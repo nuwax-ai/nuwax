@@ -1,0 +1,41 @@
+@import '@/styles/token';
+
+.container {
+  padding: @padding @padding @padding @paddingLg;
+
+  .page-header {
+    margin-bottom: @marginXxs;
+  }
+
+  .main-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: @padding;
+    align-content: start;
+    margin-top: @marginSm;
+  }
+
+  @media (max-width: 640px) {
+    .main-container {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .main-container {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .main-container {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .main-container {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}

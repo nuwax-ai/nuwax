@@ -1,0 +1,64 @@
+@import '@/styles/token';
+
+.section-title {
+  display: flex;
+  align-items: center;
+  margin: 0 0 @marginSm;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+  font-weight: @fontWeightStrong;
+
+  &::before,
+  &::after {
+    flex: 1;
+    height: @lineWidth;
+    background: @colorSplit;
+    content: '';
+  }
+
+  &::before {
+    margin-right: @marginSm;
+  }
+
+  &::after {
+    margin-left: @marginSm;
+  }
+
+  &:not(:first-child) {
+    margin-top: @marginSm;
+  }
+}
+
+.dir-trigger {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  width: 100%;
+  padding: @paddingXxs @controlPaddingHorizontal;
+  border: 1px solid @colorBorder;
+  border-radius: @borderRadius;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: @colorText;
+  font-size: @fontSize;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+}
+
+.dir-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dir-caret {
+  flex-shrink: 0;
+  font-size: @fontSizeSm;
+  color: @colorTextQuaternary;
+}

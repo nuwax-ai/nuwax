@@ -1,27 +1,46 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import ImageCaptcha, {
+  imageCaptchaRules,
+  type ImageCaptchaRef,
+  type ImageCaptchaValue,
+} from '@/components/business-component/ImageCaptcha';
 import SiteFooter from '@/components/SiteFooter';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
+import { apiAuthIdpLoginList } from '@/services/authIdp';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
+import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import {
-  isValidEmail,
-  isValidPhone,
-  isWeakNumber,
-  validatePassword,
-} from '@/utils/common';
+  filterIdpByUa,
+  IDP_RETURN_PATH_KEY,
+  resolveIdpRedirect,
+  shouldAutoRedirect,
+} from '@/utils/authIdp';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
+import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import {
+  completeDesktopIdpReturn,
+  startIdpNavigation,
+} from '@/utils/idpNavigation';
+import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
+  Alert,
   Button,
   Checkbox,
   ConfigProvider,
   Form,
   FormProps,
   Input,
+  message,
   Modal,
   Segmented,
   Space,
@@ -33,6 +52,7 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
+import IdpLoginButtons from './IdpLoginButtons';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
 import SiteProtocol from './SiteProtocol';
@@ -44,6 +64,12 @@ type SegmentedItemType = { label: React.ReactNode; value: string };
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
+
+/** 图形验证码表单值 → 接口参数（未开启时表单无此字段，返回空对象） */
+const pickImageCaptcha = (value?: ImageCaptchaValue) =>
+  value?.captchaId
+    ? { captchaId: value.captchaId, captchaCode: value.captchaCode }
+    : {};
 
 /**
  * 智能溢出检测 Tooltip 组件
@@ -104,11 +130,77 @@ const Login: React.FC = () => {
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+
+  // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
+  const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
+  const [enterpriseDomain, setEnterpriseDomain] = useState<string>('');
+  const [enterpriseSwitching, setEnterpriseSwitching] =
+    useState<boolean>(false);
+  const [enterpriseError, setEnterpriseError] = useState<string>('');
+
+  /** 目标域连通性预检（no-cors 不读响应体，可达即 resolve；防切到死域后 webview 卡死） */
+  const probeDomainReachable = async (origin: string): Promise<boolean> => {
+    try {
+      await fetch(`${origin}/api/tenant/config`, {
+        mode: 'no-cors',
+        signal: AbortSignal.timeout(5000),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleEnterpriseConfirm = async () => {
+    const domain = enterpriseDomain.trim().replace(/\/+$/, '');
+    if (!domain) {
+      setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainRequired'));
+      return;
+    }
+    const origin = /^https?:\/\//i.test(domain) ? domain : `https://${domain}`;
+    setEnterpriseSwitching(true);
+    setEnterpriseError('');
+    try {
+      const reachable = await probeDomainReachable(origin);
+      if (!reachable) {
+        setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainUnreachable'));
+        return;
+      }
+      const res = await hostBridge.auth.configureServerHost(origin);
+      if (!res.success) {
+        setEnterpriseError(
+          dict('PC.Pages.Login.enterpriseSwitchFailed', res.error ?? ''),
+        );
+        return;
+      }
+      // 成功：壳将停服务并重载 webview 到新域（本页随重载销毁，无需再操作）
+      setEnterpriseOpen(false);
+    } finally {
+      setEnterpriseSwitching(false);
+    }
+  };
+
+  const redirectAfterCaptchaCallback = (
+    responseRedirectUrl?: string | null,
+  ) => {
+    // 必须在验证码回调返回给 SDK 后再卸载登录页，避免 SDK 的成功收尾访问
+    // 已移除的验证码弹窗节点。setTimeout 会在当前 Promise 回调链结束后执行。
+    window.setTimeout(() => {
+      navigateAfterLogin(
+        history,
+        searchParams.get('redirect'),
+        responseRedirectUrl,
+        navigateToAuthUrl,
+      );
+    }, 0);
+  };
 
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
@@ -118,7 +210,15 @@ const Login: React.FC = () => {
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
         const { expireDate, token, redirect: responseRedirectUrl } = result;
-        localStorage.setItem(ACCESS_TOKEN, token);
+        const authResult = await finishBusinessLogin(token);
+        if (authResult !== 'ready') {
+          message.error(
+            authResult === 'missing-dev-token'
+              ? '登录接口未返回本地调试所需的 Token'
+              : '客户端登录会话同步失败，请升级客户端后重试',
+          );
+          return;
+        }
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {
@@ -129,20 +229,13 @@ const Login: React.FC = () => {
         }
         await loadMenus(true);
         await initI18n(true);
-        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-        if (isWeakNumber(redirect)) {
-          history.go(Number(redirect));
-        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          window.location.href = responseRedirectUrl;
-        } else if (redirect) {
-          history.replace(redirect);
-        } else {
-          history.replace('/');
-        }
+        redirectAfterCaptchaCallback(responseRedirectUrl);
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
         // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
+        // 图形验证码按一次性处理：失败后换一张
+        imageCaptchaRef.current?.refresh();
       },
     },
   );
@@ -154,32 +247,162 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 判断验证码 DOM 节点在页面中是否真正可见
+   */
+  const isElementVisible = (el: HTMLElement | null): boolean => {
+    if (!el) return false;
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      if (
+        computedStyle.display === 'none' ||
+        computedStyle.visibility === 'hidden' ||
+        computedStyle.opacity === '0'
+      ) {
+        return false;
+      }
+      return (
+        el.offsetWidth > 0 ||
+        el.offsetHeight > 0 ||
+        el.getClientRects().length > 0
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const startCaptchaPopupWatcher = () => {
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
+    let hasBeenVisible = false;
+
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
-      const hasCaptchaPopup =
-        !!document.getElementById('aliyunCaptcha-window-popup') ||
-        !!document.getElementById('aliyunCaptcha-mask');
+      const popupEl = document.getElementById('aliyunCaptcha-window-popup');
+      const maskEl = document.getElementById('aliyunCaptcha-mask');
 
-      if (!hasCaptchaPopup) {
-        loginTriggerLockRef.current = false;
-        clearCaptchaPopupWatcher();
-        return;
+      const isPopupVisible = isElementVisible(popupEl);
+      const isMaskVisible = isElementVisible(maskEl);
+      const isVisible = isPopupVisible || isMaskVisible;
+
+      if (isVisible) {
+        hasBeenVisible = true;
       }
 
-      // 极端兜底：防止异常情况下 watcher 长驻
-      if (Date.now() - startedAt > 2 * 60 * 1000) {
+      // 弹窗曾经显示过但现在被关闭/隐藏，或者弹出等待超时（3秒内未弹出），或者极端长驻超时（2分钟）
+      const isClosedAfterOpen = hasBeenVisible && !isVisible;
+      const isInitTimeout = !hasBeenVisible && Date.now() - startedAt > 3000;
+      const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
+
+      if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
       }
-    }, 500);
+    }, 300);
   };
 
   useEffect(() => {
-    unifiedThemeService.clearUserThemeConfig();
+    // 认证闪断会短暂进入登录页；若用户已显式选择主题，不应在这里再次删除，
+    // 否则 style3 会回落为经典风格，工作台详情随即误走 bare 而非 page-container。
+    unifiedThemeService.clearUserThemeConfig({ preserveExplicitChoice: true });
     runTenantConfig();
+    // 登录页无侧栏，撤销壳顶栏「展开/收起」按钮的可用态：该状态由
+    // DynamicMenusLayout 推送（layout:false 页从不推），壳本地态跨 webview
+    // 重载不重置，登出/闪断后残留 true 会把按钮带进登录页（无桥自动 no-op）。
+    hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
+
+  // ---- 三方登录（CAS / OAuth2 / 微信）：桌面回调先同步受信 Cookie 会话 ----
+  const [idpItems, setIdpItems] = useState<AuthIdpLoginItem[]>([]);
+  // 列表返回前不渲染表单，避免自动跳转前表单闪一下
+  const [idpReady, setIdpReady] = useState(false);
+  const [idpNavigating, setIdpNavigating] = useState(false);
+  const idpError = searchParams.get('idpError');
+
+  const getIdpRedirect = () =>
+    resolveIdpRedirect(
+      searchParams.get('redirect'),
+      sessionStorage.getItem(IDP_RETURN_PATH_KEY),
+    );
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadIdps = async () => {
+      const returned = await completeDesktopIdpReturn();
+      if (cancelled || returned === 'started' || returned === 'cancelled')
+        return;
+      if (returned === 'failed') {
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+        setIdpReady(true);
+        return;
+      }
+      return (
+        apiAuthIdpLoginList()
+          .then(async (res) => {
+            if (cancelled || res?.code !== SUCCESS_CODE || !res.data) return;
+            const { items = [], autoRedirectIdpId } = res.data;
+            if (
+              shouldAutoRedirect({
+                autoRedirectIdpId,
+                search: window.location.search,
+              })
+            ) {
+              const result = await startIdpNavigation({
+                providerId: autoRedirectIdpId as number,
+                redirect: getIdpRedirect(),
+                replace: true,
+              });
+              if (!cancelled && result === 'failed') {
+                setIdpItems(filterIdpByUa(items, navigator.userAgent));
+                message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+              }
+              return;
+            }
+            setIdpItems(filterIdpByUa(items, navigator.userAgent));
+          })
+          // 列表失败回落普通登录
+          .catch(() => undefined)
+          .finally(() => {
+            if (!cancelled) setIdpReady(true);
+          })
+      );
+    };
+    void loadIdps().catch(() => {
+      if (!cancelled) setIdpReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const startIdpLogin = (item: AuthIdpLoginItem) => {
+    if (idpNavigating) return;
+    const go = async () => {
+      setIdpNavigating(true);
+      const result = await startIdpNavigation({
+        providerId: item.id,
+        redirect: getIdpRedirect(),
+      });
+      if (result !== 'started') setIdpNavigating(false);
+      if (result === 'failed')
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+    };
+    if (checked) {
+      void go().catch(() => setIdpNavigating(false));
+      return;
+    }
+    // 与账号登录一致：未勾选协议先确认
+    confirm({
+      title: dict('PC.Pages.Login.serviceAgreementTitle'),
+      icon: <ExclamationCircleFilled />,
+      content: <SiteProtocol />,
+      okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+      cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
+      onOk() {
+        setChecked(true);
+        return go();
+      },
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -192,6 +415,16 @@ const Login: React.FC = () => {
   }, []);
 
   const getPhoneOrEmailRules = () => {
+    if (loginType === LoginTypeEnum.Password) {
+      return [
+        {
+          required: true,
+          whitespace: true,
+          message: dict('PC.Pages.Login.inputUnifiedAccountRequired'),
+        },
+      ];
+    }
+
     const isEmailAuth = tenantConfigInfo?.authType === 3;
     return [
       {
@@ -251,11 +484,8 @@ const Login: React.FC = () => {
       'preview:',
       captchaVerifyParam?.substring(0, 100),
     );
-    const {
-      phoneOrEmail,
-      areaCode = '86',
-      password,
-    } = form.getFieldsValue() || {};
+    const { phoneOrEmail, password, imageCaptcha } =
+      form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -279,9 +509,9 @@ const Login: React.FC = () => {
     try {
       await runPasswordLogin({
         phoneOrEmail,
-        areaCode,
         password,
         captchaVerifyParam: normalizedCaptchaParam,
+        ...pickImageCaptcha(imageCaptcha),
       });
       // onSuccess 处理导航，登录成功
       return { captchaResult: true, bizResult: true };
@@ -298,7 +528,11 @@ const Login: React.FC = () => {
   const handlerCodeLogin = async (
     captchaVerifyParam: string,
   ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
-    const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
+    const {
+      phoneOrEmail,
+      areaCode = '86',
+      imageCaptcha,
+    } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -319,15 +553,19 @@ const Login: React.FC = () => {
     }
 
     const redirect = searchParams.get('redirect');
-    const path = redirect
-      ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
-      : '/verify-code';
-    history.push(path, {
-      phoneOrEmail,
-      areaCode,
-      authType: tenantConfigInfo.authType,
-      captchaVerifyParam: normalizedCaptchaParam,
-    });
+    // 与 redirectAfterCaptchaCallback 一致：先返回验证结果给 SDK，再延迟导航，
+    // 避免 SDK 成功收尾未完成时登录页已卸载触发 destroyCaptcha，
+    // 导致 SDK 访问已销毁节点（innerHTML 空引用）
+    window.setTimeout(() => {
+      replaceLoginStep(history, 'verify-code', redirect, {
+        phoneOrEmail,
+        areaCode,
+        authType: tenantConfigInfo.authType,
+        captchaVerifyParam: normalizedCaptchaParam,
+        // 首次发码沿用登录页输入的图形验证码
+        ...pickImageCaptcha(imageCaptcha),
+      });
+    }, 0);
     return { captchaResult: true, bizResult: true };
   };
 
@@ -396,6 +634,21 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 触发验证码弹窗。
+   * 官方推荐姿势是触发 initAliyunCaptcha 绑定的隐藏 button 的 click 事件
+   * 来激活验证会话；show() 仅显示已有元素，不能可靠地启动验证流程。
+   */
+  const triggerCaptchaPopup = () => {
+    const captchaBtn = document.getElementById('aliyun-captcha-login');
+    if (captchaBtn) {
+      captchaBtn.click();
+    } else {
+      captchaRef.current?.show?.();
+    }
+    startCaptchaPopupWatcher();
+  };
+
   const doLogin = () => {
     if (loading) return;
 
@@ -426,8 +679,7 @@ const Login: React.FC = () => {
         lastLoginTriggerAtRef.current = now;
         captchaDelayTimerRef.current = window.setTimeout(() => {
           captchaDelayTimerRef.current = null;
-          captchaRef.current?.show?.();
-          startCaptchaPopupWatcher();
+          triggerCaptchaPopup();
         }, delay);
         return;
       }
@@ -446,8 +698,7 @@ const Login: React.FC = () => {
     );
 
     if (needAliyunCaptcha) {
-      captchaRef.current?.show?.();
-      startCaptchaPopupWatcher();
+      triggerCaptchaPopup();
     } else {
       const handler =
         loginTypeRef.current === LoginTypeEnum.Password
@@ -519,8 +770,17 @@ const Login: React.FC = () => {
       <LoginLangSwitcher />
       <BasicLayout>
         <div>
-          {loadEnd && (
+          {loadEnd && idpReady && (
             <div className={cx(styles['login-form-box'])}>
+              {idpError && (
+                <Alert
+                  type="error"
+                  showIcon
+                  closable
+                  className={cx(styles['idp-error'])}
+                  message={idpError}
+                />
+              )}
               <Segmented
                 className={cx(styles.segmented)}
                 options={options}
@@ -545,7 +805,8 @@ const Login: React.FC = () => {
                   </Title>
                 </Form.Item>
                 <Form.Item>
-                  {tenantConfigInfo?.authType === 3 ? (
+                  {loginType === LoginTypeEnum.Password ||
+                  tenantConfigInfo?.authType === 3 ? (
                     <Form.Item
                       name="phoneOrEmail"
                       noStyle
@@ -554,7 +815,9 @@ const Login: React.FC = () => {
                       <Input
                         rootClassName={cx(styles.input)}
                         placeholder={dict(
-                          'PC.Pages.Login.inputEmailPlaceholder',
+                          loginType === LoginTypeEnum.Password
+                            ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
+                            : 'PC.Pages.Login.inputEmailPlaceholder',
                         )}
                       />
                     </Form.Item>
@@ -605,6 +868,14 @@ const Login: React.FC = () => {
                     />
                   </Form.Item>
                 )}
+                {needImageCaptcha && (
+                  <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
+                    <ImageCaptcha
+                      ref={imageCaptchaRef}
+                      inputClassName={cx(styles.input)}
+                    />
+                  </Form.Item>
+                )}
 
                 <Form.Item className={cx(styles.login)}>
                   <Button
@@ -640,6 +911,63 @@ const Login: React.FC = () => {
                   </div>
                 </Form.Item>
               </Form>
+
+              <IdpLoginButtons
+                items={idpItems}
+                onSelect={startIdpLogin}
+                disabled={idpNavigating}
+                trailingAction={
+                  // 仅商业桌面宿主可见；保留无第三方登录时的企业入口。
+                  isDesktopHost() && (
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => {
+                        setEnterpriseError('');
+                        setEnterpriseOpen(true);
+                      }}
+                    >
+                      {dict('PC.Pages.Login.enterpriseLogin')}
+                    </Button>
+                  )
+                }
+              />
+
+              <Modal
+                title={dict('PC.Pages.Login.enterpriseLoginTitle')}
+                open={enterpriseOpen}
+                onCancel={() => {
+                  if (!enterpriseSwitching) setEnterpriseOpen(false);
+                }}
+                onOk={handleEnterpriseConfirm}
+                okText={dict('PC.Pages.Login.enterpriseSwitchConfirm')}
+                confirmLoading={enterpriseSwitching}
+                okButtonProps={{ disabled: !enterpriseDomain.trim() }}
+                destroyOnClose
+              >
+                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
+                  {dict('PC.Pages.Login.enterpriseLoginHint')}
+                </div>
+                <Input
+                  value={enterpriseDomain}
+                  onChange={(e) => {
+                    setEnterpriseDomain(e.target.value);
+                    setEnterpriseError('');
+                  }}
+                  onPressEnter={handleEnterpriseConfirm}
+                  disabled={enterpriseSwitching}
+                  placeholder={dict(
+                    'PC.Pages.Login.enterpriseDomainPlaceholder',
+                  )}
+                  allowClear
+                />
+                {enterpriseError && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: '#ff4d4f' }}>
+                    {enterpriseError}
+                  </div>
+                )}
+              </Modal>
 
               <div
                 style={{

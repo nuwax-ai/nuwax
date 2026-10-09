@@ -11,7 +11,7 @@ import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import { FileSearchOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -82,8 +82,17 @@ const DocItem: React.FC<DocItemProps> = ({
     },
   );
 
+  // 标记 runDetail 是否已执行过：ahooks 的 cancel 在 service 从未执行(count=0)时会打印警告
+  // "You should't call cancel when service not executed once."。
+  // 切换"文档/QA问答"tab 会让 DocWrap 整体卸载，此时状态为 ANALYZED/ANALYZE_FAILED 的文档
+  // runDetail 从未执行，卸载 cleanup 里直接 cancelDetail() 会触发上述警告。
+  // 用 ref 守卫：仅在确实启动过轮询时才 cancel。
+  const hasStartedRef = useRef(false);
+
   useEffect(() => {
-    cancelDetail();
+    if (hasStartedRef.current) {
+      cancelDetail();
+    }
     const { docStatusCode } = info;
     // 知识库文档状态：分析中
     if (
@@ -91,10 +100,13 @@ const DocItem: React.FC<DocItemProps> = ({
       docStatusCode !== DocStatusCodeEnum.ANALYZE_FAILED
     ) {
       runDetail(info.id);
+      hasStartedRef.current = true;
     }
 
     return () => {
-      cancelDetail();
+      if (hasStartedRef.current) {
+        cancelDetail();
+      }
     };
   }, [info?.docStatusCode]);
 

@@ -1,9 +1,9 @@
+import type { RequestResponse } from '@/types/interfaces/request';
 import {
   ModelPricingInfo,
   ResourcePricingConfigInfo,
   ToolPricingInfo,
-} from '@/pages/SpaceResource/types/resource';
-import type { RequestResponse } from '@/types/interfaces/request';
+} from '@/types/interfaces/resource';
 import { request } from 'umi';
 
 // ======================= 模型定价 =======================

@@ -19,12 +19,13 @@ import {
   Checkbox,
   Form,
   Input,
+  type InputRef,
   List,
   message,
   Select,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 
 const cx = classNames.bind(styles);
@@ -64,6 +65,8 @@ const AddMember: React.FC<AddMemberProps> = ({
   const [searchedAllMembers, setSearchedAllMembers] = useState<
     SearchUserInfo[]
   >([]);
+  const searchKeywordRef = useRef<string>('');
+  const searchInputRef = useRef<InputRef>(null);
 
   const cancelModal = () => {
     onCancel();
@@ -182,6 +185,10 @@ const AddMember: React.FC<AddMemberProps> = ({
     });
   };
 
+  const triggerSearch = (value?: string) => {
+    handleInputChange(value ?? searchKeywordRef.current);
+  };
+
   useEffect(() => {
     if (!open) {
       return;
@@ -191,6 +198,12 @@ const AddMember: React.FC<AddMemberProps> = ({
     setLeftColumnMembers([]);
     setSearchedAllMembers([]);
     run({ spaceId });
+
+    const focusTimer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
   }, [spaceId, open]);
 
   return (
@@ -205,18 +218,23 @@ const AddMember: React.FC<AddMemberProps> = ({
       onConfirm={handlerSubmit}
     >
       <div style={{ display: 'flex', gap: 20 }}>
-        <div className={cx(styles['add-member-left-column'])}>
+        <div className={cx(styles['add-member-left-column'], 'flex-1', 'overflow-hide')}>
           <Input
+            ref={searchInputRef}
             placeholder={dict(
               'PC.Pages.TeamSetting.AddMember.searchPlaceholder',
             )}
-            prefix={<SearchOutlined />}
+            suffix={
+              <SearchOutlined
+                style={{ cursor: 'pointer', color: 'rgba(0, 0, 0, 0.45)' }}
+                onClick={() => triggerSearch()}
+              />
+            }
+            onChange={(event) => {
+              searchKeywordRef.current = event.target.value;
+            }}
             onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                handleInputChange(
-                  (event.currentTarget as HTMLInputElement).value,
-                );
-              }
+              triggerSearch((event.target as HTMLInputElement).value);
             }}
           />
           <Checkbox
@@ -235,14 +253,17 @@ const AddMember: React.FC<AddMemberProps> = ({
             value={leftCheckedMembers}
           >
             {leftColumnMembers.map((m) => (
-              <Checkbox key={m.id} value={m.id} className={'flex mb-12'}>
-                <Avatar src={m.avatar || personalImage} /> {m.userName}
+              <Checkbox key={m.id} value={m.id} className={'flex mb-12 overflow-hide'}>
+                <div className="flex items-center gap-4 overflow-hide">
+                  <Avatar src={m.avatar || personalImage} />
+                  <span className="text-ellipsis">{m.userName}</span>
+                </div>
               </Checkbox>
             ))}
           </Checkbox.Group>
         </div>
 
-        <div style={{ width: '300px' }}>
+        <div className={cx('flex-1', 'overflow-hide')}>
           <h3 style={{ marginBottom: 15 }}>
             {dict('PC.Pages.TeamSetting.AddMember.selectedMembers').replace(
               '{0}',

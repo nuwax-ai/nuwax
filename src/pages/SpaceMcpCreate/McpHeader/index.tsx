@@ -1,7 +1,7 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { McpHeaderProps } from '@/types/interfaces/mcp';
 import { jumpBack } from '@/utils/router';
-import { LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -28,7 +28,10 @@ const McpHeader: React.FC<McpHeaderProps> = ({
         className={cx('flex', 'items-center', 'cursor-pointer')}
         onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
       >
-        <LeftOutlined className={cx('hover-box', styles.icon)} />
+        <SvgIcon
+          name="icons-nav-backward"
+          className={cx('hover-box', styles.icon)}
+        />
         <span className={styles.name}>
           {dict('PC.Pages.SpaceMcpCreate.createMcpService')}
         </span>

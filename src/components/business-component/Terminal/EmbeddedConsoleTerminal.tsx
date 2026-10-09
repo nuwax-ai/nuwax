@@ -19,10 +19,15 @@ import {
   type TerminalReconnectConfig,
 } from './terminalReconnect';
 import {
+  createTtydOutputFlowControl,
+  type TtydOutputFlowControl,
+} from './ttydOutputFlowControl';
+import {
   decodeTtydMessage,
   encodeTtydInit,
   encodeTtydInput,
   encodeTtydResize,
+  sendTtydFlowControl,
 } from './ttydWire';
 import type { TerminalWireProtocol } from './type';
 import { FitAddon, Terminal } from './xtermBundle';
@@ -65,6 +70,11 @@ export interface EmbeddedConsoleTerminalProps {
   lineHeight?: number;
   cursorBlink?: boolean;
   autoConnect?: boolean;
+  /**
+   * 为 true 时，面板收起或切到另一环境只暂停自动连接，不断开已有 WebSocket。
+   * 再次进入时沿用当前连接。
+   */
+  keepConnection?: boolean;
   reconnect?: TerminalReconnectConfig;
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
@@ -135,6 +145,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       lineHeight = 1.35,
       cursorBlink = true,
       autoConnect = true,
+      keepConnection = false,
       reconnect = DEFAULT_TERMINAL_RECONNECT,
       onConnect,
       onDisconnect,
@@ -153,8 +164,24 @@ const EmbeddedConsoleTerminal = forwardRef<
     const reconnectCountRef = useRef(0);
     const isManualDisconnectRef = useRef(false);
     /** xterm 是否已完成 open，WS 早到的输出暂存于此 */
-    const pendingWritesRef = useRef<string[]>([]);
+    const pendingWritesRef = useRef<
+      Array<{ data: string; callback?: () => void }>
+    >([]);
     const terminalReadyRef = useRef(false);
+    const ttydFlowControlRef = useRef<TtydOutputFlowControl | null>(null);
+
+    const releaseTtydFlowControl = useCallback(() => {
+      ttydFlowControlRef.current?.release();
+      ttydFlowControlRef.current = null;
+    }, []);
+
+    const flushPendingWrites = useCallback(() => {
+      const term = terminalRef.current;
+      if (!term || !terminalReadyRef.current) return;
+      for (const { data, callback } of pendingWritesRef.current.splice(0)) {
+        term.write(data, callback);
+      }
+    }, []);
 
     /** 心跳保活定时器：周期性同步终端尺寸 + 借 send 失败检测断连 */
     const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(
@@ -412,6 +439,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         const existingWs = wsRef.current;
         if (existingWs) {
           isManualDisconnectRef.current = true;
+          releaseTtydFlowControl();
           try {
             existingWs.close();
           } catch {
@@ -469,6 +497,19 @@ const EmbeddedConsoleTerminal = forwardRef<
             : new WebSocket(targetUrl);
           ws.binaryType = 'arraybuffer';
           wsRef.current = ws;
+          if (wireProtocol === 'ttyd') {
+            ttydFlowControlRef.current = createTtydOutputFlowControl({
+              send: (command) => sendTtydFlowControl(ws, command),
+              write: (data, callback) => {
+                const term = terminalRef.current;
+                if (!term || !terminalReadyRef.current) {
+                  pendingWritesRef.current.push({ data, callback });
+                } else {
+                  term.write(data, callback);
+                }
+              },
+            });
+          }
         } catch (err) {
           console.error('[EmbeddedTerminal] WebSocket creation failed:', err);
           scheduleReconnect();
@@ -513,13 +554,7 @@ const EmbeddedConsoleTerminal = forwardRef<
                 allowFallbackDimensions: true,
               });
               resetLocalMouseTracking();
-              const pending = pendingWritesRef.current.splice(0);
-              const term = terminalRef.current;
-              if (term && pending.length > 0) {
-                for (const chunk of pending) {
-                  term.write(chunk);
-                }
-              }
+              flushPendingWrites();
               focusTerminal();
               onConnectRef.current?.();
               if (isReconnect) {
@@ -586,8 +621,12 @@ const EmbeddedConsoleTerminal = forwardRef<
               ? event.data
               : new TextDecoder().decode(event.data);
           if (!data) return;
+          if (wireProtocol === 'ttyd' && ttydFlowControlRef.current) {
+            ttydFlowControlRef.current.write(data);
+            return;
+          }
           if (!term || !terminalReadyRef.current) {
-            pendingWritesRef.current.push(data);
+            pendingWritesRef.current.push({ data });
             return;
           }
           term.write(data);
@@ -599,6 +638,7 @@ const EmbeddedConsoleTerminal = forwardRef<
             return;
           }
           stopHeartbeat();
+          releaseTtydFlowControl();
           console.log(
             '[EmbeddedTerminal] WebSocket closed:',
             event.code,
@@ -622,26 +662,34 @@ const EmbeddedConsoleTerminal = forwardRef<
       },
       // 所有外部依赖已通过 ref 访问，保持 connect 引用稳定
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [clearReconnectTimer, syncBackendSize, wireProtocol],
+      [
+        clearReconnectTimer,
+        flushPendingWrites,
+        releaseTtydFlowControl,
+        syncBackendSize,
+        wireProtocol,
+      ],
     );
 
     const disconnect = useCallback(() => {
       stopHeartbeat();
       isManualDisconnectRef.current = true;
       clearReconnectTimer();
+      releaseTtydFlowControl();
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
       pendingWritesRef.current = [];
       ttydInitSentRef.current = false;
-    }, [clearReconnectTimer, stopHeartbeat]);
+    }, [clearReconnectTimer, releaseTtydFlowControl, stopHeartbeat]);
 
     const reconnectTerminal = useCallback(
       (url?: string) => {
         reconnectCountRef.current = 0;
         clearReconnectTimer();
         isManualDisconnectRef.current = false;
+        releaseTtydFlowControl();
         if (wsRef.current) {
           wsRef.current.close();
           wsRef.current = null;
@@ -652,7 +700,7 @@ const EmbeddedConsoleTerminal = forwardRef<
           connect(url || wsUrlRef.current);
         }, 0);
       },
-      [clearReconnectTimer, connect],
+      [clearReconnectTimer, connect, releaseTtydFlowControl],
     );
 
     useImperativeHandle(
@@ -743,12 +791,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         () => fitAddon.fit(),
         () => {
           // xterm 就绪后刷掉 WS 早到的输出
-          const pending = pendingWritesRef.current.splice(0);
-          if (pending.length > 0) {
-            for (const chunk of pending) {
-              term.write(chunk);
-            }
-          }
+          flushPendingWrites();
           // 若 WS 已连接但尚未发 ttyd init（竞态），补发
           const ws = wsRef.current;
           if (ws?.readyState === WebSocket.OPEN) {
@@ -798,12 +841,16 @@ const EmbeddedConsoleTerminal = forwardRef<
     }, [
       cursorBlink,
       disconnect,
+      flushPendingWrites,
       fontFamily,
       fontSize,
       lineHeight,
       syncBackendSize,
       wireProtocol,
     ]);
+
+    const keepConnectionRef = useRef(keepConnection);
+    keepConnectionRef.current = keepConnection;
 
     useEffect(() => {
       if (!autoConnect || !wsUrl || !terminalReadyRef.current) return;
@@ -826,7 +873,9 @@ const EmbeddedConsoleTerminal = forwardRef<
       tryConnect();
       return () => {
         cancelled = true;
-        disconnect();
+        if (!keepConnectionRef.current) {
+          disconnect();
+        }
       };
     }, [autoConnect, wsUrl, connect, disconnect]);
 

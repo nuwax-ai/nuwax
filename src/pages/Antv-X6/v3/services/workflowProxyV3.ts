@@ -318,7 +318,7 @@ class WorkflowProxyV3 {
   /**
    * 获取边列表
    */
-  getEdges(): Edge[] {
+  getEdges(): EdgeV3[] {
     return this.workflowData ? cloneDeep(this.workflowData.edges) : [];
   }
 
@@ -1166,7 +1166,9 @@ class WorkflowProxyV3 {
           case SpecialPortType.Condition:
           case SpecialPortType.Intent:
           case SpecialPortType.QAOption:
-          case SpecialPortType.HitlOption: {
+          case SpecialPortType.HitlOption:
+          case SpecialPortType.RouteDecisionDefault:
+          case SpecialPortType.RouteDecisionRoute: {
             // Condition/Intent/QA 用 uuid，AgentFlow 用 handler.getBranchKey
             const bkHandler = extensionRegistry.get(sourceNode.type);
             const branchKey =

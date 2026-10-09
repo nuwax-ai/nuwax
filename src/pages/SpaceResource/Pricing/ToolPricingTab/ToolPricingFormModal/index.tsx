@@ -1,23 +1,23 @@
 import Created from '@/components/Created';
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
+import { apiUpdateToolPricing } from '@/services/resource';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
-import { customizeRequiredMark } from '@/utils/form';
-import { createPriceInputNumberProps } from '@/utils/priceInput';
-import { TOOL_PRICING_TYPE_OPTIONS } from '@/utils/resourcePricing';
-import { Form, Input, InputNumber, Select, Switch, message } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { TARGET_TYPE_LABEL_MAP } from '..';
-import { apiUpdateToolPricing } from '../../../services/resource';
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
   ResourcePricingType,
   ToolPricingInfo,
   ToolPricingTargetType,
-} from '../../../types/resource';
+} from '@/types/interfaces/resource';
+import { customizeRequiredMark } from '@/utils/form';
+import { createPriceInputNumberProps } from '@/utils/priceInput';
+import { TOOL_PRICING_TYPE_OPTIONS } from '@/utils/resourcePricing';
+import { Form, Input, InputNumber, Select, Switch, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { TARGET_TYPE_LABEL_MAP } from '..';
 import styles from './index.less';
 
 /** 插件定价价格输入框共用配置（最多 4 位小数）。 */

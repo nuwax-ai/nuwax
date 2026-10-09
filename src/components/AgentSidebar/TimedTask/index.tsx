@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiAgentTaskCancel, apiAgentTaskList } from '@/services/agentTask';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
@@ -11,7 +12,7 @@ import {
 import { Button, message, Tabs, TabsProps, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import CreateTimedTask from './CreateTimedTask';
 import styles from './index.less';
 import TaskList from './TaskList';
@@ -22,7 +23,7 @@ const cx = classNames.bind(styles);
 const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   // 使用 model 中的定时任务弹窗状态，而不是本地状态
   const { isTimedTaskOpen, closeTimedTask, timedTaskMode, openTimedTask } =
-    useModel('conversationInfo');
+    usePageModel('conversationInfo');
 
   // 更新时,当前任务信息
   const [currentTask, setCurrentTask] = useState<TimedConversationTaskInfo>();

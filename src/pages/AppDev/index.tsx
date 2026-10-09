@@ -115,6 +115,7 @@ const cx = classNames.bind(styles);
 const AppDev: React.FC = () => {
   // 获取路由参数
   const params = useParams();
+  // 获取空间ID
   const spaceId = Number(params.spaceId);
 
   // 数据源选择状态
@@ -126,6 +127,7 @@ const AppDev: React.FC = () => {
 
   // ⭐ 自动发送消息锁，防止重复调用
   const autoSendLockRef = useRef<boolean>(false);
+  // 自动发送消息定时器
   const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ⭐ 自动错误处理 Hook 引用
@@ -142,7 +144,10 @@ const AppDev: React.FC = () => {
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
+  // 获取统一主题
   const { navigationStyle } = useUnifiedTheme();
+  // 移动端判定：单栏风格横向滚动兜底仅桌面启用（移动端 bare 形态无 page-container）
+  const { isMobile } = useModel('layout');
   const {
     workspace,
     isServiceRunning,
@@ -161,6 +166,10 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  // 单栏风格（style3）下页面内容最小宽度：横向滚动收敛在 page-container
+  // 容器内时，靠它保证窄窗口内容不被裁剪；经典风格下为空（走 .appDev 的
+  // min-width: 1200px + html 全局最小宽）
+  const [style3MinWidth, setStyle3MinWidth] = useState<string>();
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -180,9 +189,12 @@ const AppDev: React.FC = () => {
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState<boolean>(false);
+  // 单文件上传加载状态
   const [singleFileUploadLoading, setSingleFileUploadLoading] =
     useState<boolean>(false);
+  // 单文件上传路径
   const [singleFilePath, setSingleFilePath] = useState<string>('');
+  // 单文件上传文件
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // 项目导入状态
@@ -194,6 +206,7 @@ const AppDev: React.FC = () => {
 
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  // 删除节点
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   // 文件操作状态，避免多步流程竞争和覆盖
   const [isFileOperating, setIsFileOperating] = useState<boolean>(false);
@@ -260,8 +273,10 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
+  // 获取终端 WebSocket URL
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
+  // 初始化项目元数据
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.PageApp,
     targetId: Number(projectId),
@@ -308,6 +323,7 @@ const AppDev: React.FC = () => {
   });
 
   useEffect(() => {
+    // 每次 sourceControl.refreshGitList 变化时，更新 refreshGitListAfterSaveRef.current
     refreshGitListAfterSaveRef.current = sourceControl.refreshGitList;
   }, [sourceControl.refreshGitList]);
 
@@ -333,6 +349,7 @@ const AppDev: React.FC = () => {
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+  // designViewer 组件的 ref，用于触发刷新
   const designViewerRef = useRef<DesignViewerRef>(null);
 
   // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
@@ -352,6 +369,7 @@ const AppDev: React.FC = () => {
 
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState<boolean>(false);
+  // Preview 最后刷新时间
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
@@ -404,6 +422,7 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 如果没有权限，则不进行模型选择
     if (!projectInfo.hasPermission) {
       return;
     }
@@ -475,6 +494,7 @@ const AppDev: React.FC = () => {
     devLogsRefresh: () => devLogs.resetStartLine(),
   });
 
+  /** 聊天 */
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -493,6 +513,7 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 初始化自动发送
   useAppDevInitialAutoSend({
     projectId: projectId || '',
     hasValidProjectId,
@@ -646,6 +667,7 @@ const AppDev: React.FC = () => {
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
+  /** 数据源管理 */
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
       const _selectedDataResources: DataResource[] =
@@ -663,7 +685,9 @@ const AppDev: React.FC = () => {
             isSelected: false,
           };
         });
+      // 如果数据源列表为空，则不进行选择
       setSelectedDataResources(_selectedDataResources);
+      // 更新 selectedDataResourcesRef 引用
       selectedDataResourcesRef.current = _selectedDataResources;
     }
   }, [dataResourceManagement.resources]);
@@ -1456,6 +1480,48 @@ const AppDev: React.FC = () => {
     };
   }, []); // 空依赖数组，只在组件卸载时执行清理
 
+  /**
+   * 单栏风格（style3）下补横向滚动（禅道 bug2460）：
+   * 滚动区域收敛在 page-container 内，不拓宽 html（否则窗口窄于阈值时出现
+   * 窗口级全局滚动条）；横向滚动同样收敛为容器内滚动——内联放开
+   * page-container 的 overflow-x（压过布局层的 overflow-x: hidden，
+   * 切档/卸载时还原），页面内容自带 style3MinWidth，窄窗口在容器底部出
+   * 横向滚动条而非被裁剪（同 EditAgent 2462 修复模式）
+   */
+  useEffect(() => {
+    const pageContainerEl = document.getElementById('page-container-selector');
+    // 移动端无 page-container（bare 形态）且无窄窗横滚诉求，跳过
+    if (
+      document.body.classList.contains('xagi-nav-style3') &&
+      !isMobile
+    ) {
+      document.documentElement.style.minWidth = 'unset';
+      pageContainerEl?.style.setProperty('overflow-x', 'auto');
+      // 与分栏最小宽一一对应：左栏（AI 助手对话 380px 固定宽）+ 右栏
+      //（代码页 = 文件树 280px + 编辑器 540px；预览页 = 预览独占 820px，
+      // 锚定经典风格 .appDev min-width:1200px 下右栏可用宽），
+      // 保证横向滚动到最右时内容零裁剪
+      const leftMinWidth = 380;
+      const fileTreeMinWidth = activeTab !== 'preview' ? 280 : 0;
+      const editorMinWidth = activeTab === 'preview' ? 820 : 540;
+      // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
+      setStyle3MinWidth(
+        `${leftMinWidth + fileTreeMinWidth + editorMinWidth + 24}px`,
+      );
+      return () => {
+        document.documentElement.style.minWidth = '1200px';
+        pageContainerEl?.style.removeProperty('overflow-x');
+        setStyle3MinWidth(undefined);
+      };
+    }
+    pageContainerEl?.style.removeProperty('overflow-x');
+    // 经典风格：html 全局 min-width:1200px（global.less）+ .appDev 自身
+    // min-width:1200px 由窗口级滚动条兜底，维持现状
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [activeTab, isMobile]);
+
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
     return (
@@ -1543,12 +1609,15 @@ const AppDev: React.FC = () => {
           'flex',
           'flex-col',
         )}
-        /* 页面主区根据 isFileOperating 动态调整可交互性与视觉反馈（禁用操作+暗色） */
-        style={
-          isFileOperating || isDeploying
+        /* isFileOperating 动态调整可交互性（禁用+暗色）；顶部退让由路由层
+           wrappers/immersiveShellAvoid 统一承担；
+           style3MinWidth：单栏风格窄窗口横向滚动的内容最小宽（bug2460） */
+        style={{
+          ...(isFileOperating || isDeploying
             ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
-            : {}
-        }
+            : null),
+          ...(style3MinWidth ? { minWidth: style3MinWidth } : null),
+        }}
       >
         {/* 顶部头部区域 */}
         <AppDevHeader

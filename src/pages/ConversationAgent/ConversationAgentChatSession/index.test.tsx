@@ -61,6 +61,7 @@ describe('ConversationAgentChatSession', () => {
         messageList: [{ id: 'm1' }],
         isConversationActive: true,
         mentionPlacement: 'up',
+        showDebug: true,
       }),
     );
   });

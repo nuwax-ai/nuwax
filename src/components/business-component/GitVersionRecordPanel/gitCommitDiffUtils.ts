@@ -52,8 +52,11 @@ export const getLineDiffStats = (
   return { additions: n - lcs, deletions: m - lcs };
 };
 
-const normalizeDiffPath = (rawPath: string): string =>
-  rawPath.replace(/^a\//, '').replace(/^b\//, '').trim();
+/**
+ * 正则已经去掉 git 的 a/、b/ 前缀。路径自己以 a/ 或 b/ 开头时不能再剥，
+ * 否则和 summary.files[].file 对不上，展开后旧/新内容都是空的。
+ */
+const normalizeDiffPath = (rawPath: string): string => rawPath.trim();
 
 const inferDiffFileStatus = (
   insertions: number,
@@ -103,7 +106,8 @@ const parseDiffChunkContent = (
       line.startsWith('deleted file mode') ||
       line.startsWith('similarity index') ||
       line.startsWith('rename from') ||
-      line.startsWith('rename to')
+      line.startsWith('rename to') ||
+      line.startsWith('\\ No newline at end of file')
     ) {
       return;
     }

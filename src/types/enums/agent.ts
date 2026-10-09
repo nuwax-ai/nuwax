@@ -6,6 +6,12 @@ export enum CategoryTypeEnum {
   Component = 'Component',
   // 应用
   PageApp = 'PageApp',
+  // 对话框智能体
+  ChatBox = 'ChatBox',
+  // 连接器
+  Connector = 'Connector',
+  // 技能
+  Skill = 'Skill',
 }
 
 // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event,Skill,SubAgent,Hook
@@ -21,6 +27,12 @@ export enum AgentComponentTypeEnum {
   Page = 'Page',
   // 应用
   PageApp = 'PageApp',
+  // 网站应用
+  UserApp = 'UserApp',
+  // 常规项目
+  NormalProject = 'NormalProject',
+  // 第三方应用
+  ThirdApp = 'ThirdApp',
   // 事件
   Event = 'Event',
   // 技能

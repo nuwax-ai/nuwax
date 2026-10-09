@@ -1,4 +1,5 @@
 // 模型配置相关接口
+import type { ModelOptionDto } from '@/types/interfaces/agent';
 import type {
   ModelConfigInfo,
   ModelListParams,
@@ -48,6 +49,24 @@ export async function apiModelListSpace(
   spaceId: number,
 ): Promise<RequestResponse<ModelConfigInfo[]>> {
   return request(`/api/model/list/space/${spaceId}`, {
+    method: 'POST',
+  });
+}
+
+// 查询个人模型列表接口(模型选择弹窗"个人"tab)
+export async function apiModelListPersonal(): Promise<
+  RequestResponse<ModelOptionDto[]>
+> {
+  return request('/api/model/list/personal', {
+    method: 'POST',
+  });
+}
+
+// 查询团队模型列表接口(模型选择弹窗"团队"tab)
+export async function apiModelListTeam(): Promise<
+  RequestResponse<ModelOptionDto[]>
+> {
+  return request('/api/model/list/team', {
     method: 'POST',
   });
 }

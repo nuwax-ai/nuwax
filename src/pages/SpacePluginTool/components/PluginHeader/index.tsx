@@ -1,4 +1,5 @@
 import pluginImage from '@/assets/images/plugin_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -9,7 +10,6 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   FormOutlined,
-  LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
@@ -44,7 +44,8 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx(styles['icon-back'], 'cursor-pointer')}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />

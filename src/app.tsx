@@ -1,12 +1,29 @@
+import '@/utils/setupDayjsPlugins';
 import { RequestConfig } from '@@/plugin-request/request';
-import { Modal, theme as antdTheme } from 'antd';
-import React, { useEffect, useRef } from 'react';
-import { history, useAntdConfigSetter } from 'umi';
-import { SUCCESS_CODE } from './constants/codes.constants';
-import { ACCESS_TOKEN } from './constants/home.constants';
+import { OpenUIDevtools } from '@openuidev/devtools';
+import { theme as antdTheme, message, Modal } from 'antd';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
+import { history, useAntdConfigSetter, useModel } from 'umi';
+import AppStartup from './components/business-component/AppStartup';
+import {
+  REDIRECT_LOGIN,
+  SUCCESS_CODE,
+  USER_NO_LOGIN,
+} from './constants/codes.constants';
+// 首页常量须先于主题链求值：其顶层文案依赖已初始化的 i18nRuntime。
+import './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
+import {
+  DesktopShellPreviewChrome,
+  initClientShell,
+} from './features/client-shell';
 import useEventPolling from './hooks/useEventPolling';
+import {
+  BRAND_PRIMARY,
+  initBrandTheme,
+  isDefaultBrandThemeActive,
+} from './services/brandTheme';
 import { request as requestCommon } from './services/common';
 import {
   dict,
@@ -15,10 +32,29 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
-import { unifiedThemeService } from './services/unifiedThemeService';
-import { UserService } from './services/userService';
+import {
+  resolveEffectiveNavigationStyle,
+  unifiedThemeService,
+} from './services/unifiedThemeService';
+import {
+  getCurrentLoginStatus,
+  setLoginStatusToCache,
+  subscribeLoginStatus,
+  UserService,
+} from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { restoreBusinessAuthSession } from './utils/businessAuth';
+import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
+import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
+import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
+import { syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
+import { isConversationMockPage } from './utils/isConversationMockPage';
+// 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
+// import 求值期内，早于 runtime render）。必须排在 i18nRuntime 之后——它会经
+// unifiedThemeService → theme.constants 提前拉起 i18nRuntime 的循环依赖链，
+// 置顶会让 home.constants 在 dict 就绪前求值而炸（dict is not a function）。
+import '@/layouts/workbenchHistoryBase';
 /**
  * 全局初始状态类型
  */
@@ -32,27 +68,66 @@ export interface InitialStateType {
  * 这里加载菜单数据，确保在任何页面刷新时都能获取到菜单权限
  */
 export async function getInitialState(): Promise<InitialStateType> {
+  // 必须在首个会话组件挂载前完成，避免首屏先读到旧偏好。
+  migrateConversationDefaultsToV2();
   try {
     await initI18n();
 
+    const hostSessionReady = await restoreBusinessAuthSession();
+
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
-    if (!publicPaths.some((path) => history.location.pathname.includes(path))) {
+    const publicPaths = [
+      '/login',
+      '/verify-code',
+      '/set-password',
+      '/chat-temp',
+      '/examples/agent-intervention-demo',
+      ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),
+    ];
+    const initialPathname =
+      typeof window === 'undefined'
+        ? history.location.pathname
+        : window.location.pathname;
+    // Mock 验收页（dev-only 路由）跳过用户信息请求，避免未登录时被重定向
+    const isPublicPath = publicPaths.some((path) =>
+      initialPathname.toLowerCase().startsWith(path),
+    );
+    // 客户端 Cookie 或本地开发 Token 尚未就绪时先进入登录页，避免首屏鉴权请求
+    // 失败后反复重挂；Mock 验收页保持独立的匿名供数链路。
+    if (!isPublicPath && !isConversationMockPage() && !hostSessionReady) {
+      window.location.replace(
+        `/login?redirect=${encodeURIComponent(
+          initialPathname + window.location.search,
+        )}`,
+      );
+      return { menuData: [] };
+    }
+    if (!isPublicPath && !isConversationMockPage()) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);
 
       if (userInfo?.id) {
         const res = await apiQueryMenus();
         if (res.code === SUCCESS_CODE && res.data) {
+          // 菜单请求已确认登录有效，路由鉴权复用结果，避免首屏再次加载和请求。
+          setLoginStatusToCache(true);
           return { menuData: res.data };
+        }
+        // 鉴权失效已有请求层业务跳转，不要用启动错误遮挡登录页。
+        if (res.code !== USER_NO_LOGIN && res.code !== REDIRECT_LOGIN) {
+          throw new Error('App startup menu request failed');
         }
       }
     }
     return { menuData: [] };
   } catch (error) {
-    console.error('getInitialState: failed to load menu data', error);
+    if (history.location.pathname.toLowerCase().includes('/login')) {
+      return { menuData: [] };
+    }
+    // 请求层可能无 reason 地 reject；必须给 Umi 一个可识别的错误态。
+    // 不把原始服务 payload、宿主凭据或请求信息渲染到错误界面。
+    throw error instanceof Error ? error : new Error('App startup failed');
   }
-  return { menuData: [] };
 }
 
 /**
@@ -65,11 +140,29 @@ const GlobalEventPolling: React.FC = () => {
   return contextHolder; // 返回 contextHolder 以支持 Modal 的动态主题
 };
 
+const subscribePollingPath = (listener: () => void) => history.listen(listener);
+const getPollingPath = () => history.location.pathname;
+
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
+  const loggedIn = useSyncExternalStore(
+    subscribeLoginStatus,
+    getCurrentLoginStatus,
+    () => false,
+  );
+  const pathname = useSyncExternalStore(
+    subscribePollingPath,
+    getPollingPath,
+    () => '/login',
+  );
+  const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
+    pathname,
+  );
+
+  useEffect(() => installDirectorySyncLegacyBridge(), []);
 
   // 输出版本信息到控制台
   useEffect(() => {
@@ -94,22 +187,30 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     };
 
     const handleChunkError = () => {
-      if (sessionStorage.getItem('__chunk_reload')) return;
-      sessionStorage.setItem('__chunk_reload', '1');
-
-      Modal.confirm({
-        title: dict('PC.Modal.chunkLoadErrorTitle'),
-        content: dict('PC.Modal.chunkLoadErrorContent'),
-        okText: dict('PC.Modal.chunkLoadErrorRefresh'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: () => {
-          sessionStorage.removeItem('__chunk_reload');
-          window.location.reload();
-        },
-        onCancel: () => {
-          sessionStorage.removeItem('__chunk_reload');
-        },
-      });
+      // 发版后旧 chunk 缺失是最常见成因：先自动刷新一次无感完成升级。哨兵存
+      // 刷新时间戳（60s 窗口）防循环；窗口内再次失败说明资源真缺失，只能弹
+      // 不可取消的升级提示强制刷新。成功升级后哨兵停留至下次会话也不影响——
+      // 时间戳过期即恢复自动升级能力。
+      const reloadedAt = Number(sessionStorage.getItem('__chunk_reload') || 0);
+      if (reloadedAt && Date.now() - reloadedAt < 60_000) {
+        Modal.confirm({
+          title: dict('PC.Modal.chunkLoadErrorTitle'),
+          content: dict('PC.Modal.chunkLoadErrorContent'),
+          okText: dict('PC.Modal.chunkLoadErrorRefresh'),
+          okCancel: false,
+          closable: false,
+          maskClosable: false,
+          keyboard: false,
+          onOk: () => {
+            sessionStorage.removeItem('__chunk_reload');
+            window.location.reload();
+          },
+        });
+        return;
+      }
+      sessionStorage.setItem('__chunk_reload', String(Date.now()));
+      message.info(dict('PC.Modal.chunkAutoReloading'));
+      window.setTimeout(() => window.location.reload(), 500);
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -199,6 +300,12 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       try {
         const data = unifiedThemeService.getCurrentData();
         const darkMode = data.antdTheme === 'dark';
+        // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝
+        // （见 brandTheme）；显式定制后主色跟随用户选择——灰白 solid 布局已
+        // 改挂背景维度（isBrandThemeActive），不再反向绑架 antd 主色
+        const effectivePrimary = isDefaultBrandThemeActive()
+          ? BRAND_PRIMARY
+          : data.primaryColor;
 
         const algorithm = darkMode
           ? antdTheme.darkAlgorithm
@@ -206,7 +313,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         const baseTokens = darkMode ? darkThemeTokens : themeTokens;
         const tokens = {
           ...baseTokens,
-          colorPrimary: data.primaryColor,
+          colorPrimary: effectivePrimary,
         };
 
         const signature = JSON.stringify({
@@ -222,7 +329,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
             token: tokens as any,
             components: {
               Segmented: {
-                itemSelectedColor: data.primaryColor,
+                itemSelectedColor: effectivePrimary,
               },
             },
             cssVar: { prefix: 'xagi' },
@@ -237,9 +344,18 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
           'data-nav-theme',
           data.layoutStyle,
         );
+        // 生效导航风格（桌面端锁定单栏）：与 unifiedThemeService.applyToDOM
+        // 同源，避免单栏布局挂存储风格的 data-nav-style（sidebar 专属豁免失配）
+        const effectiveNavigationStyle = resolveEffectiveNavigationStyle(
+          data.navigationStyle,
+        );
         document.documentElement.setAttribute(
           'data-nav-style',
-          data.navigationStyle === 'style1' ? 'compact' : 'expanded',
+          effectiveNavigationStyle === 'style1'
+            ? 'compact'
+            : effectiveNavigationStyle === 'style3'
+            ? 'sidebar'
+            : 'expanded',
         );
 
         unifiedThemeService.updateData(data, {
@@ -279,10 +395,27 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     };
   }, [setAntdConfig]);
 
+  // nuwaclaw 桌面专属主题适配（独立模块，不侵入核心 unifiedThemeService）；
+  // 沉浸壳避让状态（html 类 + CSS 变量）同步就位——immersiveShellAvoid wrapper
+  // 首帧前还会再同步一次（幂等），这里覆盖未被该 wrapper 包裹的路由。
+  useEffect(() => {
+    syncShellAvoidanceCss();
+    const disposeTheme = initBrandTheme();
+    // 客户端专属适配聚合入口（构建版本上报/标题栏热区/未来适配统一在此登记）
+    const disposeClientShell = initClientShell();
+    return () => {
+      disposeTheme();
+      disposeClientShell();
+    };
+  }, []);
+
   return (
     <>
+      <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
-      <GlobalEventPolling />
+      {loggedIn && !isLoginPage && !isDesktopShellPreviewPage() && (
+        <GlobalEventPolling />
+      )}
       {children}
     </>
   );
@@ -294,6 +427,23 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
  */
 export function rootContainer(container: React.ReactElement) {
   return <AppContainer>{container}</AppContainer>;
+}
+
+const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
+  children,
+}) => {
+  const { error } = useModel('@@initialState');
+  return (
+    <>
+      <DesktopShellPreviewChrome />
+      {error ? <AppStartup failed /> : children}
+    </>
+  );
+};
+
+// innerProvider 位于 Umi model provider 内部，rootContainer 不能读取初始状态。
+export function innerProvider(container: React.ReactElement) {
+  return <InitialStateBoundary>{container}</InitialStateBoundary>;
 }
 
 /**
@@ -310,7 +460,7 @@ export function render(oldRender: () => void) {
  */
 export function onRouteChange() {
   // 如果是登录成功后的路由变化，确保轮询启动
-  if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
+  if (location.pathname !== '/login') {
     // 这里不需要特别处理，因为GlobalEventPolling组件会确保轮询只启动一次
   }
 }

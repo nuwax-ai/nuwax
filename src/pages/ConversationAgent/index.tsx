@@ -4,25 +4,43 @@ import {
   GitVersionRecordPanel,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
-import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
   useSourceControl,
   type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
+import {
+  parentDirectory,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import ResizableSplit from '@/components/ResizableSplit';
 import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
+import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
+import {
+  useInitialConversationAutoSend,
+  type InitialConversationState,
+} from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
+import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import {
   apiAgentComponentModelUpdate,
@@ -30,6 +48,7 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
+import { fetchContentOutcome } from '@/services/skill';
 import {
   apiDownloadAllFiles,
   apiImportProject,
@@ -39,7 +58,6 @@ import {
 import {
   AgentComponentTypeEnum,
   HideDesktopEnum,
-  MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -60,9 +78,15 @@ import { RequestResponse } from '@/types/interfaces/request';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
 import { addBaseTarget } from '@/utils/common';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { createLogger } from '@/utils/logger';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
+// import { createLogger } from '@/utils/logger';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -75,6 +99,7 @@ import debounce from 'lodash/debounce';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -97,9 +122,9 @@ import styles from './index.less';
 import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
 const cx = classNames.bind(styles);
-const devConversationPollLogger = createLogger(
-  '[ConversationAgent][DevConversationPoll]',
-);
+// const devConversationPollLogger = createLogger(
+//   '[ConversationAgent][DevConversationPoll]',
+// );
 
 /**
  * ConversationAgent — 智能体对话开发页面（核心页面组件）
@@ -129,31 +154,58 @@ const devConversationPollLogger = createLogger(
  * - 用户操作 → handleChangeAgent → 调用 API 更新 → 同步本地状态
  * - conversationInfo model 管理聊天消息、文件树、预览等页面状态
  */
-const ConversationAgent: React.FC = () => {
+export interface ConversationAgentRouteSnapshot {
+  spaceId: number;
+  agentId: number;
+  conversationId?: number;
+  search: string;
+  key: string;
+  state?: InitialConversationState;
+  action: 'PUSH' | 'POP' | 'REPLACE';
+}
+
+export interface ConversationAgentProps {
+  /** 常驻工作区传入固定路由身份；普通路由页面不传，继续读取当前 URL。 */
+  routeSnapshot?: ConversationAgentRouteSnapshot;
+  /** 隐藏实例暂停页面级请求和全局 model 写入。 */
+  active?: boolean;
+}
+
+const ConversationAgent: React.FC<ConversationAgentProps> = ({
+  routeSnapshot,
+  active = true,
+}) => {
   // ==================== 路由参数 ====================
   const params = useParams();
   const location = useLocation();
   /** 当前空间 ID，从路由参数中获取 */
-  const spaceId = Number(params.spaceId);
+  const spaceId = routeSnapshot?.spaceId ?? Number(params.spaceId);
+  const routeSearch = routeSnapshot?.search ?? location.search;
+  const routeState = routeSnapshot ? routeSnapshot.state : location.state;
+  const routeAction = routeSnapshot?.action ?? history.action;
+  const routeKey = routeSnapshot?.key ?? location.key;
 
   /**
    * 从 URL query 参数中提取 agentId
    * 支持通过 URL 直接指定要加载的智能体（如 ?agentId=123）
    */
   const agentIdFromQuery = useMemo(() => {
-    const queryAgentId = new URLSearchParams(location.search).get('agentId');
+    if (routeSnapshot) return routeSnapshot.agentId;
+    const queryAgentId = new URLSearchParams(routeSearch).get('agentId');
     return queryAgentId ? Number(queryAgentId) : 0;
-  }, [location.search]);
+  }, [routeSnapshot, routeSearch]);
 
   /**
    * 从 URL query 参数中提取 conversationId
    */
   const queryConversationId = useMemo(() => {
-    const queryId = new URLSearchParams(location.search).get('conversationId');
+    if (routeSnapshot) return routeSnapshot.conversationId;
+    const queryId = new URLSearchParams(routeSearch).get('conversationId');
     return queryId ? Number(queryId) : undefined;
-  }, [location.search]);
+  }, [routeSnapshot, routeSearch]);
 
   // ==================== 本地状态 ====================
+  const [chatPanelWidth] = useState(loadChatPanelWidthPercent);
   /** 当前智能体 ID */
   const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
   /** 发布弹窗是否打开 */
@@ -178,6 +230,17 @@ const ConversationAgent: React.FC = () => {
   /** 底部控制台布局模式（collapsed 时停止日志轮询） */
   const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
     useState<ConsoleLayoutMode>('collapsed');
+  /** 页面切走后卸掉终端，并清掉上次展开信号，避免切回时终端自己打开 */
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setDevConsoleExpandSignal(0);
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleLayoutResetSignal(0);
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleActiveTab('terminal');
+  }, [active]);
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
@@ -218,6 +281,13 @@ const ConversationAgent: React.FC = () => {
   /** 右侧预览区是否展示智能体电脑（VNC） */
   const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
+  // 预览至少 430px，额外预留栏间 padding 和边框；展开文件树时计入其 280px。
+  const workspaceMinWidth =
+    440 +
+    (canShowFileView && !(active && isAgentDesktopOpen && queryConversationId)
+      ? 280
+      : 0);
+
   // ==================== 全局状态模型 ====================
   /**
    * conversationInfo model：聊天核心状态管理
@@ -230,7 +300,6 @@ const ConversationAgent: React.FC = () => {
     showType,
     setShowType,
     messageList,
-    // setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
     isFileTreePinned,
@@ -238,23 +307,55 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
     openDesktopView,
     ensureDesktopConnection,
-    fileTreeData,
-    fileTreeDataLoading,
     handleRefreshFileList,
     refreshFileListImmediately,
+    fileTreeRefreshTrigger,
+    setFileTreeSelfManaged,
     openPreviewView,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
-    runAsync,
     resetInit,
     restartVncPod,
     restartAgent,
     isConversationActive,
     refreshGitListRef,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
+
+  useEffect(() => {
+    setFileTreeSelfManaged(true);
+    return () => setFileTreeSelfManaged(false);
+  }, [setFileTreeSelfManaged]);
+
+  /** 与 Chat / AppDevPro 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
+  const workspaceFiles = useWorkspaceFileTreeSession({
+    conversationId: queryConversationId,
+    enabled: active && !!queryConversationId,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && !!queryConversationId,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+  });
+
+  useEffect(() => {
+    if (
+      routeSnapshot &&
+      queryConversationId &&
+      conversationInfo?.id === queryConversationId
+    ) {
+      fullPageInstanceCacheManager.markStatus(
+        queryConversationId,
+        conversationInfo.taskStatus,
+      );
+    }
+  }, [
+    routeSnapshot,
+    queryConversationId,
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+  ]);
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
   const closeAgentDesktop = useCallback(() => {
@@ -262,9 +363,9 @@ const ConversationAgent: React.FC = () => {
     closePreviewView();
   }, [closePreviewView]);
 
-  /** 文件树数据 ref，供防抖保存读取最新列表 */
-  const fileTreeDataRef = useRef(fileTreeData);
-  fileTreeDataRef.current = fileTreeData;
+  /** 防抖保存读取分层加载后的最新列表，fileId 与树节点 id 一致 */
+  const fileTreeDataRef = useRef(workspaceFiles.files);
+  fileTreeDataRef.current = workspaceFiles.files;
 
   /** conversationAgent model：页面独立聊天会话（与 conversationInfo 隔离） */
   const {
@@ -274,11 +375,12 @@ const ConversationAgent: React.FC = () => {
     setIsMoreMessage: setAgentIsMoreMessage,
     setIsLoadingConversation: setAgentIsLoadingConversation,
     handleClearSideEffect: handleClearAgentConversationSideEffect,
-  } = useModel('conversationAgent');
+  } = usePageModel('conversationAgent');
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
 
+  /** 是否开启版本管控 */
   const isVersionControlEnabled = useMemo(
     () =>
       !!conversationInfo && isAgentVersionControlEnabled(enableVersionControl),
@@ -294,6 +396,7 @@ const ConversationAgent: React.FC = () => {
     return tools;
   }, [isVersionControlEnabled]);
 
+  // 版本管控是否开启的 ref
   isVersionControlEnabledRef.current = isVersionControlEnabled;
 
   /** 仅在开启版本管控时拉取 git status */
@@ -309,11 +412,7 @@ const ConversationAgent: React.FC = () => {
     if (!spaceId || !agentId) {
       return;
     }
-    window.open(
-      `/space/${spaceId}/agent/${agentId}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
+    void openBusinessRouteWindow(`/space/${spaceId}/agent/${agentId}`);
   }, [spaceId, agentId]);
 
   /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */
@@ -323,6 +422,7 @@ const ConversationAgent: React.FC = () => {
       if (!componentId || !agentConfigInfo) {
         return;
       }
+      // 更新模型组件配置
       const bindConfig = agentConfigInfo.modelComponentConfig
         ?.bindConfig as ComponentModelBindConfig;
       await apiAgentComponentModelUpdate({
@@ -345,43 +445,25 @@ const ConversationAgent: React.FC = () => {
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
   const devConversationId = agentConfigInfo?.devConversationId;
+  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
   const devConversationIdRef = useRef(devConversationId);
+  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
   devConversationIdRef.current = devConversationId;
 
   /**
-   * 获取有效的沙箱 ID
+   * 获取有效的沙箱 ID（四级取值链单源，bug 2451，
+   * 详见 src/utils/effectiveSandbox.ts）
    */
-  const getEffectiveSandboxId = (info: any = conversationInfo) => {
-    try {
-      // 优先级 1: 手动选择 (selectedComputerId)
-      if (selectedComputerId) {
-        return selectedComputerId;
-      }
-
-      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
-      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
-      if (
-        history.action === 'PUSH' &&
-        (location.state as any)?.selectedComputerId
-      ) {
-        return (location.state as any).selectedComputerId;
-      }
-
-      // 优先级 3: 个人电脑 (sandboxId)
-      if (info?.agent?.sandboxId) {
-        return info.agent.sandboxId;
-      }
-
-      // 优先级 4: 共享电脑 (sandboxServerId)
-      const sandboxServerId = info?.sandboxServerId;
-      if (sandboxServerId) {
-        return String(sandboxServerId);
-      }
-
-      return '';
-    } catch {
-      return selectedComputerId;
-    }
+  const getEffectiveSandboxId = (info: any = conversationInfo): string => {
+    return resolveEffectiveSandboxId({
+      selectedComputerId,
+      pushStateComputerId:
+        routeAction === 'PUSH'
+          ? (routeState as any)?.selectedComputerId
+          : undefined,
+      agentSandboxId: info?.agent?.sandboxId,
+      sandboxServerId: info?.sandboxServerId,
+    });
   };
 
   /**
@@ -390,7 +472,7 @@ const ConversationAgent: React.FC = () => {
    */
   const finalSelectedComputerId = useMemo(() => {
     return getEffectiveSandboxId();
-  }, [selectedComputerId, conversationInfo, history.action, location.state]);
+  }, [selectedComputerId, conversationInfo, routeAction, routeState]);
 
   /**
    * 终端 WebSocket 连接地址（ttyd）
@@ -400,6 +482,7 @@ const ConversationAgent: React.FC = () => {
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(queryConversationId, {
     enabled:
+      active &&
       showDevConsole &&
       devConsoleActiveTab === 'logs' &&
       devConsoleLayoutMode !== 'collapsed' &&
@@ -440,21 +523,21 @@ const ConversationAgent: React.FC = () => {
   // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
   // 值变化即触发上面的 useEffect → runQueryAgentConversation 自动切到新会话。
   useRequest(() => apiAgentConfigInfo(agentId), {
-    ready: !!agentId,
+    ready: active && !!agentId,
     pollingInterval: GLOBAL_POLLING_INTERVAL,
     pollingWhenHidden: false,
     pollingErrorRetryCount: -1,
     onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
       const next = result?.data?.devConversationId;
-      devConversationPollLogger.info('agent config poll result', {
-        agentId,
-        previousDevConversationId: devConversationIdRef.current,
-        nextDevConversationId: next,
-        changed:
-          next !== null &&
-          next !== undefined &&
-          next !== devConversationIdRef.current,
-      });
+      // devConversationPollLogger.info('agent config poll result', {
+      //   agentId,
+      //   previousDevConversationId: devConversationIdRef.current,
+      //   nextDevConversationId: next,
+      //   changed:
+      //     next !== null &&
+      //     next !== undefined &&
+      //     next !== devConversationIdRef.current,
+      // });
       if (next !== null && next !== undefined) {
         setAgentConfigInfo((prev) =>
           prev && next !== prev.devConversationId
@@ -466,72 +549,48 @@ const ConversationAgent: React.FC = () => {
   });
 
   /**
-   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
+   * 页面级 V2 runtime 线（bug 2477）：URL id 即建（不等 model 首拉回填），
+   * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
+   * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
-  useEffect(() => {
-    // 优先使用路由参数中指定的 conversationId
-    const id = queryConversationId;
+  /** 会话事件打开桌面时调用，具体打开动作在面板回调里赋值 */
+  const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
+    () => {},
+  );
 
-    if (id) {
-      const state = (location.state || history.location.state) as any;
-      if (
-        state &&
-        (state.message?.trim() || state.files?.length || state.skillIds?.length)
-      ) {
-        const asyncFun = async () => {
-          let data = null;
-          try {
-            const { data: _data } = await runAsync(id);
-            data = _data;
-          } catch (error) {
-            console.error(
-              'Failed to query conversation before auto-send',
-              error,
-            );
-          }
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: queryConversationId,
+    // chat 请求携带面板当前选中电脑（空串兜底 undefined）
+    getSandboxId: () => finalSelectedComputerId || undefined,
+    effectsResources: {
+      openDesktopView: (conversationId: number) => {
+        openDesktopViewFromEventRef.current(conversationId);
+      },
+    },
+  });
 
-          const list = data?.messageList || [];
-          const len = list?.length || 0;
-          // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
-          const isCanMessage =
-            !len ||
-            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
-
-          if (isCanMessage) {
-            // 确定沙箱 ID
-            const effectiveSandboxId = String(getEffectiveSandboxId(data));
-            onMessageSend({
-              id,
-              messageInfo: state.message || '',
-              files: state.files,
-              infos: state.infos || [],
-              sandboxId: effectiveSandboxId,
-              debug: true,
-              isSync: false,
-              skillIds: state.skillIds,
-              modelId: state.modelId,
-              agentMode: (state.agentMode as AgentMode) || 'yolo',
-              data,
-            });
-          }
-        };
-        asyncFun();
-      }
-    }
-  }, [
-    location.state,
-    history.location.state,
-    selectedComputerId,
-    queryConversationId,
-  ]);
+  useInitialConversationAutoSend({
+    conversationId: queryConversationId,
+    routeState: (routeSnapshot
+      ? routeState
+      : routeState || history.location.state) as
+      | InitialConversationState
+      | undefined,
+    getEffectiveSandboxId,
+    onMessageSend,
+    runtimeSession: runtimeLine?.session,
+    // 页面重新挂载时路由里的提示词还在，详情却可能尚未写入第一条用户消息
+    dedupeAcrossRemount: true,
+  });
 
   /** 空间变化时重新加载模型列表 */
   useEffect(() => {
+    if (!active) return;
     runMode({
       spaceId,
       modelType: ModelTypeEnum.Chat,
     });
-  }, [spaceId]);
+  }, [active, spaceId]);
 
   /** URL 中的 agentId 变化时同步到本地状态 */
   useEffect(() => {
@@ -602,7 +661,7 @@ const ConversationAgent: React.FC = () => {
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
-    if (queryConversationId) {
+    if (active && queryConversationId) {
       setLoadingAgentConfigInfo(true);
 
       // 安装项目依赖
@@ -645,15 +704,11 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(false);
       const data = result?.data;
       // 回显模型选择 (如果从创建项目页面带过来)
-      if (
-        data &&
-        history.action === 'PUSH' &&
-        (location.state as any)?.modelId
-      ) {
+      if (data && routeAction === 'PUSH' && (routeState as any)?.modelId) {
         if (!data.modelComponentConfig) {
           data.modelComponentConfig = {} as any;
         }
-        const stateModelId = (location.state as any).modelId;
+        const stateModelId = (routeState as any).modelId;
         data.modelComponentConfig.targetId = stateModelId;
 
         // 尝试从列表中回显名称
@@ -684,9 +739,12 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** 初始化项目元数据 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
     targetId: agentId,
+    routeSnapshot,
+    ready: active,
     onSuccess: () => {
       if (agentId) runAgentConfigInfo(agentId);
     },
@@ -694,15 +752,20 @@ const ConversationAgent: React.FC = () => {
 
   /** 将配置加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
-    setIsLoadingOtherInterface(loadingAgentConfigInfo);
-  }, [loadingAgentConfigInfo]);
+    if (active) setIsLoadingOtherInterface(loadingAgentConfigInfo);
+  }, [active, loadingAgentConfigInfo]);
 
   /**
    * agentId 变化时触发配置加载
    * - agentId 为 0 时（新建场景）跳过请求
    * - 同时重置页面标题
    */
+  const loadedAgentIdRef = useRef<number>();
   useEffect(() => {
+    if (!active) return;
+    // 常驻页重新激活时保留工作区 DOM，避免全屏 Loading 卸载预览和终端。
+    if (loadedAgentIdRef.current === agentId) return;
+    loadedAgentIdRef.current = agentId;
     if (!agentId) {
       setLoadingAgentConfigInfo(false);
       setAgentConfigInfo(undefined);
@@ -711,12 +774,12 @@ const ConversationAgent: React.FC = () => {
     setAgentConfigInfo(undefined);
     setLoadingAgentConfigInfo(true);
     runAgentConfigInfo(agentId);
-  }, [agentId, runAgentConfigInfo]);
+  }, [active, agentId, runAgentConfigInfo]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
-    addBaseTarget();
-  }, [location]);
+    if (active) addBaseTarget();
+  }, [active, routeKey]);
 
   // 任务结果文件点击自定义拦截处理器：跳转至 EditAgent 并携带 file 参数
   const handleTaskResultClick = useCallback(
@@ -816,11 +879,14 @@ const ConversationAgent: React.FC = () => {
     if (!queryConversationId) {
       return false;
     }
+    // 去除空格
     const trimmedName = newName.trim();
     if (!trimmedName) {
       return false;
     }
+    // 如果文件夹名称与父节点名称相同，则提示错误
     const parentPath = fileNode.parentPath || '';
+    // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
       name: newPath,
@@ -831,11 +897,13 @@ const ConversationAgent: React.FC = () => {
       operation: 'create',
       isDir: fileNode.type === 'folder',
     };
+    // 创建文件
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: [newFile],
     });
     if (code === SUCCESS_CODE) {
+      // 刷新文件树
       await handleRefreshFileList(queryConversationId);
       void refreshGitListIfEnabled();
     }
@@ -872,22 +940,30 @@ const ConversationAgent: React.FC = () => {
             ];
           } else {
             // 文件删除：需要查找完整的文件信息
-            const currentFile = fileTreeData?.find(
+            const currentFile = workspaceFiles.files?.find(
               (item: StaticFileInfo) => item.fileId === fileNode.id,
             );
             if (!currentFile) {
               resolve(false);
               return;
             }
-            currentFile.operation = 'delete';
-            currentFile.contents = '';
-            updatedFilesList = [currentFile] as UpdateFileInfo[];
+            updatedFilesList = [
+              {
+                name: currentFile.name,
+                binary: currentFile.binary,
+                sizeExceeded: currentFile.sizeExceeded,
+                isDir: currentFile.isDir,
+                operation: 'delete',
+                contents: '',
+              },
+            ];
           }
           const { code } = await apiUpdateStaticFile({
             cId: queryConversationId,
             files: updatedFilesList,
           });
           if (code === SUCCESS_CODE) {
+            // 刷新文件树
             handleRefreshFileList(queryConversationId);
             resolve(true);
           } else {
@@ -911,7 +987,7 @@ const ConversationAgent: React.FC = () => {
       return false;
     }
     const updatedFilesList = updateFilesListName(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       fileNode,
       newName,
     );
@@ -943,7 +1019,7 @@ const ConversationAgent: React.FC = () => {
       return false;
     }
     const updatedFilesList = updateFilesListContent(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       data,
       'modify',
     );
@@ -1032,21 +1108,24 @@ const ConversationAgent: React.FC = () => {
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
-
+    // 如果智能体电脑打开，则关闭智能体电脑，并打开文件树
     if (isAgentDesktopOpen) {
       setIsAgentDesktopOpen(false);
       setDevConsoleExpandSignal(0);
       setCanShowFileView(true);
+      // 刷新文件树
       if (queryConversationId) {
         handleRefreshFileList(queryConversationId);
         void openPreviewView(queryConversationId);
       }
+      // 如果终端全屏，则折叠终端
       if (isTerminalExpanded) {
         setDevConsoleCollapseSignal((n) => n + 1);
       }
       return;
     }
 
+    // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
@@ -1056,6 +1135,7 @@ const ConversationAgent: React.FC = () => {
       return;
     }
 
+    // 切换文件树显隐
     setCanShowFileView((prev) => {
       const nextVisible = !prev;
       if (nextVisible && queryConversationId) {
@@ -1104,6 +1184,22 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
   ]);
 
+  /**
+   * 会话 OPEN_DESKTOP：打开智能体电脑。已经打开时不再切换关掉。
+   */
+  openDesktopViewFromEventRef.current = (conversationId: number) => {
+    if (
+      !conversationId ||
+      Number(conversationId) !== Number(queryConversationId) ||
+      isAgentDesktopOpen ||
+      finalSelectedComputerId !== '-1' ||
+      agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+    ) {
+      return;
+    }
+    void handleOpenDesktopPanel();
+  };
+
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1123,6 +1219,17 @@ const ConversationAgent: React.FC = () => {
     isShowFilePanel &&
     agentConfigInfo?.hideDesktop === HideDesktopEnum.No &&
     finalSelectedComputerId === '-1';
+
+  /**
+   * 切到非云端电脑时，若智能体电脑面板开着则关闭并恢复文件预览，
+   * 避免入口隐藏后面板残留（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (finalSelectedComputerId !== '-1' && isAgentDesktopOpen) {
+      closeAgentDesktop();
+      setCanShowFileView(true);
+    }
+  }, [finalSelectedComputerId, isAgentDesktopOpen, closeAgentDesktop]);
 
   /**
    * 关闭预览面板
@@ -1165,6 +1272,7 @@ const ConversationAgent: React.FC = () => {
     queryConversationId,
   ]);
 
+  /** 是否打开终端面板 */
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
@@ -1185,8 +1293,9 @@ const ConversationAgent: React.FC = () => {
       className: cx(styles['file-tree-sidebar']),
       taskAgentSelectedFileId, // TaskAgent 自动选中的文件 ID
       taskAgentSelectTrigger, // 触发选中的事件标识
-      originalFiles: fileTreeData, // 原始文件树数据
-      fileTreeDataLoading, // 文件树加载状态
+      originalFiles: workspaceFiles.files,
+      fileTreeDataLoading: workspaceFiles.loading,
+      fileTreeRefreshTrigger,
       targetId: queryConversationId?.toString() || '', // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -1197,22 +1306,35 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      /** 导入项目 */
       onImportProject: handleImportProject,
+      /** 是否正在导入项目 */
       isImportingProject,
       onRestartServer: () => {
         if (queryConversationId) {
           restartVncPod(queryConversationId, finalSelectedComputerId);
         }
       },
+      /** 重启智能体 */
       onRestartAgent: () => {
         if (queryConversationId) {
           restartAgent(queryConversationId);
         }
       },
+      /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
+      /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
-      onDeleteFile: handleDeleteFile,
+      /** 删除文件 */
+      onDeleteFile: (node) =>
+        handleDeleteFile(
+          node.type === 'folder' && node.relativePath
+            ? { ...node, id: node.relativePath }
+            : node,
+        ),
+      /** 保存文件 */
       onSaveFiles: handleSaveFiles,
+      /** 保存单个文件 */
       onSaveFileContent: async (fileId, content, originalFileContent) => {
         const result = await handleSaveFileContent(
           fileId,
@@ -1226,6 +1348,7 @@ const ConversationAgent: React.FC = () => {
       onClose: handleClosePreviewPanel, // 关闭预览回调
       isFileTreePinned, // 文件树是否固定
       onFileTreePinnedChange: setIsFileTreePinned,
+      /** 文件树侧栏是否可见 */
       isFileTreeSidebarVisible: canShowFileView,
       isCanDeleteSkillFile: true, // 是否允许删除技能文件
       onRefreshFileTree: async () => {
@@ -1233,11 +1356,23 @@ const ConversationAgent: React.FC = () => {
           await refreshFileListImmediately(queryConversationId);
         }
       },
+      onOpenDirectory: workspaceFiles.onOpenDirectory,
+      /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
+      isAutoSelectDirectoryLoaded: (fileId: string) => {
+        const parentPath = parentDirectory(workspaceRelativePath(fileId));
+        if (
+          workspaceFiles.openingTaskResultRef.current?.parent === parentPath
+        ) {
+          return false;
+        }
+        return workspaceFiles.loadedDirectoryPaths.has(parentPath);
+      },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 仅配置加载完成且开启版本管理时拉取 Git status */
-      enableGitStatus: isVersionControlEnabled,
+      enableGitStatus:
+        isVersionControlEnabled && workspaceFiles.files.length > 0,
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -1250,7 +1385,10 @@ const ConversationAgent: React.FC = () => {
           });
         }
         if (queryConversationId) {
-          openPreviewView(queryConversationId);
+          // closeAgentDesktop 会先关掉预览标记；这里只重新打开，不重拉已展开目录
+          void openPreviewView(queryConversationId, {
+            skipFileTreeRefresh: true,
+          });
         }
       },
       /** 文件重命名后同步更新预览区标签页标题与 fileId */
@@ -1268,17 +1406,20 @@ const ConversationAgent: React.FC = () => {
           fileNode.id,
           fileNode.type === 'folder',
         );
+        const deletedPath =
+          fileNode.relativePath || fileNode.path || fileNode.id;
         setSelectedChangeFile((current) => {
           if (!current?.fileId) {
             return current;
           }
+          const matchesPath =
+            current.fileId === deletedPath || current.fileId === fileNode.id;
           if (fileNode.type === 'folder') {
             const isUnderFolder =
-              current.fileId === fileNode.id ||
-              current.fileId.startsWith(`${fileNode.id}/`);
+              matchesPath || current.fileId.startsWith(`${deletedPath}/`);
             return isUnderFolder ? null : current;
           }
-          return current.fileId === fileNode.id ? null : current;
+          return matchesPath ? null : current;
         });
         void refreshGitListIfEnabled();
       },
@@ -1291,8 +1432,12 @@ const ConversationAgent: React.FC = () => {
   }, [
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
-    fileTreeData,
-    fileTreeDataLoading,
+    workspaceFiles.files,
+    workspaceFiles.loading,
+    workspaceFiles.onOpenDirectory,
+    workspaceFiles.loadedDirectoryPaths,
+    workspaceFiles.openingTaskResultRef,
+    fileTreeRefreshTrigger,
     queryConversationId,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
@@ -1321,7 +1466,10 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
-  refreshGitListRef.current = fileView.refreshGitList;
+  workspaceFiles.selectFileRef.current = fileView.tree.handleFileSelect;
+  // 刷新 Git 列表
+  if (active) refreshGitListRef.current = fileView.refreshGitList;
+  // 清空文件树选中
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
   // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
@@ -1403,62 +1551,45 @@ const ConversationAgent: React.FC = () => {
       }
 
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止。不再从模型树取 contents——树条目运行时不填充该字段，
+      // 旧实现追加恒基于空串，会用单条目覆写整个 .gitignore
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(
+          `/api/computer/static/${queryConversationId}/${gitignoreId}`,
+        ),
+        fileId,
       );
-      const currentContent = existing?.contents ?? '';
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
+      if (plan.action === 'abort-fetch-error') {
+        message.error(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
         message.info(
           dict('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
 
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
-
       try {
-        if (existing) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            [
-              {
-                fileId: gitignoreId,
-                fileContent: newContent,
-                originalFileContent: currentContent,
-              },
-            ],
-            'modify',
-          );
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: updatedFilesList as UpdateFileInfo[],
-          });
-        } else {
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: [
-              {
-                name: gitignoreId,
-                contents: `${newContent}\n`,
-                operation: 'create',
-                binary: false,
-                sizeExceeded: false,
-                renameFrom: '',
-                isDir: false,
-              },
-            ],
-          });
-        }
+        await apiUpdateStaticFile({
+          cId: queryConversationId,
+          files: [
+            {
+              name: gitignoreId,
+              contents: plan.contents,
+              operation: plan.operation,
+              binary: false,
+              sizeExceeded: false,
+              renameFrom: '',
+              isDir: false,
+            },
+          ],
+        });
 
         message.success(
           dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
@@ -1468,7 +1599,7 @@ const ConversationAgent: React.FC = () => {
         console.error('Add to gitignore failed:', error);
       }
     },
-    [fileTreeData, handleRefreshFileList],
+    [queryConversationId, handleRefreshFileList],
   );
 
   /**
@@ -1495,6 +1626,9 @@ const ConversationAgent: React.FC = () => {
       onDiffFileSelect: (fileId: string) => {
         closeAgentDesktop();
         previewTabs.openFileTab(fileId, true);
+      },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
       },
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
@@ -1640,7 +1774,7 @@ const ConversationAgent: React.FC = () => {
       <VncPreview
         serviceUrl={process.env.BASE_URL || ''}
         cId={String(queryConversationId)}
-        autoConnect
+        autoConnect={active}
         className={styles['agent-desktop-vnc']}
         idleDetection={{
           enabled: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
@@ -1665,6 +1799,7 @@ const ConversationAgent: React.FC = () => {
       <div className={cx(styles['right-panel-body'])}>
         {/* 顶部标签栏 */}
         <PreviewTabBar
+          active={active}
           // 标签列表
           tabs={previewTabs.tabs}
           // 选中标签 ID
@@ -1708,6 +1843,7 @@ const ConversationAgent: React.FC = () => {
         <div className={cx(styles['right-panel-main'])}>
           <div className={cx(styles['right-panel-content'])}>
             <ConversationAgentFilePreview
+              active={active}
               // 预览文件
               preview={fileView.preview}
               // 差异文件
@@ -1723,36 +1859,39 @@ const ConversationAgent: React.FC = () => {
             />
           </div>
 
-          {/* 底部终端、开发日志合集面板 */}
-          {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
-          <ConversationBottomConsole
-            // 在ConversationAgent中，conversationId 为 queryConversationId
-            conversationId={
-              finalSelectedComputerId === '-1' ? queryConversationId : undefined
-            }
-            visible={showDevConsole}
-            wsUrl={terminalWsUrl}
-            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-            layoutResetSignal={devConsoleLayoutResetSignal}
-            expandSignal={devConsoleExpandSignal}
-            collapseSignal={devConsoleCollapseSignal}
-            onLayoutModeChange={setDevConsoleLayoutMode}
-            onActiveTabChange={(tab) => {
-              setDevConsoleActiveTab(tab);
-            }}
-            devLog={{
-              logs: devLogs.logs,
-              isLoading: devLogs.isLoading,
-              lastLine: devLogs.lastLine,
-            }}
-            logsExtra={
-              <DevLogActions
-                onRefresh={devLogs.refreshLogs}
-                onClear={devLogs.clearLogs}
-              />
-            }
-          />
+          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
+          {active ? (
+            <ConversationBottomConsole
+              // 在ConversationAgent中，conversationId 为 queryConversationId
+              conversationId={
+                finalSelectedComputerId === '-1'
+                  ? queryConversationId
+                  : undefined
+              }
+              visible={showDevConsole}
+              wsUrl={terminalWsUrl}
+              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+              layoutResetSignal={devConsoleLayoutResetSignal}
+              expandSignal={devConsoleExpandSignal}
+              collapseSignal={devConsoleCollapseSignal}
+              onLayoutModeChange={setDevConsoleLayoutMode}
+              onActiveTabChange={(tab) => {
+                setDevConsoleActiveTab(tab);
+              }}
+              devLog={{
+                logs: devLogs.logs,
+                isLoading: devLogs.isLoading,
+                lastLine: devLogs.lastLine,
+              }}
+              logsExtra={
+                <DevLogActions
+                  onRefresh={devLogs.refreshLogs}
+                  onClear={devLogs.clearLogs}
+                />
+              }
+            />
+          ) : null}
         </div>
       </div>
     </div>
@@ -1778,10 +1917,10 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
+    // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
       <ConversationAgentHeader
-        className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
         onPublish={() => setOpen(true)}
@@ -1804,76 +1943,119 @@ const ConversationAgent: React.FC = () => {
           `xagi-nav-${navigationStyle}`,
         )}
       >
-        <div className={cx(styles['main-row'])}>
-          {/* 左侧面板：聊天区域（始终显示） */}
-          <div className={cx(styles['left-panel'])}>
-            <AgentConversationChatPanel
-              selectedComputerId={finalSelectedComputerId}
-              onChangeSelectedComputerId={setSelectedComputerId}
-              onConversationEnd={handleConversationEnd}
-            />
-          </div>
-
-          <div
-            className={cx('flex', 'flex-1', styles['content-container'], {
-              [styles['content-container-fullscreen']]:
-                fileView.preview.isFullscreen,
-            })}
-          >
-            {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-            {isAgentDesktopOpen && queryConversationId ? (
-              renderAgentDesktopPanel()
-            ) : (
-              <>
-                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
-                <div
-                  className={cx(styles['middle-panel'], {
-                    [styles['middle-panel-visible']]: canShowFileView,
-                    [styles['middle-panel-hidden']]: !canShowFileView,
-                  })}
-                >
-                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                  <FileTreeGitSourcePanel
-                    className={cx(styles['file-tree-sidebar'], 'w-full')}
-                    showSourceControl={isVersionControlEnabled}
-                    enableVersionControl={enableVersionControl}
-                    tree={fileView.tree}
-                    treeClassName="w-full h-full"
-                    onImportProject={handleImportProject}
-                    importProjectLabel={dict(
-                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                    )}
-                    isImportingProject={isImportingProject}
-                    sourceControl={{
-                      changeFiles: fileView.changeFiles,
-                      selectedChangeFile: gitSourceControl.selectedChangeFile,
-                      isCommitting:
-                        gitSourceControl.isCommitting ||
-                        fileView.preview.isSavingFiles,
-                      isRefreshingGitList: fileView.isRefreshingGitList,
-                      onRefreshGitList: fileView.refreshGitList,
-                      onDiffFileSelect: handleGitDiffFileSelect,
-                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                      onDiscardChanges: gitSourceControl.handleDiscardChange,
-                      onStageChanges: gitSourceControl.handleStageChanges,
-                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                      onAddToGitignore: (fileId) => {
-                        void gitSourceControl.handleAddToGitignore(fileId);
-                      },
-                      onCommit: gitSourceControl.handleCommit,
-                    }}
-                  />
-                </div>
-                {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
-                {renderRightPanel()}
-              </>
-            )}
-          </div>
-        </div>
+        <ResizableSplit
+          className={styles['main-row']}
+          style={{ minWidth: 430 + workspaceMinWidth }}
+          minLeftWidth={430}
+          minRightWidth={workspaceMinWidth}
+          defaultLeftWidth={chatPanelWidth}
+          onResizeEnd={saveChatPanelWidthPercent}
+          left={
+            <div className={cx(styles['left-panel'])}>
+              {/* 左侧面板：聊天区域（始终显示） */}
+              <AgentConversationChatPanel
+                routeSnapshot={{
+                  search: routeSearch,
+                  state: routeState,
+                  key: routeKey,
+                  action: routeAction,
+                }}
+                runtimeLine={runtimeLine}
+                selectedComputerId={finalSelectedComputerId}
+                onChangeSelectedComputerId={setSelectedComputerId}
+                onConversationEnd={handleConversationEnd}
+              />
+            </div>
+          }
+          right={
+            <div className={styles['workspace']}>
+              <div
+                className={cx('flex', 'flex-1', styles['content-container'], {
+                  [styles['content-container-fullscreen']]:
+                    fileView.preview.isFullscreen,
+                  // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
+                  // 挂稳定全局类供 styles/immersiveShell.less 做 top/height 补偿
+                  'immersive-shell-fullscreen': fileView.preview.isFullscreen,
+                })}
+              >
+                {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
+                {active && isAgentDesktopOpen && queryConversationId ? (
+                  renderAgentDesktopPanel()
+                ) : (
+                  <>
+                    {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+                    <div
+                      className={cx(styles['middle-panel'], {
+                        [styles['middle-panel-visible']]: canShowFileView,
+                        [styles['middle-panel-hidden']]: !canShowFileView,
+                      })}
+                    >
+                      {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                      <FileTreeGitSourcePanel
+                        className={cx(styles['file-tree-sidebar'], 'w-full')}
+                        showSourceControl={
+                          isVersionControlEnabled &&
+                          workspaceFiles.files.length > 0
+                        }
+                        enableVersionControl={enableVersionControl}
+                        tree={{
+                          ...fileView.tree,
+                          loadedFolderIds: workspaceFiles.loadedFolderIds,
+                          loadingFolderIds: workspaceFiles.loadingFolderIds,
+                          onLoadDirectory: workspaceFiles.onLoadDirectory,
+                          remoteFileSearch: workspaceFiles.remoteFileSearch,
+                          handleFileSelect: async (fileId, options) => {
+                            await workspaceFiles.ensureFallbackDirectory(
+                              options,
+                            );
+                            await fileView.tree.handleFileSelect(
+                              fileId,
+                              options,
+                            );
+                          },
+                        }}
+                        treeClassName="w-full h-full"
+                        onImportProject={handleImportProject}
+                        importProjectLabel={dict(
+                          'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                        )}
+                        isImportingProject={isImportingProject}
+                        sourceControl={{
+                          changeFiles: fileView.changeFiles,
+                          selectedChangeFile:
+                            gitSourceControl.selectedChangeFile,
+                          isCommitting:
+                            gitSourceControl.isCommitting ||
+                            fileView.preview.isSavingFiles,
+                          isRefreshingGitList: fileView.isRefreshingGitList,
+                          onRefreshGitList: fileView.refreshGitList,
+                          onDiffFileSelect: handleGitDiffFileSelect,
+                          onOpenChangeFile:
+                            gitSourceControl.handleOpenChangeFile,
+                          onDiscardChanges:
+                            gitSourceControl.handleDiscardChange,
+                          onStageChanges: gitSourceControl.handleStageChanges,
+                          onUnstageChanges:
+                            gitSourceControl.handleUnstageChanges,
+                          onAddToGitignore: (fileId) => {
+                            void gitSourceControl.handleAddToGitignore(fileId);
+                          },
+                          onCommit: gitSourceControl.handleCommit,
+                        }}
+                      />
+                    </div>
+                    {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
+                    {renderRightPanel()}
+                  </>
+                )}
+              </div>
+            </div>
+          }
+        />
 
         {/* 调试详情抽屉（按需显示） */}
         <DebugDetails
-          visible={showType === EditAgentShowType.Debug_Details}
+          visible={active && showType === EditAgentShowType.Debug_Details}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         <VersionHistory
@@ -1881,7 +2063,7 @@ const ConversationAgent: React.FC = () => {
           targetName={agentConfigInfo?.name}
           targetType={AgentComponentTypeEnum.Agent}
           permissions={agentConfigInfo?.permissions || []}
-          visible={showType === EditAgentShowType.Version_History}
+          visible={active && showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>
@@ -1891,7 +2073,7 @@ const ConversationAgent: React.FC = () => {
       {/* 发布智能体弹窗 */}
       <PublishComponentModal
         targetId={agentId}
-        open={open}
+        open={active && open}
         spaceId={spaceId}
         category={agentConfigInfo?.category}
         onCancel={() => setOpen(false)}
@@ -1903,13 +2085,13 @@ const ConversationAgent: React.FC = () => {
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
-        open={openEditAgent}
+        open={active && openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
       />
       {/* 导入项目弹窗 */}
       <ImportProjectModal
-        open={openImportProject}
+        open={active && openImportProject}
         loading={isImportingProject}
         onCancel={() => setOpenImportProject(false)}
         onConfirm={handleImportProjectConfirm}
@@ -1918,4 +2100,63 @@ const ConversationAgent: React.FC = () => {
   );
 };
 
-export default ConversationAgent;
+/** 仅供已完成隔离验证的常驻宿主使用；每个实例拥有独立会话 model。 */
+export const CachedConversationAgent: React.FC<
+  ClientConversationPageInstanceProps
+> = ({ route, active }) => {
+  const initialRouteRef = useRef(route);
+  const initialRoute = initialRouteRef.current;
+  const entryActionRef = useRef(
+    initialRoute.navigationAction ?? history.action,
+  );
+  const routeSnapshot = useMemo<ConversationAgentRouteSnapshot>(
+    () => ({
+      spaceId: Number(initialRoute.params.spaceId),
+      agentId: Number(initialRoute.params.agentId),
+      conversationId: initialRoute.conversationId,
+      search: initialRoute.search,
+      key: initialRoute.key,
+      state: initialRoute.state as InitialConversationState | undefined,
+      action: entryActionRef.current,
+    }),
+    [initialRoute],
+  );
+  return (
+    <ConversationPagePathnameContext.Provider value={initialRoute.pathname}>
+      <ConversationRendererRouteSearchContext.Provider
+        value={initialRoute.search}
+      >
+        <ConversationPageModelProvider includeAgentModel>
+          <ConversationAgent routeSnapshot={routeSnapshot} active={active} />
+        </ConversationPageModelProvider>
+      </ConversationRendererRouteSearchContext.Provider>
+    </ConversationPagePathnameContext.Provider>
+  );
+};
+
+/** 路由入口只负责注册 PC style3 渲染器，避免首帧双挂载与自动发送重复。 */
+const ConversationAgentRoute: React.FC = () => {
+  const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
+  const params = useParams();
+  const location = useLocation();
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
+  const query = new URLSearchParams(location.search);
+  const validRouteId = (value: string | null | undefined) =>
+    /^\d+$/.test(value ?? '') && Number(value) > 0;
+  const cacheable =
+    keepAliveEnabled &&
+    validRouteId(params.spaceId) &&
+    validRouteId(query.get('agentId')) &&
+    validRouteId(query.get('conversationId'));
+  useLayoutEffect(() => {
+    if (cacheable) {
+      registerClientConversationRenderer(
+        'agent-workspace',
+        CachedConversationAgent,
+      );
+    }
+  }, [cacheable, registerClientConversationRenderer]);
+  return cacheable ? null : <ConversationAgent />;
+};
+
+export default ConversationAgentRoute;

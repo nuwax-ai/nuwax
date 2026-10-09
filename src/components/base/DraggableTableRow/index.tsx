@@ -11,6 +11,8 @@ import React, { useContext, useMemo } from 'react';
 interface RowContextProps {
   setActivatorNodeRef?: (element: HTMLElement | null) => void;
   listeners?: SyntheticListenerMap;
+  /** 是否禁用拖拽（从 Row 透传到 DragHandle） */
+  disabled?: boolean;
 }
 
 const RowContext = React.createContext<RowContextProps>({});
@@ -19,8 +21,23 @@ const RowContext = React.createContext<RowContextProps>({});
  * 拖拽手柄组件
  * 用于表格行拖拽排序的触发按钮
  */
-export const DragHandle: React.FC = () => {
-  const { setActivatorNodeRef, listeners } = useContext(RowContext);
+export const DragHandle: React.FC<{ disabled?: boolean }> = ({
+  disabled: propDisabled,
+}) => {
+  const {
+    setActivatorNodeRef,
+    listeners,
+    disabled: ctxDisabled,
+  } = useContext(RowContext);
+  const isDisabled = propDisabled ?? ctxDisabled ?? false;
+  if (isDisabled) {
+    return (
+      <HolderOutlined
+        aria-label={dict('PC.Pages.SystemConfigI18n.columnSortDisabled')}
+        style={{ cursor: 'not-allowed', color: '#bfbfbf' }}
+      />
+    );
+  }
   return (
     <Button
       type="text"
@@ -41,6 +58,11 @@ interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   'data-row-key': string | number;
   /** 是否显示拖拽时的样式 */
   showDraggingStyle?: boolean;
+  /**
+   * 是否禁用该行的拖拽（用于筛选态等场景）。
+   * 透传给 useSortable 并通过 Context 下发到 DragHandle。
+   */
+  disabled?: boolean;
 }
 
 /**
@@ -49,6 +71,7 @@ interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
  */
 export const Row: React.FC<RowProps> = ({
   showDraggingStyle = true,
+  disabled = false,
   ...props
 }) => {
   const {
@@ -59,7 +82,7 @@ export const Row: React.FC<RowProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: String(props['data-row-key']) });
+  } = useSortable({ id: String(props['data-row-key']), disabled });
 
   const style: React.CSSProperties = {
     ...props.style,
@@ -71,8 +94,8 @@ export const Row: React.FC<RowProps> = ({
   };
 
   const contextValue = useMemo<RowContextProps>(
-    () => ({ setActivatorNodeRef, listeners }),
-    [setActivatorNodeRef, listeners],
+    () => ({ setActivatorNodeRef, listeners, disabled }),
+    [setActivatorNodeRef, listeners, disabled],
   );
 
   return (

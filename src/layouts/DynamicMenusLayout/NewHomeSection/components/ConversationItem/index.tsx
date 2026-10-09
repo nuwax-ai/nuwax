@@ -1,83 +1,261 @@
-import agentImage from '@/assets/images/agent_image.png';
+import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiAgentConversationArchive,
+  apiAgentConversationPin,
+} from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { Typography } from 'antd';
+import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
+import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
-import { formatModifiedTime } from '../../utils';
+import React, { useEffect, useRef, useState } from 'react';
+import { formatRelativeTime } from '../../utils';
+import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface ConversationItemProps {
+  compact?: boolean;
   item: ConversationInfo;
   isActive: boolean;
   onClick: () => void;
+  /** 服务端置顶状态，影响列表排序与本项图标 */
+  pinned?: boolean;
+  /** 服务端归档状态（已归档视图内展示，供菜单「取消归档」） */
+  archived?: boolean;
+  /** 服务端收藏状态（菜单「收藏/取消收藏」按此选择接口路径与文案） */
+  collected?: boolean;
+  /**
+   * 状态标记（单栏 style3 启用，展示在行尾）：执行中转圈替换「执行中」文字胶囊。
+   * 经典布局不传维持现状。
+   */
+  leadingMark?: boolean;
+  onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
+  onCollectedChanged?: (collected: boolean) => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
   item,
+  compact = false,
   isActive,
   onClick,
+  pinned = false,
+  archived = false,
+  collected = false,
+  leadingMark = false,
+  onFlagChanged,
+  onCollectedChanged,
 }) => {
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
 
-  // 渲染智能体圆形头像，缺失或加载失败时使用默认图片兜底
-  const renderAvatar = () => {
-    const icon = item.icon || item.agent?.icon;
-    const name = item.topic || item.agent?.name || '';
-
-    return (
-      <div className={cx(styles['avatar-container'])}>
-        <img
-          src={icon || agentImage}
-          alt={name}
-          className={cx(styles['avatar-img'])}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = agentImage;
-          }}
-        />
-      </div>
-    );
+  // 行内不再提供归档图标；仅从 ⋯ 菜单进入既有二次确认。
+  const [archiveArming, setArchiveArming] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  // 确认态点击外部取消（2026-09-20 定调）：armed 时点击「确认」以外任意位置
+  // （其他行/菜单/空白）回退常规态。capture 阶段监听先于行内 stopPropagation；
+  // ref 包容判断豁免确认钮本体，Esc 取消保留
+  const archiveActionRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (!archiveArming) return;
+    const onDocClick = (event: MouseEvent) => {
+      if (!archiveActionRef.current?.contains(event.target as Node)) {
+        setArchiveArming(false);
+      }
+    };
+    document.addEventListener('click', onDocClick, true);
+    return () => document.removeEventListener('click', onDocClick, true);
+  }, [archiveArming]);
+  const handleArchiveConfirm = async () => {
+    if (archiving) return;
+    setArchiving(true);
+    try {
+      const res = await apiAgentConversationArchive(item.id, true).catch(
+        () => null,
+      );
+      if (res?.code === SUCCESS_CODE) {
+        onFlagChanged?.('archived', true);
+        message.success(
+          dict('PC.Components.ConversationContextMenu.archivedToast'),
+        );
+        setArchiveArming(false);
+      } else {
+        message.error(dict('PC.Common.Global.operationFailed'));
+      }
+    } finally {
+      setArchiving(false);
+    }
   };
 
+  // 行尾置顶/取消置顶：未置顶 hover 展开空心图钉、已置顶
+  // 常显实心图钉可点击取消；接口与 ⋯菜单同源，成功后同步调用方列表
+  const [pinning, setPinning] = useState(false);
+  const handleTogglePinned = async () => {
+    if (pinning) return;
+    setPinning(true);
+    try {
+      const next = !pinned;
+      const res = await apiAgentConversationPin(item.id, next).catch(
+        () => null,
+      );
+      if (res?.code === SUCCESS_CODE) {
+        onFlagChanged?.('pinned', next);
+        message.success(
+          dict(
+            next
+              ? 'PC.Components.ConversationContextMenu.pinnedToast'
+              : 'PC.Components.ConversationContextMenu.unpinnedToast',
+          ),
+        );
+      } else {
+        message.error(dict('PC.Common.Global.operationFailed'));
+      }
+    } finally {
+      setPinning(false);
+    }
+  };
+  // 智能体名副标题已全网撤收（2026-09-19 定调：经典布局任务列表项只展示会话
+  // 标题；单栏 compact 此前即不展示），时间统一内联在标题行尾
+
   return (
-    <div
-      className={cx(styles['conversation-item'], {
-        [styles.active]: isActive,
-      })}
-      onClick={onClick}
+    <ConversationContextMenu
+      conversationId={item.id}
+      currentTopic={
+        item.topic || item.agent?.name || dict('PC.Constants.Menus.newChat')
+      }
+      pinned={pinned}
+      archived={archived}
+      collected={collected}
+      onFlagChanged={onFlagChanged}
+      onCollectedChanged={onCollectedChanged}
+      onArchive={archived ? undefined : () => setArchiveArming(true)}
+      showMoreButton
     >
-      {renderAvatar()}
-      <div className={cx(styles['conversation-item-content'])}>
-        <div className={cx(styles['conversation-topic-row'])}>
-          <Typography.Text
-            className={cx(styles['conversation-topic'])}
-            ellipsis={true}
-          >
-            {item.topic}
-          </Typography.Text>
-          {item.taskStatus === TaskStatus.EXECUTING && (
-            <span className={cx(styles['status-tag'])}>{executingText}</span>
-          )}
+      {(moreButton) => (
+        <div
+          className={cx(styles['conversation-item'], {
+            [styles['active']]: isActive,
+            [styles.compact]: compact,
+            // 确认态常显：鼠标移出行后红色「确认」不随 hover 消失
+            [styles['archive-arming']]: archiveArming,
+          })}
+          onClick={onClick}
+          role="button"
+          tabIndex={0}
+          aria-current={isActive ? 'page' : undefined}
+          onKeyDown={(event) => {
+            if (archiveArming && event.key === 'Escape') {
+              event.stopPropagation();
+              setArchiveArming(false);
+              return;
+            }
+            if (event.target !== event.currentTarget) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onClick();
+            }
+          }}
+        >
+          <div className={cx(styles['conversation-item-content'])}>
+            <div className={cx(styles['conversation-topic-row'])}>
+              {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
+                每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
+              <span className={cx(styles['conversation-topic'])}>
+                {item.topic ||
+                  item.agent?.name ||
+                  dict('PC.Constants.Menus.newChat')}
+              </span>
+              {/* 状态标记开启时不再展示「执行中」文字胶囊（经典布局保留）。 */}
+              {!leadingMark && item.taskStatus === TaskStatus.EXECUTING && (
+                <span className={cx(styles['status-tag'])}>
+                  {executingText}
+                </span>
+              )}
+              <span className={cx(styles['conversation-trailing'])}>
+                {/* 状态区静止时在时间前，hover 时在更多前；状态与置顶
+                    操作共用一个固定槽位，标题起点始终不变。 */}
+                <span className={cx(styles['status-slot'])}>
+                  <span className={cx(styles['status-mark'])}>
+                    <ConversationStatusMark
+                      taskStatus={leadingMark ? item.taskStatus : undefined}
+                      fallback={
+                        pinned ? (
+                          <PushpinFilled
+                            className={cx(styles['pinned-state-icon'])}
+                          />
+                        ) : null
+                      }
+                    />
+                  </span>
+                  <Tooltip
+                    title={dict(
+                      pinned
+                        ? 'PC.Components.ConversationContextMenu.unpin'
+                        : 'PC.Components.ConversationContextMenu.pin',
+                    )}
+                    mouseEnterDelay={0.3}
+                  >
+                    <button
+                      type="button"
+                      className={cx(styles['pin-toggle'], {
+                        [styles['pin-toggle-pinned']]: pinned,
+                      })}
+                      aria-label={dict(
+                        pinned
+                          ? 'PC.Components.ConversationContextMenu.unpin'
+                          : 'PC.Components.ConversationContextMenu.pin',
+                      )}
+                      disabled={pinning}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleTogglePinned();
+                      }}
+                    >
+                      {pinned ? (
+                        <span className={cx(styles['unpin-icon'])} aria-hidden>
+                          <PushpinFilled />
+                          <span className={cx(styles['unpin-slash'])} />
+                        </span>
+                      ) : (
+                        <PushpinOutlined />
+                      )}
+                    </button>
+                  </Tooltip>
+                </span>
+                {archiveArming && (
+                  <span
+                    className={cx(styles['archive-action'])}
+                    ref={archiveActionRef}
+                  >
+                    <button
+                      type="button"
+                      className={cx(styles['archive-confirm'])}
+                      disabled={archiving}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleArchiveConfirm();
+                      }}
+                    >
+                      {dict('PC.Common.Global.confirm')}
+                    </button>
+                  </span>
+                )}
+                {item.taskStatus !== TaskStatus.EXECUTING && (
+                  <span className={cx(styles['conversation-date'])}>
+                    {formatRelativeTime(item.modified)}
+                  </span>
+                )}
+                {moreButton}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className={cx(styles['conversation-meta'])}>
-          <Typography.Text
-            className={cx(styles['conversation-agent-name'])}
-            ellipsis={true}
-          >
-            {item.agent?.name}
-          </Typography.Text>
-          <span className={cx(styles['conversation-date'])}>
-            {formatModifiedTime(item.modified)}
-          </span>
-        </div>
-      </div>
-    </div>
+      )}
+    </ConversationContextMenu>
   );
 };
 

@@ -195,6 +195,10 @@ const SandboxConfig: React.FC = () => {
     {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnName'),
       dataIndex: 'name',
+      // 钉列宽（bug 2458）：原不设宽度的列随容器伸缩——窄屏被挤到 35px
+      // （表头一字一行）、宽屏又空出一大截，与其它系统管理列表页基线
+      // （显式列宽 + scroll.x，参照 I18nManage/官方连接器）不一致
+      width: 260,
       render: (_: any, record: SandboxItem) => (
         <div className={styles['sandbox-item']}>
           <div className={styles['sandbox-info']}>
@@ -225,6 +229,8 @@ const SandboxConfig: React.FC = () => {
     {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnUsage'),
       dataIndex: 'usage',
+      width: 220,
+      align: 'center',
       render: (_: any, record: SandboxItem) => {
         // Current user count is not fully returned by backend; use available values.
         const percent =
@@ -263,7 +269,8 @@ const SandboxConfig: React.FC = () => {
     {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnOnlineStatus'),
       dataIndex: 'online',
-      minWidth: 120,
+      width: 120,
+      align: 'center',
       render: (_, record) => (
         <div
           className={cx(styles['status-tag'], {
@@ -283,7 +290,8 @@ const SandboxConfig: React.FC = () => {
     {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnActiveStatus'),
       dataIndex: 'isActive',
-      minWidth: 120,
+      width: 120,
+      align: 'center',
       render: (_, record) => (
         <div
           className={cx(styles['status-tag'], {
@@ -304,6 +312,8 @@ const SandboxConfig: React.FC = () => {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnAction'),
       valueType: 'option',
       width: 190,
+      align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <div className={styles['action-btns']}>
           <Tooltip
@@ -481,6 +491,9 @@ const SandboxConfig: React.FC = () => {
             search={false}
             pagination={false}
             showQueryButtons={false}
+            // 列宽兜底（bug 2458）：六列显式宽度合计 1030，容器不足时横向
+            // 滚动而非压缩列（对齐 I18nManage/官方连接器等系统管理列表基线）
+            scroll={{ x: 1030 }}
           />
           <div className={styles['footer-info']}>
             <span>

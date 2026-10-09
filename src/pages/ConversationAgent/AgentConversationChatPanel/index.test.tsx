@@ -1,6 +1,6 @@
 import AgentConversationChatPanel from '@/pages/ConversationAgent/AgentConversationChatPanel';
 import { TaskStatus } from '@/types/enums/agent';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
@@ -24,6 +24,13 @@ vi.mock('umi', () => ({
   useModel: (...args: unknown[]) => mockUseModel(...args),
 }));
 
+// useConversationMentionFiles → services 链（vncDesktop → userService → 常量表）
+// 在 vitest 环境不可用，统一桩掉 i18n 与文件列表接口
+vi.mock('@/services/i18nRuntime', () => ({
+  t: (key: string) => key,
+  dict: (key: string) => key,
+}));
+
 function createConversationInfoModel(overrides: Record<string, any> = {}) {
   return {
     conversationInfo: {
@@ -39,7 +46,7 @@ function createConversationInfoModel(overrides: Record<string, any> = {}) {
     chatSuggestList: ['next'],
     loadingConversation: false,
     onMessageSend: vi.fn(),
-    manualComponents: [{ id: 'component-1' }],
+    manualComponents: [{ id: 1, type: 'Plugin', defaultSelected: 1 }],
     isMoreMessage: true,
     loadingMore: false,
     handleLoadMoreMessage: vi.fn(),
@@ -126,14 +133,52 @@ describe('AgentConversationChatPanel', () => {
       id: 7001,
       messageInfo: 'fix it',
       files: [{ name: 'a.ts' }],
-      infos: [{ id: 'component-1' }],
+      infos: [{ id: 1, type: 'Plugin' }],
       sandboxId: 'computer-prop',
       debug: true,
-      isSync: false,
       skillIds: [11],
       modelId: 456,
       agentMode: 'ask',
     });
+  });
+
+  it('当前 URL 会话已有乐观消息时不再被详情 loading 遮挡', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-loading',
+      state: {},
+      search: '?agentId=88&conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
+
+  it('新建智能体跳转后保留选中的工具，后续发送也使用当前选中态', async () => {
+    const model = createConversationInfoModel();
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-from-project-create',
+      state: { infos: [{ id: 2, type: 'Workflow' }] },
+      search: '?agentId=88&conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 2, type: 'Workflow' },
+      ]);
+    });
+
+    act(() => {
+      latestUnifiedProps().onSelectComponent({ id: 2, type: 'Workflow' });
+    });
+    latestUnifiedProps().onSendMessage('继续', [], []);
+    expect(model.onMessageSend).toHaveBeenCalledWith(
+      expect.objectContaining({ infos: [] }),
+    );
   });
 
   it('重新加载历史时把字符串 id 转数字并返回 messageList', async () => {
@@ -169,5 +214,143 @@ describe('AgentConversationChatPanel', () => {
     );
 
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('V2 线：runtimeLine prop 生效值的下降沿触发会话结束回调（model 置位点不再执行）', () => {
+    // V2 下 onSendMessage 走 runtime 线，model 的 isConversationActive 恒 false——
+    // 结束沿必须消费 runtimeLine（页面级外提注入，bug 2477）的生效值
+    const model = createConversationInfoModel({
+      isConversationActive: false,
+    });
+    mockUseModel.mockReturnValue(model);
+    const onConversationEnd = vi.fn();
+    const { rerender } = render(
+      <AgentConversationChatPanel
+        runtimeLine={
+          {
+            conversationProps: { isConversationActive: true },
+            effectiveIsActive: true,
+          } as any
+        }
+        onConversationEnd={onConversationEnd}
+      />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    rerender(
+      <AgentConversationChatPanel
+        runtimeLine={
+          {
+            conversationProps: { isConversationActive: false },
+            effectiveIsActive: false,
+          } as any
+        }
+        onConversationEnd={onConversationEnd}
+      />,
+    );
+
+    expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('V2 线：生效值优先于 model 值（model 恒 false 不干扰 runtime 值驱动的沿检测）', () => {
+    const model = createConversationInfoModel({
+      isConversationActive: false,
+    });
+    mockUseModel.mockReturnValue(model);
+    const inactive = {
+      conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
+    } as any;
+    const active = {
+      conversationProps: { isConversationActive: true },
+      effectiveIsActive: true,
+    } as any;
+    const onConversationEnd = vi.fn();
+    // 生效值 false（合成值即 false），model 值同为 false：无上升沿噪声
+    const { rerender } = render(
+      <AgentConversationChatPanel
+        runtimeLine={inactive}
+        onConversationEnd={onConversationEnd}
+      />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    // 生效值上升 → 再下降：一次沿
+    rerender(
+      <AgentConversationChatPanel
+        runtimeLine={active}
+        onConversationEnd={onConversationEnd}
+      />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    rerender(
+      <AgentConversationChatPanel
+        runtimeLine={inactive}
+        onConversationEnd={onConversationEnd}
+      />,
+    );
+    expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('URL 带 conversationId 时 @ 提及数据源首帧即下发（不等会话详情回填）', () => {
+    // 进入开发页：URL 已有 conversationId，但 conversationInfo 尚为 null（详情请求未返回）
+    mockUseModel.mockReturnValue(
+      createConversationInfoModel({ conversationInfo: null }),
+    );
+    mockUseLocation.mockReturnValue({
+      key: 'route-1',
+      search: '?agentId=88&conversationId=7001',
+      state: {},
+    });
+
+    render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
+
+    // 首帧即拿到 @ 文件数据源：输入 @ 不再退化为纯文本
+    expect(typeof latestUnifiedProps().onFetchMentionFiles).toBe('function');
+  });
+
+  it('常驻实例固定入页路由，其他页面导航不重置电脑与模型选择', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    const onChangeSelectedComputerId = vi.fn();
+    const routeSnapshot = {
+      search: '?agentId=88&conversationId=7001',
+      key: 'agent-route',
+      state: {
+        selectedComputerId: 'computer-from-agent',
+        modelId: 456,
+        agentMode: 'ask',
+      },
+      action: 'PUSH' as const,
+    };
+    const { rerender } = render(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+    expect(latestUnifiedProps().isLoading).toBe(false);
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+    expect(latestUnifiedProps().initialAgentMode).toBe('ask');
+
+    mockUseLocation.mockReturnValue({
+      key: 'other-route',
+      search: '?conversationId=9002',
+      state: { selectedComputerId: 'other-computer', modelId: 999 },
+    });
+    rerender(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+
+    expect(onChangeSelectedComputerId).toHaveBeenCalledTimes(1);
+    expect(onChangeSelectedComputerId).toHaveBeenCalledWith(
+      'computer-from-agent',
+    );
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+    expect(latestUnifiedProps().isLoading).toBe(false);
   });
 });

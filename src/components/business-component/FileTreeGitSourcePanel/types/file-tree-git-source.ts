@@ -21,8 +21,8 @@ export interface SourceControlProps {
   refreshDisabled?: boolean;
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
-  /** 提交修改（保存并推送） */
-  onCommit?: (message: string) => Promise<void>;
+  /** 提交修改（保存并推送）。成功时可返回 true，供预览区刷新版本记录 */
+  onCommit?: (message: string) => Promise<void | boolean>;
   /** 选中修改文件，在右侧预览区展示 diff */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
@@ -59,8 +59,10 @@ export interface FileTreeGitSourcePanelProps {
   treeEmptyState?: ReactNode;
   /** 导入项目（空白区域右键菜单，覆盖 tree 内同名配置） */
   onImportProject?: () => void;
-  /** 导入项目菜单项文案 */
+  /** 导入按钮与菜单文案，不传时为「导入项目」 */
   importProjectLabel?: string;
+  /** 导出按钮提示，不传时为「导出项目」 */
+  exportProjectLabel?: string;
   /** 是否正在导入项目 */
   isImportingProject?: boolean;
   /** 源代码管理配置 */
@@ -91,6 +93,12 @@ export interface FileTreeContainerProps {
   fileTreeContainerRef: React.RefObject<HTMLDivElement>;
   /** 文件树数据是否加载中 */
   fileTreeDataLoading?: boolean;
+  /** 已完成懒加载的文件夹 ID */
+  loadedFolderIds?: Set<string>;
+  /** 正在拉取子文件列表的文件夹 ID，用于展开后的 loading */
+  loadingFolderIds?: Set<string>;
+  /** 缓存恢复时补拉仍处于展开状态的目录 */
+  onLoadDirectory?: (path: string) => void | Promise<void>;
   /** TaskAgent 自动选中的文件 ID（外部驱动选中） */
   taskAgentSelectedFileId?: string;
   /** 是否允许删除技能文件（如 SKILL.md） */
@@ -105,10 +113,29 @@ export interface FileTreeContainerProps {
   hideFileTree: boolean;
   /** 是否显示文件树刷新按钮 */
   showRefreshButton: boolean;
-  /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
+  /**
+   * 文件搜索走服务端（会话工作区）。
+   * 不传时仍用已加载树做前端过滤（应用开发页）。
+   */
+  remoteFileSearch?: {
+    /** 会话 ID */
+    cId: number;
+    /** 把接口返回的相对路径转成树节点 id，需与文件树 id 规则一致 */
+    toNodeId?: (relativePath: string) => string;
+    /** 写入搜索结果节点，便于与工作区树节点对齐 */
+    dataSourceId?: string;
+  };
+  /**
+   * 选中文件并在右侧预览区打开。selectFolder 为 true 时仅选中文件夹。
+   * openDirectory 为 false 时不请求该层文件列表。
+   */
   handleFileSelect: (
     fileId: string,
-    options?: { selectFolder?: boolean },
+    options?: {
+      selectFolder?: boolean;
+      openDirectory?: boolean;
+      fallbackNode?: FileNode;
+    },
   ) => Promise<void>;
   /** 清空文件树选中态（文件 + 文件夹） */
   clearSelection?: () => void;
@@ -144,8 +171,10 @@ export interface FileTreeContainerProps {
   ) => Promise<void>;
   /** 导入项目（空白区域右键菜单，可选） */
   handleImportProject?: () => void;
-  /** 导入项目菜单项文案（不传时使用默认的「导入技能」文案） */
+  /** 导入按钮与菜单文案（不传时菜单使用「导入技能」，工具栏使用「导入项目」） */
   importProjectLabel?: string;
+  /** 导出按钮提示，不传时为「导出项目」 */
+  exportProjectLabel?: string;
   /** 导出项目 */
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
@@ -154,4 +183,6 @@ export interface FileTreeContainerProps {
   isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
+  /** 搜索框下方工具栏左侧标题，默认「项目」 */
+  toolbarTitle?: string;
 }

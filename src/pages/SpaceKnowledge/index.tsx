@@ -32,7 +32,7 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
-import { Input, message } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,13 +40,14 @@ import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import GraphDocTable from './GraphDocTable';
 import styles from './index.less';
+import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
 import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
-import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
+import SourceDocumentComparison from './SourceDocumentComparison';
 
 const cx = classNames.bind(styles);
 
@@ -90,6 +91,8 @@ const SpaceKnowledge: React.FC = () => {
   // 根据docType 判断是否显示QA问答
   const [qaOpen, setQaOpen] = useState<boolean>(false);
   const [question, setQuestion] = useState<string>('');
+  // 当前选中的分段（用于原文对照）
+  const [selectedSegment, setSelectedSegment] = useState<any>(null);
 
   // 知识图谱模式的文档状态
   const [graphDocList, setGraphDocList] = useState<
@@ -182,8 +185,8 @@ const SpaceKnowledge: React.FC = () => {
         name: searchName,
       });
       if (response.code === SUCCESS_CODE && response.data) {
-        // 直接使用返回的数据
-        setGraphDocList(response.data || []);
+        // 直接使用返回的数据（响应体 data 为 { data: 文档列表 } 结构）
+        setGraphDocList(response.data.data || []);
       }
     } catch (error) {
       // console.error('加载知识图谱列表失败:', error);
@@ -419,7 +422,10 @@ const SpaceKnowledge: React.FC = () => {
   // 文档内容
   const renderDocContent = () => {
     return (
-      <div className={cx('flex', 'flex-1')}>
+      <div
+        className={cx('flex', 'flex-1')}
+        style={{ overflowX: 'auto', overflowY: 'hidden' }}
+      >
         {/*文档列表*/}
         <DocWrap
           currentDocId={currentDocumentInfo?.id}
@@ -440,6 +446,13 @@ const SpaceKnowledge: React.FC = () => {
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
           onSuccessUpdateName={handleSuccessUpdateName}
+          onSegmentSelect={setSelectedSegment}
+        />
+        {/*原文对照 - 新增板块（暂时隐藏，分段列表 flex-1 自动拉通整行；恢复时改回 visible={true} 即可）*/}
+        <SourceDocumentComparison
+          documentInfo={currentDocumentInfo}
+          selectedSegment={selectedSegment}
+          visible={false}
         />
       </div>
     );
@@ -461,11 +474,6 @@ const SpaceKnowledge: React.FC = () => {
         handleQaList();
       }
     } catch {}
-  };
-  // 添加问题搜索功能 点击按钮搜索
-  const handleSearch = (value: string) => {
-    setQuestion(value);
-    handleQaList();
   };
 
   // 点击表格中的文档，进入图谱详情页
@@ -575,6 +583,8 @@ const SpaceKnowledge: React.FC = () => {
         documentName: dict('PC.Pages.SpaceKnowledge.Index.allKnowledgeGraphs'),
         fileType: 'all',
         tripleStatus: 2,
+        createdTime: '',
+        updatedTime: '',
       });
     } catch (error) {
       console.error('查看全部知识图谱失败:', error);
@@ -639,19 +649,7 @@ const SpaceKnowledge: React.FC = () => {
   const renderQaContent = () => {
     return (
       <div className={cx('flex', 'flex-col', 'w-full')}>
-        <div className={cx(styles.inputSearch)}>
-          <Input.Search
-            placeholder={dict('PC.Pages.SpaceKnowledge.Index.searchQuestion')}
-            value={question}
-            onChange={(e) => handleSearch(e.target.value)}
-            allowClear
-            style={{
-              width: 240,
-            }}
-            onSearch={handleSearch}
-          />
-        </div>
-        {/* 修改为表格 远程加载数据 */}
+        {/* 问题搜索框已下沉到 QaTableList 顶部工具栏，与文档筛选同一行靠左 */}
         <QaTableList
           ref={qaTableListRef}
           spaceId={Number(spaceId)}
@@ -659,6 +657,7 @@ const SpaceKnowledge: React.FC = () => {
           onEdit={handleEditQa}
           onDelete={handleDeleteQa}
           question={question}
+          onQuestionChange={setQuestion}
         />
       </div>
     );
@@ -730,7 +729,8 @@ const SpaceKnowledge: React.FC = () => {
         {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
         {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
         {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
-        {docType === KnowledgeDocTypeEnum.ACCURACYTEST && renderAccuracyTestContent()}
+        {docType === KnowledgeDocTypeEnum.ACCURACYTEST &&
+          renderAccuracyTestContent()}
       </div>
 
       {/*本地文档弹窗*/}

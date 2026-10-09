@@ -1,4 +1,4 @@
-import emptyStateNoFile from '@/assets/images/empty_state_no_file.svg';
+import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { dict } from '@/services/i18nRuntime';
 import { Typography } from 'antd';
 import classNames from 'classnames';
@@ -23,7 +23,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ keyword }) => {
       ) : (
         <div className={cx(styles['empty-state-content'])}>
           <img
-            src={emptyStateNoFile}
+            src={emptyStateNoData}
             alt="empty"
             className={cx(styles['empty-state-img'])}
           />

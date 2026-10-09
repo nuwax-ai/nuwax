@@ -1,8 +1,14 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SANDBOX } from '@/constants/common.constants';
+import useHostVisibility from '@/hooks/useHostVisibility';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils';
+import eventBus, {
+  EVENT_NAMES,
+  type AppTabPreviewCommandPayload,
+} from '@/utils/eventBus';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { debounce } from 'lodash';
@@ -14,8 +20,8 @@ import React, {
   useState,
 } from 'react';
 import TurndownService from 'turndown';
-import { useModel } from 'umi';
 import styles from './index.less';
+import { observePreviewDocument } from './observePreviewDocument';
 
 const cx = classNames.bind(styles);
 
@@ -35,6 +41,8 @@ interface PagePreviewData {
   data_type?: 'html' | 'markdown';
   /** 请求 ID */
   request_id?: string;
+  /** 受限预览来源 */
+  source?: 'agent-page';
 }
 
 /**
@@ -59,6 +67,8 @@ interface PagePreviewIframeProps {
   titleStyle?: React.CSSProperties;
   /** 标题文本自定义类名 */
   titleClassName?: string;
+  /** 标题栏左侧文案;不传时沿用 iframe 文档标题(既有行为) */
+  title?: string;
   /** 是否显示复制按钮 */
   showCopyButton?: boolean;
   /** 是否允许复制（用于条件渲染） */
@@ -69,6 +79,15 @@ interface PagePreviewIframeProps {
   copyButtonText?: string;
   /** 复制按钮自定义类名 */
   copyButtonClassName?: string;
+  /**
+   * 预览命令订阅键（应用标签 routePath，如 /user-app/5、/agent/11）：
+   * 传入后订阅 eventBus 的应用标签预览命令，侧栏标签行的刷新/复制链接
+   * 按钮经事件总线触发本实例 reload/goCopy（与 header 图标同源行为）；
+   * 不传（默认）不订阅，既有消费方行为完全不变
+   */
+  commandKey?: string;
+  /** 当前缓存实例是否可见；仅控制标题观察，不暂停业务内容上报。 */
+  active?: boolean;
 }
 
 /**
@@ -89,11 +108,14 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   className,
   titleStyle,
   titleClassName,
+  title,
   showCopyButton = false,
   allowCopy = false,
   onCopyClick,
   copyButtonText = t('PC.Components.PagePreviewIframe.copyTemplate'),
   copyButtonClassName,
+  commandKey,
+  active = true,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -111,9 +133,26 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   const [canGoBack, setCanGoBack] = useState<boolean>(false);
   const [canGoForward, setCanGoForward] = useState<boolean>(false);
 
-  // 用于存储 MutationObserver 实例，以便清理
-  const observerRef = useRef<MutationObserver | null>(null);
-  const observerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hostVisible = useHostVisibility();
+  const [documentVisible, setDocumentVisible] = useState(
+    () => !document.hidden,
+  );
+  const uiVisible = active && hostVisible && documentVisible;
+  const uiVisibleRef = useRef(uiVisible);
+  uiVisibleRef.current = uiVisible;
+  const observerRef = useRef<ReturnType<typeof observePreviewDocument> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const update = () => setDocumentVisible(!document.hidden);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+
+  useEffect(() => {
+    observerRef.current?.setVisible(uiVisible);
+  }, [uiVisible]);
 
   // 构建页面 URL（拼接 query 参数）
   const pageUrl = useMemo(() => {
@@ -139,6 +178,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     return `${uri}?${queryString}`;
   }, [pagePreviewData]);
 
+  const iframeSandbox = SANDBOX;
+
   // iframe 加载完成
   const handleIframeLoad = () => {
     setIsLoading(false);
@@ -149,7 +190,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setIsLoading(false);
   };
 
-  const { previewPageTitle, setPreviewPageTitle } = useModel('chat');
+  const { previewPageTitle, setPreviewPageTitle } = usePageModel('chat');
 
   /**
    * 更新按钮状态
@@ -162,6 +203,23 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setCanGoBack(canBack);
     setCanGoForward(canForward);
   }, []);
+
+  // 应用标签行命令分发：handler 经 ref 取最新闭包（pageUrl 随 iframe 内导航
+  // 变化后 goCopy 仍复制当前地址）；订阅仅在 commandKey 存在时建立、卸载按
+  // 引用精确 off。ref.current 的实际赋值在 reload/goCopy 定义之后（见下方）
+  const commandHandlerRef = useRef<
+    (payload: AppTabPreviewCommandPayload) => void
+  >(() => {});
+
+  useEffect(() => {
+    if (!commandKey) return undefined;
+    const handler = (payload: AppTabPreviewCommandPayload) =>
+      commandHandlerRef.current(payload);
+    eventBus.on(EVENT_NAMES.APP_TAB_PREVIEW_COMMAND, handler);
+    return () => {
+      eventBus.off(EVENT_NAMES.APP_TAB_PREVIEW_COMMAND, handler);
+    };
+  }, [commandKey]);
 
   /**
    * 处理来自 dev-monitor 的历史变化消息
@@ -303,28 +361,20 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setCanGoForward(false);
   }
 
-  // 处理页面内容变化和上报
+  // 导航与业务内容上报保持常驻；标题观察按 UI 可见性暂停，不重设 iframe src。
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !pagePreviewData) return;
-
-    // 清理函数：断开 observer，清除定时器
+    let navigationTimer: ReturnType<typeof setTimeout> | undefined;
     const cleanupObserver = () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      if (observerTimerRef.current) {
-        clearTimeout(observerTimerRef.current);
-        observerTimerRef.current = null;
-      }
+      observerRef.current?.disconnect();
+      observerRef.current = null;
     };
-
-    // 每次 effect 执行前先清理
     cleanupObserver();
-    setIsLoading(true);
 
-    const handleLoad = debounce(async () => {
+    const handleLoad = debounce(() => {
+      // 同一 iframe 内连续导航也会替换 Document，必须先释放上一份观察器。
+      cleanupObserver();
       let iframeDoc: Document | null = null;
       try {
         iframeDoc =
@@ -337,96 +387,72 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         setIsLoading(false);
         return;
       }
-
-      if (!iframeDoc || !iframeDoc.body) return;
-
-      const turndownService = new TurndownService();
-
-      // 定义 Observer 回调
-      const observerCallback = () => {
-        if (observerTimerRef.current) {
-          clearTimeout(observerTimerRef.current);
+      if (!iframeDoc?.body) return;
+      const doc = iframeDoc;
+      let turndownService: TurndownService | undefined;
+      const reportContent = async () => {
+        // 保持既有 navigate 请求、Nginx 特殊反馈以及完整 HTML/Markdown 内容。
+        const html =
+          pagePreviewData.data_type === 'html' ||
+          pagePreviewData.data_type === 'markdown'
+            ? doc.body.innerHTML
+            : '';
+        const nginxWelcomeText = doc.body.querySelector('body>h1')?.textContent;
+        if (nginxWelcomeText === 'Welcome to nginx!') {
+          await apiAgentComponentPageResultUpdate({
+            requestId: pagePreviewData.request_id as string,
+            html: t('PC.Components.PagePreviewIframe.unableToReadData'),
+          });
         }
-        observerTimerRef.current = setTimeout(async () => {
-          if (!iframeDoc?.body) return;
-
-          const title =
-            iframeDoc.querySelector('head > title')?.textContent ||
-            t('PC.Components.PagePreviewIframe.defaultPageTitle');
-          setPreviewPageTitle(title);
-
-          const html = iframeDoc.body.innerHTML;
-
-          // 检查 Nginx Welcome
-          if (pagePreviewData?.method === 'browser_navigate_page') {
-            const nginxWelcomeText =
-              iframeDoc.body.querySelector('body>h1')?.textContent;
-
-            if (nginxWelcomeText === 'Welcome to nginx!') {
-              const params = {
-                requestId: pagePreviewData?.request_id as string,
-                html: t('PC.Components.PagePreviewIframe.unableToReadData'),
-              };
-              console.log('CHART1', params);
-              await apiAgentComponentPageResultUpdate(params);
-              // 继续执行后续逻辑，或者 return
-            }
-          }
-
-          if (!pagePreviewData?.method) return;
-
-          let str = '';
-          if (pagePreviewData.data_type === 'html') {
-            str = html;
-          } else if (pagePreviewData.data_type === 'markdown') {
-            str = turndownService.turndown(html);
-          }
-
-          if (pagePreviewData?.method === 'browser_navigate_page') {
-            const params = {
-              requestId: pagePreviewData.request_id || '',
-              html: str,
-            };
-            console.log('CHART2', params);
-            await apiAgentComponentPageResultUpdate(params);
-          }
-        }, 500);
+        let str = '';
+        if (pagePreviewData.data_type === 'html') {
+          str = html;
+        } else if (pagePreviewData.data_type === 'markdown') {
+          turndownService ??= new TurndownService();
+          str = turndownService.turndown(html);
+        }
+        await apiAgentComponentPageResultUpdate({
+          requestId: pagePreviewData.request_id || '',
+          html: str,
+        });
       };
-
-      // 创建并启动 Observer
-      observerRef.current = new MutationObserver(observerCallback);
-      observerRef.current.observe(iframeDoc.body, {
-        childList: true,
-        subtree: true,
-        characterData: true,
+      observerRef.current = observePreviewDocument(doc, {
+        visible: uiVisibleRef.current,
+        onTitle: () => {
+          setPreviewPageTitle(
+            doc.querySelector('head > title')?.textContent ||
+              t('PC.Components.PagePreviewIframe.defaultPageTitle'),
+          );
+        },
+        onContent:
+          pagePreviewData.method === 'browser_navigate_page'
+            ? reportContent
+            : undefined,
       });
-
-      // 立即触发一次处理
-      observerCallback();
     }, 100);
-
-    // 绑定 onload
     iframe.onload = handleLoad;
 
-    // 设置 src
-    const hasHash = pageUrl.includes('#');
-    if (hasHash) {
-      iframe.src = '';
-      setTimeout(() => {
-        if (iframeRef.current) {
-          iframeRef.current.src = pageUrl;
-        }
-      }, 50);
+    // 同值跳过，缓存页切换只更新观察器，不重新加载已打开的页面。
+    if (iframe.src === pageUrl) {
+      handleLoad();
     } else {
-      iframe.src = pageUrl;
+      setIsLoading(true);
+      if (pageUrl.includes('#')) {
+        iframe.src = '';
+        navigationTimer = setTimeout(() => {
+          iframe.src = pageUrl;
+        }, 50);
+      } else {
+        iframe.src = pageUrl;
+      }
     }
-
     return () => {
       iframe.onload = null;
       handleLoad.cancel();
+      clearTimeout(navigationTimer);
       cleanupObserver();
     };
-  }, [pagePreviewData, pageUrl, setPreviewPageTitle]);
+  }, [pagePreviewData, pageUrl, setPreviewPageTitle, iframeKey]);
 
   /**
    * 监听来自 iframe 的 postMessage 消息
@@ -580,6 +606,17 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     copyTextToClipboard(url, () => {}, true);
   }
 
+  // 应用标签行命令的实际分发（在 reload/goCopy 定义后赋值，每渲染刷新为
+  // 最新闭包）：routePath 精确匹配本实例才执行，与 header 图标同源行为
+  commandHandlerRef.current = (payload) => {
+    if (payload.routePath !== commandKey) return;
+    if (payload.action === 'reload') {
+      reload();
+    } else {
+      goCopy();
+    }
+  };
+
   return (
     <div
       className={cx(styles['page-preview-iframe-container'], className)}
@@ -590,7 +627,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         <div className={cx(styles['page-preview-header'])}>
           <h3 className="text-ellipsis">
             <span className={titleClassName} style={titleStyle}>
-              {previewPageTitle}
+              {title ?? previewPageTitle}
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -696,7 +733,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           ref={iframeRef}
           key={iframeKey}
           src={pageUrl}
-          sandbox={SANDBOX}
+          sandbox={iframeSandbox}
           className={cx(styles['page-iframe'])}
           onLoad={handleIframeLoad}
           onError={handleIframeError}

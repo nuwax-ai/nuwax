@@ -2,6 +2,9 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { canOpenDesktopFromEvent } from '@/features/conversation/react/openDesktopEvent';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -23,6 +26,7 @@ import {
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import eventBus from '@/utils/eventBus';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
@@ -78,6 +82,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const [form] = Form.useForm();
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
+  /**
+   * 会话内容是否正处于初始化、创建或切换阶段。
+   *
+   * 不直接依赖 ahooks 的 loading：会话详情请求配置了 debounce/loadingDelay，
+   * 在该时间窗口内会短暂渲染上一个会话的开场信息，造成明显闪烁。
+   */
+  const [isConversationTransitioning, setIsConversationTransitioning] =
+    useState(true);
+  const loadingConversationIdRef = useRef<number | null>(null);
+  const loadedConversationIdRef = useRef<number | null>(null);
+  const conversationLoadVersionRef = useRef(0);
   // 变量参数
   const [variableParams, setVariableParams] = useState<Record<
     string,
@@ -97,12 +112,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const hasAutoPreviewedRef = useRef(false);
 
   const {
+    setCardList,
+    handleRefreshFileList,
+    refreshFileListImmediately,
+    refreshGitListRef,
+    setFileTreeRefreshTrigger,
+
     conversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
     loadingConversation,
-    runQueryConversation,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
@@ -146,6 +166,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 其它接口加载状态
     isLoadingOtherInterface,
     isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
@@ -231,18 +252,58 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   }, [manualComponents]);
 
   useEffect(() => {
-    if (agentConfigInfo) {
-      const { devConversationId } = agentConfigInfo;
-      devConversationIdRef.current = devConversationId;
-      setIsLoadingConversation(false);
-      // 查询会话
-      runQueryConversation(devConversationId);
+    const devConversationId = agentConfigInfo?.devConversationId;
+    if (!devConversationId) {
+      return;
     }
-  }, [agentConfigInfo?.devConversationId]);
+
+    devConversationIdRef.current = devConversationId;
+
+    // 同一个会话已完成加载或正在加载时不重复请求。轮询、刷子创建成功和
+    // 初始进入页面都会经过这里，因此需要在入口统一去重。
+    if (loadedConversationIdRef.current === devConversationId) {
+      setIsConversationTransitioning(false);
+      setIsLoadingOtherInterface(false);
+      return;
+    }
+    if (loadingConversationIdRef.current === devConversationId) {
+      return;
+    }
+
+    const loadVersion = ++conversationLoadVersionRef.current;
+    loadingConversationIdRef.current = devConversationId;
+    setIsConversationTransitioning(true);
+    setIsLoadingOtherInterface(true);
+
+    // runAsync 与 model 内的 onSuccess 共用同一条数据回填链路；在此等待它结束，
+    // 仅由本 effect 作为详情加载入口，避免刷子创建后的重复加载。
+    runAsync(devConversationId)
+      .then(() => {
+        if (conversationLoadVersionRef.current === loadVersion) {
+          loadedConversationIdRef.current = devConversationId;
+        }
+      })
+      .catch((error: any) => {
+        console.error('[PreviewAndDebug] load conversation failed', error);
+      })
+      .finally(() => {
+        if (loadingConversationIdRef.current === devConversationId) {
+          loadingConversationIdRef.current = null;
+        }
+        if (conversationLoadVersionRef.current === loadVersion) {
+          setIsConversationTransitioning(false);
+          setIsLoadingOtherInterface(false);
+        }
+      });
+  }, [
+    agentConfigInfo?.devConversationId,
+    runAsync,
+    setIsLoadingOtherInterface,
+  ]);
 
   // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。
   // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
-  // 值变化即触发上面的 useEffect → runQueryConversation 自动切到新会话；组件卸载（hideChatArea）自动停止轮询。
+  // 值变化即触发上面的 useEffect 加载新会话；组件卸载（hideChatArea）自动停止轮询。
   useRequest(() => apiAgentConfigInfo(agentId), {
     ready: !!agentId,
     pollingInterval: GLOBAL_POLLING_INTERVAL,
@@ -315,25 +376,24 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
-    // 重置对话设置表单数据
-    form.resetFields();
-    // 清除调试结果
-    setFinalResult(null);
-    handleClearSideEffect();
-    // 重置是否还有更多消息
-    setIsMoreMessage(false);
-    // 清除文件面板信息, 并关闭文件面板
-    clearFilePanelInfo();
-    setMessageList([]);
-    setIsLoadingConversation(false);
-    setHasUserSentMessage(false); // 重置发送状态
+    // 在创建请求发出前立刻遮罩会话区域，避免旧会话的开场信息重新渲染。
+    // 破坏性清理延后至创建成功，失败时仍可恢复原会话内容。
+    setIsConversationTransitioning(true);
+    setIsLoadingOtherInterface(true);
 
     try {
-      setIsLoadingOtherInterface(true);
-      // 创建智能体会话(智能体编排页面devMode为true)
+      // 创建智能体会话(智能体编排页面devMode为true)；执行按创建时绑定的
+      // 沙箱路由（bug 2451 口径），创建即带当前生效选择（预览面板清空不重置
+      // 手动选择，自然延续；旧会话智能体快照绑定兜底，最后云电脑哨兵）
       const { success, data } = await runAsyncConversationCreate({
         agentId,
         devMode: true,
+        sandboxId: Number(
+          resolveEffectiveSandboxId({
+            selectedComputerId,
+            agentSandboxId: conversationInfo?.agent?.sandboxId,
+          }) || CLOUD_SANDBOX_ID,
+        ),
       });
 
       if (success) {
@@ -351,6 +411,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
         }
 
         const id = data?.id;
+        // 重置对话设置和旧会话数据；此时新会话尚在 Loading，不会出现空态闪烁。
+        form.resetFields();
+        setFinalResult(null);
+        handleClearSideEffect();
+        setIsMoreMessage(false);
+        clearFilePanelInfo();
+        setMessageList([]);
+        setIsLoadingConversation(false);
+        setHasUserSentMessage(false);
         devConversationIdRef.current = id;
         if (agentConfigInfo) {
           // 更新智能体配置信息
@@ -360,31 +429,74 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
           _agentConfigInfo.devConversationId = id;
           onAgentConfigInfo(_agentConfigInfo);
         }
-        // 查询会话
-        await runQueryConversation(id);
+        // 更新 devConversationId 后由上方 effect 统一加载详情，轮询发现新会话时也复用该入口。
+      } else {
+        setIsConversationTransitioning(false);
+        setIsLoadingOtherInterface(false);
       }
-    } finally {
+    } catch (error) {
+      console.error('[PreviewAndDebug] create conversation failed', error);
+      setIsConversationTransitioning(false);
       setIsLoadingOtherInterface(false);
     }
-  }, [agentId, agentConfigInfo, form]);
+  }, [
+    agentId,
+    agentConfigInfo,
+    clearFilePanelInfo,
+    conversationInfo?.agent?.sandboxId,
+    form,
+    handleClearSideEffect,
+    hidePagePreview,
+    onAgentConfigInfo,
+    runAsyncConversationCreate,
+    selectedComputerId,
+    setFinalResult,
+    setIsLoadingConversation,
+    setIsLoadingOtherInterface,
+    setIsMoreMessage,
+    setMessageList,
+    showPagePreview,
+  ]);
 
   /**
-   * 当前生效的沙箱 ID：优先会话已绑定沙箱，其次智能体默认沙箱，最后用户手动选择
+   * 当前生效的沙箱 ID（bug 2451 修复）：手动选择最优先，其次智能体绑定，
+   * 最后共享电脑——与 Chat 页 useChatSandbox、模型层 OPEN_DESKTOP gate
+   * （64db47a9d）同序（四级链单源见 src/utils/effectiveSandbox.ts）。
+   * 旧实现把手动选择排第三，智能体存了云端记忆（sandboxId='-1'）时，
+   * 手动选个人电脑发送仍走云电脑，即本入口的 2451 根因。
    */
   const effectiveSandboxId = useMemo(
     () =>
-      String(
-        conversationInfo?.sandboxServerId ??
-          conversationInfo?.agent?.sandboxId ??
-          selectedComputerId ??
-          '-1',
-      ),
+      resolveEffectiveSandboxId({
+        selectedComputerId,
+        agentSandboxId: conversationInfo?.agent?.sandboxId,
+        sandboxServerId: conversationInfo?.sandboxServerId,
+      }) || CLOUD_SANDBOX_ID,
     [
-      conversationInfo?.sandboxServerId,
-      conversationInfo?.agent?.sandboxId,
       selectedComputerId,
+      conversationInfo?.agent?.sandboxId,
+      conversationInfo?.sandboxServerId,
     ],
   );
+
+  /**
+   * 会话共享电脑不参与锁选（bug 2490 收尾，2026-09-23 走查实证）：空会话
+   * （无消息）可能延续创建时的共享沙箱绑定（sandboxServerId=真实 id），
+   * 若当绑定锁 fixedSelection，菜单点击全被吞——即「空会话选不了电脑」。
+   * 与 Chat 页同口径：共享绑定仅经 effectiveSandboxId 四级链第 4 级做展示
+   * （云哨兵 -1 与未绑定同义）；锁选只留智能体真实绑定（UnifiedChatSession
+   * isAgentSandboxBound）与会话进度锁（hasUserSentMessage / messageList）。
+   */
+
+  /**
+   * 切到非云端电脑时，若停留在智能体电脑视图则关闭，
+   * 避免入口隐藏后残留桌面预览（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (effectiveSandboxId !== '-1' && viewMode === 'desktop') {
+      closePreviewView();
+    }
+  }, [effectiveSandboxId, viewMode, closePreviewView]);
 
   // 消息发送
   const handleMessageSend = (
@@ -522,6 +634,66 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   }, [pagePreviewData, showType, setShowType]);
 
   /**
+   * 会话事件打开远程桌面。条件与 Chat 页共用：未隐藏桌面，且生效电脑是云电脑。
+   */
+  const openDesktopViewFromEvent = useCallback(
+    (conversationId: number) => {
+      const pageConversationId =
+        devConversationIdRef.current || conversationInfo?.id;
+      if (
+        !canOpenDesktopFromEvent({
+          conversationId,
+          pageConversationId,
+          hideDesktop:
+            conversationInfo?.agent?.hideDesktop ??
+            agentConfigInfo?.hideDesktop,
+          sandboxId: effectiveSandboxId,
+        })
+      ) {
+        return;
+      }
+      void openDesktopView(conversationId);
+    },
+    [
+      agentConfigInfo?.hideDesktop,
+      conversationInfo?.agent?.hideDesktop,
+      conversationInfo?.id,
+      effectiveSandboxId,
+      openDesktopView,
+    ],
+  );
+
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: devConversationIdRef.current || undefined,
+    // 隔离入口与旧线（onMessageSend isSync:false）一致：不同步会话记录
+    //（不发乐观列表标记、不更新主题）
+    isSync: false,
+    // chat 请求携带当前生效电脑的 sandboxId（effectiveSandboxId 链尾已兜底云电脑 -1）
+    getSandboxId: () => effectiveSandboxId,
+    effectsResources: {
+      showPagePreview,
+      openDesktopView: openDesktopViewFromEvent,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+
+  /**
+   * 当前生效的消息列表（bug 2490）：V2 新线消息只写 runtime store，不回写
+   * conversationInfo model（RefreshChatMessage 事件已无生产者），旧线才写
+   * model 的 messageList。头部工具图标（文件系统/终端/远程电脑）的显隐判定
+   * 必须取「实际渲染的那份列表」——新线启用取 runtime 投影，关闭回落旧 model。
+   */
+  const effectiveMessageList = runtimeLine?.messageList ?? messageList;
+
+  /**
    * 是否显示文件面板：
    * 1. 仅通用型智能体 (TaskAgent) 才显示
    * 2. 必须存在消息
@@ -532,17 +704,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       return false;
     }
 
-    if (!messageList || messageList.length === 0) {
+    if (!effectiveMessageList || effectiveMessageList.length === 0) {
       return false;
     }
 
-    if (messageList.length === 1) {
-      const first = messageList[0];
+    if (effectiveMessageList.length === 1) {
+      const first = effectiveMessageList[0];
       return !!first?.id;
     }
 
     return true;
-  }, [agentConfigInfo?.type, messageList]);
+  }, [agentConfigInfo?.type, effectiveMessageList]);
 
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
@@ -586,10 +758,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             )}
           >
             <UnifiedChatSession
+              showDebug
               conversationId={devConversationIdRef.current}
               messageList={messageList}
               roleInfo={roleInfo}
-              isLoading={loadingConversation}
+              isLoading={isConversationTransitioning}
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
               isConversationActive={
@@ -597,6 +770,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
               isLocallyStreaming={isConversationActive}
+              isAwaitingChatTerminal={isAwaitingChatTerminal}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}
@@ -610,8 +784,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 eventBindConfig: agentConfigInfo?.eventBindConfig,
                 hasPermission: conversationInfo?.agent?.hasPermission,
                 sandboxId:
-                  conversationInfo?.sandboxServerId ||
-                  conversationInfo?.agent?.sandboxId,
+                  // 与 Chat 页同语义（bug 2451/2490）：只传智能体自身绑定，
+                  // 会话共享电脑不进此位（共享绑定经 selectedComputerId=
+                  // effectiveSandboxId 四级链第 4 级仅做展示，勿锁选——空会话
+                  // 延续创建绑定时会锁死选择器）；云端哨兵 -1 由
+                  // UnifiedChatSession isRealAgentSandboxBinding 排除
+                  conversationInfo?.agent?.sandboxId || undefined,
                 allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}
@@ -627,10 +805,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               variables={variables}
               userFillVariables={userFillVariables}
               isVariablesFilled={true}
-              clearLoading={false}
-              isSelectionLocked={!!conversationInfo?.sandboxServerId}
+              clearLoading={isConversationTransitioning}
+              chatInputDisabled={isConversationTransitioning}
+              // 共享绑定不锁选（见上方口径注释）：空会话必须可改选电脑，
+              // 有消息后由 UnifiedChatSession 进度锁（messageList/hasUserSentMessage）接管
+              isSelectionLocked={false}
               hasUserSentMessage={hasUserSentMessage}
-              selectedComputerId={selectedComputerId}
+              // 与 Chat 页 finalSelectedId 同模式：传四级链解析值而非原始手动
+              // 选择，空会话（未手选）也正确显示云端勾选（agent 云端记忆 -1 不
+              // 再经 agentSandboxId 压值，见 UnifiedChatSession isAgentSandboxBound）
+              selectedComputerId={effectiveSandboxId}
               onComputerSelect={(id) => {
                 setSelectedComputerId(id);
                 onChangeSelectedComputerId?.(id);
@@ -661,6 +845,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 (await runAsync(Number(id)))?.data?.messageList
               }
               resumeDebugSource="edit-agent:preview-and-debug"
+              {...(runtimeLine?.conversationProps ?? {})}
             />
           </div>
         </div>

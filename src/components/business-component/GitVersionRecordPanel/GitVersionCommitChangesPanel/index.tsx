@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
@@ -6,7 +7,6 @@ import { getFileIcon } from '@/utils/fileTree';
 import {
   BranchesOutlined,
   DownOutlined,
-  LeftOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { DiffModeEnum } from '@git-diff-view/react';
@@ -258,7 +258,12 @@ const GitVersionCommitChangesPanel: React.FC<
       <div className={cx(styles['top-bar'])}>
         <Button
           type="text"
-          icon={<LeftOutlined />}
+          icon={
+            <SvgIcon
+              name="icons-nav-backward"
+              style={{ fontSize: 'inherit' }}
+            />
+          }
           className={cx(styles['back-btn'])}
           onClick={onBack}
         >

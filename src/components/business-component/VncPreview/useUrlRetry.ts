@@ -26,6 +26,7 @@ interface UrlCheckResult {
   shouldRetry: boolean;
   isTimeout: boolean;
   elapsedTime: number;
+  cancelled?: boolean;
 }
 
 interface UseUrlRetryReturn {
@@ -51,6 +52,7 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
 
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retryStartTimeRef = useRef<number | null>(null);
+  const retryGenerationRef = useRef(0);
 
   // 清除重试定时器
   const clearRetry = useCallback(() => {
@@ -62,6 +64,7 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
 
   // 重置重试状态
   const resetRetry = useCallback(() => {
+    retryGenerationRef.current += 1;
     clearRetry();
     retryStartTimeRef.current = null;
   }, [clearRetry]);
@@ -106,7 +109,18 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
   // 带重试逻辑的 URL 检测
   const checkWithRetry = useCallback(
     async (url: string, onRetry: () => void): Promise<UrlCheckResult> => {
+      const generation = retryGenerationRef.current;
       const result = await checkUrl(url);
+      // 配置切换、断开或卸载后，迟到结果不能再次挂出重试定时器。
+      if (generation !== retryGenerationRef.current) {
+        return {
+          ok: false,
+          shouldRetry: false,
+          isTimeout: false,
+          elapsedTime: 0,
+          cancelled: true,
+        };
+      }
       const elapsed = retryStartTimeRef.current
         ? Date.now() - retryStartTimeRef.current
         : 0;
@@ -150,7 +164,10 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
             result.status
           }, elapsed: ${Math.round(currentElapsed / 1000)}s`,
         );
-        retryTimerRef.current = setTimeout(onRetry, retryInterval);
+        clearRetry();
+        retryTimerRef.current = setTimeout(() => {
+          if (generation === retryGenerationRef.current) onRetry();
+        }, retryInterval);
 
         return {
           ok: false,
@@ -172,7 +189,14 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
         elapsedTime: elapsed,
       };
     },
-    [checkUrl, retryStatusCodes, maxRetryDuration, retryInterval, resetRetry],
+    [
+      checkUrl,
+      retryStatusCodes,
+      maxRetryDuration,
+      retryInterval,
+      resetRetry,
+      clearRetry,
+    ],
   );
 
   return {

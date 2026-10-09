@@ -1,0 +1,15 @@
+{
+  "name": "nuwax",
+  "srcPaths": ["src/"],
+  "plansDirs": ["plans", "specs"],
+  "protectedWrite": [],
+  "envPrefix": "NUWACLAW",
+  "test": "pnpm exec vitest run",
+  "grillExtra": [
+    "改路由/菜单先看 config/config.ts 与 config/routes 约定，UMI_ENV 区分 dev/prod 构建",
+    "mock/ 与真实接口切换的影响面要在规格里写明",
+    "tests/ 目录按域分子目录（conversation/ snapshot/ messageQueue...），新测试跟域走",
+    "types 补字段要跟后端契约（参考 2b18d6dc6：Page.docname 教训）",
+    "移动端构建走 build:m 下载产物流程，别绕过 scripts/download-mobile-build.js"
+  ]
+}

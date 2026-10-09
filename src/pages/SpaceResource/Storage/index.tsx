@@ -1,7 +1,8 @@
 import ButtonToggle from '@/components/ButtonToggle';
 import CreatedItem from '@/components/CreatedItem';
-import UploadImportConfig from '@/components/UploadImportConfig';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
+import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST } from '@/constants/space.constants';
 import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
@@ -184,11 +185,10 @@ const SpaceStorage: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Common.Global.dataTable')}
-          </h3>
+      <PageContainerHeader
+        className={cx(styles['header-area'])}
+        title={dict('PC.Common.Global.dataTable')}
+        titleExtra={
           <ButtonToggle
             options={CREATE_LIST}
             value={create}
@@ -199,39 +199,41 @@ const SpaceStorage: React.FC = () => {
               handleChange('create', _v.toString());
             }}
           />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
-            value={keyword}
-            onChange={(e) => {
-              const k = e.target.value;
-              setKeyword(k);
-              handleFilterList(create, k);
-              handleChange('keyword', k);
-            }}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={() => {
-              setKeyword('');
-              handleFilterList(create, '');
-            }}
-            style={{ width: 214 }}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={() => runComponent(spaceId)}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenDatabase(true)}
-          >
-            {dict('PC.Pages.AgentArrangeConfig.addTable')}
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
+              value={keyword}
+              onChange={(e) => {
+                const k = e.target.value;
+                setKeyword(k);
+                handleFilterList(create, k);
+                handleChange('keyword', k);
+              }}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => {
+                setKeyword('');
+                handleFilterList(create, '');
+              }}
+              style={{ width: 214 }}
+            />
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={() => runComponent(spaceId)}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setOpenDatabase(true)}
+            >
+              {dict('PC.Pages.AgentArrangeConfig.addTable')}
+            </Button>
+          </>
+        }
+      />
 
       {loading ? (
         <Loading />

@@ -4,6 +4,8 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import { request } from 'umi';
+import { saveWithDesktopHost } from './downloadCompletion';
+import { getDownloadFileName } from './downloadFileName';
 
 /**
  * 导出文件Blob返回类型
@@ -155,9 +157,9 @@ export const exportConfigFile = async (
 
     // 从响应头中获取文件名
     const contentDisposition = res.headers?.['content-disposition'];
-    // 解码文件名
-    const fileName = decodeURIComponent(
-      contentDisposition?.split('filename=')[1].replace(/"/g, '') || '',
+    const fileName = getDownloadFileName(
+      contentDisposition,
+      `config-${id}.zip`,
     );
 
     // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象
@@ -178,11 +180,13 @@ export const exportConfigFile = async (
  * @param fileName 文件名称
  * fileProxyUrl 拼上 BASE_URL 后需与页面同源，download 才生效
  */
-export const exportFileViaBrowserDownload = (
+export const exportFileViaBrowserDownload = async (
   linkUrl: string,
   fileName?: string,
 ) => {
-  // 创建一个 a 标签
+  const saved = await saveWithDesktopHost(linkUrl, fileName || 'export.zip');
+  if (saved !== undefined) return saved;
+  // 浏览器只能确认触发，不能据此提示文件保存成功。
   const link = document.createElement('a');
   // 设置链接地址
   link.href = linkUrl;
@@ -198,6 +202,7 @@ export const exportFileViaBrowserDownload = (
   document.body.removeChild(link);
   // 释放 URL 对象
   window.URL.revokeObjectURL(linkUrl);
+  return false;
 };
 
 /**

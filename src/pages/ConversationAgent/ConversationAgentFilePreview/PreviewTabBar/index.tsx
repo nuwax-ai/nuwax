@@ -49,6 +49,8 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface PreviewTabBarProps {
+  /** 当前缓存工作台是否可见；隐藏时关闭弹出菜单。 */
+  active?: boolean;
   tabs: PreviewTab[];
   activeTabId: string | null;
   onTabSelect: (tabId: string) => void;
@@ -287,6 +289,7 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
  * 左侧为可切换/关闭的标签页
  */
 const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
+  active = true,
   tabs,
   activeTabId,
   onTabSelect,
@@ -678,23 +681,27 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
         {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
-          <PreviewTabModelSelect
-            originalModelConfigList={originalModelConfigList}
-            agentConfigInfo={agentConfigInfo}
-            onModelChange={onModelChange}
-          />
-          <MoreActionsMenu
-            onRestartServer={onRestartServer}
-            onRestartAgent={onRestartAgent}
-            onExportProject={onExportProject}
-            isCloudComputer={isCloudComputer}
-          />
+          {active ? (
+            <>
+              <PreviewTabModelSelect
+                originalModelConfigList={originalModelConfigList}
+                agentConfigInfo={agentConfigInfo}
+                onModelChange={onModelChange}
+              />
+              <MoreActionsMenu
+                onRestartServer={onRestartServer}
+                onRestartAgent={onRestartAgent}
+                onExportProject={onExportProject}
+                isCloudComputer={isCloudComputer}
+              />
+            </>
+          ) : null}
         </div>
       </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
-        visible={contextMenu.visible}
+        visible={active && contextMenu.visible}
         /** 标签位置 */
         position={{ x: contextMenu.x, y: contextMenu.y }}
         /** 标签是否固定 */

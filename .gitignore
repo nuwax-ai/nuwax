@@ -1,5 +1,6 @@
 /node_modules
 /.env.local
+/scripts/deploy_sync_test.env
 /.umirc.local.ts
 /config/config.local.ts
 /src/.umi
@@ -9,13 +10,14 @@
 /.umi-production
 /.umi-test
 /dist
+/public/micro-apps/
+/.cache/micro-apps/
 /reports/a11y/*.json
 /.mfsu
 .swc
 /.idea
 /.yarn.lock
 package-lock.json
-pnpm-lock.yaml
 
 # Ignore DevSpace cache and log folder
 .devspace/
@@ -28,11 +30,20 @@ pnpm-lock.yaml
 # /.husky
 /src/mock
 .npm-cache
+.pnpm-store/
+
 
 # Claude local settings
 .claude/settings.local.json
 
-.claude
+.claude/*
+!.claude/hooks/
+!.claude/settings.json
+!.claude/skills/
+!.claude/commands/
+!.claude/agents/
+.zcode/*
+!.zcode/config.json
 .cursor
 .cursorrules
 .DS_Store
@@ -41,7 +52,14 @@ pnpm-lock.yaml
 .temp
 .hermes
 # /deploy_test.sh
+.playwright-mcp/
 
 # 微信公众/小程序域名校验文件：仅在生产 Nginx/网关/Volume 部署，勿放入 public/
 public/MP_verify_*.txt
 public/Nd28jPGzj4.txt
+.claude/cache/
+
+tasks/
+debug-shots/
+.deploy-worktree
+.dist-retention-snapshot

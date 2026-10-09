@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { PLAN_MODE_ENABLED } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -10,12 +11,21 @@ import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  selectSessionActive,
+  selectSessionStreamActive,
+} from '@/features/conversation/domain/runtimeSelectors';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -23,7 +33,10 @@ import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
-  DesktopOutlined,
+  CloseOutlined,
+  DownOutlined,
+  FolderOpenOutlined,
+  FolderOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
@@ -40,7 +53,6 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import AtMentionIcon from './AtMentionIcon';
 import ComputerTypeSelector from './ComputerTypeSelector';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
@@ -48,12 +60,16 @@ import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 import SpaceSelector from './SpaceSelector';
+import { useSlashPlugins } from './useSlashPlugins';
+import WorkspaceDirPickerModal from './WorkspaceDirPickerModal';
 
 const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
 
-const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+const AGENT_MODE_OPTIONS: AgentMode[] = PLAN_MODE_ENABLED
+  ? ['yolo', 'ask', 'plan']
+  : ['yolo', 'ask'];
 
 const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   yolo: {
@@ -63,6 +79,10 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   ask: {
     label: 'PC.Components.ChatInputHome.agentModeApproval',
     desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
+  },
+  plan: {
+    label: 'PC.Components.ChatInputHome.agentModePlan',
+    desc: 'PC.Components.ChatInputHome.agentModePlanDesc',
   },
 };
 
@@ -92,11 +112,12 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       showAnnouncement = false,
       onTempChatStop,
       loadingStopTempConversation,
-      showTaskAgentToggle = false,
       isTaskAgentActive = false,
-      onToggleTaskAgent,
       selectedComputerId,
       onComputerSelect,
+      workspacePath,
+      onWorkspaceDirChange,
+      disablePersonalComputer = false,
       agentId,
       agentSandboxId,
       fixedSelection,
@@ -128,6 +149,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       tabsSlot,
       selectedTag,
       onClearSelectedTag,
+      pinnedProject,
+      onClearPinnedProject,
       prefix,
       agentMode = 'yolo',
       onAgentModeChange,
@@ -154,7 +177,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       loadingConversation,
       isLoadingOtherInterface,
       conversationInfo,
-    } = useModel('conversationInfo');
+    } = usePageModel('conversationInfo');
 
     /** 使用独立会话 model（如预览 Tab），勿改动全局 conversationInfo 活跃状态 */
     const isIsolatedSessionSource = streamActiveOverride !== undefined;
@@ -194,6 +217,11 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // 是否打开订阅弹窗
     const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+    // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
+    const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] =
+      useState(false);
+    // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
+    const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
 
     // 文档
     const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -204,6 +232,13 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     // 停止操作是否正在进行中
     const [isStoppingConversation, setIsStoppingConversation] =
       useState<boolean>(false);
+    const stopAttemptRef = useRef(0);
+    const stopOwnerId =
+      stopConversationIdOverride ?? getCurrentConversationId();
+    useEffect(() => {
+      stopAttemptRef.current += 1;
+      setIsStoppingConversation(false);
+    }, [stopOwnerId]);
     // @ 提及编辑器引用
     const mentionEditorRef = useRef<MentionEditorHandle>(null);
 
@@ -273,8 +308,6 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       };
     }, [visible, isHoveringBtn]);
 
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
     useEffect(() => {
       setFiles(
         uploadFiles.filter(
@@ -286,10 +319,15 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // 监听会话状态变化，当会话结束时重置停止状态
     useEffect(() => {
-      if (!isConversationActive) {
+      if (
+        !isConversationActive &&
+        !effectiveTaskExecuting &&
+        !loadingStopConversation
+      ) {
+        stopAttemptRef.current += 1;
         setIsStoppingConversation(false);
       }
-    }, [isConversationActive]);
+    }, [isConversationActive, effectiveTaskExecuting, loadingStopConversation]);
 
     // 发送按钮disabled
     const disabledSend = useMemo(() => {
@@ -301,10 +339,14 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
      * model 流式信号 + messageList 兜底 + 后台 taskStatus
      */
     const streamActive = useMemo(
-      () => isConversationActive || isSessionStreamBusy(messageList),
+      () => selectSessionStreamActive(isConversationActive, messageList),
       [isConversationActive, messageList],
     );
-    const isActiveConversation = streamActive || effectiveTaskExecuting;
+    const isActiveConversation = selectSessionActive(
+      streamActive,
+      messageList,
+      effectiveTaskExecuting ? TaskStatus.EXECUTING : undefined,
+    );
 
     /** 按钮区活跃态（延迟回落）：吸收 model / taskStatus 短暂抖动，避免停止钮与发送钮来回闪 */
     const BUTTON_SLOT_RELEASE_MS = 800;
@@ -326,6 +368,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // enter事件 - 确认发送消息
     const confirmSendMessage = (value: string) => {
+      if (isStoppingConversation || loadingStopConversation) return;
       // 如果输入框内容不为空 或者 附件文件列表不为空
       if (!!value.trim() || !!files?.length) {
         onEnter(value, files, skillIds, selectedModelId, agentMode);
@@ -482,10 +525,9 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
             formData.append('type', 'tmp');
 
             const response = await fetch(UPLOAD_FILE_ACTION, {
+              credentials: 'include',
               method: 'POST',
-              headers: {
-                Authorization: token ? `Bearer ${token}` : '',
-              },
+
               body: formData,
             });
 
@@ -525,7 +567,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
           }
         }
       },
-      [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
+      [applyServerUploadResult, getDefaultFileName, wholeDisabled],
     );
 
     /**
@@ -633,6 +675,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       }
       // 设置停止操作状态
       setIsStoppingConversation(true);
+      const attempt = ++stopAttemptRef.current;
 
       // 获取当前会话请求ID
       const requestId = getCurrentConversationRequestId();
@@ -641,14 +684,20 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
       // 修复：即使 requestId 为空也应该调用停止接口
       // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
-      if (onTempChatStop && requestId) {
-        // 临时聊天需要 requestId
-        onTempChatStop(requestId);
-      } else if (onStopConversationOverride && conversationId) {
-        onStopConversationOverride(conversationId);
-      } else if (conversationId) {
-        // 正常会话只需要 conversationId 即可停止
-        runStopConversation(conversationId);
+      try {
+        if (onTempChatStop && requestId) {
+          await onTempChatStop(requestId);
+        } else if (onStopConversationOverride && conversationId) {
+          await onStopConversationOverride(conversationId);
+        } else if (conversationId) {
+          await runStopConversation(conversationId);
+        } else {
+          setIsStoppingConversation(false);
+        }
+      } catch (error) {
+        if (stopAttemptRef.current === attempt)
+          setIsStoppingConversation(false);
+        console.error('[chatInput] stop request failed', error);
       }
     }, [
       isStoppingConversation,
@@ -755,13 +804,12 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     }, []);
 
     /**
-     * 将底部 @ 图标选择的提及项插入到 MentionEditor
+     * 命令选择回调：能力面板选中的连接器等经此并入底部组件栏
      */
-    const handleInsertAtMention = useCallback(
-      (item: MentionItem) => {
-        mentionEditorRef.current?.handleAtIconMentionSelect(item);
-      },
-      [mentionEditorRef],
+    const { onPluginSelect, commandManualComponents } = useSlashPlugins(
+      manualComponents,
+      selectedComponentList,
+      onSelectComponent,
     );
 
     /**
@@ -769,7 +817,14 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
      */
     const handleUnsubscribedSkillSelect = useCallback(
       (item: MentionItem) => {
-        if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
+        // 订阅拦截只关乎技能 chip（文件/资料库文档无付费语义）
+        if (
+          item.kind === 'file' ||
+          item.kind === 'doc' ||
+          !isEnableSubscription ||
+          !item.paymentRequired ||
+          item.subscribed
+        ) {
           return;
         }
         querySkillSubscriptionPlans(item.targetId);
@@ -835,6 +890,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                 </div>
               </ConditionRender>
               <MentionEditor
+                onPluginSelect={onPluginSelect}
                 ref={mentionEditorRef}
                 className={cx(styles.input)}
                 disabled={wholeDisabled}
@@ -874,168 +930,69 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
               }
             >
               {(isVoiceActive) => (
-                <footer
-                  className={cx('flex', 'flex-1', styles.footer, {
-                    [styles['footer-voice-active']]: isVoiceActive,
-                  })}
-                >
-                  {/* 清空会话记录 */}
-                  {!!messageList?.filter((item: MessageInfo) => item.id)
-                    ?.length && (
-                    <ConditionRender condition={!!onClear}>
-                      <Tooltip
-                        title={t('PC.Components.ChatInputHome.clearRecord')}
-                      >
-                        <span
-                          className={cx(
-                            styles.clear,
-                            'flex',
-                            'items-center',
-                            'content-center',
-                            'cursor-pointer',
-                            styles.box,
-                            styles['plus-box'],
-                            {
-                              [styles.disabled]:
-                                clearDisabled || wholeDisabled || clearLoading,
-                            },
-                          )}
-                          onClick={handleClear}
-                        >
-                          {clearLoading ? (
-                            <LoadingOutlined />
-                          ) : (
-                            <SvgIcon
-                              name="icons-chat-clear"
-                              style={{ fontSize: '14px' }}
-                              className={cx(styles['svg-icon'])}
-                            />
-                          )}
-                        </span>
-                      </Tooltip>
-                    </ConditionRender>
-                  )}
-
-                  <VoiceFooter.HideWhenActive>
-                    <AtMentionIcon
-                      enableMention={enableMention}
-                      mentionPlacement={mentionPlacement}
-                      enableSubscription={isEnableSubscription}
-                      onSelectMention={handleInsertAtMention}
-                      usageScenarios={usageScenarios}
-                      disabled={wholeDisabled}
-                    />
-                  </VoiceFooter.HideWhenActive>
-
-                  {/*上传按钮*/}
-                  <Upload
-                    action={UPLOAD_FILE_ACTION}
-                    disabled={wholeDisabled}
-                    onChange={handleChange}
-                    multiple={true}
-                    fileList={uploadFiles}
-                    headers={{
-                      Authorization: token ? `Bearer ${token}` : '',
-                    }}
-                    data={{
-                      type: 'tmp',
-                    }}
-                    showUploadList={false}
+                <>
+                  <footer
+                    className={cx('flex', 'flex-1', styles.footer, {
+                      [styles['footer-voice-active']]: isVoiceActive,
+                    })}
                   >
-                    <Tooltip
-                      title={t('PC.Components.ChatInputHome.uploadAttachment')}
+                    {/* 清空会话记录 */}
+                    {!!messageList?.filter((item: MessageInfo) => item.id)
+                      ?.length && (
+                      <ConditionRender condition={!!onClear}>
+                        <Tooltip
+                          title={t('PC.Components.ChatInputHome.clearRecord')}
+                        >
+                          <span
+                            className={cx(
+                              styles.clear,
+                              'flex',
+                              'items-center',
+                              'content-center',
+                              'cursor-pointer',
+                              styles.box,
+                              styles['plus-box'],
+                              {
+                                [styles.disabled]:
+                                  clearDisabled ||
+                                  wholeDisabled ||
+                                  clearLoading,
+                              },
+                            )}
+                            onClick={handleClear}
+                          >
+                            {clearLoading ? (
+                              <LoadingOutlined />
+                            ) : (
+                              <SvgIcon
+                                name="icons-chat-clear"
+                                style={{ fontSize: '14px' }}
+                                className={cx(styles['svg-icon'])}
+                              />
+                            )}
+                          </span>
+                        </Tooltip>
+                      </ConditionRender>
+                    )}
+
+                    {/*上传按钮*/}
+                    <Upload
+                      action={UPLOAD_FILE_ACTION}
+                      withCredentials
+                      disabled={wholeDisabled}
+                      onChange={handleChange}
+                      multiple={true}
+                      fileList={uploadFiles}
+                      data={{
+                        type: 'tmp',
+                      }}
+                      showUploadList={false}
                     >
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          'content-center',
-                          'cursor-pointer',
-                          styles.box,
-                          styles['plus-box'],
-                          { [styles['upload-box-disabled']]: wholeDisabled },
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.uploadAttachment',
                         )}
                       >
-                        <SvgIcon
-                          name="icons-chat-add"
-                          style={{ fontSize: '14px' }}
-                          className={cx(styles['svg-icon'])}
-                        />
-                      </span>
-                    </Tooltip>
-                  </Upload>
-                  <VoiceFooter.HideWhenActive>
-                    {showAgentModeSelector && (
-                      <Dropdown
-                        menu={{
-                          selectedKeys: [agentMode],
-                          items: AGENT_MODE_OPTIONS.map((mode) => ({
-                            key: mode,
-                            label: (
-                              <div
-                                className={cx(
-                                  styles['agent-mode-dropdown-item'],
-                                )}
-                              >
-                                <div className={cx(styles['item-content'])}>
-                                  <span className={cx(styles['item-name'])}>
-                                    {t(AGENT_MODE_I18N[mode].label)}
-                                  </span>
-                                  <span className={cx(styles['item-desc'])}>
-                                    {t(AGENT_MODE_I18N[mode].desc)}
-                                  </span>
-                                </div>
-                                {agentMode === mode && (
-                                  <CheckOutlined
-                                    className={cx(styles['agent-mode-check'])}
-                                  />
-                                )}
-                              </div>
-                            ),
-                            onClick: () => onAgentModeChange?.(mode),
-                          })),
-                        }}
-                        trigger={['click']}
-                        placement="topLeft"
-                        disabled={wholeDisabled || streamActive}
-                        overlayClassName="agent-mode-dropdown-overlay"
-                        // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
-                      >
-                        <Tooltip
-                          title={t('PC.Components.ChatInputHome.agentMode')}
-                        >
-                          <span className={cx(styles['agent-mode-select'])}>
-                            <span
-                              className={cx(
-                                styles['agent-mode-trigger'],
-                                styles[`agent-mode-option-${agentMode}`],
-                              )}
-                            >
-                              <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
-                              <SvgIcon
-                                name="icons-common-caret_down"
-                                style={{ fontSize: '14px' }}
-                                className={cx(styles['agent-mode-arrow'])}
-                              />
-                            </span>
-                          </span>
-                        </Tooltip>
-                      </Dropdown>
-                    )}
-                  </VoiceFooter.HideWhenActive>
-                  <VoiceFooter.HideWhenActive>
-                    {showTaskAgentToggle && (
-                      <Tooltip
-                        title={
-                          isTaskAgentActive
-                            ? t(
-                                'PC.Components.ChatInputHome.switchToNormalMode',
-                              )
-                            : t(
-                                'PC.Components.ChatInputHome.useAgentComputerTask',
-                              )
-                        }
-                      >
                         <span
                           className={cx(
                             'flex',
@@ -1044,139 +1001,337 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                             'cursor-pointer',
                             styles.box,
                             styles['plus-box'],
-                            styles['task-agent-box'],
-                            {
-                              [styles['task-agent-active']]: isTaskAgentActive,
-                            },
+                            { [styles['upload-box-disabled']]: wholeDisabled },
                           )}
-                          onClick={onToggleTaskAgent}
                         >
-                          <DesktopOutlined style={{ fontSize: '14px' }} />
+                          <SvgIcon
+                            name="icons-chat-add"
+                            style={{ fontSize: '14px' }}
+                            className={cx(styles['svg-icon'])}
+                          />
                         </span>
                       </Tooltip>
-                    )}
-                  </VoiceFooter.HideWhenActive>
-
-                  <VoiceFooter.HideWhenActive>
-                    <ManualComponentItem
-                      manualComponents={manualComponents}
-                      selectedComponentList={selectedComponentList}
-                      onSelectComponent={onSelectComponent}
-                    />
-                  </VoiceFooter.HideWhenActive>
-
-                  <VoiceFooter.Expand />
-
-                  <VoiceFooter.Right
-                    defaultActions={
-                      showStopButton ? (
-                        <Tooltip title={getStopButtonTooltip()}>
-                          <span
-                            onClick={handleStopConversation}
-                            className={cx(
-                              'flex',
-                              'items-center',
-                              'content-center',
-                              'cursor-pointer',
-                              styles.box,
-                              styles['send-box'],
-                              styles['stop-box'],
-                              {
-                                [styles['stop-box-active']]:
-                                  !isStoppingConversation,
-                              },
-                            )}
-                          >
-                            {isStoppingConversation ? (
-                              <div className={cx(styles['loading-box'])}>
-                                <LoadingOutlined
-                                  className={cx(styles['loading-icon'])}
-                                />
-                              </div>
-                            ) : (
-                              <SvgIcon name="icons-chat-stop" />
-                            )}
-                          </span>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip
-                          title={
-                            buttonSlotActive
-                              ? '加入发送队列'
-                              : getButtonTooltip()
-                          }
+                    </Upload>
+                    <VoiceFooter.HideWhenActive>
+                      {showAgentModeSelector && (
+                        <Dropdown
+                          menu={{
+                            selectedKeys: [agentMode],
+                            items: AGENT_MODE_OPTIONS.map((mode) => ({
+                              key: mode,
+                              label: (
+                                <div
+                                  className={cx(
+                                    styles['agent-mode-dropdown-item'],
+                                  )}
+                                >
+                                  <div className={cx(styles['item-content'])}>
+                                    <span className={cx(styles['item-name'])}>
+                                      {t(AGENT_MODE_I18N[mode].label)}
+                                    </span>
+                                    <span className={cx(styles['item-desc'])}>
+                                      {t(AGENT_MODE_I18N[mode].desc)}
+                                    </span>
+                                  </div>
+                                  {agentMode === mode && (
+                                    <CheckOutlined
+                                      className={cx(styles['agent-mode-check'])}
+                                    />
+                                  )}
+                                </div>
+                              ),
+                              onClick: () => onAgentModeChange?.(mode),
+                            })),
+                          }}
+                          trigger={['click']}
+                          placement="topLeft"
+                          disabled={wholeDisabled || streamActive}
+                          overlayClassName="agent-mode-dropdown-overlay"
+                          // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
                         >
-                          <span
-                            onClick={handleSendMessage}
-                            className={cx(
-                              'flex',
-                              'items-center',
-                              'content-center',
-                              'cursor-pointer',
-                              styles.box,
-                              styles['send-box'],
-                              {
-                                [styles['send-box-queue']]: buttonSlotActive,
-                                [styles.disabled]:
-                                  disabledSend ||
-                                  wholeDisabled ||
-                                  loadingConversation ||
-                                  isLoadingOtherInterface,
-                              },
-                            )}
+                          <Tooltip
+                            title={t('PC.Components.ChatInputHome.agentMode')}
                           >
-                            <SvgIcon
-                              name="icons-chat-send"
-                              style={{ fontSize: '14px' }}
+                            <span className={cx(styles['agent-mode-select'])}>
+                              <span
+                                className={cx(
+                                  styles['agent-mode-trigger'],
+                                  styles[`agent-mode-option-${agentMode}`],
+                                )}
+                              >
+                                <span>
+                                  {t(AGENT_MODE_I18N[agentMode].label)}
+                                </span>
+                                <SvgIcon
+                                  name="icons-common-caret_down"
+                                  style={{ fontSize: '14px' }}
+                                  className={cx(styles['agent-mode-arrow'])}
+                                />
+                              </span>
+                            </span>
+                          </Tooltip>
+                        </Dropdown>
+                      )}
+                    </VoiceFooter.HideWhenActive>
+                    <VoiceFooter.HideWhenActive>
+                      <ManualComponentItem
+                        manualComponents={commandManualComponents}
+                        selectedComponentList={selectedComponentList}
+                        onSelectComponent={onSelectComponent}
+                      />
+                    </VoiceFooter.HideWhenActive>
+
+                    <VoiceFooter.Expand />
+
+                    <VoiceFooter.Right
+                      defaultActions={
+                        showStopButton ? (
+                          <Tooltip title={getStopButtonTooltip()}>
+                            <span
+                              onClick={handleStopConversation}
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                'content-center',
+                                'cursor-pointer',
+                                styles.box,
+                                styles['send-box'],
+                                styles['stop-box'],
+                                {
+                                  [styles['stop-box-active']]:
+                                    !isStoppingConversation,
+                                },
+                              )}
+                            >
+                              {isStoppingConversation ? (
+                                <div className={cx(styles['loading-box'])}>
+                                  <LoadingOutlined
+                                    className={cx(styles['loading-icon'])}
+                                  />
+                                </div>
+                              ) : (
+                                <SvgIcon name="icons-chat-stop" />
+                              )}
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title={
+                              buttonSlotActive
+                                ? '加入发送队列'
+                                : getButtonTooltip()
+                            }
+                          >
+                            <span
+                              onClick={handleSendMessage}
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                'content-center',
+                                'cursor-pointer',
+                                styles.box,
+                                styles['send-box'],
+                                {
+                                  [styles['send-box-queue']]: buttonSlotActive,
+                                  [styles.disabled]:
+                                    disabledSend ||
+                                    wholeDisabled ||
+                                    loadingConversation ||
+                                    isLoadingOtherInterface,
+                                },
+                              )}
+                            >
+                              <SvgIcon
+                                name="icons-chat-send"
+                                style={{ fontSize: '14px' }}
+                              />
+                            </span>
+                          </Tooltip>
+                        )
+                      }
+                    >
+                      {prefix}
+                      {(isTaskAgentActive ||
+                        agentType === AgentTypeEnum.TaskAgent) &&
+                        // 项目上框期间沙箱由项目隐含，隐藏电脑选择器
+                        !pinnedProject &&
+                        !readonly && (
+                          <ComputerTypeSelector
+                            value={
+                              agentSandboxId !== undefined &&
+                              agentSandboxId !== null
+                                ? String(agentSandboxId)
+                                : conversationInfo?.sandboxServerId !==
+                                    undefined &&
+                                  conversationInfo?.sandboxServerId !== null
+                                ? String(conversationInfo.sandboxServerId)
+                                : selectedComputerId
+                            }
+                            onChange={(id: string) => {
+                              onComputerSelect?.(id);
+                              // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
+                              if (id === '-1' && workspacePath) {
+                                onWorkspaceDirChange?.('');
+                              }
+                            }}
+                            disabled={wholeDisabled}
+                            agentId={agentId}
+                            fixedSelection={
+                              fixedSelection ||
+                              streamActive ||
+                              effectiveTaskExecuting
+                            }
+                            unavailable={isSandboxUnavailable}
+                            autoSelect={autoSelectComputer}
+                            saveOnSelect={saveComputerOnSelect}
+                            isPersonalComputer={isPersonalComputer}
+                            readonly={readonly}
+                            cloudOnly={disablePersonalComputer}
+                          />
+                        )}
+                      {allowOtherModel === DefaultSelectedEnum.Yes && (
+                        <ModelSelector
+                          agentId={agentId}
+                          selectedModelId={selectedModelId}
+                          onModelSelect={onModelSelect}
+                          agentType={agentType}
+                        />
+                      )}
+                      {showSpaceSelector && (
+                        <SpaceSelector
+                          selectedSpaceId={selectedSpaceId}
+                          onSpaceSelect={onSpaceSelect}
+                        />
+                      )}
+                    </VoiceFooter.Right>
+                  </footer>
+                  {/**
+                   * 项目上框栏（项目列表「+ 新建会话」）：与工作目录栏同槽位同基样式
+                   * （workspace-dir-bar 灰底贴边栏），直接展示项目名并可移除
+                   * （清空按钮贴文案并排、hover 整行出现；项目类型不作徽标展示，
+                   * 降级为整行 title 悬停提示）；存在期间工作区由项目隐含，
+                   * 不渲染工作目录栏与电脑选择器。
+                   */}
+                  {pinnedProject && onClearPinnedProject && (
+                    <div
+                      className={cx(
+                        styles['workspace-dir-bar'],
+                        styles['pinned-project-bar'],
+                      )}
+                      title={
+                        pinnedProject.projectType ===
+                        AgentComponentTypeEnum.UserApp
+                          ? t('PC.Pages.Home.pinnedProject.userAppBadge')
+                          : t('PC.Pages.Home.pinnedProject.normalProjectBadge')
+                      }
+                    >
+                      {pinnedProjectIcon.displaySrc ? (
+                        <img
+                          src={pinnedProjectIcon.displaySrc}
+                          alt=""
+                          className={cx(styles['pinned-project-icon'])}
+                        />
+                      ) : (
+                        <FolderOutlined
+                          className={cx(styles['pinned-project-icon'])}
+                        />
+                      )}
+                      <span
+                        className={cx(
+                          styles['workspace-dir-text'],
+                          styles['pinned-project-name'],
+                        )}
+                        title={pinnedProject.name}
+                      >
+                        {pinnedProject.name}
+                      </span>
+                      <Tooltip title={t('PC.Pages.Home.pinnedProject.remove')}>
+                        <button
+                          type="button"
+                          className={cx(styles['pinned-project-remove'])}
+                          aria-label={t('PC.Pages.Home.pinnedProject.remove')}
+                          onClick={onClearPinnedProject}
+                        >
+                          <CloseOutlined />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {/**
+                   * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
+                   * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
+                   * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+                   * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
+                   */}
+                  {(isTaskAgentActive ||
+                    agentType === AgentTypeEnum.TaskAgent) &&
+                    !readonly &&
+                    !fixedSelection &&
+                    !pinnedProject &&
+                    !disablePersonalComputer &&
+                    selectedComputerId &&
+                    selectedComputerId !== '-1' &&
+                    onWorkspaceDirChange && (
+                      <div className={cx(styles['workspace-dir-bar'])}>
+                        <Dropdown
+                          trigger={['click']}
+                          menu={{
+                            selectable: true,
+                            selectedKeys: [
+                              workspacePath ? 'pick-folder' : 'default',
+                            ],
+                            items: [
+                              {
+                                key: 'default',
+                                icon: <FolderOutlined />,
+                                label: t(
+                                  'PC.Components.WorkspaceDir.defaultDir',
+                                ),
+                              },
+                              {
+                                key: 'pick-folder',
+                                icon: <FolderOpenOutlined />,
+                                label: t(
+                                  'PC.Components.WorkspaceDir.openComputerFolder',
+                                ),
+                              },
+                            ],
+                            onClick: ({ key }: { key: string }) => {
+                              if (key === 'pick-folder') {
+                                setWorkspaceDirPickerOpen(true);
+                              } else {
+                                onWorkspaceDirChange('');
+                              }
+                            },
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className={cx(styles['workspace-dir-trigger'])}
+                            title={workspacePath || undefined}
+                          >
+                            <FolderOutlined />
+                            <span className={cx(styles['workspace-dir-text'])}>
+                              {workspacePath ||
+                                t('PC.Components.WorkspaceDir.defaultDir')}
+                            </span>
+                            <DownOutlined
+                              className={cx(styles['workspace-dir-caret'])}
                             />
-                          </span>
-                        </Tooltip>
-                      )
-                    }
-                  >
-                    {prefix}
-                    {isTaskAgentActive && !readonly && (
-                      <ComputerTypeSelector
-                        value={
-                          agentSandboxId !== undefined &&
-                          agentSandboxId !== null
-                            ? String(agentSandboxId)
-                            : conversationInfo?.sandboxServerId !== undefined &&
-                              conversationInfo?.sandboxServerId !== null
-                            ? String(conversationInfo.sandboxServerId)
-                            : selectedComputerId
-                        }
-                        onChange={(id: string) => onComputerSelect?.(id)}
-                        disabled={wholeDisabled}
-                        agentId={agentId}
-                        fixedSelection={
-                          fixedSelection ||
-                          streamActive ||
-                          effectiveTaskExecuting
-                        }
-                        unavailable={isSandboxUnavailable}
-                        autoSelect={autoSelectComputer}
-                        saveOnSelect={saveComputerOnSelect}
-                        isPersonalComputer={isPersonalComputer}
-                        readonly={readonly}
-                      />
+                          </button>
+                        </Dropdown>
+                        <WorkspaceDirPickerModal
+                          sandboxId={selectedComputerId}
+                          open={workspacePathPickerOpen}
+                          onCancel={() => setWorkspaceDirPickerOpen(false)}
+                          onConfirm={(dir) => {
+                            setWorkspaceDirPickerOpen(false);
+                            onWorkspaceDirChange(dir);
+                          }}
+                        />
+                      </div>
                     )}
-                    {allowOtherModel === DefaultSelectedEnum.Yes && (
-                      <ModelSelector
-                        agentId={agentId}
-                        selectedModelId={selectedModelId}
-                        onModelSelect={onModelSelect}
-                        agentType={agentType}
-                      />
-                    )}
-                    {showSpaceSelector && (
-                      <SpaceSelector
-                        selectedSpaceId={selectedSpaceId}
-                        onSpaceSelect={onSpaceSelect}
-                      />
-                    )}
-                  </VoiceFooter.Right>
-                </footer>
+                </>
               )}
             </VoiceFooter.Provider>
           </div>

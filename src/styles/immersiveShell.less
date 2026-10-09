@@ -1,0 +1,72 @@
+/**
+ * Nuwax 沉浸客户端避让层——避让几何的唯一样式源（零魔法数）。
+ *
+ * 数值由 hostBridge.shellAvoidancePolicy 按平台、页面形态和导航状态计算；
+ * syncShellAvoidanceCss 写宿主默认值，SidebarShell 在 page-container 覆盖全屏 top。
+ * 本文件只消费变量，不重复判断平台（浏览器/独立窗口规则整体不命中）。
+ * 状态类：html.immersive-shell（沉浸主窗口）、.immersive-shell-frameless（Win/Linux
+ * 自绘三键，固定定位浮层避让门控：全高 Drawer 顶部退让，见文件末层）。
+ *
+ * 作用域约定：.immersive-shell-page 由 wrappers/immersiveShellAvoid 挂在
+ * layout:false 独立路由上（无菜单详情页：工作流详情/智能体编排/网页应用开发等）；
+ * 带左侧菜单页面的顶部退让由 layouts 的 page-container 统一承担，两层互斥不叠加。
+ */
+html.immersive-shell {
+  /* 独立页页根：单盒 padding（非 margin，避免 margin 折叠穿透到 body 产生
+   * 底部空白/滚动条），border-box 保证总高不变。 */
+  .immersive-shell-page {
+    height: 100%;
+    box-sizing: border-box;
+    padding-top: var(--immersive-shell-toolbar, 0);
+  }
+
+  /* 内层 relative：成为页内 absolute 元素（如 Antv-X6 编辑器根）的包含块，
+   * 使其锚定到 padding 之下而非视口顶。 */
+  .immersive-shell-page-inner {
+    position: relative;
+    height: 100%;
+  }
+
+  /* 工作流编辑器 v1/v3 顶部栏（.fold-header-style）已由 fixed 改为 absolute
+   * 锚定 #container：#container 处于 inner（padding 之下）内，top:0 天然落在
+   * 工具栏下方，无需再按 fixed 语义做 top 补偿（补偿会造成双重下移）。 */
+
+  /* 公共/agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，故 JSX 在
+   * 真正 fixed 的根挂稳定全局类）。不能只标记 agent-dev 外层：内层 fixed
+   * 仍锚视口，且 Chat 入口不在 immersive-shell-page 内（bug2469）。
+   * 优先使用 page-container 按平台/导航展开态提供的 fullscreen-top；脱离
+   * page-container 时回退到宿主默认值。height 同步收缩避免底部溢出视口。
+   * 带 !important 盖过页面自身的 top:0/height:100vh !important；保留页根
+   * 选择器以覆盖外层的高特异性规则。 */
+  .immersive-shell-fullscreen,
+  .immersive-shell-page .immersive-shell-fullscreen {
+    top: var(
+      --immersive-shell-fullscreen-top,
+      var(--immersive-shell-toolbar, 0)
+    ) !important;
+    height: calc(
+      100vh -
+        var(--immersive-shell-fullscreen-top, var(--immersive-shell-toolbar, 0))
+    ) !important;
+  }
+}
+
+/* Win/Linux 自绘三键专属层（frameless=沉浸态 ∧ 非 mac）：固定定位浮层避让。
+ * antd 全高 Drawer 锚视口顶（wrapper top:0;bottom:0，见 antd drawer style），
+ * 无视 page-container 的内容避让——头部标题/关闭键半截塞进壳顶行透明带下，
+ * 与窗口三键形成错位双「×」、关闭键上沿落进拖拽带成死区（禅道 2429）。
+ * 左/右 placement 的 wrapper 上下锚定，覆盖 top 即整体收缩；本项目 Drawer
+ * 均为 right placement。mac（红绿灯在左、无右侧窗控）与浏览器/独立窗口
+ * 不命中本层，PC web 形态零影响。 */
+html.immersive-shell-frameless {
+  // 单栏工作台页的内容与 fixed 全屏根都对齐 page-container 的 CONTENT_TOP；
+  // wrapper 使用策略层给出的补偿量，避免在样式层重复计算端差异。
+  #page-container-selector > .immersive-shell-page {
+    padding-top: var(--immersive-shell-page-content-offset, 0);
+  }
+
+  .ant-drawer-left > .ant-drawer-content-wrapper,
+  .ant-drawer-right > .ant-drawer-content-wrapper {
+    top: var(--immersive-shell-content-top, 0);
+  }
+}

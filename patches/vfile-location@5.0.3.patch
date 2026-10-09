@@ -1,0 +1,21 @@
+diff --git a/lib/index.js b/lib/index.js
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -83,9 +83,12 @@ export function location(file) {
+  * @param {number} from
+  */
+ function next(value, from) {
+-  const cr = value.indexOf('\r', from)
+-  const lf = value.indexOf('\n', from)
+-  if (lf === -1) return cr
+-  if (cr === -1 || cr + 1 === lf) return lf
+-  return cr < lf ? cr : lf
++  for (let index = from || 0; index < value.length; index++) {
++    const code = value.charCodeAt(index)
++    if (code === 10) return index
++    if (code === 13) {
++      return value.charCodeAt(index + 1) === 10 ? index + 1 : index
++    }
++  }
++  return -1
+ }

@@ -31,6 +31,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type { RcoderAcpPermissionInteraction } from './acpPermission';
+import type { SelectedDocInfo } from './repo';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -155,6 +156,8 @@ export interface SendMessageParams {
   data?: any;
   // 技能ID列表
   skillIds?: number[];
+  // 选中的资料库文档列表（空间文档仓库页面）
+  selectedDocs?: SelectedDocInfo[];
   // 模型ID
   modelId?: number;
   // Agent mode, 默认 yolo
@@ -178,6 +181,8 @@ export interface ConversationChatParams {
   sandboxId?: string;
   // 技能ID列表
   skillIds?: number[];
+  // 选中的资料库文档列表（空间文档仓库页面）
+  selectedDocs?: SelectedDocInfo[];
   // 模型ID
   modelId?: number;
   // Agent mode, 默认 yolo
@@ -213,6 +218,32 @@ export interface ConversationCreateParams {
   // 开发模式
   devMode: boolean;
   variables?: Record<string, string | number> | null;
+  /**
+   * 会话沙箱 ID（用户个人电脑或云端沙箱）。
+   * 发起会话时选择了个人电脑则携带（wiki #17：选择个人电脑时可选目录）。
+   * 类型（bug2443）：数字形态 id 为 number；非数字形态（新沙箱）以字符串
+   * 透传，后端字段需放宽为字符串后即可放行（前端勿 Number() 转 NaN）。
+   */
+  sandboxId?: number | string;
+  /**
+   * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
+   */
+  workspacePath?: string;
+  /**
+   * 关联项目 ID（首页项目上框：已有项目下直接新建会话时携带，
+   * 后端按此把会话绑定到项目，不再隐式建项目）。
+   */
+  projectId?: number;
+  /**
+   * 关联项目类型（UserApp=全栈 / NormalProject=常规）。
+   * 携带 projectId 时后端必填（2026-09-12 实测缺省报「项目类型不能为空」）。
+   */
+  projectType?: AgentComponentTypeEnum;
+  /**
+   * 项目绑定的调试智能体 ID（全栈项目上框时携带，值为当前选中的
+   * 全栈类智能体）。
+   */
+  devAgentId?: number;
 }
 
 // 消息查询过程信息
@@ -277,6 +308,8 @@ export interface ChatMessageDto {
 
 // 会话消息信息
 export interface MessageInfo extends ChatMessageDto {
+  /** 乐观消息落库后仍保持不变的前端渲染标识。 */
+  clientRenderKey?: string;
   index: number;
   // 租户ID
   tenantId: number;
@@ -290,6 +323,10 @@ export interface MessageInfo extends ChatMessageDto {
   agentId: number;
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
+  /** 思考流是否已收到结束分片；未设置时按历史消息状态兼容处理。 */
+  thinkingFinished?: boolean;
+  /** 思考内容按轮次分块（前端流式态），与 text 内联思考标签的轮次一一对应。 */
+  thinkBlocks?: string[];
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
@@ -316,6 +353,12 @@ export interface ConversationInfo {
   topicUpdated: number;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
   summary: string;
+  /** 服务端会话置顶状态 */
+  pinned?: boolean;
+  /** 服务端会话归档状态 */
+  archived?: boolean;
+  /** 服务端会话收藏状态（2026-09-13 collect/unCollect 接口上线，列表回读打标） */
+  collected?: boolean;
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
@@ -396,6 +439,8 @@ export interface ConversationInfo {
     hasPermission?: boolean;
     /** 会话关联的智能体电脑是否不可用 */
     isSandboxUnavailable?: boolean;
+    /** 智能体绑定的个人电脑 ID，与 AgentDetailDto.sandboxId 同源 */
+    sandboxId?: string | number;
     /** 是否允许用户在对话框中选择 Agent 模式，1 允许，其他不允许 */
     allowChooseMode?: number;
     /** 是否开启版本管理，1 开启，其他不开启 */
@@ -419,6 +464,11 @@ export interface ConversationInfo {
   sandboxServerId: string;
   // 沙盒会话ID
   sandboxSessionId: string;
+  /**
+   * 会话记录的工作目录（创建会话时传入，仅个人电脑沙箱生效）。
+   * 打开会话时以此目录作为文件树本地目录数据源的初始根（wiki #17 会话上记录目录）。
+   */
+  workspacePath?: string;
   // 已分享的URI地址，比对上了则不需要认证
   sharedUris: string[];
   /** 是否有权限使用该智能体 */
@@ -436,6 +486,12 @@ export interface ConversationInfo {
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
   agentId: number | null;
+  /** 归档过滤：all=全部（后端默认）；exclude=排除归档；only=仅归档。服务层缺省按 exclude 兜底（兼容旧调用点） */
+  archivedFilter?: 'all' | 'exclude' | 'only';
+  /** 收藏过滤：all=全部（后端默认，缺省不传）；only=仅收藏（2026-09-13 后端上线） */
+  collectedFilter?: 'all' | 'only';
+  /** 项目会话过滤（常规项目/网站应用，2026-09-14 后端上线，值大小写不敏感）：all=全部（默认，缺省不传）；exclude=排除项目会话；only=仅项目会话 */
+  projectFilter?: 'all' | 'exclude' | 'only';
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量

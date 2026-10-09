@@ -1,6 +1,13 @@
 import { apiI18nLangList } from '@/services/i18n';
-import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
+import { normalizeLang } from '@/services/i18nLangPolicy';
+import {
+  dict,
+  fetchAndApplyLangMap,
+  getCurrentLang,
+  markLangUserSet,
+} from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
 import { Dropdown, MenuProps, message } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -8,7 +15,9 @@ import styles from './index.less';
 
 /**
  * 登录页专用语言切换组件
- * 悬浮在右上角，点击后直接切换并刷新页面
+ * 悬浮在右上角，点击后直接切换并刷新页面；
+ * Windows/Linux 的 nuwaclaw 壳内右移避让壳自绘的窗口控制三键
+ * （判定与避让尺寸统一收口在 hostBridge 的 needsTopRightAvoid / shellAvoid）
  */
 const LoginLangSwitcher: React.FC = () => {
   const [languages, setLanguages] = useState<I18nLangDto[]>([]);
@@ -24,10 +33,16 @@ const LoginLangSwitcher: React.FC = () => {
           const enabledLangs = res.data.filter((item) => item.status === 1);
           setLanguages(enabledLangs);
 
-          // 默认选中后端返回的默认语言
-          const defaultLang = enabledLangs.find((item) => item.isDefault === 1);
-          if (defaultLang) {
-            setSelectedLang(defaultLang.lang);
+          // 初值优先当前运行语言（后端 isDefault 是租户默认，未必是用户当前语种）
+          const currentLangItem = enabledLangs.find(
+            (item) =>
+              normalizeLang(item.lang) === normalizeLang(getCurrentLang()),
+          );
+          const initialLang =
+            currentLangItem ??
+            enabledLangs.find((item) => item.isDefault === 1);
+          if (initialLang) {
+            setSelectedLang(initialLang.lang);
           }
         }
       } catch (error) {
@@ -43,6 +58,8 @@ const LoginLangSwitcher: React.FC = () => {
     setLoading(true);
     const hide = message.loading(dict('PC.Common.Global.processing'), 0);
     try {
+      // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认覆盖）
+      markLangUserSet();
       const applied = await fetchAndApplyLangMap(key, 'PC');
       if (applied) {
         // 切换成功后刷新页面
@@ -90,7 +107,10 @@ const LoginLangSwitcher: React.FC = () => {
     languages.find((l) => l.lang === selectedLang)?.name || 'Language';
 
   return (
-    <div className={styles.switcherContainer}>
+    <div
+      className={styles.switcherContainer}
+      style={needsTopRightAvoid() ? { right: shellAvoid.RIGHT } : undefined}
+    >
       <Dropdown
         menu={{
           items: menuItems,

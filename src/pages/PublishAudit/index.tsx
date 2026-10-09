@@ -13,6 +13,7 @@ import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
@@ -26,6 +27,31 @@ import { useLocation, useModel } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 发布审核目标类型对应的多语言文案。
+ * 下拉筛选与表格展示共用，避免表格回显原始枚举值。
+ */
+const getPublishAuditTargetTypeText = (targetType?: string): string => {
+  switch (targetType) {
+    case SquareAgentTypeEnum.Agent:
+      return dict('PC.Pages.PublishAudit.typeAgent');
+    case SquareAgentTypeEnum.UserApp:
+      return dict('PC.Pages.PublishAudit.typeUserApp');
+    case SquareAgentTypeEnum.ThirdApp:
+      return dict('PC.Pages.PublishAudit.typeThirdApp');
+    case SquareAgentTypeEnum.NormalProject:
+      return dict('PC.Pages.PublishAudit.typeNormalProject');
+    case SquareAgentTypeEnum.Plugin:
+      return dict('PC.Pages.PublishAudit.typePlugin');
+    case SquareAgentTypeEnum.Workflow:
+      return dict('PC.Pages.PublishAudit.typeWorkflow');
+    case SquareAgentTypeEnum.Skill:
+      return dict('PC.Pages.PublishAudit.typeSkill');
+    default:
+      return '--';
+  }
+};
 
 /**
  * 发布审核
@@ -79,10 +105,16 @@ const PublishAudit: React.FC = () => {
       });
     } else if (targetType === SquareAgentTypeEnum.Skill) {
       url = `/space/${spaceId}/apply/skill-details/${targetId}?applyId=${applyId}`;
+    } else if (targetType === SquareAgentTypeEnum.UserApp) {
+      url = `/space/${spaceId}/app-project-detail/${targetId}`;
+    } else if (targetType === SquareAgentTypeEnum.ThirdApp) {
+      url = `/space/${spaceId}/third-app-detail/${targetId}`;
+    } else if (targetType === SquareAgentTypeEnum.NormalProject) {
+      url = `/space/${spaceId}/normal-project-detail/${targetId}`;
     }
 
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      void openBusinessRouteWindow(url);
     }
   }, []);
 
@@ -149,19 +181,30 @@ const PublishAudit: React.FC = () => {
       valueType: 'select',
       valueEnum: {
         [SquareAgentTypeEnum.Agent]: {
-          text: dict('PC.Pages.PublishAudit.typeAgent'),
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.Agent),
         },
-        // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
+        [SquareAgentTypeEnum.UserApp]: {
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.UserApp),
+        },
+        [SquareAgentTypeEnum.ThirdApp]: {
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.ThirdApp),
+        },
+        [SquareAgentTypeEnum.NormalProject]: {
+          text: getPublishAuditTargetTypeText(
+            SquareAgentTypeEnum.NormalProject,
+          ),
+        },
         [SquareAgentTypeEnum.Plugin]: {
-          text: dict('PC.Pages.PublishAudit.typePlugin'),
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.Plugin),
         },
         [SquareAgentTypeEnum.Workflow]: {
-          text: dict('PC.Pages.PublishAudit.typeWorkflow'),
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.Workflow),
         },
         [SquareAgentTypeEnum.Skill]: {
-          text: dict('PC.Pages.PublishAudit.typeSkill'),
+          text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.Skill),
         },
       },
+      render: (_, record) => getPublishAuditTargetTypeText(record.targetType),
     },
     {
       title: dict('PC.Pages.PublishAudit.colDescription'),

@@ -1,11 +1,12 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { selectQueueGate } from '@/features/conversation/domain/runtimeSelectors';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { useCallback } from 'react';
-import { useModel } from 'umi';
 import type { QueuedMessage } from './types';
 import { useChatMessageQueue } from './useChatMessageQueue';
 
@@ -15,8 +16,6 @@ export interface UnifiedChatQueueContext {
   streamActive?: boolean;
   /** 后台任务执行中（taskStatus===EXECUTING），仅参与入队拦截 */
   taskExecuting?: boolean;
-  /** 停止当前会话（立即发送队列消息时调用） */
-  runStopConversation?: (id: number | string) => void;
 }
 
 export interface UseUnifiedChatQueueParams {
@@ -35,7 +34,9 @@ export interface UseUnifiedChatQueueParams {
     skillIds?: number[],
     modelId?: number,
     selectedAgentMode?: AgentMode,
-  ) => void;
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: QueuedMessage['expertComponents'],
+  ) => void | Promise<unknown>;
   /**
    * 队列消费下一条前的最小等待间隔（ms），默认 1200，从「流式结束（消费阻塞解除）时刻」起算。
    * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
@@ -44,8 +45,9 @@ export interface UseUnifiedChatQueueParams {
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
   /**
-   * 可选：覆盖 conversationInfo model 的活跃/停止上下文。
-   * 预览 Tab 使用 conversationAgent model 时传入，避免与左侧主聊天串扰。
+   * 队列的流式/任务上下文（必传语义：由 UnifiedChatSession 以自身 props 构造默认值，
+   * 隔离入口（预览 Tab 等）显式传入 conversationAgent model 的上下文避免串扰）。
+   * 本 hook 不再默认读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
 }
@@ -68,19 +70,21 @@ export const useUnifiedChatQueue = ({
   hasPendingIntervention,
   queueContext,
 }: UseUnifiedChatQueueParams) => {
-  const {
-    isConversationActive: modelStreamActive,
-    conversationInfo,
-    runStopConversation: modelRunStop,
-  } = useModel('conversationInfo');
+  // 双线分支语义：queueContext（新线 Provider / 隔离入口）显式注入优先；
+  // 未提供时保持基线行为——回落全局 conversationInfo model（旧线入口零改动）。
+  const { isConversationActive: modelStreamActive, conversationInfo } =
+    usePageModel('conversationInfo');
 
-  const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
-  const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
-  const taskExecuting =
-    queueContext?.taskExecuting ??
-    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
-  const isEnqueueBlocked = streamActive || taskExecuting;
-  const runStopConversation = queueContext?.runStopConversation ?? modelRunStop;
+  const queueGate = selectQueueGate(
+    queueContext?.streamActive ?? modelStreamActive,
+    messageList,
+    queueContext?.taskExecuting === undefined
+      ? conversationInfo?.taskStatus
+      : queueContext.taskExecuting
+      ? TaskStatus.EXECUTING
+      : undefined,
+    hasPendingIntervention,
+  );
 
   const rawSend = useCallback(
     (
@@ -89,26 +93,29 @@ export const useUnifiedChatQueue = ({
       skillIds?: number[],
       modelId?: number,
       selectedAgentMode?: AgentMode,
+      selectedDocs?: SelectedDocInfo[],
+      expertComponents?: QueuedMessage['expertComponents'],
     ) => {
-      onSendMessage?.(
+      return onSendMessage?.(
         messageInfo,
         files,
         skillIds,
         modelId || selectedModelId,
         selectedAgentMode || agentModeRef.current,
+        selectedDocs,
+        expertComponents,
       );
     },
     [onSendMessage, selectedModelId, agentModeRef],
   );
 
   const messageQueueCtrl = useChatMessageQueue({
-    isConversationActive: streamActive,
-    isEnqueueBlocked,
-    isTaskExecuting: taskExecuting,
+    isConversationActive: queueGate.streamActive,
+    isEnqueueBlocked: queueGate.enqueueBlocked,
+    isTaskExecuting: queueGate.taskExecuting,
     messageList: messageList || [],
     conversationId,
     sendMessage: rawSend,
-    runStopConversation,
     minConsumeInterval,
     hasPendingIntervention,
   });

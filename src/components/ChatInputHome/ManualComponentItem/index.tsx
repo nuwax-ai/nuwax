@@ -133,10 +133,12 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
   const hiddenItems = normalizeManualComponents?.slice(visibleCount) || [];
 
   const renderItem = (item: AgentManualComponentInfo, index: number) => {
-    const isActive = selectedComponentList?.some((c) => c.id === item.id);
+    const isActive = selectedComponentList?.some(
+      (c) => c.id === item.id && c.type === item.type,
+    );
     return (
       <span
-        key={item.id || index}
+        key={`${item.type}:${item.id ?? index}`}
         className={cx(
           styles['manual-box'],
           'flex',

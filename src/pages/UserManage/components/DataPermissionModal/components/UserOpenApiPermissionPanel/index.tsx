@@ -4,9 +4,9 @@
  * 树结构、字段与系统管理端 ApiPermissionTabPanel 一致；勾选与 RPM/RPD 由接口返回的 openApiConfigs 决定，不可编辑。
  */
 import Loading from '@/components/custom/Loading';
-import type { OpenApiConfigInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { dict } from '@/services/i18nRuntime';
 import type { OpenApiDefinition } from '@/types/interfaces/account';
+import type { OpenApiConfigInfo } from '@/types/menuPermission/role-manage';
 import { Empty, InputNumber, Tree, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';

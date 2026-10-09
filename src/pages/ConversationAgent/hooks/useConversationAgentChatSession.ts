@@ -2,12 +2,15 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import {
   areMessageListsEquivalent,
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
 } from '@/models/conversationInfoMessageList';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -20,10 +23,9 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
-import { useModel } from 'umi';
 
 export interface UseConversationAgentChatSessionOptions {
   /** 当前智能体 ID */
@@ -73,7 +75,6 @@ export function useConversationAgentChatSession(
 
   const {
     conversationInfo,
-    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -94,6 +95,9 @@ export function useConversationAgentChatSession(
     runAsync,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
+    isAwaitingChatTerminal,
+    // 统一终态清算入口（终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息）
+    finalizeConversationTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -105,9 +109,9 @@ export function useConversationAgentChatSession(
     abortResumeStream,
     respondAcpPermission,
     respondMcpAsk,
-  } = useModel('conversationAgent');
+  } = usePageModel('conversationAgent');
 
-  const { hidePagePreview, showPagePreview } = useModel('chat');
+  const { hidePagePreview, showPagePreview } = usePageModel('chat');
   const { runAsyncConversationCreate } = useConversation();
 
   const roleInfo: RoleInfo = useMemo(
@@ -178,10 +182,18 @@ export function useConversationAgentChatSession(
 
     try {
       setIsLoadingOtherInterface(true);
-      // 创建智能体会话(智能体编排页面devMode为true)
+      // 创建智能体会话(智能体编排页面devMode为true)；执行按创建时绑定的沙箱
+      // 路由（bug 2451 口径），创建即带当前生效选择（手动 > 旧会话智能体快照
+      // 绑定 > 云电脑哨兵）
       const { success, data } = await runAsyncConversationCreate({
         agentId,
         devMode: true,
+        sandboxId: Number(
+          resolveEffectiveSandboxId({
+            selectedComputerId,
+            agentSandboxId: conversationInfo?.agent?.sandboxId,
+          }) || CLOUD_SANDBOX_ID,
+        ),
       });
 
       if (success) {
@@ -218,7 +230,9 @@ export function useConversationAgentChatSession(
   }, [
     agentId,
     agentConfigInfo,
+    conversationInfo?.agent?.sandboxId,
     onAgentConfigInfo,
+    selectedComputerId,
     handleClearSideEffect,
     setIsMoreMessage,
     clearFilePanelInfo,
@@ -247,6 +261,15 @@ export function useConversationAgentChatSession(
     [respondAcpPermission, respondMcpAsk],
   );
 
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。隔离入口注入空资源（隔离子集语义）。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: devConversationId,
+    effectsResources: {},
+    // 隔离入口与旧线一致：不同步会话记录（不发乐观列表标记、不更新主题）
+    isSync: false,
+  });
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -257,12 +280,10 @@ export function useConversationAgentChatSession(
     isConversationActive: agentStreamActive || agentTaskExecuting,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: agentStreamActive,
+    isAwaitingChatTerminal,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
-      runStopConversation: (id: number | string) => {
-        void runStopConversation(String(id));
-      },
     },
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
@@ -271,7 +292,9 @@ export function useConversationAgentChatSession(
     resumeDebugSource: 'agent-dev:preview-tab-session',
     onTerminalTaskStatus: async (status: TaskStatus) => {
       if (!devConversationId) return;
-      applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
+      // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
+      // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
+      finalizeConversationTerminal(devConversationId, status, 'poll-snapshot');
       // 终态兜底 reload messageList：dev-agent 经 flow-debugger 等外部写入会话的消息，
       // 若错过 EXECUTING 窗口（sub 流没接住），这里拉最新历史确保预览可见
       if (getCurrentConversationId() !== devConversationId) return;
@@ -355,5 +378,7 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     conversationInfo,
     interventionHandlers,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 }

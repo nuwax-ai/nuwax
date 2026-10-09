@@ -1,0 +1,9 @@
+{
+  "state": "VALID",
+  "subject": "前端验收组织（本地样例）",
+  "maskedId": "MOCK-****-NEXT",
+  "validFrom": "2026-10-02T00:00:00Z",
+  "expiresAt": "2027-10-02T00:00:00Z",
+  "canImport": true,
+  "features": [{ "code": "demo_feature", "name": "样例功能", "enabled": true }]
+}

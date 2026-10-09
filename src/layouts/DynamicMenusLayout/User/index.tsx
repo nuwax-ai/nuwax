@@ -1,7 +1,10 @@
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
+import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
+import { hostBridge } from '@/utils/hostBridge';
 import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
@@ -46,8 +49,9 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
   const { run } = useRequest(apiLogout, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      localStorage.clear();
+    onSuccess: async () => {
+      clearStoragePreservingUserPrefs();
+      await hostBridge.auth.clear();
       // 清除菜单信息
       clearMenuInfo();
 
@@ -59,7 +63,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         const currentPath = location.pathname;
         redirectToLogin(currentPath);
       } else {
-        navigate('/login', { replace: true });
+        // local=1：主动登出后停在普通登录页，不被「未登录自动跳转」带回三方登录
+        navigate('/login?local=1', { replace: true });
       }
     },
   });
@@ -142,6 +147,10 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       }}
       content={
         <div className={cx(styles.container)}>
+          {/* 积分入口（主导航改造：自侧栏底部收进用户弹层；订阅关闭时组件自隐藏） */}
+          <div style={{ padding: '8px 8px 4px' }}>
+            <CreditsBalance showFooter={false} active={openAdmin} />
+          </div>
           {menuList.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';

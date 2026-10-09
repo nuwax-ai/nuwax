@@ -1,11 +1,30 @@
 import ChangeFileGitDiffView, {
   DiffModeEnum,
 } from '@/components/business-component/ChangeFileGitDiffView';
+import MarkdownCustomPlanDoc, {
+  extractPlanDocument,
+} from '@/components/MarkdownCustomPlanDoc';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
+import {
+  buildOpenUiArtifactFileUrl,
+  extractOpenUiArtifactId,
+  isOpenUiArtifactRef,
+  isOpenUiRenderToolName,
+  resolveOpenUiDisplayState,
+} from '@/utils/openUiArtifact';
+import {
+  formatDuration,
+  getPlanProgress,
+  getProcessDurationMs,
+  mergeTerminalItems,
+  normalizeTerminalItems,
+} from '@/utils/terminalOutput';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -21,12 +40,29 @@ import {
 import { Button, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import styles from './index.less';
+import ParamsResponseView from './ParamsResponseView';
 import SeeDetailModal from './SeeDetailModal';
+import TerminalOutputView from './TerminalOutputView';
+import {
+  getToolPresentationKind,
+  shouldRenderGenericDetails,
+} from './toolPresentation';
+import { usePlanAutoScroll } from './usePlanAutoScroll';
 
 const cx = classNames.bind(styles);
+const OpenUiArtifactView = lazy(
+  () => import('@/components/business-component/OpenUiArtifactView'),
+);
 
 /**
  * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
@@ -95,6 +131,8 @@ interface MarkdownCustomProcessProps {
   type: AgentComponentTypeEnum;
   dataKey: string;
   conversationId: number | string;
+  /** V2 节点已提供外层折叠，嵌入态直接展示内容，避免双层展开。 */
+  embedded?: boolean;
 }
 interface InputProps {
   method: 'browser_open_page' | 'browser_navigate_page';
@@ -106,19 +144,20 @@ interface InputProps {
 }
 
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
+  const isEmbedded = props.embedded === true;
   const {
     getProcessingById,
     processingList,
     pagePreviewData,
     showPagePreview,
     agentPageConfig,
-  } = useModel('chat');
+  } = usePageModel('chat');
 
   const {
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
@@ -136,12 +175,78 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
   // Diff 展开/收起状态
   const [isDiffExpanded, setIsDiffExpanded] = useState(false);
+  // 终端输出展开/收起状态
+  const [isTerminalExpanded, setIsTerminalExpanded] = useState(false);
+  // 通用工具「参数/结果」内联展开状态（与终端/Plan 同交互范式）
+  const [isDetailExpanded, setIsDetailExpanded] = useState(false);
 
   const diffItems = useMemo(() => {
     return normalizeFileDiffItems(innerProcessing.result);
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
+
+  // 终端输出（P0-1）：实时读取 result.data 的 terminal 项（流式中经
+  // processingList 同步增长），与 diff 互斥——diff 优先保持既有形态
+  const terminalItem = useMemo(() => {
+    if (hasDiff) return null;
+    return mergeTerminalItems(normalizeTerminalItems(innerProcessing.result));
+  }, [innerProcessing.result, hasDiff]);
+  const isTerminal = !!terminalItem;
+  const terminalCommand =
+    terminalItem?.command ??
+    (innerProcessing.result as { input?: { command?: string } } | null)?.input
+      ?.command ??
+    innerProcessing.name ??
+    props.name;
+
+  // 单步耗时（P0-3）：终态后展示，流式中不占位
+  const durationText = useMemo(() => {
+    if (
+      innerProcessing.status !== ProcessingEnum.FINISHED &&
+      innerProcessing.status !== ProcessingEnum.FAILED
+    ) {
+      return null;
+    }
+    const durationMs = getProcessDurationMs(innerProcessing.result);
+    return durationMs === null || durationMs === undefined
+      ? null
+      : formatDuration(durationMs);
+  }, [innerProcessing.status, innerProcessing.result]);
+
+  // Plan 进度摘要（P0-2）：读实时 result.data，流式推进中立即可见
+  const planProgress = useMemo(() => {
+    if (innerProcessing.type !== AgentComponentTypeEnum.Plan) return null;
+    return getPlanProgress(
+      (innerProcessing.result as { data?: unknown } | null)?.data,
+    );
+  }, [innerProcessing.type, innerProcessing.result]);
+
+  // 计划文档（switch_mode / ExitPlanMode）：命中时走专用文档卡片，
+  // 不再落到通用工具调用小卡片；正文/kind 缺失时为 null，自然降级
+  const planDocument = useMemo(
+    () => extractPlanDocument(innerProcessing.result),
+    [innerProcessing.result],
+  );
+  const openUiDisplayState = useMemo(
+    () => resolveOpenUiDisplayState(innerProcessing.result),
+    [innerProcessing.result],
+  );
+  const openUiRenderInput =
+    openUiDisplayState.status === 'absent'
+      ? null
+      : openUiDisplayState.renderInput;
+  const openUiArtifact =
+    openUiDisplayState.status === 'ready'
+      ? openUiDisplayState.artifact
+      : undefined;
+  const inlineArtifactId =
+    openUiRenderInput?.artifactId ??
+    extractOpenUiArtifactId(innerProcessing.result) ??
+    innerProcessing.executeId;
+  const isOpenUiRenderProcess = isOpenUiRenderToolName(
+    innerProcessing.name || props.name,
+  );
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -282,6 +387,21 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     );
   }, [innerProcessing.status, detailData]);
 
+  // 通用工具是否有可内联展示的参数/响应（非专属卡时在工具栏给 +/− 按钮）
+  const hasInlineDetail = useMemo(() => {
+    if (!detailData) return false;
+    const { params, response } = detailData;
+    const hasParams =
+      !!params && !(typeof params === 'object' && !Object.keys(params).length);
+    const hasResponse =
+      response !== null &&
+      response !== undefined &&
+      !(
+        typeof response === 'object' && !Object.keys(response as object).length
+      );
+    return hasParams || hasResponse;
+  }, [detailData]);
+
   const handleOpenFileTree = useCallback(async () => {
     const result = innerProcessing.result as any;
     // 打开文件树
@@ -332,6 +452,30 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return innerProcessing.type === AgentComponentTypeEnum.Plan;
   }, [innerProcessing.type]);
 
+  const toolPresentationKind = useMemo(
+    () =>
+      getToolPresentationKind({
+        componentType: innerProcessing.type,
+        name: innerProcessing.name || props.name,
+        result: innerProcessing.result,
+      }),
+    [
+      innerProcessing.type,
+      innerProcessing.name,
+      innerProcessing.result,
+      props.name,
+    ],
+  );
+
+  const {
+    containerRef: planTaskListRef,
+    handleScroll: handlePlanScroll,
+    handleWheel: handlePlanWheel,
+  } = usePlanAutoScroll(
+    detailData?.response,
+    isPlanType && (isEmbedded || isPlanExpanded),
+  );
+
   // 获取 Plan 任务状态图标
   const getPlanStatusIcon = useCallback((status: string) => {
     const iconProps = { className: cx(styles['task-icon']) };
@@ -353,7 +497,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const renderPlanDetails = useCallback(() => {
     if (
       !isPlanType ||
-      !isPlanExpanded ||
+      (!isEmbedded && !isPlanExpanded) ||
       !detailData?.response ||
       !Array.isArray(detailData.response)
     ) {
@@ -362,7 +506,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
     return (
       <div className={cx(styles['plan-details'])}>
-        <div className={cx(styles['plan-task-list'])}>
+        <div
+          ref={planTaskListRef}
+          className={cx(styles['plan-task-list'])}
+          onScroll={handlePlanScroll}
+          onWheel={handlePlanWheel}
+        >
           {detailData.response.map((entry: any, index: number) => (
             <div key={index} className={cx(styles['plan-task-item'])}>
               {getPlanStatusIcon(entry.status)}
@@ -374,7 +523,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         </div>
       </div>
     );
-  }, [isPlanType, isPlanExpanded, detailData?.response, getPlanStatusIcon]);
+  }, [
+    isPlanType,
+    isEmbedded,
+    isPlanExpanded,
+    detailData?.response,
+    getPlanStatusIcon,
+  ]);
 
   const [open, setOpen] = useState(false);
 
@@ -433,6 +588,28 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     openPreviewPage();
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
+  const handleOpenUiSidecar = useCallback(
+    async (artifact: OpenUiArtifact) => {
+      const conversationId = props.conversationId;
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+      // sidecar 不再走专用预览面板：直接在文件树中选中 data/{artifactId}.openui.json，
+      // 复用文件树既有的 OpenUiRuntimeFrame 预览（与 handleOpenFileTree 一致）。
+      // forceRefresh 确保刚落盘的 .openui.json 入树；自动选中逻辑对「尚未入树」会 pending+补选。
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      // 每次点击更新触发标志，确保即使文件ID相同也能强制触发选中
+      setTaskAgentSelectTrigger(Date.now());
+    },
+    [
+      props.conversationId,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+    ],
+  );
+
   // 自动打开预览页面功能
   // useEffect(() => {
   //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
@@ -442,22 +619,68 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
+  // 渲染工具（OpenUI）：有内联 UI 产物（ready / input-only）时渲染 sidecar/inline 视图；
+  // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
+  // `type === Event → return null` 吞掉。若产物缺席（status === 'absent'），则降级向下走标准工具调用卡片渲染。
+  if (isOpenUiRenderProcess && openUiDisplayState.status !== 'absent') {
+    return (
+      <div
+        className={cx(styles['markdown-custom-process'], styles.openuiInline)}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <Suspense fallback={null}>
+          <OpenUiArtifactView
+            artifact={openUiArtifact}
+            inlineInput={openUiRenderInput || undefined}
+            inlineArtifactId={inlineArtifactId}
+            artifactUrl={
+              openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                ? buildOpenUiArtifactFileUrl(
+                    props.conversationId,
+                    openUiArtifact.artifactId,
+                    openUiArtifact.digest,
+                  ) || undefined
+                : undefined
+            }
+            conversationId={props.conversationId}
+            onOpenSidecar={handleOpenUiSidecar}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   if (
     !innerProcessing.executeId ||
-    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有（非渲染）事件都不显示
   ) {
     return null;
   }
 
-  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
+  // 计划文档（switch_mode / ExitPlanMode）：以专用文档卡片渲染计划全文与文件路径
+  if (planDocument) {
+    return (
+      <MarkdownCustomPlanDoc
+        key={props.dataKey}
+        title={innerProcessing.name}
+        plan={planDocument.plan}
+        planFilePath={planDocument.planFilePath}
+        status={innerProcessing.status}
+      />
+    );
+  }
+
+  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条；终端类显示命令行
   const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
-  const titleText =
-    hasDiff && diffItems.length === 1
-      ? `${processName} ${diffItems[0].path}`
-      : hasDiff && diffItems.length > 1
-      ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
-      : processName;
+  const titleText = isTerminal
+    ? `$ ${terminalCommand}`
+    : hasDiff && diffItems.length === 1
+    ? `${processName} ${diffItems[0].path}`
+    : hasDiff && diffItems.length > 1
+    ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
+    : processName;
 
   return (
     <>
@@ -472,10 +695,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               [styles['is-edit']]:
                 !hasDiff && (innerProcessing.result as any)?.kind === 'edit',
               [styles['is-diff']]: hasDiff,
+              [styles['is-terminal']]: isTerminal,
             })}
             onClick={
-              hasDiff
+              isEmbedded
+                ? undefined
+                : hasDiff
                 ? () => setIsDiffExpanded(!isDiffExpanded)
+                : isTerminal && terminalItem?.content
+                ? () => setIsTerminalExpanded(!isTerminalExpanded)
                 : handleOpenFileTree
             }
           >
@@ -502,6 +730,29 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               >
                 {titleText}
               </Typography.Text>
+              {isTerminal &&
+                terminalItem?.exitCode !== null &&
+                terminalItem?.exitCode !== undefined && (
+                  <span
+                    className={cx(styles['exit-badge'], {
+                      [styles['exit-ok']]: terminalItem.exitCode === 0,
+                      [styles['exit-error']]: terminalItem.exitCode !== 0,
+                    })}
+                  >
+                    exit {terminalItem.exitCode}
+                  </span>
+                )}
+              {planProgress && (
+                <span
+                  className={cx(styles['plan-progress-chip'])}
+                  title={planProgress.currentStep}
+                >
+                  {planProgress.completed}/{planProgress.total}
+                  {planProgress.currentStep
+                    ? ` · ${planProgress.currentStep}`
+                    : ''}
+                </span>
+              )}
               {hasDiff && (
                 <span className={cx(styles['diff-badges'])}>
                   {totalAdditions > 0 && (
@@ -519,20 +770,66 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             </div>
           </div>
           <div className={cx(styles['process-controls'])}>
+            {durationText && (
+              <span className={cx(styles['duration-chip'])}>
+                {durationText}
+              </span>
+            )}
             {genStatusDisplay()}
             <div className={cx(styles['process-controls-actions'])}>
-              <Tooltip
-                title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  disabled={disabled}
-                  icon={<ProfileOutlined />}
-                  onClick={handleShowDetailModal}
-                />
-              </Tooltip>
-              {isPageType ? (
+              {!isEmbedded && isTerminal && !!terminalItem?.content && (
+                <Tooltip
+                  title={
+                    isTerminalExpanded
+                      ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                      : dict('PC.Components.MarkdownCustomProcess.expand')
+                  }
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={
+                      isTerminalExpanded ? <MinusOutlined /> : <PlusOutlined />
+                    }
+                    onClick={() => setIsTerminalExpanded(!isTerminalExpanded)}
+                  />
+                </Tooltip>
+              )}
+              {/* 通用工具(非终端卡)「参数/结果」内联展开 */}
+              {!isEmbedded &&
+                hasInlineDetail &&
+                shouldRenderGenericDetails(toolPresentationKind) && (
+                  <Tooltip
+                    title={
+                      isDetailExpanded
+                        ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                        : dict('PC.Components.MarkdownCustomProcess.expand')
+                    }
+                  >
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={
+                        isDetailExpanded ? <MinusOutlined /> : <PlusOutlined />
+                      }
+                      onClick={() => setIsDetailExpanded(!isDetailExpanded)}
+                    />
+                  </Tooltip>
+                )}
+              {!isEmbedded && (
+                <Tooltip
+                  title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={disabled}
+                    icon={<ProfileOutlined />}
+                    onClick={handleShowDetailModal}
+                  />
+                </Tooltip>
+              )}
+              {!isEmbedded && isPageType ? (
                 <Tooltip
                   title={
                     pagePreviewData
@@ -560,7 +857,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 </Tooltip>
               ) : null}
               {/* 展开/收起 */}
-              {isPlanType && (
+              {!isEmbedded && isPlanType && (
                 <Tooltip
                   title={
                     isPlanExpanded
@@ -604,17 +901,68 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           onClose={() => setOpenModal(false)}
           data={detailData}
         />
+        {openUiDisplayState.status !== 'absent' && (
+          <Suspense fallback={null}>
+            <OpenUiArtifactView
+              artifact={openUiArtifact}
+              inlineInput={openUiRenderInput || undefined}
+              inlineArtifactId={inlineArtifactId}
+              artifactUrl={
+                openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                  ? buildOpenUiArtifactFileUrl(
+                      props.conversationId,
+                      openUiArtifact.artifactId,
+                      openUiArtifact.digest,
+                    ) || undefined
+                  : undefined
+              }
+              conversationId={props.conversationId}
+              onOpenSidecar={handleOpenUiSidecar}
+            />
+          </Suspense>
+        )}
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
+      {/* 终端工具展开严格只有两区：参数(command) + 结果(stdout)，分别滚动。
+          收起且流式执行中仍保留既有尾部预览。 */}
+      {isTerminal &&
+        !!terminalItem?.content &&
+        (isEmbedded || isTerminalExpanded ? (
+          <ParamsResponseView
+            params={detailData?.params}
+            response={terminalItem.content}
+            kind="terminal"
+            name={innerProcessing.name}
+          />
+        ) : (
+          innerProcessing.status === ProcessingEnum.EXECUTING && (
+            <TerminalOutputView
+              key={`${innerProcessing.executeId}-preview`}
+              content={terminalItem.content}
+              mode="preview"
+            />
+          )
+        ))}
       {/* Diff 类型展开内容 */}
-      {hasDiff && isDiffExpanded && (
+      {hasDiff && (isEmbedded || isDiffExpanded) && (
         <div className={cx(styles['diff-container'])}>
           {diffItems.map((item, index) => (
             <ProcessDiffViewer key={index} item={item} />
           ))}
         </div>
       )}
+      {/* 通用工具「参数/结果」内联展开区（非专属卡时的兜底展示） */}
+      {(isEmbedded || isDetailExpanded) &&
+        hasInlineDetail &&
+        shouldRenderGenericDetails(toolPresentationKind) && (
+          <ParamsResponseView
+            params={detailData?.params}
+            response={detailData?.response}
+            kind={toolPresentationKind}
+            name={innerProcessing.name}
+          />
+        )}
     </>
   );
 }
@@ -623,6 +971,7 @@ export default memo(MarkdownCustomProcess, (prevProps, nextProps) => {
   return (
     prevProps.executeId === nextProps.executeId &&
     prevProps.status === nextProps.status &&
-    prevProps.conversationId === nextProps.conversationId
+    prevProps.conversationId === nextProps.conversationId &&
+    prevProps.embedded === nextProps.embedded
   );
 });

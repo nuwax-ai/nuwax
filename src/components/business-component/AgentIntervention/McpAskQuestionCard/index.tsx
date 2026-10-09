@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -29,13 +30,13 @@ import {
 import styles from './index.less';
 import McpAskFormField from './McpAskFormField';
 
-const { Text } = Typography;
+const { Paragraph, Text } = Typography;
 
 interface McpAskQuestionCardProps {
   interaction: McpAskInteraction;
   dockShellClassName?: string;
   keyboardShortcutsEnabled?: boolean;
-  onRespond?: (payload: McpAskRespondPayload) => void;
+  onRespond?: (payload: McpAskRespondPayload) => void | Promise<void>;
 }
 
 const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
@@ -46,11 +47,15 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
 }) => {
   const [form] = Form.useForm<Record<string, unknown>>();
   const [currentStep, setCurrentStep] = useState(0);
+  const initializedFormKeyRef = useRef<string | undefined>(undefined);
   const { input, toolCallId } = interaction;
   const ui = input.ui;
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const isSubmitting = interaction.responseStatus === 'submitting';
+  const submitLock = useRef(false);
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+  const isSubmitting =
+    localSubmitting || interaction.responseStatus === 'submitting';
   const isSubmitted = interaction.responseStatus === 'submitted';
   const isCancelled = interaction.responseStatus === 'cancelled';
   const isSkipped = interaction.responseStatus === 'skipped';
@@ -74,13 +79,61 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const isLastStep = currentStep >= steps.length - 1;
 
   const title = input.title || ui.title;
+  const subTitle = input.subTitle || ui.subTitle;
   const description = input.description || ui.description;
+  // 长描述默认 2 行截断，展开后看全文
+  const [descExpanded, setDescExpanded] = useState(false);
+  // 描述真实溢出 2 行才显示「展开全文」，短文案不渲染按钮
+  const [descOverflow, setDescOverflow] = useState(false);
+  const descTextRef = useRef<HTMLSpanElement>(null);
+
+  const measureDescOverflow = useCallback(() => {
+    const el = descTextRef.current;
+    if (!el) {
+      return;
+    }
+    // 溢出检测不能直接比对 scrollHeight/clientHeight：line-clamp 生效时部分内核
+    // （WebKit/WKWebView 及部分 Chromium 版本）scrollHeight 会塌缩成 clamp 高度，
+    // 检不出截断。改为临时把 display 切成 block 彻底解除 clamp 上下文量一次全文高，
+    // 量完即恢复；同步执行不落帧，无闪烁，Chrome/WebKit 行为一致
+    const clampedHeight = el.clientHeight;
+    const prevDisplay = el.style.display;
+    el.style.display = 'block';
+    const fullHeight = el.scrollHeight;
+    el.style.display = prevDisplay;
+    setDescOverflow(fullHeight > clampedHeight);
+  }, []);
+
+  useLayoutEffect(() => {
+    // 展开态 scrollHeight===clientHeight 恒成立，测了会把按钮收掉；展开时保留按钮用于收起
+    if (descExpanded) {
+      return;
+    }
+    measureDescOverflow();
+  }, [description, descExpanded, measureDescOverflow]);
+
+  useEffect(() => {
+    const el = descTextRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() => measureDescOverflow());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measureDescOverflow]);
 
   useEffect(() => {
     setCurrentStep(0);
   }, [input.requestId]);
 
   useEffect(() => {
+    // 会话补偿刷新会用同一条 Ask 的服务端快照替换 interaction。
+    // 该快照只包含 schema 默认值，不能覆盖用户尚未提交的本地编辑。
+    const initializationKey = `${input.requestId}:${input.revision ?? ''}`;
+    if (initializedFormKeyRef.current === initializationKey) {
+      return;
+    }
+
     const fieldInitials = (ui.fields ?? []).reduce<Record<string, unknown>>(
       (acc, f) =>
         f.initialValue !== undefined
@@ -93,9 +146,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
         ? { ...fieldInitials, ...(interaction.formData ?? {}) }
         : interaction.formData;
     if (initial) {
-      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui));
+      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui) as any);
     }
-  }, [form, ui.fields, interaction.formData, input.requestId]);
+    initializedFormKeyRef.current = initializationKey;
+  }, [form, ui.fields, interaction.formData, input.requestId, input.revision]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],
@@ -123,8 +177,17 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleNext = async () => {
-    await validateStepFields(currentStep);
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    try {
+      await validateStepFields(currentStep);
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    } catch (errorInfo: any) {
+      if (errorInfo?.errorFields?.length > 0) {
+        form.scrollToField(errorInfo.errorFields[0].name, {
+          block: 'center',
+          behavior: 'smooth',
+        });
+      }
+    }
   };
 
   const handlePrev = () => {
@@ -132,21 +195,37 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (isWizard) {
-      for (let i = 0; i < steps.length; i += 1) {
-        await validateStepFields(i);
+    if (disabled || submitLock.current) return;
+    submitLock.current = true;
+    setLocalSubmitting(true);
+    try {
+      if (isWizard) {
+        for (let i = 0; i < steps.length; i += 1) {
+          await validateStepFields(i);
+        }
+      } else {
+        await form.validateFields();
       }
-    } else {
-      await form.validateFields();
+      const rawValues = form.getFieldsValue(true);
+      const files = extractMcpAskFormAttachments(rawValues, ui);
+      const values = normalizeMcpAskFormData(rawValues, ui);
+      await onRespond?.(buildPayload('submit', values, files));
+    } catch (errorInfo: any) {
+      if (errorInfo?.errorFields?.length > 0) {
+        form.scrollToField(errorInfo.errorFields[0].name, {
+          block: 'center',
+          behavior: 'smooth',
+        });
+      }
+    } finally {
+      submitLock.current = false;
+      setLocalSubmitting(false);
     }
-    const rawValues = form.getFieldsValue(true);
-    const files = extractMcpAskFormAttachments(rawValues, ui);
-    const values = normalizeMcpAskFormData(rawValues, ui);
-    onRespond?.(buildPayload('submit', values, files));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
       if (
         e.target instanceof HTMLElement &&
@@ -179,16 +258,20 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleCancel = useCallback(() => {
-    onRespond?.({
-      interventionId: input.requestId,
-      toolCallId,
-      revision: input.revision,
-      source: 'mcp_ask',
-      protocol: 'mcp',
-      action: 'cancel',
-      answeredAt: Date.now(),
-      answeredBy: { kind: 'web' },
-    });
+    void Promise.resolve()
+      .then(() =>
+        onRespond?.({
+          interventionId: input.requestId,
+          toolCallId,
+          revision: input.revision,
+          source: 'mcp_ask',
+          protocol: 'mcp',
+          action: 'cancel',
+          answeredAt: Date.now(),
+          answeredBy: { kind: 'web' },
+        }),
+      )
+      .catch((error) => console.error('[mcpAsk] cancel failed', error));
   }, [onRespond, input.requestId, input.revision, toolCallId]);
 
   useInterventionEscapeKey({
@@ -198,7 +281,9 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   });
 
   const handleSkip = () => {
-    onRespond?.(buildPayload('skip'));
+    void Promise.resolve()
+      .then(() => onRespond?.(buildPayload('skip')))
+      .catch((error) => console.error('[mcpAsk] skip failed', error));
   };
 
   const stepItems = steps.map((step) => ({
@@ -248,13 +333,60 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           <span className={styles.eyebrow}>
             {t('PC.Components.McpAskQuestionCard.eyebrow')}
           </span>
-          <Text strong className={styles.title}>
+          <Paragraph
+            strong
+            className={styles.title}
+            ellipsis={{
+              rows: 2,
+              // 'collapsible' 才支持展开后再收起；旧写法 expand:'expanded' 是无效 prop（antd 5 EllipsisConfig 无此字段）
+              expandable: 'collapsible',
+              symbol: (expanded) =>
+                expanded
+                  ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                  : t('PC.Components.McpAskQuestionCard.titleExpand'),
+            }}
+          >
             {title}
-          </Text>
+          </Paragraph>
+          {subTitle ? (
+            <Paragraph
+              type="secondary"
+              className={styles.subTitle}
+              ellipsis={{
+                rows: 1,
+                expandable: 'collapsible',
+                symbol: (expanded) =>
+                  expanded
+                    ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                    : t('PC.Components.McpAskQuestionCard.titleExpand'),
+              }}
+            >
+              {subTitle}
+            </Paragraph>
+          ) : null}
           {description ? (
-            <Text type="secondary" className={styles.desc}>
-              {description}
-            </Text>
+            <div className={styles.descWrap}>
+              <Text
+                ref={descTextRef}
+                type="secondary"
+                className={classNames(styles.desc, {
+                  [styles['desc-expanded']]: descExpanded,
+                })}
+              >
+                {description}
+              </Text>
+              {descExpanded || descOverflow ? (
+                <button
+                  type="button"
+                  className={styles.descToggle}
+                  onClick={() => setDescExpanded((prev) => !prev)}
+                >
+                  {descExpanded
+                    ? t('PC.Components.McpAskQuestionCard.collapseDesc')
+                    : t('PC.Components.McpAskQuestionCard.expandDesc')}
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </div>
         {renderStatusTag()}
@@ -285,6 +417,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           className={styles.form}
           disabled={disabled}
           requiredMark="optional"
+          scrollToFirstError
         >
           {visibleFields.map((field) => (
             <McpAskFormField

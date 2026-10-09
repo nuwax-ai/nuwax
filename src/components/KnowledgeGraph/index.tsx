@@ -1,10 +1,11 @@
 /**
  * 知识图谱主组件
  */
+import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeTripleListByKnowledge } from '@/services/knowledge';
 import type { KnowledgeTripleDocumentInfo } from '@/types/interfaces/knowledge';
-import { ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { Empty, Input, Spin, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import EntityDetailPanel from './EntityDetailPanel';
@@ -125,7 +126,11 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           {showBackButton && (
-            <ArrowLeftOutlined className={styles.backIcon} onClick={onBack} />
+            <SvgIcon
+              name="icons-nav-backward"
+              className={styles.backIcon}
+              onClick={onBack}
+            />
           )}
           <div className={styles.titleArea}>
             <div className={styles.titleMain}>

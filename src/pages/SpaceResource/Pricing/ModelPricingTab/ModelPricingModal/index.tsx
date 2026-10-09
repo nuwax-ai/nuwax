@@ -1,17 +1,17 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelListSpace } from '@/services/modelConfig';
+import {
+  apiCreateModelPricing,
+  apiDeleteModelPricing,
+  apiUpdateModelPricing,
+} from '@/services/resource';
+import type { ResourcePricingConfigInfo } from '@/types/interfaces/resource';
 import { customizeRequiredMark } from '@/utils/form';
 import { createPriceInputNumberProps } from '@/utils/priceInput';
 import type { FormInstance } from 'antd';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  apiCreateModelPricing,
-  apiDeleteModelPricing,
-  apiUpdateModelPricing,
-} from '../../../services/resource';
-import type { ResourcePricingConfigInfo } from '../../../types/resource';
 import styles from './index.less';
 
 /** 模型定价价格输入框共用配置（最多 4 位小数）。 */

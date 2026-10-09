@@ -286,6 +286,8 @@ export interface AgentChatEmptyProps {
 export interface RecommendListProps {
   className?: string;
   itemClassName?: string;
+  /** 提供时替代每项配置的图标，显示在文案前。 */
+  itemPrefix?: React.ReactNode;
   loading?: boolean;
   chatSuggestList: GuidQuestionDto[] | string[];
   onClick: (message: string) => void;
@@ -348,6 +350,8 @@ export interface AttachFileProps {
 export interface DebugDetailsProps {
   visible?: boolean;
   onClose: () => void;
+  /** 容器自定义类名（透传 ToggleWrap，供页面侧覆盖默认宽度等） */
+  className?: string;
 }
 
 // 节点详情

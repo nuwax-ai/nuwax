@@ -1,0 +1,386 @@
+/**
+ * 添加能力弹窗：与设计稿一致的双栏、轻边框卡片和中性聚焦态。
+ * 颜色全部走 token.less（--xagi-* 主题变量），随亮/暗主题自动切换。
+ */
+@import '@/styles/token';
+@import '@/styles/nav-item-state';
+
+@capability-accent: @colorPrimary;
+@capability-text: @colorText;
+@capability-secondary: @colorTextSecondary;
+@capability-muted: @colorTextTertiary;
+@capability-faint: @colorTextQuaternary;
+@capability-fill: @colorFillSecondary;
+@capability-border: @colorBorderSecondary;
+
+.capability-modal {
+  max-width: calc(100vw - 24px);
+  padding-bottom: 0;
+}
+
+// 双写提权：压过 antd Modal 默认 content 内边距（同因 :where 降权后特异性打平）
+.capability-modal.capability-modal {
+  :global(.ant-modal-content) {
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: @colorBgContainer;
+    box-shadow: none;
+  }
+}
+
+.root {
+  display: flex;
+  height: min(600px, calc(100dvh - 24px));
+  outline: none;
+  background: @colorBgContainer;
+  color: @capability-text;
+
+  button {
+    font-family: inherit;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 220px;
+  flex-shrink: 0;
+  padding: 22px 12px 20px;
+  // 灰底画布：与主导航一致，选中白卡才可辨
+  background: @colorFillSecondary;
+  border-right: 1px solid @capability-border;
+}
+
+.sidebar-header {
+  padding: 0 10px 16px;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: @capability-text;
+}
+
+.sidebar-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 1.8px;
+  color: @capability-faint;
+}
+
+.menu {
+  // 双写提权压过 antd Menu 默认样式（cssinjs 运行时注入在后）
+  &.menu {
+    flex: 1;
+    background: transparent;
+  }
+
+  // antd 竖向浅色菜单自带 border-inline-end（特异性 0-3-0，压过上面的双写）；
+  // 用 antd 同类链再提权去掉，否则与侧栏右边框并成两条竖线
+  &.menu:global(.ant-menu-root.ant-menu-vertical) {
+    border-inline-end: none;
+  }
+
+  // hover / 选中对齐主导航菜单（nav-item-state.less 统一交互态）：hover 灰底；
+  // 选中为容器白卡 + 阴影、文字近黑字重 500、仅图标取主色——底色不随主题色变
+  // （antd 默认选中底对近黑自定义色会算成深灰）
+  &.menu :global(.ant-menu-item) {
+    .nav-row-hover();
+  }
+
+  &.menu :global(.ant-menu-item-selected),
+  &.menu :global(.ant-menu-item-selected):hover {
+    .nav-row-selected();
+
+    color: @colorText;
+    font-weight: 500;
+  }
+
+  &.menu :global(.ant-menu-item-selected .ant-menu-item-icon) {
+    color: @colorPrimary;
+  }
+
+  // Tab 停靠菜单项的键盘聚焦态：主色内缩描边对齐全弹窗停靠控件
+  //（双写提权压过 antd 的 accessibilityFocus 描边与 outline 重置）
+  &.menu :global(.ant-menu-item:focus-visible) {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+}
+
+.menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 16px;
+  color: inherit;
+}
+
+// SVG 字符串图标承载 span（./icons 单源图标经 dangerouslySetInnerHTML
+// 注入）：透传 svg 进入 menu-icon 弹性容器居中，消除行内基线空隙
+.menu-raw-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+
+  svg {
+    display: block;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  min-height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid @capability-border;
+}
+
+// 数据源 tab 走 antd Tabs：仅做布局微调——nav/list 拉通 header 高度使指示线
+// 贴齐下边框，tab 内容垂直居中、间距对齐原设计（22px）
+.tabs {
+  align-self: stretch;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+  }
+
+  :global(.ant-tabs-list) {
+    height: 100%;
+    align-items: stretch;
+  }
+
+  :global(.ant-tabs-tab) {
+    display: flex;
+    align-items: center;
+    padding: 0;
+  }
+
+  :global(.ant-tabs-tab + .ant-tabs-tab) {
+    margin-inline-start: 22px;
+  }
+}
+
+.header-title {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: @capability-accent;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+// header 右侧操作簇：搜索（常驻最上方右侧）+ 关闭按钮
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+// 关闭/搜索图标按钮：antd Button type=text，仅保留图标尺寸与弱化色
+.close-btn,
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: @capability-muted;
+  font-size: 16px;
+
+  &:hover {
+    color: @capability-text;
+  }
+
+  // Tab 停靠聚焦态：主色图标 + 主色内缩描边，与全弹窗停靠控件统一
+  //（双写提权压过 antd Button 自带 focus-visible 描边）
+  &.close-btn:focus-visible,
+  &.search-btn:focus-visible {
+    color: @capability-accent;
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+}
+
+.search-input {
+  width: 180px;
+  border-radius: 8px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+}
+
+.categories {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.category-pill {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: @capability-secondary;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: @capability-fill;
+  }
+
+  // Tab/方向键聚焦态：主色内缩描边——内描边不会被外层滚动容器
+  //（.categories overflow-x:auto）裁断（与 antd Tabs 的内缩聚焦描边同语言）
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+
+  &.category-pill-active {
+    background: @capability-fill;
+    color: @capability-accent;
+    font-weight: 500;
+  }
+}
+
+// 聚合视图（最近召唤/我启用的/已连接/最近访问）隐藏了分类 pill 行（toolbar），
+// 列表顶部补回留白，避免卡片贴住 header 下边框
+.list-enabled {
+  padding-top: 12px;
+}
+
+// 内嵌列表（Skill/Expert/Connector/KnowledgeListView）键盘聚焦态：
+// 主色描边 + 分层阴影（卡片属内聚组件、样式不可经 props 传入，聚焦类
+// 由弹窗键盘导航经 DOM 注入，故用全局类）
+:global(.capability-embed-card-focus) {
+  border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+  box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+    0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
+}
+
+// 类名双写提权：antd 基础样式经 :where 降权后与本类同为 0-2-0，
+// cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效。
+// 根节点 flex 列 + body flex:1：body 撑满卡片（同行网格卡等高），
+// 注意 basis 必须为 auto：写 flex:1（basis 0%）会把卡片固有高度塌缩
+
+/* 连接器卡圆形图标（与技能卡同款简化布局） */
+
+// 内嵌列表（四维度列表组件）外层停靠容器：承载 Tab 轮询
+// 列表分组落点（子列表根 flex:1 填充），聚焦描边与全弹窗停靠控件统一
+.embed-list-wrap {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  // Tab 停靠聚焦态：主色内缩描边（容器贴弹窗边缘，外描边会被
+  // .ant-modal-content 的 overflow:hidden 裁断）
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+}
+
+// 列表组件（四维度列表组件）内嵌容器：通用组件根不带
+// padding,间距由使用方决定——此处对齐弹窗自实现列表的内边距;
+// 聚合视图（我启用的/最近召唤）无分类 pill 行,顶部补留白（.list-enabled 叠加）
+.embed-list {
+  padding: 0 24px 14px 20px;
+
+  &.list-enabled {
+    padding-top: 12px;
+  }
+}
+
+// 双写提权：尺寸与选中底色需压过 antd Switch 默认形态（:where 降权后特异性打平）
+
+// 资料库横向资料卡：文件格式 tinted 图标 + 名称 + 右端相对时间/格式胶囊
+// （双写提权：12px 14px 内边距 + row 布局压过 antd Card 默认形态）
+
+/* 连接器卡（与技能卡同款简化布局）：连接状态槽（状态标 + hover「断开」
+   覆盖）+ 常驻连接开关，操作簇随两行标题垂直居中。
+   总高钉死 70px（= 技能卡 14 padding + 40 内容 + 2 边框），消除
+   antd Card 内边距/行高漂移导致的高度不一致 */
+
+/* 连接状态槽：常驻状态标定宽占位，「断开」按钮绝对定位等宽覆盖
+   （hover 出现时盖住状态标,不挤开开关）；未连接时无按钮、仅状态标 */
+.connect-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 58px;
+  height: 24px;
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: 160px;
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .sidebar {
+    width: 116px;
+  }
+
+  .sidebar-title {
+    font-size: 16px;
+  }
+
+  .sidebar-subtitle {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .header,
+  .toolbar {
+    padding-inline: 12px;
+  }
+
+  .tabs {
+    gap: 12px;
+  }
+
+  .search-input {
+    width: 130px;
+  }
+}

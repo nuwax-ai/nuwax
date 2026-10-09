@@ -1,0 +1,342 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useExclusiveDropdown from '@/hooks/useExclusiveDropdown';
+import {
+  apiAgentConversationArchive,
+  apiAgentConversationCollect,
+  apiAgentConversationDelete,
+  apiAgentConversationPin,
+  apiAgentConversationUnCollect,
+  apiAgentConversationUpdate,
+} from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  InboxOutlined,
+  PushpinOutlined,
+  StarFilled,
+  StarOutlined,
+} from '@ant-design/icons';
+import { Dropdown, Input, message, Modal } from 'antd';
+import classNames from 'classnames';
+import React, { useMemo, useState } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+interface ConversationContextMenuProps {
+  /** 右键触发区（会话列表项）；传函数时可拿到「⋯」按钮自行布局（触屏/移动端兜底入口） */
+  children:
+    | React.ReactElement
+    | ((moreButton: React.ReactNode) => React.ReactElement);
+  conversationId: number;
+  currentTopic?: string;
+  /** 服务端置顶状态 */
+  pinned?: boolean;
+  /** 服务端归档状态 */
+  archived?: boolean;
+  /** 服务端收藏状态（2026-09-13 collect/unCollect 接口上线） */
+  collected?: boolean;
+  /** 服务端置顶/归档成功后同步调用方列表 */
+  onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
+  /** 收藏切换成功后同步调用方列表 */
+  onCollectedChanged?: (collected: boolean) => void;
+  /** 自定义重命名入口（缺省时组件内置 Modal + API + 全局事件） */
+  onRename?: () => void;
+  /**
+   * 自定义归档入口（行内二次确认透出，2026-09-19 定调）：传则菜单「归档」不再
+   * 直接调接口，改由调用方进入行内确认态；「取消归档」仍走内置切换
+   */
+  onArchive?: () => void;
+  /** 自定义删除入口（缺省时组件内置确认框 + API + 全局事件） */
+  onDelete?: () => void;
+  /** 内置删除成功后的回调（如列表本地移除） */
+  onDeleted?: () => void;
+  /** 内置重命名成功后的回调 */
+  onRenamed?: (topic: string) => void;
+  /** 渲染「⋯」按钮（触屏/移动端右键不可用时的兜底入口） */
+  showMoreButton?: boolean;
+}
+
+/**
+ * 会话列表右键菜单：置顶 / 归档 / 收藏 / 重命名 / 删除。
+ * - 置顶/归档/收藏均调用会话级后端接口，成功后同步调用方列表（非乐观）；
+ * - 收藏为 collect/unCollect 双路径，按当前状态选择（2026-09-13 上线）；
+ * - 重命名与删除接现有接口（apiAgentConversationUpdate / Delete），成功后派发
+ *   conversation-updated / conversation-deleted 全局事件供侧栏列表同步。
+ */
+const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
+  children,
+  conversationId,
+  currentTopic = '',
+  pinned = false,
+  archived = false,
+  collected = false,
+  onFlagChanged,
+  onCollectedChanged,
+  onRename,
+  onArchive,
+  onDelete,
+  onDeleted,
+  onRenamed,
+  showMoreButton = false,
+}) => {
+  const { getDropdownProps, close: closeMenu } = useExclusiveDropdown();
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameTopic, setRenameTopic] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // 内置删除：确认框 + API + 全局事件（供侧栏列表同步刷新）
+  const handleDelete = () => {
+    Modal.confirm({
+      title: t('PC.Common.Global.deleteConfirmTitle'),
+      content: t('PC.Common.Global.deleteConfirmContent'),
+      okButtonProps: { danger: true },
+      okText: t('PC.Common.Global.delete'),
+      cancelText: t('PC.Common.Global.cancel'),
+      onOk: async () => {
+        const res = await apiAgentConversationDelete(conversationId);
+        if (res?.success) {
+          window.dispatchEvent(
+            new CustomEvent('conversation-deleted', {
+              detail: { id: conversationId },
+            }),
+          );
+          onDeleted?.();
+        }
+      },
+    });
+  };
+
+  // 服务端标记 toggle：成功后才更新调用方列表，失败不做乐观变更
+  const handleToggleFlag = async (
+    kind: 'pinned' | 'archived',
+  ): Promise<void> => {
+    const next = kind === 'pinned' ? !pinned : !archived;
+    const res = await (kind === 'pinned'
+      ? apiAgentConversationPin(conversationId, next)
+      : apiAgentConversationArchive(conversationId, next)
+    ).catch(() => null);
+    if (res?.code !== SUCCESS_CODE) {
+      message.error(t('PC.Common.Global.operationFailed'));
+      return;
+    }
+    onFlagChanged?.(kind, next);
+    // 置顶/归档成功广播 directorySync 事件（bug 2475）：历史会话页等入口操作后，
+    // 左侧任务列表既有订阅按补丁即时排前/隐藏并节流静默重拉对齐服务端真值。
+    // 本入口自身（如首页侧栏）收到回声时同值补丁幂等，不会重复变更
+    emitConversationChanged({
+      operation: 'updated',
+      conversationId: String(conversationId),
+      patch: kind === 'pinned' ? { pinned: next } : { archived: next },
+      origin: 'conversation-context-menu',
+      reason: next
+        ? kind === 'pinned'
+          ? 'pin'
+          : 'archive'
+        : kind === 'pinned'
+        ? 'unpin'
+        : 'unarchive',
+    });
+    const toastKeyMap = {
+      pinned: next
+        ? 'PC.Components.ConversationContextMenu.pinnedToast'
+        : 'PC.Components.ConversationContextMenu.unpinnedToast',
+      archived: next
+        ? 'PC.Components.ConversationContextMenu.archivedToast'
+        : 'PC.Components.ConversationContextMenu.unarchivedToast',
+    } as const;
+    message.success(t(toastKeyMap[kind]));
+  };
+
+  // 收藏 toggle：后端 collect/unCollect 双路径（按当前状态选择），成功后才
+  // 更新调用方列表，失败不做乐观变更（与置顶/归档同模式）
+  const handleToggleCollect = async (): Promise<void> => {
+    const request = collected
+      ? apiAgentConversationUnCollect(conversationId)
+      : apiAgentConversationCollect(conversationId);
+    const res = await request.catch(() => null);
+    if (res?.code !== SUCCESS_CODE) {
+      message.error(t('PC.Common.Global.operationFailed'));
+      return;
+    }
+    const next = !collected;
+    onCollectedChanged?.(next);
+    message.success(
+      t(
+        next
+          ? 'PC.Components.ConversationContextMenu.collectedToast'
+          : 'PC.Components.ConversationContextMenu.uncollectedToast',
+      ),
+    );
+  };
+
+  const menuProps = useMemo(
+    () => ({
+      items: [
+        {
+          key: 'pin',
+          icon: <PushpinOutlined />,
+          label: pinned
+            ? t('PC.Components.ConversationContextMenu.unpin')
+            : t('PC.Components.ConversationContextMenu.pin'),
+        },
+        {
+          key: 'archive',
+          icon: <InboxOutlined />,
+          label: archived
+            ? t('PC.Components.ConversationContextMenu.unarchive')
+            : t('PC.Components.ConversationContextMenu.archive'),
+        },
+        {
+          key: 'collect',
+          icon: collected ? <StarFilled /> : <StarOutlined />,
+          label: collected
+            ? t('PC.Components.ConversationContextMenu.unfavorite')
+            : t('PC.Components.ConversationContextMenu.favorite'),
+        },
+        { type: 'divider' as const },
+        {
+          key: 'rename',
+          icon: <EditOutlined />,
+          label: t('PC.Components.ConversationContextMenu.rename'),
+        },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          danger: true,
+          label: t('PC.Common.Global.delete'),
+        },
+      ],
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string;
+        domEvent?:
+          | React.MouseEvent<HTMLElement>
+          | React.KeyboardEvent<HTMLElement>;
+      }) => {
+        // 弹层 portal 到 body 但 React 合成事件仍沿组件树冒泡，菜单项点击会穿过
+        // 行 div 的 onClick（触发钮自身的 stopPropagation 拦不住此路径），须在此截断
+        domEvent?.stopPropagation();
+        closeMenu();
+        if (key === 'pin') {
+          void handleToggleFlag('pinned');
+        } else if (key === 'archive') {
+          // 归档走行内二次确认（onArchive 透出，2026-09-19 定调）；取消归档仍内置
+          if (!archived && onArchive) {
+            onArchive();
+          } else {
+            void handleToggleFlag('archived');
+          }
+        } else if (key === 'collect') {
+          void handleToggleCollect();
+        } else if (key === 'rename') {
+          if (onRename) {
+            onRename();
+          } else {
+            setRenameTopic(currentTopic);
+            setRenameOpen(true);
+          }
+        } else if (key === 'delete') {
+          if (onDelete) {
+            onDelete();
+          } else {
+            handleDelete();
+          }
+        }
+      },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      pinned,
+      archived,
+      collected,
+      currentTopic,
+      onRename,
+      onArchive,
+      onDelete,
+      onFlagChanged,
+      onCollectedChanged,
+      closeMenu,
+    ],
+  );
+
+  const handleRenameSubmit = async () => {
+    if (submitting) return;
+    const trimmed = renameTopic.trim();
+    if (!trimmed) return;
+    setSubmitting(true);
+    try {
+      const res = await apiAgentConversationUpdate({
+        id: conversationId,
+        topic: trimmed,
+      });
+      if (res?.success) {
+        window.dispatchEvent(
+          new CustomEvent('conversation-updated', {
+            detail: { id: conversationId, topic: trimmed },
+          }),
+        );
+        onRenamed?.(trimmed);
+        setRenameOpen(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const moreButton = showMoreButton ? (
+    <Dropdown
+      {...getDropdownProps('more')}
+      menu={menuProps}
+      trigger={['click']}
+      overlayClassName="context-menu-overlay"
+    >
+      <span className={cx('more-btn')} onClick={(e) => e.stopPropagation()}>
+        {/* 与项目面板行图标族统一（icons-common-more，2026-09-12 需求）；
+            SvgIcon 内联字号优先于 CSS，须显式 15px 与项目子行 ⋯ 同款 */}
+        <SvgIcon name="icons-common-more" style={{ fontSize: 15 }} />
+      </span>
+    </Dropdown>
+  ) : null;
+
+  const triggerNode =
+    typeof children === 'function' ? children(moreButton) : children;
+
+  return (
+    <>
+      <Dropdown
+        {...getDropdownProps('context')}
+        menu={menuProps}
+        trigger={['contextMenu']}
+        overlayClassName="context-menu-overlay"
+      >
+        {triggerNode}
+      </Dropdown>
+      <Modal
+        title={t('PC.Components.HistoryConversationList.renameModalTitle')}
+        open={renameOpen}
+        onOk={handleRenameSubmit}
+        onCancel={() => setRenameOpen(false)}
+        confirmLoading={submitting}
+        okButtonProps={{ disabled: !renameTopic.trim() }}
+        okText={t('PC.Common.Global.confirm')}
+        cancelText={t('PC.Common.Global.cancel')}
+        destroyOnHidden
+      >
+        <Input
+          value={renameTopic}
+          onChange={(e) => setRenameTopic(e.target.value)}
+          onPressEnter={handleRenameSubmit}
+          maxLength={50}
+        />
+      </Modal>
+    </>
+  );
+};
+
+export default ConversationContextMenu;

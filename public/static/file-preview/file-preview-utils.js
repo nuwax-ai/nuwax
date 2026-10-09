@@ -31,6 +31,26 @@ function getBaseUrl(url) {
 }
 
 // ============================================
+// Document Title
+// ============================================
+/**
+ * Markdown 预览：用文件名（含 .md 后缀）作为页面标题。
+ * 其它格式不做处理，保持 HTML 中的默认标题。
+ * @param {string} purePath 不含查询参数的文件路径
+ */
+function applyMarkdownDocumentTitle(purePath) {
+    if (!purePath || !/\.md$/i.test(purePath)) return;
+    let name = purePath.split('/').pop() || '';
+    try {
+        name = decodeURIComponent(name);
+    } catch (e) {
+        console.warn('Failed to decode filename:', e);
+    }
+    name = name.trim();
+    if (name) document.title = name;
+}
+
+// ============================================
 // UI State Management
 // ============================================
 function showLoading() {
@@ -80,19 +100,50 @@ function hideError() {
 // ============================================
 // Dynamic Script Loading
 // ============================================
+const previewScriptLoads = new Map();
+
 function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        // Check if already loaded
-        if (document.querySelector(`script[src="${src}"]`)) {
+    const url = new URL(src, document.baseURI).href;
+    if (previewScriptLoads.has(url)) return previewScriptLoads.get(url);
+
+    const promise = new Promise((resolve, reject) => {
+        const existing = Array.from(document.scripts).find(script => script.src === url);
+        if (existing && existing.dataset.previewLoaded === 'true') {
             resolve();
             return;
         }
 
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error(`Failed to load: ${src}`));
-        document.head.appendChild(script);
+        const script = existing || document.createElement('script');
+        script.src = url;
+        script.addEventListener('load', () => {
+            script.dataset.previewLoaded = 'true';
+            resolve();
+        }, { once: true });
+        script.addEventListener('error', () => {
+            // 失败的 script 不能被下次重试当作已经加载。
+            previewScriptLoads.delete(url);
+            script.remove();
+            reject(new Error(`Failed to load: ${src}`));
+        }, { once: true });
+        if (!existing) document.head.appendChild(script);
+    });
+    previewScriptLoads.set(url, promise);
+    return promise;
+}
+
+function loadStylesheet(href) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`link[href="${href}"]`)) {
+            resolve();
+            return;
+        }
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.onload = resolve;
+        link.onerror = () => reject(new Error(`Failed to load: ${href}`));
+        document.head.appendChild(link);
     });
 }
 
@@ -101,7 +152,7 @@ function loadScript(src) {
 // ============================================
 function notifyParent(data) {
     try {
-        // For iframe
+        // For iframe（PC web / H5）：parent 直收
         if (window.parent && window.parent !== window) {
             window.parent.postMessage(data, '*');
         }
@@ -109,6 +160,16 @@ function notifyParent(data) {
         // For WeChat Mini Program WebView
         if (typeof wx !== 'undefined' && wx.miniProgram) {
             wx.miniProgram.postMessage({ data });
+        }
+
+        // For uni-app x / App 顶层 webview（window.parent===window）：经 uni.webView.postMessage
+        // 桥接到 <web-view> @message（JSSDK 由 file-preview.html 无条件加载；未就绪时此分支安全跳过）。
+        if (window.parent === window) {
+            var post =
+                window.uni && window.uni.webView && window.uni.webView.postMessage;
+            // uni-app x Android 仅稳定支持对象 payload；原生 event.detail.data
+            // 会自行包装为消息数组，这里不能再预先包一层数组。
+            if (post) post({ data: data });
         }
     } catch (e) {
         console.warn('[FilePreview] Failed to notify parent:', e);

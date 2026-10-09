@@ -1,9 +1,9 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import BasicLayout from '@/pages/Login/BasicLayout';
 import { apiSetPassword } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
-import { LeftOutlined } from '@ant-design/icons';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -48,7 +48,7 @@ const SetPassword: React.FC = () => {
             color="default"
             variant="filled"
             shape="circle"
-            icon={<LeftOutlined />}
+            icon={<SvgIcon name="icons-nav-backward" />}
             onClick={() => history.push('/login')}
           />
         </div>

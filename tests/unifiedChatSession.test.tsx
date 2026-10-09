@@ -46,12 +46,9 @@ vi.mock(
 );
 
 vi.mock('@/components/ChatInputHome', () => ({ default: () => null }));
-vi.mock(
-  '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent',
-  () => ({
-    default: () => <div data-testid="chat-input" />,
-  }),
-);
+vi.mock('@/components/business-component/ChatInputUnified', () => ({
+  default: () => <div data-testid="chat-input" />,
+}));
 vi.mock('@/components/ChatView', () => ({
   default: ({ messageInfo }: { messageInfo: MessageInfo }) => (
     <div
@@ -70,10 +67,6 @@ vi.mock('@/components/RecommendList', () => ({
     <div data-testid="recommend-list">{chatSuggestList?.join(',')}</div>
   ),
 }));
-vi.mock('@/pages/Chat/components/ConversationStatus', () => ({
-  default: () => null,
-}));
-
 vi.mock('@/components/business-component/AgentIntervention', () => ({
   AgentInterventionChatLayer: () => null,
   useAgentInterventionLayer: () => ({
@@ -82,7 +75,6 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
     agentModeInputProps: {
       agentMode: 'yolo',
       onAgentModeChange: vi.fn(),
-      showAgentModeSelector: false,
     },
   }),
 }));
@@ -123,8 +115,14 @@ vi.mock('@/hooks/useIntersectionObserver', () => ({
 
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 
-// jsdom 未实现 Element.scrollTo，UnifiedChatSession 的滚动 effect 会调用它
+// jsdom 未实现 Element.scrollTo / ResizeObserver
 Element.prototype.scrollTo = vi.fn() as any;
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.ResizeObserver = ResizeObserverStub;
 
 const askItem = (): InterventionQueueItem =>
   ({
@@ -150,6 +148,7 @@ describe('UnifiedChatSession：权限审批 / ask/question 出现时隐藏队列
     vi.mocked(useActiveInterventionQueue).mockReturnValue([]);
     render(
       <UnifiedChatSession
+        messageRenderer="v1"
         messageList={
           [
             { id: '', text: 'opening message' },
@@ -173,6 +172,7 @@ describe('UnifiedChatSession：权限审批 / ask/question 出现时隐藏队列
     vi.mocked(useActiveInterventionQueue).mockReturnValue([]);
     const { container } = render(
       <UnifiedChatSession
+        messageRenderer="v1"
         isLoading
         messageList={[{ id: 'assistant-1', text: 'hidden' } as MessageInfo]}
         chatSuggestList={['hidden suggest']}

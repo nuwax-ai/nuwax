@@ -1,10 +1,10 @@
 import agentImage from '@/assets/images/agent_image.png';
 import personalImage from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import { LogHeaderProps } from '@/types/interfaces/space';
 import { jumpBack } from '@/utils/router';
-import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import { useParams } from 'umi';
@@ -27,7 +27,8 @@ const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
         styles.header,
       )}
     >
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx('hover-box')}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />

@@ -7,6 +7,20 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiDeleteRole,
+  apiGetRoleList,
+  apiUpdateRole,
+  apiUpdateRoleSort,
+} from '@/services/menuPermission/roleManage';
+import {
+  RoleSourceEnum,
+  RoleStatusEnum,
+  type GetRoleListParams,
+  type RoleInfo,
+  type UpdateRoleParams,
+  type UpdateRoleSortItem,
+} from '@/types/menuPermission/role-manage';
 import { modalConfirm } from '@/utils/ant-custom';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
@@ -30,20 +44,6 @@ import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
 import MenuPermissionModal from '../components/MenuPermissionModal';
-import {
-  apiDeleteRole,
-  apiGetRoleList,
-  apiUpdateRole,
-  apiUpdateRoleSort,
-} from '../services/role-manage';
-import {
-  RoleSourceEnum,
-  RoleStatusEnum,
-  type GetRoleListParams,
-  type RoleInfo,
-  type UpdateRoleParams,
-  type UpdateRoleSortItem,
-} from '../types/role-manage';
 import styles from './index.less';
 import RoleFormModal from './RoleFormModal';
 

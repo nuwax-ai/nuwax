@@ -33,6 +33,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   showCollectCount = true,
   collectApi = apiCollectAgent,
   unCollectApi = apiUnCollectAgent,
+  iconShape = 'square',
 }) => {
   const {
     targetId,
@@ -77,6 +78,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   return (
     <CardWrapper
       className={cx(styles['card-wrapper'])}
+      // 智能体 tab 卡片图标裁圆（技能 tab 复用本组件时保持方形默认）
+      iconShape={iconShape}
       title={title || name}
       avatar={publishUser?.avatar || defaultAvatar}
       name={publishUser?.nickName || publishUser?.userName}

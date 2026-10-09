@@ -134,6 +134,9 @@ const SubsOrders: React.FC = () => {
       [BillBizTypeEnum.SUBSCRIPTION]: dict(
         'PC.Pages.MorePage.MyOrders.bizTypeSubscription',
       ),
+      [BillBizTypeEnum.DESK_BUDDY]: dict(
+        'PC.Pages.MorePage.MyOrders.bizTypeDeskBuddy',
+      ),
     }),
     [],
   );
@@ -178,6 +181,9 @@ const SubsOrders: React.FC = () => {
           },
           [BillBizTypeEnum.SUBSCRIPTION]: {
             text: bizTypeLabelMap[BillBizTypeEnum.SUBSCRIPTION],
+          },
+          [BillBizTypeEnum.DESK_BUDDY]: {
+            text: bizTypeLabelMap[BillBizTypeEnum.DESK_BUDDY],
           },
         },
         fieldProps: {

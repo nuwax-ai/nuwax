@@ -4,6 +4,13 @@ import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
+import {
+  SubscriptionPlanBizTypeEnum,
+  SubscriptionPlanInfo,
+  SubscriptionPlanPeriodEnum,
+  SubscriptionPlanStatsResult,
+  SubscriptionPlanStatusEnum,
+} from '@/types/interfaces/subscriptionPlan';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { formatInteger } from '@/utils/numberFormat';
 import { PlusOutlined } from '@ant-design/icons';
@@ -31,13 +38,6 @@ import {
   apiUpdateSubscriptionPlan,
   apiUpdateSubscriptionPlanSort,
 } from '../services/subscription';
-import {
-  SubscriptionPlanBizTypeEnum,
-  SubscriptionPlanInfo,
-  SubscriptionPlanPeriodEnum,
-  SubscriptionPlanStatsResult,
-  SubscriptionPlanStatusEnum,
-} from '../types/subscription';
 import CreatePlanModal from './CreatePlanModal';
 
 const PERIOD_LABEL_KEY: Partial<Record<SubscriptionPlanPeriodEnum, string>> = {

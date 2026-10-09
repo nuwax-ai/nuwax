@@ -7,12 +7,12 @@
  * @see DataPermissionModal
  */
 import { dict } from '@/services/i18nRuntime';
+import type { DataPermission } from '@/types/menuPermission/role-manage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Form, InputNumber, Row } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import classNames from 'classnames';
 import React from 'react';
-import type { DataPermission } from '../../../types/role-manage';
 import styles from '../index.less';
 
 const cx = classNames.bind(styles);
@@ -110,6 +110,48 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               icon: <InfoCircleOutlined />,
               title: dict(
                 'PC.Pages.DeveloperPermissionForm.maxPageAppCountTooltip',
+              ),
+            }}
+          >
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict('PC.Pages.DeveloperPermissionForm.maxUserAppCount')}
+            name="maxUserAppCount"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxUserAppCountTooltip',
+              ),
+            }}
+          >
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.userAppIdleTimeoutSeconds',
+            )}
+            name="userAppIdleTimeoutSeconds"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.userAppIdleTimeoutSecondsTooltip',
               ),
             }}
           >

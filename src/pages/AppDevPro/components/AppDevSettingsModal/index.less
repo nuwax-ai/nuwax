@@ -1,0 +1,134 @@
+@import '@/styles/token.less';
+
+.settingsModal {
+  .platformDomainList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .defaultDomain {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    background: @colorFillTertiary;
+    border-radius: @borderRadius;
+  }
+
+  .defaultDomainInfo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .defaultDomainLabel {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 18px;
+    color: @colorTextTertiary;
+  }
+
+  .defaultDomainValue {
+    font-size: 14px;
+    line-height: 22px;
+    color: @colorText;
+    word-break: break-all;
+  }
+
+  .copyBtn {
+    flex-shrink: 0;
+
+    &:global(.ant-btn) {
+      height: 28px;
+      padding-inline: 12px;
+      font-size: 13px;
+      color: @colorTextSecondary;
+      background: @colorFillSecondary;
+      border: none;
+      border-radius: @borderRadiusSm;
+      box-shadow: none;
+
+      &:hover,
+      &:focus {
+        color: @colorText;
+        background: @colorFill;
+      }
+    }
+  }
+
+  .bindRow {
+    width: 100%;
+    margin-bottom: 8px;
+
+    :global(.ant-input) {
+      flex: 1;
+    }
+  }
+
+  .bindHint {
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 18px;
+    color: @colorTextTertiary;
+  }
+
+  /** CNAME 地址使用主题色，和提示正文区分开 */
+  .bindHintTarget {
+    color: @colorPrimary;
+  }
+
+  .domainList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .domainItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid @colorBorderSecondary;
+    border-radius: 8px;
+    background: @colorBgContainer;
+
+    :global(.ant-tag) {
+      margin-inline-end: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  .domainActions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .domainActionBtn {
+    flex-shrink: 0;
+    color: @colorTextSecondary;
+
+    &:global(.ant-btn) {
+      height: 28px;
+      padding-inline: 12px;
+      font-size: 13px;
+    }
+  }
+
+  .domainName {
+    min-width: 0;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+    color: @colorTextBase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

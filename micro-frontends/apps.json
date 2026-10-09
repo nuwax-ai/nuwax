@@ -1,0 +1,10 @@
+[
+  {
+    "id": "repo",
+    "adapter": "micro-frontends/repo-web/adapter.json"
+  },
+  {
+    "id": "message",
+    "adapter": "micro-frontends/message/adapter.json"
+  }
+]

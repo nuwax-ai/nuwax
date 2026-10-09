@@ -23,6 +23,42 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
+import { isDesktopHost } from '@/utils/hostBridge';
+import { migrateLegacyNavigationStyleToStyle3 } from './navStyleMigration';
+
+/**
+ * 单栏（style3）锁定的背景：背景列表第一个纯色（无图）背景（2026-09-12 需求，
+ * 单栏风格下背景不可修改，见 updateData 内的不变量收敛）。
+ */
+const singleColumnBackgroundId = backgroundConfigs.find((bg) => !bg.url)?.id;
+
+/**
+ * 生效导航风格：桌面端（商业宿主）锁定单栏 style3，其余环境随存储配置。
+ * 与 useUnifiedTheme.effectiveNavigationStyle 同一规则的单源实现——React 布局
+ * 分发（hook 层）与背景/DOM 落地（本服务）必须同源，否则出现「单栏布局 +
+ * 存储风格的壁纸/属性」错位（2026-09-14 商业客户端实证：存储 style1 + 渐变
+ * 壁纸在锁单栏的客户端里原样渲染，单栏纯色背景失守）。
+ */
+export function resolveEffectiveNavigationStyle(
+  navigationStyle: ThemeNavigationStyleType,
+): ThemeNavigationStyleType {
+  return isDesktopHost() ? ThemeNavigationStyleType.STYLE3 : navigationStyle;
+}
+
+/**
+ * layoutStyle（导航深浅色）值域收敛：仅认 light/dark，其余值（两代字段语义
+ * 过渡期布局类型 style1/2/3 被误写进深浅色字段等脏值）一律视为缺失回落默认。
+ * 非法值进内存会让 body 布局类（xagi-layout-*）、灰白主题让位判定
+ * （isBrandThemeActive）等全面失配（2026-09-13 单栏 bg-solid 失效根因）。
+ */
+function normalizeLayoutStyleValue(
+  value: unknown,
+): ThemeLayoutColorStyle | undefined {
+  return value === ThemeLayoutColorStyle.LIGHT ||
+    value === ThemeLayoutColorStyle.DARK
+    ? value
+    : undefined;
+}
 
 /**
  * 统一主题配置接口
@@ -62,6 +98,8 @@ interface UpdateOptions {
 class UnifiedThemeService {
   private currentData: UnifiedThemeData;
   private listeners: Set<(data: UnifiedThemeData) => void> = new Set();
+  /** applyToDOM 后置钩子：变量写完后同步执行，见 registerPostApplyHook */
+  private postApplyHooks: Set<() => void> = new Set();
   private clearThemeFlag: boolean = false;
   constructor() {
     this.currentData = this.loadConfiguration();
@@ -73,21 +111,42 @@ class UnifiedThemeService {
    * 优先级：用户设置 > 租户信息设置 > 默认配置
    */
   private loadConfiguration(): UnifiedThemeData {
+    let data: UnifiedThemeData;
     // 1. 尝试加载用户设置（最高优先级）
     const userConfig = this.loadUserSettings();
     if (userConfig) {
-      return { ...userConfig, source: 'user' };
+      data = { ...userConfig, source: 'user' };
+    } else {
+      // 2. 尝试加载租户信息设置
+      const tenantConfig = this.loadTenantSettings();
+      if (tenantConfig) {
+        data = { ...tenantConfig, source: 'tenant' };
+      } else {
+        // 3. 使用默认配置
+        data = { ...this.getDefaultConfiguration(), source: 'default' };
+      }
     }
 
-    // 2. 尝试加载租户信息设置
-    const tenantConfig = this.loadTenantSettings();
-    if (tenantConfig) {
-      return { ...tenantConfig, source: 'tenant' };
+    // 单栏（style3）锁定纯色浅色背景（2026-09-12 需求；2026-09-20 追加深浅定调
+    // 浅色）：历史「单栏 + 图片背景/深色导航」状态在加载时归一（不回写存储，仅
+    // 收敛生效态），与 updateNavigationStyle 的切入收敛同源。判据用生效风格
+    // （resolveEffectiveNavigationStyle）：桌面端锁定单栏时，存储 style1/2 的
+    // 渐变壁纸/深色导航同样收敛为纯色浅色
+    if (
+      resolveEffectiveNavigationStyle(data.navigationStyle) ===
+      ThemeNavigationStyleType.STYLE3
+    ) {
+      if (
+        singleColumnBackgroundId &&
+        data.backgroundId !== singleColumnBackgroundId
+      ) {
+        data.backgroundId = singleColumnBackgroundId;
+      }
+      if (data.layoutStyle !== ThemeLayoutColorStyle.LIGHT) {
+        data.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+      }
     }
-
-    // 3. 使用默认配置
-    const defaultConfig = this.getDefaultConfiguration();
-    return { ...defaultConfig, source: 'default' };
+    return data;
   }
 
   /**
@@ -95,6 +154,10 @@ class UnifiedThemeService {
    */
   private loadUserSettings(): UnifiedThemeData | null {
     try {
+      // 一次性迁移：存量 style1/style2（单栏硬编码时期的默认回声）→ style3，
+      // 保证默认切到单栏后存量用户无感（guard 保证不覆盖迁移后的显式选择）
+      migrateLegacyNavigationStyleToStyle3(localStorage);
+
       // 从用户主题配置加载
       const userThemeConfig = localStorage.getItem(
         STORAGE_KEYS.USER_THEME_CONFIG,
@@ -165,7 +228,9 @@ class UnifiedThemeService {
       primaryColor: config.selectedThemeColor || defaults.primaryColor,
       antdTheme: config.antdTheme || defaults.antdTheme,
       navigationStyle: config.navigationStyleId || defaults.navigationStyle,
-      layoutStyle: config.navigationStyle || defaults.layoutStyle,
+      layoutStyle:
+        normalizeLayoutStyleValue(config.navigationStyle) ||
+        defaults.layoutStyle,
       backgroundId: config.selectedBackgroundId || defaults.backgroundId,
       language: config.language || defaults.language,
       timestamp: config.timestamp || Date.now(),
@@ -192,17 +257,36 @@ class UnifiedThemeService {
 
   /**
    * 标准化租户配置格式
+   * 兼容两代租户模板字段：管理端「主题配置」现保存新版字段
+   * （primaryColor/backgroundId/layoutStyle(light|dark)/navigationStyle(布局类型)），
+   * 旧版为 selectedThemeColor/selectedBackgroundId/navigationStyleId/
+   * navigationStyle(深浅色)。旧字段优先、缺失侧回落新字段——否则新版模板会把
+   * 导航风格误兜底成默认 style3（单栏）、主题色/背景误回平台默认（用户层配置
+   * 落空走租户兜底的场景，如 4010 清理后/新浏览器首次进入）。
    */
   private normalizeTenantConfig(config: any): UnifiedThemeData {
     const defaults = this.getDefaultConfiguration();
+    const hasV2TemplateFields = typeof config?.layoutStyle === 'string';
     return {
-      primaryColor: config.selectedThemeColor || defaults.primaryColor,
-      antdTheme: config.antdTheme || defaults.antdTheme,
-      navigationStyle: config.navigationStyleId || defaults.navigationStyle,
-      layoutStyle: config.navigationStyle || defaults.layoutStyle,
-      backgroundId: config.selectedBackgroundId || defaults.backgroundId,
-      language: config.language || defaults.language,
-      timestamp: config.timestamp || Date.now(),
+      primaryColor:
+        config?.selectedThemeColor ||
+        config?.primaryColor ||
+        defaults.primaryColor,
+      antdTheme: config?.antdTheme || defaults.antdTheme,
+      navigationStyle:
+        config?.navigationStyleId ||
+        (hasV2TemplateFields ? config?.navigationStyle : undefined) ||
+        defaults.navigationStyle,
+      layoutStyle:
+        normalizeLayoutStyleValue(config?.layoutStyle) ||
+        normalizeLayoutStyleValue(config?.navigationStyle) ||
+        defaults.layoutStyle,
+      backgroundId:
+        config?.selectedBackgroundId ||
+        config?.backgroundId ||
+        defaults.backgroundId,
+      language: config?.language || defaults.language,
+      timestamp: config?.timestamp || Date.now(),
       source: 'tenant',
     };
   }
@@ -274,6 +358,27 @@ class UnifiedThemeService {
     style: ThemeNavigationStyleType,
     options: UpdateOptions = {},
   ): Promise<void> {
+    // 单栏（style3）锁定纯色浅色背景（2026-09-12 需求：只能第一个纯色、不允许
+    // 修改；2026-09-20 追加：深浅色随之定调浅色）：切入单栏时把背景与深浅一并
+    // 收敛，随后的背景/深浅写入由设置面板置灰拦在 UI 层。
+    // 不在 updateData 里做全局不变量——租户管理页的背景/深浅预览共用本服务，
+    // 管理员运行态为单栏时会被误强转
+    if (style === ThemeNavigationStyleType.STYLE3) {
+      const updates: Partial<UnifiedThemeData> = { navigationStyle: style };
+      if (
+        singleColumnBackgroundId &&
+        this.currentData.backgroundId !== singleColumnBackgroundId
+      ) {
+        updates.backgroundId = singleColumnBackgroundId;
+      }
+      if (this.currentData.layoutStyle !== ThemeLayoutColorStyle.LIGHT) {
+        updates.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+      }
+      if (Object.keys(updates).length > 1) {
+        await this.updateData(updates, options);
+        return;
+      }
+    }
     await this.updateData({ navigationStyle: style }, options);
   }
 
@@ -333,12 +438,29 @@ class UnifiedThemeService {
     } = options;
 
     // 更新内存中的数据
-    this.currentData = {
+    const next: UnifiedThemeData = {
       ...this.currentData,
       ...(updates || {}),
       timestamp: Date.now(),
       source: 'user', // 用户操作都标记为用户来源
     };
+    // 桌面端生效单栏（resolveEffectiveNavigationStyle 单源）：任何写入路径都不得
+    // 把图片背景/深色导航带回生效态——加载收敛之后到达的登录/租户回声
+    // （tenantConfigInfo 把模板并进 updateData）会把渐变壁纸/深色写回，
+    // 2026-09-14 客户端实证（浏览器手动切换正常、客户端仍渐变的差异根因）。
+    // 浏览器端不收敛：租户管理页背景/深浅预览共用本服务，管理员误强转顾虑照旧
+    // （2026-09-12 注释）
+    if (
+      isDesktopHost() &&
+      resolveEffectiveNavigationStyle(next.navigationStyle) ===
+        ThemeNavigationStyleType.STYLE3
+    ) {
+      if (singleColumnBackgroundId) {
+        next.backgroundId = singleColumnBackgroundId;
+      }
+      next.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+    }
+    this.currentData = next;
 
     // 保存到存储
     if (saveToStorage) {
@@ -415,14 +537,19 @@ class UnifiedThemeService {
           (bg) => bg.id === this.currentData.backgroundId,
         );
 
-        const backgroundUrl =
-          backgroundConfig?.url || `/bg/${this.currentData.backgroundId}.png`;
+        // 纯色背景（url 为空串）：显式置 none，覆盖此前已设置的背景图
+        if (backgroundConfig && !backgroundConfig.url) {
+          root.style.setProperty('--xagi-background-image', 'none');
+        } else {
+          const backgroundUrl =
+            backgroundConfig?.url || `/bg/${this.currentData.backgroundId}.png`;
 
-        // 设置CSS变量
-        root.style.setProperty(
-          '--xagi-background-image',
-          `url(${backgroundUrl})`,
-        );
+          // 设置CSS变量
+          root.style.setProperty(
+            '--xagi-background-image',
+            `url(${backgroundUrl})`,
+          );
+        }
       }
 
       // 根据布局风格和导航风格应用完整的CSS变量
@@ -430,10 +557,14 @@ class UnifiedThemeService {
         this.currentData.layoutStyle === ThemeLayoutColorStyle.DARK
           ? 'dark'
           : 'light';
-      const navigationStyleKey =
-        this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
-          ? 'style1'
-          : 'style2';
+      // 生效导航风格（桌面端锁定单栏）：CSS 变量/data 属性/body 类与 React
+      // 布局分发同源（resolveEffectiveNavigationStyle），避免「单栏布局挂着
+      // 存储风格的壁纸与属性」错位
+      const navigationStyleKey = resolveEffectiveNavigationStyle(
+        this.currentData.navigationStyle,
+      );
+      // 枚举值与组合键后缀同名（style1/style2/style3），直接透传；
+      // style3（单栏）的变量组克隆自 style1，缺失时走下方兜底
       const styleConfigKey = `${layoutStyleKey}-${navigationStyleKey}`;
 
       const styleConfig = STYLE_CONFIGS[styleConfigKey];
@@ -448,9 +579,10 @@ class UnifiedThemeService {
           root.style.setProperty(property, value);
         });
       } else {
-        // 设置导航栏宽度（兜底）
+        // 设置导航栏宽度（兜底）；style3 layout 变量与 style1 同源，同宽
         const navWidth =
-          this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
+          navigationStyleKey === ThemeNavigationStyleType.STYLE1 ||
+          navigationStyleKey === ThemeNavigationStyleType.STYLE3
             ? `${FIRST_MENU_WIDTH}px`
             : `${FIRST_MENU_WIDTH_STYLE2}px`;
         root.style.setProperty('--xagi-nav-first-menu-width', navWidth);
@@ -461,11 +593,25 @@ class UnifiedThemeService {
       root.setAttribute('data-nav-theme', this.currentData.layoutStyle);
       root.setAttribute(
         'data-nav-style',
-        this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
+        navigationStyleKey === ThemeNavigationStyleType.STYLE1
           ? 'compact'
+          : navigationStyleKey === ThemeNavigationStyleType.STYLE3
+          ? 'sidebar'
           : 'expanded',
       );
-      this.updateBodyClasses();
+      this.updateBodyClasses(navigationStyleKey);
+
+      // 后置钩子：本方法把 STYLE_CONFIGS 变量整组覆写后同步执行。emitEvent:false /
+      // needNotify:false 等静默应用路径不触发 listeners，靠通知续写自己变量的覆盖层
+      // （brandTheme）会被这里冲掉后无人恢复（2026-09-20 侧栏吸顶分组头白带根因）；
+      // 钩子在每条应用路径收尾处续写，单钩子失败不拖垮其余钩子
+      this.postApplyHooks.forEach((hook) => {
+        try {
+          hook();
+        } catch (error) {
+          console.error('Post-apply hook failed:', error);
+        }
+      });
     } catch (error) {
       console.error('Failed to apply theme data to DOM:', error);
     }
@@ -473,19 +619,25 @@ class UnifiedThemeService {
 
   /**
    * 更新body元素的样式类名
+   * @param effectiveNavigationStyle 生效导航风格（桌面端锁定单栏，见
+   * resolveEffectiveNavigationStyle）——body 布局类须与实际渲染形态一致，
+   * 单栏专属样式（xagi-nav-style3 选择器，如底部栏内缩）依赖此前提
    */
-  private updateBodyClasses(): void {
+  private updateBodyClasses(
+    effectiveNavigationStyle: ThemeNavigationStyleType,
+  ): void {
     // 移除所有相关的类名
     document.body.classList.remove(
       'xagi-layout-light',
       'xagi-layout-dark',
       'xagi-nav-style1',
       'xagi-nav-style2',
+      'xagi-nav-style3',
     );
 
     // 添加当前样式对应的类名
     document.body.classList.add(`xagi-layout-${this.currentData.layoutStyle}`);
-    document.body.classList.add(`xagi-nav-${this.currentData.navigationStyle}`);
+    document.body.classList.add(`xagi-nav-${effectiveNavigationStyle}`);
   }
 
   /**
@@ -552,6 +704,20 @@ class UnifiedThemeService {
    */
   addListener(callback: (data: UnifiedThemeData) => void): void {
     this.listeners.add(callback);
+  }
+
+  /**
+   * 注册 applyToDOM 后置钩子，返回卸载函数。
+   * 与 listeners 的区别：listeners 只在通知型更新（emitEvent/needNotify=true）触发，
+   * 钩子在每一次 applyToDOM 之后同步执行——包括 updateData({emitEvent:false})、
+   * reloadConfiguration(false) 等静默路径。供不依赖 React 通知、但必须在通用变量
+   * 落地后续写/收敛自己变量的覆盖层使用（如 brandTheme 的品牌 CSS 变量）。
+   */
+  registerPostApplyHook(hook: () => void): () => void {
+    this.postApplyHooks.add(hook);
+    return () => {
+      this.postApplyHooks.delete(hook);
+    };
   }
 
   /**
@@ -637,9 +803,20 @@ class UnifiedThemeService {
   }
 
   /**
-   * 清除用户主题配置
+   * 清除用户主题配置。
+   * 登录页初始化可选择保护用户已显式切换过的主题：认证闪断会短暂挂载登录页，
+   * 此时不能再次删除 4010 清理链刚保住的导航风格。显式退出会先整体清空
+   * localStorage，因而没有 HAS_USER_SWITCH_THEME 标记，仍按原语义清理。
    */
-  clearUserThemeConfig(): void {
+  clearUserThemeConfig(
+    options: { preserveExplicitChoice?: boolean } = {},
+  ): void {
+    if (
+      options.preserveExplicitChoice &&
+      localStorage.getItem(STORAGE_KEYS.HAS_USER_SWITCH_THEME)
+    ) {
+      return;
+    }
     this.clearThemeFlag = true;
     localStorage.removeItem(STORAGE_KEYS.USER_THEME_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.GLOBAL_SETTINGS);
@@ -665,6 +842,7 @@ export const {
   updateLanguage,
   addListener,
   removeListener,
+  registerPostApplyHook,
   reloadConfiguration,
   resetToDefault,
   getConfigSource,
@@ -672,5 +850,4 @@ export const {
   getExtraColors,
   clearUserThemeConfig,
 } = unifiedThemeService;
-
 export default unifiedThemeService;

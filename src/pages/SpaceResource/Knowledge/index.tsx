@@ -1,6 +1,7 @@
 import ButtonToggle from '@/components/ButtonToggle';
 import CreateKnowledge from '@/components/CreateKnowledge';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { CREATE_LIST } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
@@ -145,11 +146,10 @@ const SpaceKnowledge: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Common.Global.knowledge')}
-          </h3>
+      <PageContainerHeader
+        className={cx(styles['header-area'])}
+        title={dict('PC.Common.Global.knowledge')}
+        titleExtra={
           <ButtonToggle
             options={CREATE_LIST}
             value={create}
@@ -160,35 +160,37 @@ const SpaceKnowledge: React.FC = () => {
               handleChange('create', _v.toString());
             }}
           />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
-            value={keyword}
-            onChange={(e) => {
-              const k = e.target.value;
-              setKeyword(k);
-              handleFilterList(create, k);
-              handleChange('keyword', k);
-            }}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={() => {
-              setKeyword('');
-              handleFilterList(create, '');
-            }}
-            style={{ width: 214 }}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenKnowledge(true)}
-          >
-            {dict('PC.Components.CreateKnowledge.createTitle')}
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
+              value={keyword}
+              onChange={(e) => {
+                const k = e.target.value;
+                setKeyword(k);
+                handleFilterList(create, k);
+                handleChange('keyword', k);
+              }}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => {
+                setKeyword('');
+                handleFilterList(create, '');
+              }}
+              style={{ width: 214 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setOpenKnowledge(true)}
+            >
+              {dict('PC.Components.CreateKnowledge.createTitle')}
+            </Button>
+          </>
+        }
+      />
 
       {loading ? (
         <Loading />

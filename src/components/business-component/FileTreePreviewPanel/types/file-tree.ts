@@ -3,6 +3,7 @@ import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
 import type {
+  FileTreeContainerProps,
   GitWorkspaceConfig,
   SourceControlCallbacks,
 } from '../../FileTreeGitSourcePanel';
@@ -62,6 +63,11 @@ export interface FileTreeViewProps {
   agentSandboxName?: string;
   onRestartServer?: () => void;
   onRestartAgent?: () => void;
+  /**
+   * VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+   * 典型实现：ensureDesktopConnection(conversationId)
+   */
+  onReconnect?: () => void | Promise<void>;
   showMoreActions?: boolean;
   isFullscreenPreview?: boolean;
   onFullscreenPreview?: (isFullscreen: boolean) => void;
@@ -77,6 +83,8 @@ export interface FileTreeViewProps {
   showRefreshButton?: boolean;
   idleDetection?: IdleDetectionConfig;
   hideDesktop?: HideDesktopEnum;
+  /** 网站应用环境，仅 AppDevPro 传入 */
+  appStage?: 'dev' | 'prod';
   isDynamicTheme?: boolean;
   isShowExportPdfButton?: boolean;
   isShowDownloadButton?: boolean;
@@ -101,4 +109,40 @@ export interface FileTreeViewProps {
   onSelectedFileMissing?: (fileId: string) => void;
   /** 是否启用 Git status 拉取 */
   enableGitStatus?: boolean;
+  /**
+   * 点击文件夹时加载该目录。
+   * 传入后展开文件夹会按层请求 file-list，而不是只展开已有子节点。
+   */
+  onOpenDirectory?: (node: FileNode) => void | Promise<void>;
+  /** 模型层文件树刷新信号，用于重拉当前打开文件的正文 */
+  fileTreeRefreshTrigger?: number;
+  /**
+   * 目标文件所在目录是否已加载。
+   * 未加载时自动选中会等待，避免分层树还没返回就把文件判成不存在。
+   */
+  isAutoSelectDirectoryLoaded?: (fileId: string) => boolean;
+  /** 已完成分层加载的文件夹节点 id */
+  loadedFolderIds?: Set<string>;
+  /** 正在请求子列表的文件夹节点 id */
+  loadingFolderIds?: Set<string>;
+  /** 已展开但尚未加载的目录，由文件树补拉 */
+  onLoadDirectory?: (path: string) => void | Promise<void>;
+  /** 文件树搜索走服务端 */
+  remoteFileSearch?: FileTreeContainerProps['remoteFileSearch'];
+  /** 搜索命中尚未出现在树上时，先拉它所在的目录 */
+  onEnsureFallbackDirectory?: (options?: {
+    selectFolder?: boolean;
+    openDirectory?: boolean;
+    fallbackNode?: FileNode;
+  }) => Promise<void>;
+  /**
+   * 任务结果文件打开后的选中入口。
+   * 分层加载 hook 比预览面板更早创建，渲染后再把选中函数写进这个 ref。
+   */
+  selectFileRef?: React.MutableRefObject<
+    (
+      fileId: string,
+      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+    ) => Promise<void> | void
+  >;
 }

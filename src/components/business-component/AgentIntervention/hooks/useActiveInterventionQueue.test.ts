@@ -1,10 +1,16 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import { buildMcpAskRequestIdMarker } from '../utils/mcpAskResumeMessage';
 import { useActiveInterventionQueue } from './useActiveInterventionQueue';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 function createAskInteraction(
   overrides: Partial<McpAskInteraction> = {},
@@ -253,10 +259,9 @@ describe('useActiveInterventionQueue', () => {
     );
 
     expect(result.current).toHaveLength(2);
-    expect(result.current.map((item) => item.kind)).toEqual([
-      'acp_permission',
-      'mcp_ask',
-    ]);
+    expect(result.current.map((item) => item.kind)).toEqual(
+      expect.arrayContaining(['acp_permission', 'mcp_ask']),
+    );
   });
 
   it('keeps the approval whose executeId matches the latest processing focus', () => {

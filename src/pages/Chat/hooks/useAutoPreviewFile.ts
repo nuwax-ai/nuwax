@@ -1,9 +1,10 @@
+import { parentDirectory } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { extractLastTaskResultFile } from '@/utils';
-import { useModel } from 'umi';
 
 /**
  * 自动预览最后一次任务生成的文件
@@ -13,7 +14,7 @@ export const useAutoPreviewFile = () => {
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   const handleAutoPreviewLastFile = (list: MessageInfo[], id: number) => {
     if (!list || list.length === 0) return;
@@ -28,8 +29,12 @@ export const useAutoPreviewFile = () => {
     const _lastTaskResultFile = lastTaskResultFile?.split(`${id}/`).pop();
 
     if (_lastTaskResultFile) {
-      // 异步查询文件列表，判断文件是否存在
-      apiGetStaticFileList(id)
+      // #5a 懒加载收尾：存在性检查从全量递归拉整树改为目标父目录单层查询。
+      // 单层条目的 name 为工作区根起算的相对路径，匹配谓词与全量列表一致。
+      apiGetStaticFileList(id, {
+        relativePath: parentDirectory(_lastTaskResultFile),
+        recursive: false,
+      })
         .then((fileListRes) => {
           if (fileListRes.code === SUCCESS_CODE && fileListRes.data?.files) {
             // 遍历文件列表，判断文件是否存在

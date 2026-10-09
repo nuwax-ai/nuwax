@@ -1,7 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import type { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemModelList } from '@/services/systemManage';
+import type { ResourcePricingConfigInfo } from '@/types/interfaces/resource';
 import { customizeRequiredMark } from '@/utils/form';
 import { createPriceInputNumberProps } from '@/utils/priceInput';
 import type { FormInstance } from 'antd';

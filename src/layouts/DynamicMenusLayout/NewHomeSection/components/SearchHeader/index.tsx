@@ -10,21 +10,21 @@ const cx = classNames.bind(styles);
 
 interface SearchHeaderProps {
   keyword: string;
+  placeholder: string;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSearchSubmit: () => void;
   onNewChat: () => void;
   showNewChatButton?: boolean;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
   keyword,
+  placeholder,
   onSearchChange,
+  onSearchSubmit,
   onNewChat,
   showNewChatButton = true,
 }) => {
-  const searchPlaceholder = dict(
-    'PC.Components.HistoryConversationList.searchPlaceholder',
-  );
-
   return (
     <div className={cx(styles['header-search-row'])}>
       <div className={cx(styles['search-input-wrapper'])}>
@@ -32,9 +32,10 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
           prefix={
             <SearchOutlined className={cx(styles['search-icon-inner'])} />
           }
-          placeholder={searchPlaceholder}
+          placeholder={placeholder}
           value={keyword}
           onChange={onSearchChange}
+          onPressEnter={onSearchSubmit}
           allowClear
           className={cx(styles['search-input'])}
         />

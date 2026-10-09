@@ -7,6 +7,7 @@ import type {
   ImageAttachment,
   TextAttachment,
 } from '@/types/interfaces/appDev';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import {
   ApiOutlined,
   FileOutlined,
@@ -214,17 +215,11 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
 
       if (type === 'plugin') {
         // 在新页面中打开插件详情页面
-        window.open(
-          `/square/publish/plugin/${dataSourceId}`,
-          '_blank',
-          'noopener,noreferrer',
-        );
+        void openBusinessRouteWindow(`/square/publish/plugin/${dataSourceId}`);
       } else if (type === 'workflow') {
         // 在新页面中打开工作流详情页面
-        window.open(
+        void openBusinessRouteWindow(
           `/square/publish/workflow/${dataSourceId}`,
-          '_blank',
-          'noopener,noreferrer',
         );
       }
     };

@@ -1,0 +1,165 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 24px;
+
+  .header {
+    gap: 12px;
+    margin-bottom: 20px;
+
+    .search-input {
+      width: 240px;
+    }
+
+    // 「更多」:样式对齐专家·技能·连接器页 ResourceToolbar 的 more-btn
+    .more-btn {
+      flex-shrink: 0;
+      font-size: @fontSizeSm;
+      color: @GRAY05;
+      white-space: nowrap;
+
+      &:hover {
+        color: @colorPrimary;
+      }
+    }
+  }
+
+  .section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    color: @BLANK04;
+  }
+
+  .min-height-300 {
+    min-height: 300px;
+  }
+
+  // ===================== 最近使用 =====================
+  // 网格 + 展开收起开关的外壳统一持有底部间距(无论是否渲染开关,
+  // 与下方应用列表区的间隔保持一致)
+  .recent-body {
+    margin-bottom: 24px;
+  }
+
+  .recent-list {
+    display: grid;
+    // 列宽下限 220px:1920 视窗(扣除侧栏与页内边距后可用宽约 1670~1820)
+    // 恰好整段落进 7 列(8 列需可用宽 ≥1872,基本不触达);1fr 拉伸填满
+    // 整行、无行尾留白,与下方应用卡片网格(minmax(300px,1fr))同款写法。
+    // 两排折叠的列数由 index.tsx 按首行卡片实测,不依赖这里的常量
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: @borderRadius;
+      background-color: @WHITE01;
+      cursor: pointer;
+      transition: background-color 0.3s;
+
+      &:hover {
+        background-color: @WHITE04;
+      }
+
+      .recent-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: @WHITE04;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .recent-name {
+        margin: 0;
+        font-size: 14px;
+        font-weight: @fontWeightStrong;
+        color: @BLANK04;
+      }
+
+      .recent-desc {
+        margin: 0;
+        font-size: @fontSizeSm;
+        color: @GRAY11;
+      }
+    }
+  }
+
+  // 展开/收起开关:仅超过两排时渲染;样式对齐头部「更多」链接
+  .recent-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: @colorPrimary;
+    }
+  }
+
+  // ===================== 主tab(系统应用/团队空间) =====================
+  // Segmented 收窄为内容宽:本页 Segmented 处于 flex 列容器中,默认
+  // align-items:stretch 会把它横向拉满整行;专家页同行是 flex 行容器
+  // 无此问题,这里收窄回内容宽(inline-block 观感)保持两页一致
+  .source-segmented.source-segmented {
+    width: fit-content;
+  }
+
+  // ===================== 二级分类/空间筛选 pill =====================
+  // 样式对齐专家·技能·连接器页 ResourceToolbar 的 category-tab(圆角胶囊)
+  .category-tabs {
+    gap: 8px;
+    margin-top: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .category-tab {
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @BLANK04;
+      background-color: @WHITE04;
+    }
+  }
+
+  .category-tab-active {
+    color: @BLANK04;
+    background-color: @WHITE08;
+    font-weight: 500;
+  }
+
+  // ===================== 应用卡片网格 =====================
+  .app-list {
+    display: grid;
+    // 与专家·技能·连接器页完全同写法(minmax(300px, 1fr) 流式网格):
+    // 1920 窗口一排 5 张,列数随容器宽度自适应(本页无左侧分类栏、内容区
+    // 略宽,卡片 1fr 拉伸后比专家页稍宽属正常)
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    align-content: start;
+  }
+}

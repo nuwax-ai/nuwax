@@ -3,7 +3,6 @@ import {
   DataPermissionTabKey,
   getDataPermissionTabItems,
 } from '@/pages/SystemManagement/MenuPermission/components/DataPermissionModal';
-import type { OpenApiConfigInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import {
   apiGetOpenApiList,
   OpenApiPermissionTargetTypeEnum,
@@ -17,6 +16,7 @@ import type {
   KnowledgeInfoById,
   ModelConfigDto,
 } from '@/types/interfaces/systemManage';
+import type { OpenApiConfigInfo } from '@/types/menuPermission/role-manage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Empty, Form, InputNumber, Modal, Row, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -124,6 +124,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           maxSpaceCount: result.maxSpaceCount ?? -1,
           maxAgentCount: result.maxAgentCount ?? -1,
           maxPageAppCount: result.maxPageAppCount ?? -1,
+          maxUserAppCount: result.maxUserAppCount ?? -1,
+          userAppIdleTimeoutSeconds: result.userAppIdleTimeoutSeconds ?? -1,
           maxKnowledgeCount: result.maxKnowledgeCount ?? -1,
           knowledgeStorageLimitGb: result.knowledgeStorageLimitGb ?? -1,
           maxDataTableCount: result.maxDataTableCount ?? -1,
@@ -209,6 +211,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         maxSpaceCount: -1,
         maxAgentCount: -1,
         maxPageAppCount: -1,
+        maxUserAppCount: -1,
+        userAppIdleTimeoutSeconds: -1,
         maxKnowledgeCount: -1,
         knowledgeStorageLimitGb: -1,
         maxDataTableCount: -1,
@@ -479,6 +483,40 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       icon: <InfoCircleOutlined />,
                       title: dict(
                         'PC.Pages.UserManage.DataPermissionModal.maxPageAppCountTooltip',
+                      ),
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxUserAppCount',
+                    )}
+                    name="maxUserAppCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxUserAppCountTooltip',
+                      ),
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.userAppIdleTimeoutSeconds',
+                    )}
+                    name="userAppIdleTimeoutSeconds"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.userAppIdleTimeoutSecondsTooltip',
                       ),
                     }}
                   >

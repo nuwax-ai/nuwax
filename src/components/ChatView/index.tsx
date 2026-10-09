@@ -2,13 +2,18 @@ import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
 import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
+import { stripOpenUiResumeDisplayArtifacts } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
+import {
+  collapseTerminalProcesses,
+  groupMarkdownProcesses,
+} from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { getLegacyThinkBlock } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -39,26 +44,56 @@ const ChatView: React.FC<ChatViewProps> = memo(
     mode = 'chat',
     conversationId = '',
     showStatusDesc = true,
-    showDebug = true,
+    showDebug = false,
   }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
+    // 任务终态（非流式中）：终态聚合只展示最后一段正文，其余统一进「执行过程」折叠区
+    const isTerminalStatus = useMemo(
+      () =>
+        messageInfo?.status !== MessageStatusEnum.Incomplete &&
+        messageInfo?.status !== MessageStatusEnum.Loading,
+      [messageInfo?.status],
+    );
+
+    // 工具组在执行中展开，终态默认收起进「执行过程」区域。
+    const groupDefaultCollapsed = isTerminalStatus;
+
     const processedText = useMemo(() => {
-      return groupMarkdownProcesses(messageInfo?.text || '');
-    }, [messageInfo?.text]);
+      const rawText = messageInfo?.text || '';
+      const grouped = groupMarkdownProcesses(rawText);
+      // 思考按流式位置内联渲染：新消息 text 已含 markdown-custom-think 标签；
+      // 存量历史消息只有聚合 think 字段（无位置信息），合成为消息开头的内联块，
+      // 与新消息形态统一。
+      const withLegacyThink =
+        !rawText.includes('markdown-custom-think') && messageInfo?.think
+          ? `${getLegacyThinkBlock(messageInfo.think)}${grouped}`
+          : grouped;
+      return isTerminalStatus
+        ? collapseTerminalProcesses(withLegacyThink)
+        : withLegacyThink;
+    }, [messageInfo?.text, messageInfo?.think, isTerminalStatus]);
+
+    // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
+    const hasInlineThink = useMemo(
+      () => processedText.includes('markdown-custom-think'),
+      [processedText],
+    );
 
     const userDisplayText = useMemo(() => {
-      return stripMcpAskResumeDisplayArtifacts(messageInfo?.text);
+      return stripOpenUiResumeDisplayArtifacts(
+        stripMcpAskResumeDisplayArtifacts(messageInfo?.text),
+      );
     }, [messageInfo?.text]);
 
     const userCopyText = userDisplayText;
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
-      thinking: messageInfo?.think || '',
-      id: messageInfo?.id || '',
+      thinking: hasInlineThink ? '' : messageInfo?.think || '',
+      id: messageInfo?.clientRenderKey || messageInfo?.id || '',
     });
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
@@ -101,7 +136,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
     return (
       <div
         className={cx(styles.container, 'flex', className)}
-        data-message-id={messageInfo?.id}
+        // 与 React key 使用同一客户端稳定标识；服务端快照补齐 id 时不再让 DOM 身份跳变。
+        data-message-id={messageInfo?.clientRenderKey || messageInfo?.id}
+        data-server-message-id={messageInfo?.id}
       >
         <div
           className={cx('flex-1', 'overflow-hide', {
@@ -208,8 +245,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     markdownRef={markdownRef}
                     conversationId={conversationId}
                     answer={processedText}
-                    thinking={messageInfo?.think}
+                    thinking={hasInlineThink ? '' : messageInfo?.think}
                     status={messageInfo?.status}
+                    thinkingFinished={messageInfo?.thinkingFinished}
+                    collapseProcessGroups={groupDefaultCollapsed}
+                    autoCollapseEnabled
                   />
                 </div>
               </div>
@@ -220,6 +260,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
               condition={
                 messageInfo &&
                 (messageInfo?.status === MessageStatusEnum.Complete ||
+                  messageInfo?.status === MessageStatusEnum.Stopped ||
+                  messageInfo?.status === MessageStatusEnum.Error ||
                   !messageInfo?.status)
               }
             >
@@ -236,9 +278,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   <div style={{ flex: 1 }}>
                     <ChatBottomMore messageInfo={messageInfo} />
                   </div>
-                  {showDebug !== false && (
-                    <ChatBottomDebug messageInfo={messageInfo} />
-                  )}
+                  {showDebug && <ChatBottomDebug messageInfo={messageInfo} />}
                 </div>
               ) : mode === 'home' ? (
                 <ChatSampleBottom messageInfo={messageInfo} />
@@ -250,7 +290,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
     );
   },
   (prevProps, nextProps) => {
-    return isEqual(prevProps.messageInfo, nextProps.messageInfo);
+    return (
+      isEqual(prevProps.messageInfo, nextProps.messageInfo) &&
+      prevProps.conversationId === nextProps.conversationId
+    );
   },
 );
 

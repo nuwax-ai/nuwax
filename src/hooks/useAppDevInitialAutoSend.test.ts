@@ -195,4 +195,40 @@ describe('useAppDevInitialAutoSend', () => {
     expect(chat.sendMessageWithPrompt).not.toHaveBeenCalled();
     expect(clearContext).not.toHaveBeenCalled();
   });
+
+  it('首页只传 id 和 type 的工具仍随网页应用首条消息发送', () => {
+    const getContext = vi.fn().mockReturnValue({
+      message: '创建网页应用',
+      infos: [{ id: 21, type: AgentComponentTypeEnum.Plugin }],
+    });
+    mockUseModel.mockReturnValue({ getContext, clearContext: vi.fn() });
+    const chat = {
+      isChatLoading: false,
+      sendMessageWithPrompt: vi.fn(),
+    };
+
+    renderHook(() =>
+      useAppDevInitialAutoSend({
+        projectId: 'project-2',
+        hasValidProjectId: true,
+        hasPermission: true,
+        chat,
+        modelSelector: { selectedModelId: 1001, models: { chatModelList: [] } },
+      }),
+    );
+
+    expect(chat.sendMessageWithPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: '创建网页应用',
+        selectedDataResources: [
+          expect.objectContaining({
+            id: 21,
+            name: '21',
+            type: DataResourceType.PLUGIN,
+            isSelected: true,
+          }),
+        ],
+      }),
+    );
+  });
 });

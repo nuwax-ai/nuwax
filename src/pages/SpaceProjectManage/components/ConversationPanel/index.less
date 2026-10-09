@@ -1,0 +1,123 @@
+@import '@/styles/token';
+
+.sidebar {
+  flex-shrink: 0;
+  width: 320px;
+  padding: @paddingMd @padding @paddingLg;
+  background: @colorBgContainer;
+  border-left: 1px solid @colorSplit;
+  overflow: auto;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: @marginSm;
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeight;
+  color: @colorText;
+}
+
+.create-btn {
+  padding-inline: 0;
+  height: @fontHeight;
+  font-size: @fontSizeSm;
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginSm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversation-item {
+  padding: @paddingSm @padding;
+  border-radius: @borderRadiusLg;
+  border: 1px solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  cursor: pointer;
+  transition: border-color @motionDurationFast @motionEaseOut,
+    box-shadow @motionDurationFast @motionEaseOut;
+
+  &:hover {
+    border-color: @colorPrimaryBorder;
+    box-shadow: @boxShadowTertiary;
+  }
+}
+
+.conversation-item-disabled {
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: @colorBorderSecondary;
+    box-shadow: none;
+  }
+}
+
+.conversation-top {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginSm;
+}
+
+.conversation-name {
+  flex: 1;
+  min-width: 0;
+  color: #141416;
+  font-size: 13px;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeight;
+}
+
+.owner {
+  flex-shrink: 0;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 @paddingXs;
+  height: @fontHeight;
+  line-height: @fontHeight;
+  border-radius: @borderRadiusLg;
+  font-size: @fontSizeSm;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}
+
+.owner-other {
+  color: @colorTextSecondary;
+  background: @colorFillTertiary;
+}
+
+.conversation-meta {
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+  margin-top: @marginXs;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
+}
+
+.sidebar-empty {
+  padding-top: 48px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid @colorSplit;
+  }
+}

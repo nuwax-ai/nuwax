@@ -1,0 +1,43 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.panel {
+  flex-shrink: 0;
+  width: 360px;
+  height: 100%;
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorSplit;
+  margin-left: 10px;
+  border-radius: @borderRadius;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0 16px 16px;
+  overflow: auto;
+}
+
+.main-wrap {
+  padding: 0 10px;
+
+  .title {
+    line-height: 40px;
+    padding-left: 8px;
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    border-bottom: 1px solid @WHITE15;
+    color: @BLANK04;
+  }
+}
+
+.empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}

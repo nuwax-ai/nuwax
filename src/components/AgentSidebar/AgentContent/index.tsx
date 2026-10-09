@@ -89,7 +89,7 @@ const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
             {agentDetail?.description}
           </Typography.Paragraph>
         </ConditionRender>
-        {/* 分享 复制 迁移 功能 */}
+        {/* 收藏 复制模板 功能 */}
         <ChatTitleActions agentInfo={agentDetail} />
       </div>
     </div>

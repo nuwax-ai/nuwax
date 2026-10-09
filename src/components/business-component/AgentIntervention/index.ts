@@ -15,7 +15,8 @@ export {
 } from './utils/mcpAskHydrateMessage';
 export { processInterventionSsePatch } from './utils/processInterventionSsePatch';
 
-// Types
+// Types & constants
+export { PLAN_MODE_ENABLED } from './types/acpIntervention';
 export type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,

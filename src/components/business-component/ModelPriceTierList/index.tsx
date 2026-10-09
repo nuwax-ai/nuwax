@@ -1,5 +1,5 @@
-import type { ModelPricingInfo } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
+import type { ModelPricingInfo } from '@/types/interfaces/resource';
 import { Tag } from 'antd';
 import React from 'react';
 import styles from './index.less';

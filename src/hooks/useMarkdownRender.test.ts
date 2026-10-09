@@ -172,4 +172,35 @@ describe('useMarkdownRender', () => {
     expect(markdownRef.push).toHaveBeenCalledTimes(1);
     expect(markdownRef.push).toHaveBeenCalledWith('new answer', 'answer');
   });
+
+  it('非增量替换不等待下一帧，立即清空旧内容并推送新正文', () => {
+    const { result, rerender } = renderHook(
+      ({ answer }) => useMarkdownRender({ id: 'm1', answer, thinking: '' }),
+      { initialProps: { answer: '旧回答' } },
+    );
+    const markdownRef = createMarkdownRefMock();
+    result.current.markdownRef.current = markdownRef;
+    flushMarkdownTimer();
+    vi.clearAllMocks();
+
+    rerender({ answer: '续接后的新回答' });
+    expect(markdownRef.clear).toHaveBeenCalledTimes(1);
+    expect(markdownRef.push).toHaveBeenCalledWith('续接后的新回答', 'answer');
+  });
+
+  it('正文清空时立即移除旧内容，后续相同正文仍能完整重建', () => {
+    const { result, rerender } = renderHook(
+      ({ answer }) => useMarkdownRender({ id: 'm1', answer, thinking: '' }),
+      { initialProps: { answer: '旧回答' } },
+    );
+    const markdownRef = createMarkdownRefMock();
+    result.current.markdownRef.current = markdownRef;
+    flushMarkdownTimer();
+    vi.clearAllMocks();
+
+    rerender({ answer: '' });
+    expect(markdownRef.clear).toHaveBeenCalledTimes(1);
+    rerender({ answer: '旧回答' });
+    expect(markdownRef.push).toHaveBeenCalledWith('旧回答', 'answer');
+  });
 });

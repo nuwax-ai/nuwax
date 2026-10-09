@@ -61,15 +61,24 @@ const SettingEmail: React.FC = () => {
     run(values);
   };
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     const fieldName: 'phone' | 'email' = authType ? 'email' : 'phone';
-    form.validateFields([fieldName]).then((values) => {
+    try {
+      const values = await form.validateFields([fieldName]);
       handleCount();
-      runSendCode({
-        type: SendCodeEnum.BIND_EMAIL,
-        [fieldName]: values[fieldName],
-      });
-    });
+      try {
+        await runSendCode({
+          type: SendCodeEnum.BIND_EMAIL,
+          [fieldName]: values[fieldName],
+        });
+      } catch {
+        // 发送失败可立即重发（提示由请求层给出）
+        setCountDown(0);
+        onClearTimer();
+      }
+    } catch {
+      // 表单校验失败已在字段上提示，消费拒绝且不发码。
+    }
   };
 
   return (

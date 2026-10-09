@@ -8,7 +8,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
-import { treeToFlatList } from '@/utils/appDevUtils';
+import { isPreviewableFile, treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
 import {
   useCallback,
@@ -33,11 +33,13 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '../utils/gitStatusUtils';
+import { locateWorkspaceChangeFile } from '../utils/locateWorkspaceChangeFile';
 import {
   runGitDiscard,
   runGitStage,
   runGitUnstage,
 } from '../utils/sourceControlGitActions';
+import { workspaceRelativePath } from '../utils/workspaceFileList';
 
 export type { GitWorkspaceConfig };
 
@@ -51,6 +53,11 @@ export interface SourceControlCallbacks {
   addFileToGitignore?: (fileId: string) => Promise<void>;
   /** 选中 diff 文件后的页面操作 */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
+  /**
+   * 按文件名搜索后，用路径是否命中文件。
+   * 未命中时预览区提示未搜索到，不改「未选中文件」文案。
+   */
+  onWorkspaceFileSearchResult?: (found: boolean) => void;
   /** Git discard 成功后的页面操作 */
   onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
   /** 批量 Git discard 完成后的页面操作（整批只调用一次） */
@@ -128,8 +135,8 @@ export interface UseSourceControlReturn {
   handleAfterDiscardChange: (fileId: string) => void;
   /** 添加到 .gitignore */
   handleAddToGitignore: (fileId: string) => Promise<void>;
-  /** 提交修改（保存并推送） */
-  handleCommit: (message: string) => Promise<void>;
+  /** 提交修改（保存并推送）。成功返回 true，失败返回 false */
+  handleCommit: (message: string) => Promise<boolean>;
   /** 刷新 Git 变更列表 */
   refreshGitList: () => Promise<void>;
   /** 取消编辑并同步清理 Git 状态 */
@@ -334,11 +341,21 @@ export const useSourceControl = ({
   );
 
   /**
-   * 选中修改文件并在右侧展示 diff 预览
-   * 调用 apiGitFileContent 拉取 HEAD 与 worktree/staged 文件内容
+   * 选中修改文件并在右侧展示 diff 预览。
+   * 不支持预览的文件（压缩包等）改为打开普通预览，不请求 diff。
+   * 其余文件调用 apiGitFileContent 拉取 HEAD 与 worktree/staged 内容。
    */
   const handleDiffFileSelect = useCallback(
     (fileId: string, section: ChangeListSection) => {
+      const fileName = workspaceRelativePath(fileId).split('/').pop() || fileId;
+      // 压缩包等不支持预览的文件不查 diff，直接打开普通预览，由预览区提示不支持
+      if (!isPreviewableFile(fileName, true)) {
+        setSelectedChangeFile(null);
+        setDiffFileContent(null);
+        callbacks.openChangeFile(fileId);
+        return;
+      }
+
       setSelectedChangeFile({ fileId, section });
       setDiffFileContent(null);
       callbacks.onDiffFileSelect?.(fileId, section);
@@ -349,6 +366,19 @@ export const useSourceControl = ({
 
       void (async () => {
         try {
+          // 分层文件树没有全量列表，先按文件名搜到真正的文件，再拉 diff
+          if (workspace.workspaceType === 'taskAgent') {
+            try {
+              const locatedFile = await locateWorkspaceChangeFile(
+                workspace.cid,
+                fileId,
+              );
+              callbacks.onWorkspaceFileSearchResult?.(Boolean(locatedFile));
+            } catch (error) {
+              callbacks.onWorkspaceFileSearchResult?.(false);
+              console.error('搜索源代码变更文件失败', error);
+            }
+          }
           const content = await fetchGitChangeFileContent(
             buildGitWorkspaceParams(workspace),
             fileId,
@@ -661,7 +691,7 @@ export const useSourceControl = ({
         message.error(
           dict('PC.Pages.ConversationAgent.gitPush.noConversation'),
         );
-        return;
+        return false;
       }
 
       setIsCommitting(true);
@@ -676,7 +706,7 @@ export const useSourceControl = ({
         });
 
         if (code !== SUCCESS_CODE) {
-          return;
+          return false;
         }
 
         message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
@@ -690,8 +720,10 @@ export const useSourceControl = ({
         }
 
         await callbacks.onCommitSuccess?.();
+        return true;
       } catch (error) {
         console.error('Git commit push failed:', error);
+        return false;
       } finally {
         setIsCommitting(false);
       }

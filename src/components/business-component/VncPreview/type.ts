@@ -33,6 +33,8 @@ export interface VncPreviewProps {
    * e.g., "http://rcoder-service.example.com"
    */
   serviceUrl?: string;
+  /** 可选业务文档代理 URL；cId 仍为真实会话 ID，用于状态检查。 */
+  sourceUrl?: string;
   /**
    * Container ID or Session ID
    */
@@ -71,6 +73,11 @@ export interface VncPreviewProps {
    * 未传入时，重试按钮仅执行本地 connect（兼容旧用法）。
    */
   onReconnect?: () => Promise<void> | void;
+  /**
+   * 网站应用环境，仅 AppDevPro 传入。
+   * 未传时 vnc-status 老接口不带 appStage。
+   */
+  appStage?: 'dev' | 'prod';
 }
 
 export type ConnectionStatus =

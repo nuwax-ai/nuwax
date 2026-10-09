@@ -20,6 +20,23 @@
       margin-top: @paddingMd;
     }
   }
+
+  // 单栏锁定纯色背景：选项区整体置灰不可点（2026-09-12 需求）
+  &.disabled {
+    .backgroundGrid,
+    .customBackgroundGrid {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+  }
+
+  // 锁定说明（置于标题下；token 是 var() 包装，负边距须走 calc）
+  .lockedHint {
+    margin: calc(-1 * @paddingXs) 0 @paddingSm;
+    font-size: @fontSizeSm;
+    color: @colorTextTertiary;
+    line-height: @fontHeightSm;
+  }
 }
 
 .systemBackgroundsSection {

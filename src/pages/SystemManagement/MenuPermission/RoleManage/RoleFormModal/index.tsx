@@ -1,5 +1,15 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddRole,
+  apiGetRoleById,
+  apiUpdateRole,
+} from '@/services/menuPermission/roleManage';
+import {
+  RoleSourceEnum,
+  RoleStatusEnum,
+  type RoleInfo,
+} from '@/types/menuPermission/role-manage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -15,16 +25,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddRole,
-  apiGetRoleById,
-  apiUpdateRole,
-} from '../../services/role-manage';
-import {
-  RoleSourceEnum,
-  RoleStatusEnum,
-  type RoleInfo,
-} from '../../types/role-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

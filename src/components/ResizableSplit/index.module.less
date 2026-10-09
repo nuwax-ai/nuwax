@@ -1,3 +1,5 @@
+@import '@/styles/token.less';
+
 .container {
   display: flex;
   width: 100%;
@@ -27,62 +29,8 @@
     display: flex;
   }
 
-  .divider {
-    position: absolute;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    background-color: var(--divider-color, #e0e0e0);
-    cursor: col-resize;
-    transition: background-color 0.2s;
-    z-index: 10;
-    transform: translateX(-1px); // 使分隔线居中
-    // 添加 will-change 优化渲染性能
-    will-change: transform;
-
-    // 添加拖拽手柄
-    &::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 1px;
-      height: 40px;
-      background-color: rgba(0, 0, 0, 15%);
-      border-radius: 2px;
-      transition: background-color 0.2s;
-    }
-
-    &:hover {
-      background-color: var(--divider-hover-color, #bbb);
-
-      &::before {
-        background-color: rgba(0, 0, 0, 30%);
-      }
-    }
-
-    &.dragging {
-      background-color: var(--divider-dragging-color, #1890ff);
-      transition: none; // 拖拽时禁用过渡
-
-      &::before {
-        background-color: rgba(255, 255, 255, 80%);
-        transition: none; // 拖拽时禁用过渡
-      }
-    }
-
-    &.disabled {
-      cursor: not-allowed;
-      background-color: #f2f2f2;
-
-      &::before {
-        display: none;
-      }
-    }
-  }
-
-  // 拖拽时左右面板禁用过渡效果和滚动条
+  // 拖拽时左右面板禁用过渡效果和滚动条（.divider/.resizeGrip/.resizeHint 规则
+  // 已提为模块顶层，供 ResizableSplit 与共用的 ResizeDivider 同源复用）
   &:has(.dragging) {
     .left,
     .right {
@@ -90,6 +38,116 @@
       overflow: hidden; // 拖拽时禁用滚动条，避免闪烁
     }
   }
+}
+
+// —— 分隔条三件套（顶层规则，ResizableSplit / ResizeDivider 共用同一 module，视觉单源）——
+.divider {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  cursor: col-resize;
+  // 无常驻基线：静止时完全不可见，hover/拖拽反馈 = 跟随鼠标的短高亮段（.resizeGrip）+ 气泡；
+  // opacity 过渡是挂载时的淡入（值由组件 inline 下发）
+  transition: opacity 0.4s ease-in-out;
+  z-index: 10;
+  // 注意：不要在这里写 transform，react-draggable 会以 inline style 下发
+  // transform: translate(Xpx, 0px)，优先级更高，写了也不会生效
+  will-change: transform;
+
+  // 拖拽热区：左右各外扩 6px（总计 12px），透明不可见，只负责接住鼠标；
+  // 由 4px 加宽到 6px（09-22）：更好命中，透明性不变
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -6px;
+    right: -6px;
+    height: 100%;
+    cursor: col-resize;
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+
+    &::after {
+      cursor: not-allowed;
+    }
+  }
+}
+
+// hover/拖拽时跟随鼠标的短高亮段：分隔条变色反馈的「变短」版（top 由 --hint-y 驱动）
+.resizeGrip {
+  position: absolute;
+  top: var(--hint-y, 50%);
+  left: 0;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 40px;
+  background-color: var(--divider-hover-color, #8c8c8c);
+  // 视觉上加粗到 2px（向右描边），不占布局空间
+  box-shadow: 1px 0 0 0 var(--divider-hover-color, #8c8c8c);
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s, box-shadow 0.2s;
+  pointer-events: none;
+  z-index: 11;
+}
+
+// 悬停意图与拖拽中均显示：hover-intent 类由组件 JS 定时器满 800ms 意图判定后加上
+// （防路过分隔条误闪）；拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底。
+// 延时不用 CSS transition-delay——被打断重入时会把半透明中间值冻结整个延时周期，
+// 表现为指示态抖动/残影
+.divider.hover-intent .resizeGrip,
+.divider.dragging .resizeGrip {
+  opacity: 1;
+}
+
+.divider.dragging .resizeGrip {
+  background-color: var(--divider-dragging-color, #595959);
+  box-shadow: 1px 0 0 0 var(--divider-dragging-color, #595959);
+  transition: none; // 拖拽时禁用过渡（不经 hover 延时，按下即拖立即反馈）
+}
+
+.divider.disabled .resizeGrip {
+  opacity: 0;
+  transition: none;
+}
+
+// hover/拖拽时浮出的「调整宽度」提示气泡，贴分隔线右侧、与高亮段同以 --hint-y 对齐；
+// antd Tooltip 会与 Draggable 的 nodeRef 冲突，故自绘
+.resizeHint {
+  position: absolute;
+  left: 12px;
+  top: var(--hint-y, 50%);
+  transform: translateY(-50%);
+  padding: 3px 8px;
+  border-radius: @borderRadiusSm;
+  background-color: @colorBgSpotlight;
+  color: @colorTextLightSolid;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 11;
+}
+
+// 悬停意图与拖拽中均显示（机制见上方 grip 同名规则注释）
+.divider.hover-intent .resizeHint,
+.divider.dragging .resizeHint {
+  opacity: 1;
+}
+
+// 拖拽时禁用过渡（与 grip 的 .dragging 规则同款）
+.divider.dragging .resizeHint {
+  transition: none;
+}
+
+.divider.disabled .resizeHint {
+  opacity: 0;
+  transition: none;
 }
 
 // 拖拽时的遮罩层，防止 iframe 干扰

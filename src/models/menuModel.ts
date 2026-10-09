@@ -10,7 +10,11 @@ import { useModel } from 'umi';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { OTHER_MENU_CODES } from '@/constants/menus.constants';
-import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
+import { MenuEnabledEnum } from '@/types/menuPermission/menu-manage';
+import {
+  filterAiosCommercialMenus,
+  getCommercialEdition,
+} from '@/utils/commercialEdition';
 import {
   extractAllMenuCodes,
   extractAllPermissions,
@@ -90,7 +94,13 @@ export default function useMenuModel() {
 
       const filteredMenus = filterItems(menus);
 
-      setMenuTree(filteredMenus);
+      // 商业入口显隐不改 RBAC 权限，已有内容的直接链接仍按原权限使用。
+      setMenuTree(
+        filterAiosCommercialMenus(
+          filteredMenus,
+          getCommercialEdition(tenantConfigInfo).aiOSCommercialEdition,
+        ),
+      );
 
       // 提取所有权限码（从 Map 中提取所有值并打平）
       const permissionsMapData: Map<string, string[]> =
@@ -106,7 +116,10 @@ export default function useMenuModel() {
       const menuCodes = extractAllMenuCodes(filteredMenus);
       setMenuCodeSet(new Set(menuCodes));
     },
-    [tenantConfigInfo?.enableSubscription],
+    [
+      tenantConfigInfo?.enableSubscription,
+      tenantConfigInfo?.aiOSCommercialEdition,
+    ],
   );
 
   // 当租户订阅开关状态变化时，重新基于最原始的菜单树数据源进行响应式过滤与权限重算
@@ -114,7 +127,11 @@ export default function useMenuModel() {
     if (rawMenusRef.current.length > 0) {
       processMenuData(rawMenusRef.current);
     }
-  }, [tenantConfigInfo?.enableSubscription, processMenuData]);
+  }, [
+    tenantConfigInfo?.enableSubscription,
+    tenantConfigInfo?.aiOSCommercialEdition,
+    processMenuData,
+  ]);
 
   /**
    * 从 initialState 初始化菜单数据

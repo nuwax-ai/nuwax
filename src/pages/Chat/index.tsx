@@ -1,4 +1,3 @@
-import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import {
   ConversationBottomConsole,
   CopyToSpaceComponent,
@@ -7,80 +6,154 @@ import {
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
+import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
+import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
-import ResizableSplit from '@/components/ResizableSplit';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
+import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
+import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useRepoDocLinkPreview } from '@/hooks/useRepoDocLinkPreview';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
+import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
+import AgentDetailModal from '@/components/business-component/AgentDetailModal';
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import {
+  conversationPageCacheManager,
+  createConversationPageCacheKey,
+  type ConversationWorkspaceView,
+} from '@/features/conversation/react/useConversationPageCache';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
+import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
-  DefaultSelectedEnum,
+  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { FileNode } from '@/types/interfaces/appDev';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
+  ConversationInfo,
+  MessageInfo,
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
+import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
+import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
+import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 
 import {
   useSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
+import {
+  parentDirectory,
+  workspaceNodeId,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
-import { apiUpdateStaticFile } from '@/services/vncDesktop';
-import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
-import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
-import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
-import { updateFilesListContent } from '@/utils/fileTree';
+import {
+  apiAgentConversation,
+  apiAgentConversationList,
+} from '@/services/agentConfig';
+import { fetchContentOutcome } from '@/services/skill';
+import {
+  apiGetStaticFileList,
+  apiSearchFiles,
+  apiUpdateStaticFile,
+} from '@/services/vncDesktop';
+
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
+import { message as antdMessage, Form } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
+import ConversationInstanceCacheSlot from './components/ConversationInstanceCacheSlot';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
+import { isNormalProjectConversation } from './hooks/isNormalProjectConversation';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
+import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSync';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
 import styles from './index.less';
+import { resolveSandboxFileOpen } from './utils/sandboxPath';
 
 const cx = classNames.bind(styles);
 export interface ChatCoreProps {
   id: number;
   agentId: number;
   locationState?: any;
+  /** 直渲染入口切出时传 false；客户端局部模型入口由 CachedChatPage 常驻。 */
+  active?: boolean;
+  /** 宿主创建实例时的路由 state，优先于后来导航产生的全局 location.state。 */
+  initialLocationState?: any;
+  /** 仅常驻实例使用：固定创建时的路由参数，隐藏后不读取其他页面的 location。 */
+  freezeRouteLocation?: boolean;
+  routeLocationSnapshot?: {
+    pathname: string;
+    search: string;
+    state?: any;
+    key?: string;
+    navigationAction?: 'PUSH' | 'POP' | 'REPLACE';
+  };
   showSidebar?: boolean; // 是否渲染右侧属性面板，默认 true
   showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
-  enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
+  enableResizable?: boolean; // 兼容旧调用；资料库 / Page 已在顶部图标下方的内容区展开
   showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
   defaultFileTreeVisible?: boolean; // 是否默认显示文件树，默认 false
+  /**
+   * #5a 文件树懒加载收尾：本页是否自管文件树数据（单层 hook），默认 true。
+   * 置 true 时模型层跳过全量递归拉取、只发刷新信号；依赖模型全量树做
+   * 变更信号的宿主（如 SkillDetailsConversation）显式传 false 保持原行为。
+   */
+  fileTreeSelfManaged?: boolean;
+  /**
+   * 是否启用项目型会话直开兜底跳转（默认 false）。
+   * 仅独立 /home/chat 路由页传 true：全栈（UserApp）等项目会话在此页只有
+   * 空壳，按侧栏同款分发规则 replace 到对应 IDE。EditAgent 预览等内嵌宿主
+   * 必须保持 false，避免被踢出宿主页。
+   */
+  enableDevTargetRedirect?: boolean;
   renderTitle?: (props: {
     effectiveAgent: any;
     isAppSidebarMode: boolean;
@@ -91,27 +164,67 @@ export interface ChatCoreProps {
 /**
  * 主页咨询聊天页面
  */
-export const ChatCore: React.FC<ChatCoreProps> = ({
+const ChatCoreInner: React.FC<ChatCoreProps> = ({
   id,
   agentId,
   locationState,
+  initialLocationState,
+  freezeRouteLocation = false,
+  routeLocationSnapshot,
+  active = true,
   showSidebar = true,
   showPayment = true,
-  enableResizable = true,
   showClearContext = true,
   defaultFileTreeVisible = false,
+  fileTreeSelfManaged = true,
+  enableDevTargetRedirect = false,
   renderTitle,
   renderHeaderRight,
 }) => {
+  const pageCacheKey = useMemo(
+    () => createConversationPageCacheKey('chat', id),
+    [id],
+  );
   const location = useLocation();
+  const initialRouteRef = useRef({
+    location: routeLocationSnapshot
+      ? { ...location, ...routeLocationSnapshot }
+      : location,
+    action: routeLocationSnapshot?.navigationAction ?? history.action,
+  });
+  const routeLocation = freezeRouteLocation
+    ? {
+        ...initialRouteRef.current.location,
+        state:
+          initialLocationState !== undefined
+            ? initialLocationState
+            : initialRouteRef.current.location.state,
+      }
+    : location;
+  const routeAction = freezeRouteLocation
+    ? initialRouteRef.current.action
+    : history.action;
+  const chromeFlags = useMemo(
+    () => parseOpenAppChromeFlags(routeLocation.search),
+    [routeLocation.search],
+  );
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
-  const stateToUse = locationState || location.state;
+  const stateToUse = freezeRouteLocation
+    ? routeLocation.state
+    : initialLocationState !== undefined
+    ? initialLocationState
+    : locationState !== undefined
+    ? locationState
+    : location.state;
   // 附加state
   const message = stateToUse?.message;
   const files = stateToUse?.files;
+  // 组件列表（首页传入时已含专家合并，按 id+type 去重）
   const infos = stateToUse?.infos;
   // 技能ID列表
   const skillIds = stateToUse?.skillIds;
+  // 资料库已选文档（首页能力弹窗选中，随首条消息发送）
+  const firstSelectedDocs = stateToUse?.selectedDocs;
   // 消息来源
   const messageSourceType: MessageSourceType =
     (stateToUse?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
@@ -119,15 +232,28 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const defaultAgentDetail = stateToUse?.defaultAgentDetail;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
   const firstVariableParams = stateToUse?.variableParams;
-  // 模型ID
-  const [selectedModelId, setSelectedModelId] = useState<number>(
+  // 模型ID(undefined=尚未选择,由 ModelSelector 按列表自动落回)
+  const [selectedModelId, setSelectedModelId] = useState<number | undefined>(
     stateToUse?.modelId,
   );
+  // 模型选择按智能体隔离:切换智能体时清空当前选中,交由 ModelSelector
+  // 按新智能体的可用列表自动落回(列表首位即该智能体最近使用的模型);
+  // 否则上一智能体手选的模型会"串"到下一智能体的对话框(若同在其列表中)。
+  // 首挂载不清(保留 locationState 透传的初值),同智能体切任务也不受影响
+  const prevAgentIdRef = useRef(agentId);
+  useEffect(() => {
+    if (prevAgentIdRef.current === agentId) return;
+    prevAgentIdRef.current = agentId;
+    setSelectedModelId(undefined);
+  }, [agentId]);
   const [form] = Form.useForm();
 
-  const [isSidebarVisible, setIsSidebarVisible] =
-    useState<boolean>(showSidebar);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 智能体详情悬浮弹窗（取代原 AgentSidebar 互斥侧栏，与右侧面板共存）
+  const [isAgentDetailModalOpen, setIsAgentDetailModalOpen] =
+    useState<boolean>(false);
+
+  // 会话进度面板展开态（受控）：页头「会话进度」按钮驱动胶囊组件
+  const [capsulePanelOpen, setCapsulePanelOpen] = useState<boolean>(false);
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
@@ -136,11 +262,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 异步查询会话加载状态
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
+  const hasRenderedChatRef = useRef(false);
+  const runtimeLineRef =
+    useRef<ReturnType<typeof useConversationRuntimeSession>>(null);
 
   // 开放应用智能体会话聊天页面相关状态
   const {
     handleSetAppAgentDetail,
-    isAppSidebarMode,
+    isAppSidebarMode: globalIsAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
@@ -149,6 +278,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     localCalledTrialCount,
     incrementCalledTrialCount,
   } = useModel('useOpenApp');
+  const isAppSidebarMode = freezeRouteLocation
+    ? routeLocation.pathname.startsWith('/app/')
+    : globalIsAppSidebarMode;
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
@@ -170,13 +302,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   } = useSubscription();
 
   useEffect(() => {
-    if (!showPayment || !openPaymentModal || isAppSidebarMode) {
+    if (!active || !showPayment || !openPaymentModal || isAppSidebarMode) {
       return;
     }
 
     // 打开智能体订阅套餐弹窗
     queryAgentSubscriptionPlans(agentId);
   }, [
+    active,
     showPayment,
     openPaymentModal,
     isAppSidebarMode,
@@ -207,6 +340,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    // 双线分支：新线 effects 所需页面资源补充解构（单份共享注入；其余基线已解构）
+    setCardList,
+    setTaskAgentSelectTrigger,
+    setFileTreeRefreshTrigger,
+    setFileTreeSelfManaged,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -216,6 +354,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    syncConversationSnapshotMessages,
+    runUpdateTopic,
     variables,
     showType,
     setShowType,
@@ -227,9 +367,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     closePreviewView,
     // 清除文件面板信息
     clearFilePanelInfo,
-    // 文件树数据
-    fileTreeData,
-    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -245,8 +382,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    isAwaitingChatTerminal,
+    // 统一终态清算入口（终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息）
+    finalizeConversationTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -264,14 +406,78 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     resumeConversationStream,
     abortResumeStream,
     refreshGitListRef,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
+
+  const previousAutoScrollRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!active) {
+      if (previousAutoScrollRef.current === null) {
+        previousAutoScrollRef.current = allowAutoScrollRef.current;
+      }
+      allowAutoScrollRef.current = false;
+      return;
+    }
+    if (previousAutoScrollRef.current === null) return;
+    const shouldFollowTail = previousAutoScrollRef.current;
+    previousAutoScrollRef.current = null;
+    allowAutoScrollRef.current = shouldFollowTail;
+    if (shouldFollowTail) {
+      const frame = requestAnimationFrame(() => {
+        const element = messageViewRef.current;
+        if (element) element.scrollTop = element.scrollHeight;
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [active, allowAutoScrollRef, messageViewRef]);
+
+  // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
+  const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    conversationId: id,
+    enabled: active && isFileTreeVisible,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && isFileTreeVisible,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+  });
+
+  useConversationChanged((event) => {
+    if (
+      event.operation !== 'updated' ||
+      !event.patch ||
+      String(conversationInfo?.id ?? id ?? '') !== event.conversationId
+    ) {
+      return;
+    }
+    setConversationInfo((previous: ConversationInfo | null | undefined) => {
+      if (!previous || String(previous.id) !== event.conversationId) {
+        return previous;
+      }
+      const next = {
+        ...previous,
+        ...(event.patch?.topic !== undefined
+          ? { topic: event.patch.topic }
+          : {}),
+        ...(event.patch?.icon !== undefined ? { icon: event.patch.icon } : {}),
+        ...(event.patch?.taskStatus !== undefined
+          ? { taskStatus: event.patch.taskStatus }
+          : {}),
+      };
+      return next.topic === previous.topic &&
+        next.icon === previous.icon &&
+        next.taskStatus === previous.taskStatus
+        ? previous
+        : next;
+    });
+  });
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
-    useModel('chat');
+    usePageModel('chat');
+
+  const { isMobile } = useModel('layout');
 
   // 会话记录
-  const { runHistoryItem } = useModel('conversationHistory');
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 统一 Agent 数据源：优先使用会话关联的智能体快照，兜底使用详情接口数据
   const effectiveAgent = useMemo(() => {
@@ -284,13 +490,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsSelectionLocked,
     hasUserSentMessage,
     setHasUserSentMessage,
+    hasChangedComputerInEmptySession,
+    handleComputerSelect,
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
-    location: { ...location, state: stateToUse },
-    history,
+    conversationId: id,
+    location: { ...routeLocation, state: stateToUse },
+    history: { action: routeAction },
     effectiveAgent,
     conversationInfo,
+    hasPersistedMessage: messageList.some((message: MessageInfo) =>
+      Boolean(message?.id),
+    ),
   });
 
   /** 文件树预览区底部终端是否显示 */
@@ -312,11 +524,34 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     'terminal' | 'logs'
   >('terminal');
 
+  const rememberWorkspaceView = useCallback(
+    (view: ConversationWorkspaceView) => {
+      conversationPageCacheManager.update(pageCacheKey, { view });
+    },
+    [pageCacheKey],
+  );
+
+  /**
+   * 用户从消息里点开的资料库文档。
+   * 智能体配置同步会按缓存视图重开扩展页或关掉预览，这里记下后跳过那次覆盖，
+   * 避免刚打开的资料库被刷掉。切换会话或用户主动打开/关闭扩展页时清空。
+   */
+  const repoDocPreviewRef = useRef<{ id: string | number; uri: string } | null>(
+    null,
+  );
+
+  const handleHidePagePreview = useCallback(() => {
+    repoDocPreviewRef.current = null;
+    hidePagePreview();
+    rememberWorkspaceView('closed');
+  }, [hidePagePreview, rememberWorkspaceView]);
+
   /** 关闭文件树时同步折叠终端，避免再次打开文件树时终端以展开状态恢复 */
   const handleClosePreviewView = useCallback(() => {
     setTerminalConsoleVisible(false);
     closePreviewView();
-  }, [closePreviewView]);
+    rememberWorkspaceView('closed');
+  }, [closePreviewView, rememberWorkspaceView]);
 
   const {
     isShowFilePanel,
@@ -329,18 +564,38 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreeVisible,
     viewMode,
     id,
-    sidebarRef,
     openPreviewView,
     closePreviewView: handleClosePreviewView,
     openDesktopView,
     pagePreviewData,
   });
 
+  /**
+   * 是否显示「打开智能体电脑」入口：
+   * 仅通用型智能体 + 未隐藏远程桌面 + 当前为云端电脑（'-1'）时展示；
+   * 个人电脑 / 共享电脑会话不展示该按钮。
+   */
+  const isShowDesktop =
+    isShowFilePanel &&
+    effectiveAgent?.hideDesktop === HideDesktopEnum.No &&
+    finalSelectedId === '-1';
+
+  /**
+   * 切换到非云端电脑时，若当前停留在智能体电脑视图则关闭，
+   * 避免按钮隐藏后仍残留桌面预览。
+   */
+  useEffect(() => {
+    if (finalSelectedId !== '-1' && viewMode === 'desktop') {
+      handleClosePreviewView();
+    }
+  }, [finalSelectedId, viewMode, handleClosePreviewView]);
+
   const {
     variableParams,
     setVariableParams,
     isSendMessageRef,
     isChatInputDisabled,
+    hasUserFillVariables,
   } = useChatVariables({
     firstVariableParams,
     requiredNameList,
@@ -383,21 +638,162 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     };
   }, [conversationInfo]);
 
-  // 打开扩展页面
-  const handleOpenPreview = (agent: any) => {
-    // 判断是否默认展示页面首页
-    if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
-      // 自动触发预览
-      showPagePreview({
-        name: t('PC.Pages.Chat.pagePreview'),
-        uri: process.env.BASE_URL + agent?.pageHomeIndex,
-        params: {},
-        executeId: '',
-      });
-    } else {
-      showPagePreview(null);
+  // =============== 项目型会话直开兜底跳转 ===============
+  // 全栈（UserApp）/网页应用（PageApp）/智能体开发（Agent）会话各有 IDE 宿主，
+  // 历史记录/收藏夹等旧链直开 /home/chat 时应回到对应 IDE。分两段：
+  // ①详情正常返回时（普通/常规会话都带 devTarget* 字段），非项目型不动，
+  //   项目型按侧栏同款分发规则（NewHomeSection.handleConversationClick）replace；
+  // ②UserApp 会话详情端点直接 404（Conversation not found）——空壳页正是它
+  //   ——详情迟迟不出时用会话列表反查一次（列表端点带 devTarget*），命中即跳。
+  // id 门槛先行：模型加载期可能残留上一会话数据，仅当前路由会话可触发。
+  // 仅独立路由页启用（enableDevTargetRedirect，内嵌宿主默认 false 不受影响）。
+  const redirectDevTargetConversation = useCallback(
+    (
+      info: Pick<
+        ConversationInfo,
+        'id' | 'devTargetType' | 'devTargetId' | 'devSpaceId'
+      >,
+    ) => {
+      const { devTargetType, devTargetId, devSpaceId } = info;
+      if (!devTargetType || !devTargetId || !devSpaceId) return;
+      if (devTargetType === 'Agent') {
+        history.replace(
+          `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${info.id}`,
+        );
+      } else if (devTargetType === 'PageApp') {
+        history.replace(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      } else if (devTargetType === 'UserApp') {
+        history.replace(buildAppProRoute(devSpaceId, devTargetId, info.id));
+      }
+    },
+    [],
+  );
+
+  // ① 详情已出：仅项目型（Agent/PageApp/UserApp）才跳，普通会话不动
+  useEffect(() => {
+    if (!active || !enableDevTargetRedirect) return;
+    const info = conversationInfo;
+    if (!info || info.id !== id) return;
+    redirectDevTargetConversation(info);
+  }, [
+    conversationInfo,
+    id,
+    enableDevTargetRedirect,
+    active,
+    redirectDevTargetConversation,
+  ]);
+
+  // ② 详情超时兜底：2.5s 仍无本会话数据（UserApp 详情 404 等）→ 列表反查一次。
+  //    正常会话在窗口内加载成功即取消定时器，不产生额外请求
+  const devTargetLookupFiredRef = useRef(false);
+  useEffect(() => {
+    if (!active || !enableDevTargetRedirect) return;
+    let cancelled = false;
+    devTargetLookupFiredRef.current = false;
+    if (conversationInfo?.id === id) return;
+    const conversationId = id;
+    const timer = setTimeout(() => {
+      if (devTargetLookupFiredRef.current) return;
+      devTargetLookupFiredRef.current = true;
+      void apiAgentConversationList({
+        agentId: null,
+        // 全量找会话（含已归档）做 devTarget 兜底跳转
+        archivedFilter: 'all',
+        limit: 50,
+      })
+        .then((res) => {
+          const hit = (res?.data || []).find(
+            (item) => item.id === conversationId,
+          );
+          if (hit && !cancelled) {
+            redirectDevTargetConversation(hit);
+          }
+        })
+        .catch(() => {
+          // 反查失败维持现状（与详情 404 的空壳表现一致，不额外打扰）
+        });
+    }, 2500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    conversationInfo?.id,
+    id,
+    enableDevTargetRedirect,
+    active,
+    redirectDevTargetConversation,
+  ]);
+
+  // 常规项目：nameDefined 为 false 时 generate-info 补全项目元数据
+  useChatNormalProjectNameSync({
+    conversationInfo,
+    prompt: message,
+    navigationAction: routeAction,
+  });
+
+  // =============== 会话 icon 缺失时，补拉会话 icon ===============
+
+  /** 主题已更新但 icon 仍为空时，补拉会话 icon */
+  const conversationIconUpdateRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    conversationIconUpdateRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
+    if (
+      !conversationInfo?.id ||
+      // 无名会话不做 icon 补齐（bug2382）：空 topic 的 update 会经共享 runUpdateTopic
+      // 的 onSuccess 置 needUpdateTopicRef=false，抢先毒化首条消息的自动命名；
+      // 自动命名成功后本 effect 会以新名字重评估，icon 链路不受损
+      !conversationInfo.topic ||
+      conversationInfo.topicUpdated !== 1 ||
+      conversationInfo.icon !== null ||
+      conversationIconUpdateRef.current === conversationInfo.id
+    ) {
+      return;
     }
-  };
+
+    // 更新会话 icon，如果更新失败，则重置 conversationIconUpdateRef
+    conversationIconUpdateRef.current = conversationInfo.id;
+    void runUpdateTopic({
+      id: conversationInfo.id,
+      topic: conversationInfo.topic,
+    }).catch(() => {
+      if (conversationIconUpdateRef.current === conversationInfo.id) {
+        conversationIconUpdateRef.current = null;
+      }
+    });
+  }, [conversationInfo, runUpdateTopic]);
+
+  // 打开扩展页面；自动初始化可跳过持久化，用户操作与会话事件默认记录。
+  const handleOpenPreview = useCallback(
+    (agent: any, persist = true) => {
+      repoDocPreviewRef.current = null;
+      if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
+        showPagePreview({
+          name: t('PC.Pages.Chat.pagePreview'),
+          uri: process.env.BASE_URL + agent?.pageHomeIndex,
+          params: {},
+          executeId: '',
+        });
+        if (persist) {
+          conversationPageCacheManager.update(pageCacheKey, {
+            view: 'pagePreview',
+          });
+        }
+      } else {
+        showPagePreview(null);
+        if (persist) {
+          conversationPageCacheManager.update(pageCacheKey, {
+            view: 'closed',
+          });
+        }
+      }
+    },
+    [pageCacheKey, showPagePreview],
+  );
 
   useEffect(() => {
     // 只有当会话信息是属于当前会话，或者默认详情属于当前智能体时，数据才是有效的，过滤掉切换会话时残留的旧数据
@@ -413,19 +809,76 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setAgentDetail(targetAgent);
-
-    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
-    if (targetAgent.paymentRequired && !targetAgent.subscribed) {
-      setOpenPaymentModal(true);
-    } else {
-      setOpenPaymentModal(false);
+    // 资料库文档正在当前页预览时，不按智能体扩展页配置覆盖或关闭。
+    if (repoDocPreviewRef.current?.id === id) {
+      return;
     }
-    // 设置应用智能体详情
+    const preferredView =
+      conversationPageCacheManager.getPanelPreference(pageCacheKey);
+    if (!defaultFileTreeVisible && preferredView === undefined) {
+      handleOpenPreview(targetAgent, true);
+    } else if (!defaultFileTreeVisible && preferredView === 'pagePreview') {
+      handleOpenPreview(targetAgent, false);
+    } else {
+      showPagePreview(null);
+    }
+  }, [
+    agentId,
+    id,
+    pageCacheKey,
+    defaultFileTreeVisible,
+    defaultAgentDetail,
+    conversationInfo?.agent,
+    handleOpenPreview,
+    showPagePreview,
+  ]);
+
+  const resolvePaymentTargetAgent = () =>
+    conversationInfo?.id === id
+      ? conversationInfo.agent
+      : defaultAgentDetail?.agentId === agentId
+      ? defaultAgentDetail
+      : null;
+
+  // 试用次数等归属仍随当前智能体同步；后台缓存实例不得覆盖当前页。
+  // 与下方弹窗开关分开：这里的函数身份变化不能再去改写 openPaymentModal。
+  useEffect(() => {
+    if (!active) return;
+    const targetAgent = resolvePaymentTargetAgent();
+    if (!targetAgent) return;
     handleSetAppAgentDetail(targetAgent);
-    handleOpenPreview(targetAgent);
-  }, [agentId, id, defaultAgentDetail, conversationInfo?.agent]);
+  }, [
+    active,
+    agentId,
+    conversationInfo?.agent,
+    conversationInfo?.id,
+    defaultAgentDetail,
+    id,
+    handleSetAppAgentDetail,
+  ]);
+
+  // 只在当前会话/智能体数据变化时按付费条件写入。不要依赖
+  // handleSetAppAgentDetail：它和 openPaymentModal 同属 useOpenApp，
+  // 用户开关弹窗会让模型重跑，若函数引用不稳，effect 会把开关立刻写回。
+  useEffect(() => {
+    if (!active) return;
+    const targetAgent = resolvePaymentTargetAgent();
+    if (!targetAgent) return;
+    setOpenPaymentModal(
+      Boolean(targetAgent.paymentRequired && !targetAgent.subscribed),
+    );
+  }, [
+    active,
+    agentId,
+    conversationInfo?.agent,
+    conversationInfo?.id,
+    defaultAgentDetail,
+    id,
+    setOpenPaymentModal,
+  ]);
 
   useEffect(() => {
+    let cancelled = false;
     if (id) {
       setIsLoadingConversation(false);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
@@ -437,9 +890,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         try {
           setLoadingAsync(true);
           const { data: _data } = await runAsync(id);
+          if (cancelled) return;
           data = _data;
         } finally {
-          setLoadingAsync(false);
+          if (!cancelled) setLoadingAsync(false);
         }
         // 会话消息列表
         const list = data?.messageList || [];
@@ -453,7 +907,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          const effectiveSandboxId = getEffectiveSandboxId(data);
+          const effectiveSandboxId =
+            getEffectiveSandboxId(data) || CLOUD_SANDBOX_ID;
 
           // 发送消息参数
           const sendParams: SendMessageParams = {
@@ -465,20 +920,51 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             sandboxId: effectiveSandboxId,
             data,
             skillIds,
+            selectedDocs: firstSelectedDocs,
             modelId: selectedModelId,
             agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
 
-          onMessageSend(sendParams);
+          const runtimeSession = runtimeLineRef.current?.session;
+          if (runtimeSession) {
+            runtimeSession.send({
+              conversationId: id,
+              message,
+              files,
+              infos,
+              variableParams: firstVariableParams,
+              sandboxId: effectiveSandboxId,
+              currentInfo: data,
+              isSuggestEnabled: data?.agent?.openSuggest === 1,
+              skillIds,
+              selectedDocs: firstSelectedDocs,
+              modelId: selectedModelId,
+              agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
+            });
+          } else {
+            onMessageSend(sendParams);
+          }
         }
       };
-      asyncFun();
+      void asyncFun();
     }
-  }, [id, message, files, infos, firstVariableParams, skillIds]);
+    // 路由离开后，旧请求的回包不得再触发预览和首条消息发送。
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    id,
+    message,
+    files,
+    infos,
+    firstVariableParams,
+    skillIds,
+    firstSelectedDocs,
+  ]);
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
-    if (isAppSidebarMode) {
+    if (!active || isAppSidebarMode) {
       return;
     }
     // 获取当前智能体的历史记录
@@ -486,7 +972,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       agentId,
       limit: 20,
     });
-  }, [id, agentId, isAppSidebarMode]);
+  }, [id, agentId, isAppSidebarMode, active]);
 
   useEffect(() => {
     addBaseTarget();
@@ -503,6 +989,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [infos, messageSourceType, manualComponents]);
 
   // 会话相关 props
+  // 清空上下文新会话的创建绑定（bug 2451：执行按创建时绑定路由）：清空已重置
+  // 手动选择，绑定=智能体绑定/云哨兵，与选择器清空后显示一致（hook 内 state
+  // 闭包过时，须以渲染期值传入）；类型归一（bug2443）：智能体绑定沙箱可能为
+  // 非数字形态，归一透传勿 Number 转 NaN（NaN 非空值，下游 ?? 兜底拦不住）
+  const createConversationSandboxId = useMemo(
+    () =>
+      normalizeSandboxIdValue(effectiveAgent?.sandboxId) ??
+      Number(CLOUD_SANDBOX_ID),
+    [effectiveAgent?.sandboxId],
+  );
   const { handleClear, handleMessageSend } = useChatConversation({
     id,
     agentId,
@@ -513,6 +1009,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isSendMessageRef,
     variableParams,
     getEffectiveSandboxId,
+    createConversationSandboxId,
     setClearLoading,
     handleClearSideEffect,
     setIsMoreMessage,
@@ -531,39 +1028,42 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     selectedModelId,
   });
 
+  const getCurrentConversationIdRef = useRef(getCurrentConversationId);
+  getCurrentConversationIdRef.current = getCurrentConversationId;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
   useEffect(() => {
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
-    setOpenPaymentModal(false);
+    // 发送标记属于上一会话；新会话在用户再次发送前不能沿用。
+    // 订阅弹窗不在这里关：本 effect 每次挂上都会跑，会盖掉进入页面时的自动打开，
+    // 以及用户手动打开。切换会话由 cleanup 先收起，再由上方按新范围重判。
+    setHasUserSentMessage(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
     setClearLoading(false);
 
     return () => {
-      // 组件卸载时重置全局会话状态，防止污染其他页面
+      // 直渲染入口仍可能共享全局模型。只清理本实例当前持有的会话；
+      // 局部模型入口也用同一守卫，避免过期回包误触发清理。
+      if (Number(getCurrentConversationIdRef.current()) !== Number(id)) {
+        return;
+      }
       resetInit();
       setSelectedComponentList([]);
+      repoDocPreviewRef.current = null;
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
-
-      setOpenPaymentModal(false);
+      if (activeRef.current) setOpenPaymentModal(false);
     };
   }, [id]);
 
-  useEffect(() => {
-    if (id && defaultFileTreeVisible) {
-      openPreviewView(id);
-      setIsFileTreePinned(true);
-    }
-  }, [id, defaultFileTreeVisible, openPreviewView, setIsFileTreePinned]);
-
-  // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
+  // 互斥面板控制器：管理 PagePreview、ShowArea 的互斥展示（AgentSidebar 已改为悬浮弹窗）
   useExclusivePanels({
     pagePreviewData,
     hidePagePreview,
-    isSidebarVisible,
-    sidebarRef,
     showType,
     setShowType,
   });
@@ -572,6 +1072,27 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useMessageEventDelegate({
     containerRef: messageViewRef,
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
+
+  // 资料库链接点进当前页右侧预览，复用扩展页面的 PagePreviewIframe。
+  const openRepoDocPreview = useCallback(
+    (uri: string) => {
+      repoDocPreviewRef.current = { id, uri };
+      setTerminalConsoleVisible(false);
+      closePreviewView();
+      showPagePreview({
+        name: t('PC.Pages.Chat.pagePreview'),
+        uri,
+        params: {},
+        executeId: '',
+      });
+    },
+    [id, closePreviewView, showPagePreview],
+  );
+  useRepoDocLinkPreview({
+    active,
+    containerRef: messageViewRef,
+    onOpen: openRepoDocPreview,
   });
 
   const {
@@ -584,14 +1105,65 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleExportProject,
   } = useChatFiles({
     id,
-    fileTreeData,
-    handleRefreshFileList,
+    fileTreeData: workspaceDirectoryFiles.files,
+    handleRefreshFileList: async (_id, path) =>
+      workspaceDirectoryFiles.refresh(path),
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
-  /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
+  // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
+  // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      getOpenDesktopSandboxId: () =>
+        getEffectiveSandboxId() ||
+        conversationInfo?.sandboxServerId ||
+        effectiveAgent?.sandboxId,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+  runtimeLineRef.current = runtimeLine;
+
+  /**
+   * 当前会话是否已有有效消息。空列表、或只有一条开场白，都不算。
+   * V2 看运行时消息列表；旧线看页面模型。详情未对上当前路由时视为还没有有效消息，
+   * 避免清空后用上一会话的列表去显示产物入口、请求 git。
+   */
   const hasValidMessageList = useMemo(() => {
-    const currentMessageList = messageList || [];
+    const sessionInfo = runtimeLine
+      ? (runtimeLine.conversationProps?.conversationInfo as
+          | { id?: number | string }
+          | null
+          | undefined)
+      : conversationInfo;
+    const sessionMessageList = runtimeLine
+      ? runtimeLine.messageList
+      : messageList;
+    if (
+      sessionInfo?.id === undefined ||
+      String(sessionInfo.id) !== String(id)
+    ) {
+      return false;
+    }
+    const currentMessageList = sessionMessageList || [];
     if (!currentMessageList.length) {
       return false;
     }
@@ -599,27 +1171,89 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       currentMessageList.length === 1 &&
       currentMessageList[0]?.messageType === MessageTypeEnum.ASSISTANT
     );
-  }, [messageList]);
+  }, [runtimeLine, conversationInfo, id, messageList]);
 
-  /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
-  const isGitStatusRefreshDisabled = !hasValidMessageList;
+  /** 有有效消息后才显示产物入口，并允许在预览面板展开时请求 git */
+  const canUseFilePreview = hasValidMessageList;
+
+  /**
+   * 文件预览面板是否展开。未展开时工作区可能还没有文件，甚至尚未建立，
+   * 此时不请求 git status / diff。
+   */
+  const isFilePreviewPanelOpen = isFileTreeVisible && viewMode === 'preview';
+
+  /** 面板未展开或会话未开始时，不允许刷新 Git status */
+  const isGitStatusRefreshDisabled =
+    !canUseFilePreview || !isFilePreviewPanelOpen;
+
+  /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
+  const toolResourceSelectRef = useRef('');
+
+  /**
+   * V2 工具详情点击打开的工作区外沙箱文件（桌面等）：
+   * 右侧面板临时切换为独立预览，不依赖工作区文件树。
+   */
+  const [externalPreviewFile, setExternalPreviewFile] = useState<{
+    cId: number;
+    targetDir: string;
+    relativePath: string;
+  } | null>(null);
+
+  /**
+   * 退出工作区外文件独立预览：该面板整块顶替文件树面板（文件树/终端/云电脑
+   * 都不可见），故任何回到工作区面板的动作都要先清它，否则右侧停在独立预览、
+   * 用户无法切回文件树预览。
+   */
+  const exitExternalPreview = useCallback(() => {
+    setExternalPreviewFile(null);
+  }, []);
+
+  const workspaceTaskSelectedFileId = taskAgentSelectedFileId
+    ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
+    : '';
+
+  /**
+   * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
+   * 模型层据此跳过全量递归拉取；卸载时复位，避免影响后续依赖模型树的页面。
+   */
+  useEffect(() => {
+    setFileTreeSelfManaged(fileTreeSelfManaged);
+    return () => setFileTreeSelfManaged(false);
+  }, [fileTreeSelfManaged, setFileTreeSelfManaged]);
 
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
+  /**
+   * 工具栏刷新：重拉根目录和已展开的每一层。
+   * 与会话结束、AppDevPro 文件预览的刷新按钮相同，走 fileTreeRefreshTrigger，
+   * 由工作区会话去刷已加载目录，而不是只刷当前选中的那一层。
+   */
+  const refreshExpandedFileTree = useCallback(async () => {
+    if (!id) return;
+    await refreshFileListImmediately(id);
+  }, [id, refreshFileListImmediately]);
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
-    taskAgentSelectedFileId,
+    taskAgentSelectedFileId: workspaceTaskSelectedFileId,
     taskAgentSelectTrigger,
-    originalFiles: fileTreeData,
-    fileTreeDataLoading,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文
+    fileTreeRefreshTrigger,
+    originalFiles: workspaceDirectoryFiles.files,
+    fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
     readOnly: false,
     onUploadFiles: handleUploadMultipleFiles,
     onExportProject: handleExportProject,
     onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: handleCreateFileNode,
-    onDeleteFile: handleDeleteFile,
+    onCreateFileNode: (node, newName) => handleCreateFileNode(node, newName),
+    onDeleteFile: (node) =>
+      handleDeleteFile(
+        node.type === 'folder' && node.relativePath
+          ? { ...node, id: node.relativePath }
+          : node,
+      ),
     onSaveFiles: handleSaveFiles,
     onSaveFileContent: async (fileId, content, originalFileContent) => {
       const result = await handleSaveFileContent(
@@ -634,23 +1268,81 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: () => refreshFileListImmediately(id),
+    onRefreshFileTree: refreshExpandedFileTree,
+    onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
+      active &&
+      isFilePreviewPanelOpen &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-      hasValidMessageList &&
+      canUseFilePreview &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     enableVersionControl: effectiveAgent?.enableVersionControl,
-    onSelectedFileMissing: () => {
+    onSelectedFileMissing: (fileId?: string) => {
+      // V2 工具详情点击打开的文件在文件树中找不到：按定调提示用户即可
+      // （hook 回传的 id 带 workspace: 前缀，归一后再与点击目标比对）
+      const relativeFileId = workspaceRelativePath(fileId || '');
+      if (relativeFileId && toolResourceSelectRef.current === relativeFileId) {
+        toolResourceSelectRef.current = '';
+        antdMessage.error(t('PC.Pages.Chat.toolFileOpenMissing'));
+      }
       setTaskAgentSelectedFileId('');
     },
+    // 懒加载宿主：目标父目录已加载才允许「未命中判 miss」；父目录导航在途时
+    // hook 保持等待（目录层到达后完成选中），修复嵌套文件打开竞态
+    isAutoSelectDirectoryLoaded: (fileId: string) => {
+      const parentPath = parentDirectory(workspaceRelativePath(fileId));
+      if (
+        workspaceDirectoryFiles.openingTaskResultRef.current?.parent ===
+        parentPath
+      ) {
+        return false;
+      }
+      return workspaceDirectoryFiles.loadedDirectoryPaths.has(parentPath);
+    },
+    /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
   });
 
+  workspaceDirectoryFiles.selectFileRef.current =
+    fileView.tree.handleFileSelect;
+
+  const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
+    useState('');
+
+  const openWorkspaceFile = useCallback(
+    (fileId: string) => {
+      const relativePath = workspaceRelativePath(fileId);
+      const selectionId = workspaceNodeId(relativePath);
+      setPendingWorkspaceSelectionId(selectionId);
+      workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
+    },
+    [workspaceDirectoryFiles.navigate],
+  );
+
+  useEffect(() => {
+    if (
+      !pendingWorkspaceSelectionId ||
+      !workspaceDirectoryFiles.files.some(
+        (file) => file.fileId === pendingWorkspaceSelectionId,
+      )
+    ) {
+      return;
+    }
+    const selectionId = pendingWorkspaceSelectionId;
+    setPendingWorkspaceSelectionId('');
+    void fileView.tree.handleFileSelect(selectionId);
+  }, [
+    pendingWorkspaceSelectionId,
+    workspaceDirectoryFiles.files,
+    fileView.tree.handleFileSelect,
+  ]);
+
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
 
   /** 折叠底部终端，避免遮挡文件预览（终端未展示时不发信号，避免首次打开被误折叠） */
@@ -682,6 +1374,17 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
    * 打开文件预览：与终端全屏、智能体电脑互斥
    */
   const handleFileTreeVisibleClick = useCallback(() => {
+    // 独立预览占位时，「文件预览」入口 = 回到工作区文件树预览（不收起面板）：
+    // 入口高亮态下若仅切换显隐，用户会一直停在独立预览里出不来
+    if (externalPreviewFile) {
+      setExternalPreviewFile(null);
+      if (!isFileTreeVisible) {
+        openPreviewView(id);
+      }
+      rememberWorkspaceView('filePreview');
+      return;
+    }
+
     const hasSelectedPreviewFile = Boolean(
       fileView.tree.selectedFileId || taskAgentSelectedFileId,
     );
@@ -703,6 +1406,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       ) {
         void fileView.refreshGitList();
       }
+      rememberWorkspaceView('filePreview');
       return;
     }
 
@@ -710,6 +1414,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
 
     handleFileTreeVisible();
+    rememberWorkspaceView(
+      openingFileTree || switchingToPreview ? 'filePreview' : 'closed',
+    );
 
     if (openingFileTree || switchingToPreview) {
       setTerminalConsoleVisible(false);
@@ -737,18 +1444,22 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     effectiveAgent?.type,
     effectiveAgent?.enableVersionControl,
     openPreviewView,
+    externalPreviewFile,
     id,
+    rememberWorkspaceView,
   ]);
 
   /** 打开 / 收起底部终端全屏（与文件预览、智能体电脑互斥） */
   const handleOpenTerminalPanel = useCallback(() => {
+    // 终端挂在文件树面板内，先退出独立预览，否则点终端看不到终端
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
       setTerminalConsoleLayoutMode('collapsed');
+      rememberWorkspaceView('closed');
       return;
     }
 
-    sidebarRef.current?.close();
     setHasTerminalConsoleRendered(true);
     setTerminalConsoleVisible(true);
     setTerminalConsoleCollapseSignal(0);
@@ -761,10 +1472,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setTerminalConsoleExpandSignal((n) => n + 1);
-  }, [isTerminalPanelOpen, isFileTreeVisible, viewMode, id, openPreviewView]);
+    rememberWorkspaceView('terminal');
+  }, [
+    isTerminalPanelOpen,
+    isFileTreeVisible,
+    viewMode,
+    id,
+    openPreviewView,
+    exitExternalPreview,
+    rememberWorkspaceView,
+  ]);
 
   /** 打开 / 切换智能体电脑（与文件预览、终端全屏互斥） */
   const handleOpenDesktopViewClick = useCallback(() => {
+    // 云电脑渲染在文件树面板的预览区，先退出独立预览，否则点电脑看不到桌面
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
     }
@@ -772,9 +1494,22 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleCollapseSignal(0);
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
-    sidebarRef.current?.close();
     handleOpenDesktopView();
-  }, [isTerminalPanelOpen, handleOpenDesktopView]);
+    const nextView =
+      isFileTreeVisible && viewMode === 'desktop' ? 'closed' : 'desktop';
+    rememberWorkspaceView(nextView);
+    if (nextView === 'desktop') {
+      conversationPageCacheManager.setSharedVncOwner(id);
+    }
+  }, [
+    isTerminalPanelOpen,
+    isFileTreeVisible,
+    viewMode,
+    handleOpenDesktopView,
+    exitExternalPreview,
+    rememberWorkspaceView,
+    id,
+  ]);
 
   useEffect(
     () => () => {
@@ -791,8 +1526,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [gitVersionPanelOpen, setGitVersionPanelOpen] =
     useState<boolean>(false);
 
+  /**
+   * 常规项目（NormalProject）会话判定（含 conversationInfo 与路由 id 的守恒
+   * 校验，防切换会话窗口期错配）：终端 URL 携带 service_type=
+   * computer-normal-project，服务端/本机网关据此把终端初始目录落到 normalProject
+   * 业务目录（云端 /home/user/normalProject/{pid}、本机镜像布局）。
+   */
+  const normalProjectConversation = isNormalProjectConversation(
+    conversationInfo,
+    id,
+  );
+
   /** 终端 WebSocket 连接地址（ttyd） */
-  const terminalWsUrl = useTerminalWsUrl(id);
+  const terminalWsUrl = useTerminalWsUrl(
+    id,
+    normalProjectConversation
+      ? { serviceType: 'computer-normal-project' }
+      : undefined,
+  );
 
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
@@ -802,64 +1553,45 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }
 
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      // #5a 懒加载收尾：模型层不再全量拉树，.gitignore 现内容操作时按需拉取。
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此必须按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止，否则会出现提示成功、条目未写入的假成功
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(`/api/computer/static/${id}/${gitignoreId}`),
+        fileId,
       );
-      const currentContent = existing?.contents ?? '';
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
-        message.info(
+      if (plan.action === 'abort-fetch-error') {
+        antdMessage.error(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
+        antdMessage.info(
           t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
 
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
-
       try {
-        if (existing) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            [
-              {
-                fileId: gitignoreId,
-                fileContent: newContent,
-                originalFileContent: currentContent,
-              },
-            ],
-            'modify',
-          );
-          await apiUpdateStaticFile({
-            cId: id,
-            files: updatedFilesList as UpdateFileInfo[],
-          });
-        } else {
-          await apiUpdateStaticFile({
-            cId: id,
-            files: [
-              {
-                name: gitignoreId,
-                contents: `${newContent}\n`,
-                operation: 'create',
-                binary: false,
-                sizeExceeded: false,
-                renameFrom: '',
-                isDir: false,
-              },
-            ],
-          });
-        }
+        await apiUpdateStaticFile({
+          cId: id,
+          files: [
+            {
+              name: gitignoreId,
+              contents: plan.contents,
+              operation: plan.operation,
+              binary: false,
+              sizeExceeded: false,
+              renameFrom: '',
+              isDir: false,
+            },
+          ],
+        });
 
-        message.success(
+        antdMessage.success(
           t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
         await handleRefreshFileList(id);
@@ -868,7 +1600,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         console.error('Add to gitignore failed:', error);
       }
     },
-    [id, fileTreeData, handleRefreshFileList],
+    [id, handleRefreshFileList],
   );
 
   // Git 源代码管理 props
@@ -884,13 +1616,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       openChangeFile: (fileId: string) => {
         setSelectedChangeFile(null);
         setTaskAgentSelectedFileId('');
-        void fileView.tree.handleFileSelect(fileId);
+        openWorkspaceFile(fileId);
       },
       addFileToGitignore: handleAddToGitignore,
       onDiffFileSelect: () => {
         if (viewMode === 'desktop') {
           openPreviewView(id);
         }
+      },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
       },
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
@@ -936,6 +1671,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
     prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
 
+    // 触发链路选中工作区文件（TaskResult / markdown 链接 / 自动预览）时，
+    // 工作区文件预览优先，退出独立预览
+    exitExternalPreview();
     closeVersionPanelForFilePreviewRef.current();
 
     if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
@@ -948,8 +1686,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
+    exitExternalPreview,
   ]);
 
+  // 切换会话时，重置 Git 版本记录面板和终端状态
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
@@ -957,22 +1697,216 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleLayoutMode('default');
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleCollapseSignal(0);
+    setExternalPreviewFile(null);
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
+  const pendingWorkspaceRestoreRef = useRef<{
+    key: string;
+    view: 'terminal' | 'desktop' | 'pagePreview';
+  } | null>(null);
+  const workspaceRestoreActionsRef = useRef({
+    openPreviewView,
+    openDesktopView: handleOpenDesktopView,
+    openPagePreview: handleOpenPreview,
+    setIsFileTreePinned,
+  });
+  workspaceRestoreActionsRef.current = {
+    openPreviewView,
+    openDesktopView: handleOpenDesktopView,
+    openPagePreview: handleOpenPreview,
+    setIsFileTreePinned,
+  };
+
+  const restoredWorkspaceKeyRef = useRef<string | null>(null);
+
+  useEffect(
+    () => () => {
+      conversationPageCacheManager.updateResources(pageCacheKey, {
+        terminalMounted: false,
+        terminalConnected: false,
+      });
+    },
+    [pageCacheKey],
+  );
+
+  // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
+  useLayoutEffect(() => {
+    if (active) return;
+    restoredWorkspaceKeyRef.current = null;
+    pendingWorkspaceRestoreRef.current = null;
+    setTerminalConsoleVisible(false);
+    setHasTerminalConsoleRendered(false);
+    setTerminalConsoleLayoutMode('collapsed');
+    setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleCollapseSignal(0);
+  }, [active, pageCacheKey]);
+
+  // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
+  useEffect(() => {
+    if (!active) return;
+    const entry = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: id,
+      agentId,
+    });
+    const deactivate = () =>
+      conversationPageCacheManager.deactivate(pageCacheKey);
+    if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
+    restoredWorkspaceKeyRef.current = pageCacheKey;
+    const targetView =
+      defaultFileTreeVisible && entry.view === 'closed'
+        ? 'filePreview'
+        : entry.view;
+    if (targetView !== entry.view) rememberWorkspaceView(targetView);
+    pendingWorkspaceRestoreRef.current = null;
+    if (targetView === 'filePreview') {
+      workspaceRestoreActionsRef.current.openPreviewView(id);
+      workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
+      return deactivate;
+    }
+    if (
+      targetView === 'terminal' ||
+      targetView === 'desktop' ||
+      targetView === 'pagePreview'
+    ) {
+      pendingWorkspaceRestoreRef.current = {
+        key: pageCacheKey,
+        view: targetView,
+      };
+    }
+    return deactivate;
+  }, [
+    active,
+    pageCacheKey,
+    agentId,
+    defaultFileTreeVisible,
+    rememberWorkspaceView,
+  ]);
+
+  useEffect(() => {
+    if (conversationInfo?.id === id) {
+      conversationPageCacheManager.markConversationTaskStatus(
+        id,
+        conversationInfo.taskStatus,
+      );
+      if (freezeRouteLocation) {
+        fullPageInstanceCacheManager.markStatus(
+          id,
+          conversationInfo.taskStatus,
+        );
+      }
+    }
+  }, [
+    freezeRouteLocation,
+    id,
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+  ]);
+
+  // desktop/pagePreview 依赖异步到达的 agent/沙箱信息，仅消费当前 key 的待恢复任务一次。
+  useEffect(() => {
+    const pending = pendingWorkspaceRestoreRef.current;
+    if (
+      !active ||
+      !pending ||
+      pending.key !== pageCacheKey ||
+      !effectiveAgent ||
+      conversationInfo?.id !== id
+    )
+      return;
+
+    pendingWorkspaceRestoreRef.current = null;
+    if (pending.view === 'terminal') {
+      workspaceRestoreActionsRef.current.openPreviewView(id);
+      setHasTerminalConsoleRendered(true);
+      setTerminalConsoleVisible(true);
+      setTerminalConsoleLayoutMode('expanded');
+      setTerminalConsoleActiveTab('terminal');
+      setTerminalConsoleCollapseSignal(0);
+      setTerminalConsoleExpandSignal((signal) => signal + 1);
+      return;
+    }
+    if (pending.view === 'desktop') {
+      if (finalSelectedId === '-1') {
+        conversationPageCacheManager.setSharedVncOwner(id);
+        workspaceRestoreActionsRef.current.openDesktopView();
+      } else {
+        rememberWorkspaceView('closed');
+      }
+      return;
+    }
+    workspaceRestoreActionsRef.current.openPagePreview(effectiveAgent, false);
+  }, [
+    active,
+    id,
+    conversationInfo?.id,
+    pageCacheKey,
+    effectiveAgent,
+    finalSelectedId,
+    rememberWorkspaceView,
+  ]);
+
+  useEffect(() => {
+    conversationPageCacheManager.updateResources(pageCacheKey, {
+      terminalMounted: hasTerminalConsoleRendered,
+      terminalConnected:
+        active && hasTerminalConsoleRendered && terminalConsoleVisible,
+      pageIframeMounted: Boolean(pagePreviewData),
+      desktopVisible: active && isFileTreeVisible && viewMode === 'desktop',
+    });
+  }, [
+    active,
+    pageCacheKey,
+    hasTerminalConsoleRendered,
+    terminalConsoleVisible,
+    pagePreviewData,
+    isFileTreeVisible,
+    viewMode,
+  ]);
+
+  useEffect(() => {
+    if (active && isFileTreeVisible && viewMode === 'desktop') {
+      conversationPageCacheManager.setSharedVncOwner(id);
+      fullPageInstanceCacheManager.setSharedVncOwner(id);
+    } else if (
+      !active &&
+      conversationPageCacheManager.getSnapshot()
+        .sharedVncOwnerConversationId === String(id)
+    ) {
+      conversationPageCacheManager.setSharedVncOwner(null);
+    }
+    if (
+      !active &&
+      fullPageInstanceCacheManager.getSnapshot()
+        .sharedVncOwnerConversationId === String(id)
+    ) {
+      fullPageInstanceCacheManager.setSharedVncOwner(null);
+    }
+  }, [active, id, isFileTreeVisible, viewMode]);
+
+  // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
     if (viewMode === 'desktop') {
       setGitVersionPanelOpen(false);
     }
   }, [viewMode]);
 
-  // 文件树 props
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
+      loadedFolderIds: workspaceDirectoryFiles.loadedFolderIds,
+      loadingFolderIds: workspaceDirectoryFiles.loadingFolderIds,
+      toolbarTitle: t('PC.Pages.Chat.fileTreeFiles'),
+      onLoadDirectory: workspaceDirectoryFiles.onLoadDirectory,
+      remoteFileSearch: workspaceDirectoryFiles.remoteFileSearch,
       handleFileSelect: async (
         fileId: string,
-        options?: { selectFolder?: boolean },
+        options?: {
+          selectFolder?: boolean;
+          openDirectory?: boolean;
+          fallbackNode?: FileNode;
+        },
       ) => {
         if (!options?.selectFolder) {
           setTaskAgentSelectedFileId('');
@@ -980,11 +1914,17 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           gitSourceControl.setSelectedChangeFile(null);
           collapseTerminalConsole();
         }
+        await workspaceDirectoryFiles.ensureFallbackDirectory(options);
         await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
       fileView.tree,
+      workspaceDirectoryFiles.loadedFolderIds,
+      workspaceDirectoryFiles.loadingFolderIds,
+      workspaceDirectoryFiles.onLoadDirectory,
+      workspaceDirectoryFiles.remoteFileSearch,
+      workspaceDirectoryFiles.ensureFallbackDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
@@ -992,23 +1932,25 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
 
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
-  const terminalConsole = hasTerminalConsoleRendered ? (
-    <ConversationBottomConsole
-      className={cx(styles['terminal-console'])}
-      conversationId={finalSelectedId === '-1' ? id : undefined}
-      visible={terminalConsoleVisible}
-      wsUrl={terminalWsUrl}
-      wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-      wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-      defaultActiveTab="terminal"
-      defaultLayoutMode="default"
-      expandSignal={terminalConsoleExpandSignal}
-      collapseSignal={terminalConsoleCollapseSignal}
-      onLayoutModeChange={setTerminalConsoleLayoutMode}
-      onActiveTabChange={setTerminalConsoleActiveTab}
-      showLogsTab={false}
-    />
-  ) : null;
+  const terminalConsole =
+    active && conversationInfo?.id === id && hasTerminalConsoleRendered ? (
+      <ConversationBottomConsole
+        key={`${id}:${finalSelectedId}`}
+        className={cx(styles['terminal-console'])}
+        conversationId={finalSelectedId === '-1' ? id : undefined}
+        visible={active && terminalConsoleVisible}
+        wsUrl={terminalWsUrl}
+        wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+        wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+        defaultActiveTab="terminal"
+        defaultLayoutMode="default"
+        expandSignal={terminalConsoleExpandSignal}
+        collapseSignal={terminalConsoleCollapseSignal}
+        onLayoutModeChange={setTerminalConsoleLayoutMode}
+        onActiveTabChange={setTerminalConsoleActiveTab}
+        showLogsTab={false}
+      />
+    ) : null;
 
   /** 文件树侧边栏 props */
   const isVersionControlEnabled = isAgentVersionControlEnabled(
@@ -1020,7 +1962,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     () => ({
       tree: chatFileTree,
       preview: fileView.preview,
-      viewMode,
+      // 桌面 VNC 是全局唯一连接；隐藏整页时让 FileTreePreviewPanel 卸载 iframe。
+      viewMode: active ? viewMode : 'preview',
       hideDesktop: effectiveAgent?.hideDesktop,
       diffFile: gitSourceControl.selectedDiffFile,
       gitVersionPanelOpen,
@@ -1029,6 +1972,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       showSourceControl: isVersionControlEnabled,
       enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
+        isFilePreviewPanelOpen &&
+        canUseFilePreview &&
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
         isVersionControlEnabled
           ? {
@@ -1103,11 +2048,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       terminalConsole,
       fileView.gitBranch,
       viewMode,
+      active,
       id,
       effectiveAgent?.hideDesktop,
       effectiveAgent?.type,
       effectiveAgent?.enableVersionControl,
       isVersionControlEnabled,
+      canUseFilePreview,
+      isFilePreviewPanelOpen,
       finalSelectedId,
       handleExportProject,
       openPreviewView,
@@ -1120,21 +2068,65 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
-    // 设置最小宽度-扩展页面/文件树
+    if (!active) return;
+    // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container 内，
+    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
+    if (document.body.classList.contains('xagi-nav-style3')) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
+    // 移动端不设置最小宽度
+    if (isMobile && !isFileTreeVisible) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
+    // 设置最小宽度-扩展页面/文件树（智能体详情已改为悬浮弹窗，不再有侧栏占位档位）
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
     } else {
-      // 设置最小宽度-调试详情
-      if (showSidebar && isSidebarVisible) {
-        document.documentElement.style.minWidth = '1540px';
-      } else {
-        document.documentElement.style.minWidth = '1200px';
-      }
+      document.documentElement.style.minWidth = '1200px';
     }
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
+  }, [active, pagePreviewData, isFileTreeVisible, isMobile]);
+
+  // 会话活跃口径：本地流式 + 后台 EXECUTING（chatSessionProps.isConversationActive 同一来源）
+  const effectiveConversationActive =
+    isConversationActive ||
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  // 进度面板可用性：与胶囊组件同源纯选择器；有内容才渲染页头「会话进度」按钮，
+  // 按钮图标固定，面板内状态以胶囊组件内部模型为准
+  const capsuleModel = useMemo(
+    () => selectProgressCapsule(messageList, effectiveConversationActive),
+    [messageList, effectiveConversationActive],
+  );
+  const handleToggleCapsulePanel = useCallback(
+    () => setCapsulePanelOpen((value) => !value),
+    [],
+  );
+  const handleCloseCapsulePanel = useCallback(
+    () => setCapsulePanelOpen(false),
+    [],
+  );
+  // 进度面板节点：由页面层组装（数据/受控态/TaskAgent 门控），经 LeftContent 挂到
+  // left 栏与 chat-section 平级——距栏顶/栏右等距（原先锚在 session-container，
+  // 会多出 chat-section 的 padding-right 导致右边距偏大）
+  const chatPaneCapsule =
+    effectiveAgent?.type === AgentTypeEnum.TaskAgent ? (
+      <ConversationProgressCapsule
+        conversationId={id}
+        messageList={messageList}
+        active={effectiveConversationActive}
+        enableVersionControl={
+          isFilePreviewPanelOpen &&
+          canUseFilePreview &&
+          isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl)
+        }
+        open={active && capsulePanelOpen}
+        onClose={handleCloseCapsulePanel}
+      />
+    ) : null;
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1142,17 +2134,28 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
+    hideMenu: chromeFlags.hideMenu,
+    hideNew: chromeFlags.hideNew,
+    hideTitle: chromeFlags.hideTitle,
+    hideTerminal: chromeFlags.hideTerminal,
+    hideTree: chromeFlags.hideTree,
     agentId,
     conversationInfo,
     setConversationInfo,
     isEnableSubscription,
     setOpenPaymentModal,
-    isSidebarVisible,
-    sidebarRef,
-    hidePagePreview,
+    isAgentDetailModalOpen,
+    handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
+    // 会话进度面板（TaskAgent）：有内容才显示页头按钮
+    hasCapsuleContent: capsuleModel !== null,
+    capsuleRunning: capsuleModel?.running ?? false,
+    isCapsulePanelOpen: capsulePanelOpen,
+    handleToggleCapsulePanel,
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
+    showFilePreview: canUseFilePreview,
+    isShowDesktop,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
     isFileTreeIconActive,
@@ -1162,31 +2165,127 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleOpenDesktopView: handleOpenDesktopViewClick,
     renderTitle,
     renderHeaderRight,
+    // 会话内搜索：当前会话 + 已有会话记录（本会话发过消息，或打开旧会话已加载出消息）
+    searchConversationId: conversationInfo?.id ?? null,
+    searchHasMessages: hasUserSentMessage || messageList.length > 0,
   };
 
   // 聊天会话相关 props
+  // 渲染线（V2 双线重构）：URL 调试覆盖 > 默认 V2，与数据线正交
+  const { renderer: conversationRendererVersion } =
+    useConversationRendererPreference();
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
+  // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
+  // 旧线路径原值原行为。runtimeLine 已在产物入口判断前创建。
+
+  const fetchMentionFiles = useCallback(
+    async (keyword = ''): Promise<FileMentionItem[]> => {
+      if (!id) return [];
+      const kw = keyword.trim();
+      const response = kw
+        ? await apiSearchFiles({ cId: id, kw, type: 'file', limit: 100 })
+        : await apiGetStaticFileList(id, {
+            relativePath: '',
+            recursive: true,
+            type: 'file',
+            limit: 100,
+          });
+      if (response.code !== SUCCESS_CODE)
+        throw new Error('会话文件列表加载失败');
+      return (response.data?.files ?? [])
+        .filter((file) => !file.isDir)
+        .map((file) => ({
+          kind: 'file',
+          relativePath: file.name,
+          name: file.name.split('/').pop() || file.name,
+        }));
+    },
+    [id],
+  );
+
+  /**
+   * V2 工具详情资源点击：文件 → 打开预览面板（与 FINAL_RESULT task-result
+   * 文件自动打开同链路：开面板 + 设选中 + 触发器）；URL → 新窗口。
+   * 工作区外沙箱文件（桌面等）→ 独立预览面板（customTargetDir 锚定家目录，
+   * 云端会话放开为后端契约）。路径不属于当前会话/无法解析时按定调直接 toast
+   * 提示，不做其他兜底。
+   */
+  const handleOpenToolResource = (resource: ConversationToolResource) => {
+    if (resource.kind === 'url') {
+      void openKnownBusinessRouteWindow(resource.target);
+      return;
+    }
+    if (resource.kind !== 'file') {
+      return;
+    }
+    const currentId = id?.toString() || '';
+    const decision = resolveSandboxFileOpen(resource.target, currentId);
+    if (decision.type === 'reject') {
+      antdMessage.error(
+        t(
+          decision.reason === 'not-in-conversation'
+            ? 'PC.Pages.Chat.toolFileOpenNotInConversation'
+            : 'PC.Pages.Chat.toolFileOpenUnsupportedPath',
+        ),
+      );
+      return;
+    }
+    openPreviewView(currentId);
+    if (decision.type === 'open-external') {
+      // 清工作区自动选中，右侧面板切换为独立预览
+      toolResourceSelectRef.current = '';
+      setTaskAgentSelectedFileId('');
+      setExternalPreviewFile({
+        cId: Number(currentId),
+        targetDir: decision.targetDir,
+        relativePath: decision.relativePath,
+      });
+      return;
+    }
+    exitExternalPreview();
+    // 记录本次点击目标：文件树拉取完成后仍找不到时由 onSelectedFileMissing 提示
+    toolResourceSelectRef.current = decision.relativePath;
+    setTaskAgentSelectedFileId(decision.relativePath);
+    setTaskAgentSelectTrigger(Date.now());
+  };
+
   const chatSessionProps = {
+    onFetchMentionFiles:
+      id && effectiveAgent?.type === AgentTypeEnum.TaskAgent
+        ? fetchMentionFiles
+        : undefined,
     conversationId: id,
     messageList,
+    messageRenderer: conversationRendererVersion,
+    onOpenToolResource: handleOpenToolResource,
     roleInfo,
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
     // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
-    isConversationActive:
-      isConversationActive ||
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    isConversationActive: effectiveConversationActive,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
-    onReloadConversationHistoryAsync: async (id: number) =>
-      (await runAsync(Number(id)))?.data?.messageList,
+    // 流式恢复拉历史必须静默：不要走 model 的 runAsync（会置 loadingConversation），
+    // 否则 Chat 整页被 Loading 卸载重挂，执行中/思考中会不断闪动。
+    onReloadConversationHistoryAsync: async (reloadId: number) => {
+      const result = await apiAgentConversation(Number(reloadId));
+      if (result?.data) {
+        syncConversationSnapshotMessages(result.data);
+      }
+      return result?.data?.messageList;
+    },
+    onConversationSnapshot: syncConversationSnapshotMessages,
     resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
-      applyTerminalTaskStatus(setConversationInfo, id, status);
+      // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
+      // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
+      finalizeConversationTerminal(id, status, 'poll-snapshot');
     },
     loadingSuggest,
     chatSuggestList,
@@ -1203,9 +2302,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       hideDesktop: effectiveAgent?.hideDesktop,
       expandPageArea: effectiveAgent?.expandPageArea,
       allowChooseMode: effectiveAgent?.allowChooseMode,
+      enableVersionControl: effectiveAgent?.enableVersionControl,
     },
     onSendMessage: handleMessageSend,
-    onClear: showClearContext ? handleClear : undefined,
+    onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,
@@ -1219,20 +2319,23 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     form,
     variables,
     userFillVariables: firstVariableParams,
-    isVariablesDisabled: !!firstVariableParams || isSendMessageRef.current,
+    isVariablesDisabled: hasUserFillVariables || isSendMessageRef.current,
     clearLoading,
     isSelectionLocked,
     hasUserSentMessage,
     selectedComputerId: finalSelectedId,
-    onComputerSelect: setSelectedComputerId,
+    hasChangedComputerInEmptySession,
+    restoreConversationSandbox: true,
+    onComputerSelect: handleComputerSelect,
     showScrollBtn,
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
-    readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
+    readonly: !effectiveAgent?.allowPrivateSandbox,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-      effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
+      // allowAtSkill 兼容数字/字符串 1（后端两种形态都可能返回）
+      Number(effectiveAgent?.allowAtSkill) === 1,
     showAnnouncement: true,
     mentionPlacement: 'up',
     messageViewRef,
@@ -1245,10 +2348,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 
-  // 加载中
-  if (clearLoading || loadingConversation || loadingAsync) {
+  const isBlockingLoading = clearLoading || loadingAsync;
+  if (!isBlockingLoading) hasRenderedChatRef.current = true;
+
+  // 首次进入尚无可展示内容时使用整页 Loading；之后切会话改用覆盖层，避免卸载缓存实例。
+  // 不要把 loadingConversation 算进来：流式恢复若误走 runAsync，会反复遮挡执行中内容。
+  if (isBlockingLoading && !hasRenderedChatRef.current) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
         <LoadingOutlined />
@@ -1258,150 +2367,96 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
+  const isPagePreviewVisible = Boolean(pagePreviewData && !isFileTreeVisible);
+  // 资料库文档不是页面模板，不提供「复制模板」。
+  const showPageCopyButton =
+    showCopyButton && !isRepoLibraryPath(String(pagePreviewData?.uri || ''));
+  const pagePreviewContent = pagePreviewData ? (
+    <>
+      <PagePreviewIframe
+        pagePreviewData={pagePreviewData}
+        active={active && isPagePreviewVisible}
+        showHeader={true}
+        onClose={handleHidePagePreview}
+        showCloseButton={!effectiveAgent?.hideChatArea}
+        titleClassName={cx(styles['title-style'])}
+        showCopyButton={showPageCopyButton}
+        allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+        onCopyClick={() => setOpenCopyModal(true)}
+        copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+        copyButtonClassName={styles['copy-btn']}
+      />
+      {showPageCopyButton && effectiveAgent && pagePreviewData.uri && (
+        <CopyToSpaceComponent
+          spaceId={effectiveAgent.spaceId}
+          mode={AgentComponentTypeEnum.Page}
+          componentId={parsePageAppProjectId(pagePreviewData.uri)}
+          title={''}
+          open={active && openCopyModal}
+          isTemplate={true}
+          onSuccess={(_: any, targetSpaceId: number) => {
+            setOpenCopyModal(false);
+            jumpToPageDevelop(targetSpaceId);
+          }}
+          onCancel={() => setOpenCopyModal(false)}
+        />
+      )}
+    </>
+  ) : null;
+  const pagePreviewCache = (
+    <ConversationInstanceCacheSlot
+      activeKey={pageCacheKey}
+      active={isPagePreviewVisible}
+      retain={Boolean(pagePreviewData)}
+      testId="conversation-page-preview-cache"
+    >
+      {pagePreviewContent}
+    </ConversationInstanceCacheSlot>
+  );
 
   return (
     <div
       className={cx(styles['chat-root'])}
       data-nuwaclaw-perf-scope="chat-root"
     >
-      {/* 智能体聊天和预览页面 */}
+      {isBlockingLoading && (
+        <div className={cx(styles['chat-loading-overlay'])}>
+          <LoadingOutlined />
+        </div>
+      )}
+      {/* 智能体聊天和预览页面；资料库 / Page 在顶部图标下方的内容区展开 */}
       <div
         className={cx(styles['main-area'], {
           [styles['main-area-expanded']]: isExpandedView,
         })}
       >
-        {enableResizable ? (
-          <ResizableSplit
-            resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-            }
-            minLeftWidth={430}
-            defaultLeftWidth={37}
-            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-            left={
-              effectiveAgent?.hideChatArea ? null : (
-                <LeftContent
-                  isFileTreeVisible={isFileTreeVisible}
-                  effectiveAgent={effectiveAgent}
-                  isAppSidebarMode={isAppSidebarMode}
-                  headerProps={headerProps}
-                  chatSessionProps={chatSessionProps}
-                  fileSidebarProps={fileSidebarProps}
-                />
-              )
-            }
-            right={
-              pagePreviewData &&
-              !isFileTreeVisible && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!effectiveAgent?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenCopyModal(true)}
-                    copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={effectiveAgent!.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                      title={''}
-                      open={openCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            }
-          />
+        {effectiveAgent?.hideChatArea ? (
+          pagePreviewCache
         ) : (
-          <div
-            className={cx('flex', 'w-full', 'h-full')}
-            style={{
-              gap: '16px',
-            }}
-          >
-            {effectiveAgent?.hideChatArea ? null : (
-              <div
-                style={{
-                  flex: pagePreviewData && !isFileTreeVisible ? '0 0 50%' : '1',
-                  minWidth: 0,
-                }}
-              >
-                <LeftContent
-                  isFileTreeVisible={isFileTreeVisible}
-                  effectiveAgent={effectiveAgent}
-                  isAppSidebarMode={isAppSidebarMode}
-                  headerProps={headerProps}
-                  chatSessionProps={chatSessionProps}
-                  fileSidebarProps={fileSidebarProps}
-                />
-              </div>
-            )}
-            {pagePreviewData && !isFileTreeVisible && (
-              <div style={{ flex: '1', minWidth: 0 }}>
-                <PagePreviewIframe
-                  pagePreviewData={pagePreviewData}
-                  showHeader={true}
-                  onClose={hidePagePreview}
-                  showCloseButton={!effectiveAgent?.hideChatArea}
-                  titleClassName={cx(styles['title-style'])}
-                  showCopyButton={showCopyButton}
-                  allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={() => setOpenCopyModal(true)}
-                  copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                  copyButtonClassName={styles['copy-btn']}
-                />
-                {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                  <CopyToSpaceComponent
-                    spaceId={effectiveAgent!.spaceId}
-                    mode={AgentComponentTypeEnum.Page}
-                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                    title={''}
-                    open={openCopyModal}
-                    isTemplate={true}
-                    onSuccess={(_: any, targetSpaceId: number) => {
-                      setOpenCopyModal(false);
-                      jumpToPageDevelop(targetSpaceId);
-                    }}
-                    onCancel={() => setOpenCopyModal(false)}
-                  />
-                )}
-              </div>
-            )}
-          </div>
+          <LeftContent
+            pageCacheKey={pageCacheKey}
+            isFileTreeVisible={isFileTreeVisible}
+            effectiveAgent={effectiveAgent}
+            isAppSidebarMode={isAppSidebarMode}
+            headerProps={headerProps}
+            chatSessionProps={chatSessionProps}
+            fileSidebarProps={fileSidebarProps}
+            externalFilePreview={externalPreviewFile}
+            onExternalFilePreviewBack={exitExternalPreview}
+            chatPaneCapsule={chatPaneCapsule}
+            pagePreview={pagePreviewData ? pagePreviewCache : null}
+            isPagePreviewVisible={isPagePreviewVisible}
+          />
         )}
       </div>
-      {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
-      <ConditionRender
-        condition={showSidebar && !isAppSidebarMode && !isFileTreeVisible}
-      >
-        {/* AgentSidebar - 只在文件树隐藏时显示 */}
-        <AgentSidebar
-          ref={sidebarRef}
-          className={cx(
-            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-          )}
-          agentId={agentId}
-          loading={loadingConversation}
-          agentDetail={effectiveAgent}
-          onVisibleChange={setIsSidebarVisible}
-        />
-      </ConditionRender>
+      {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}
+      <AgentDetailModal
+        open={active && isAgentDetailModalOpen}
+        onClose={() => setIsAgentDetailModalOpen(false)}
+        agentId={agentId}
+        loading={loadingConversation}
+        agentDetail={effectiveAgent}
+      />
       {/*展示台区域*/}
       <ShowArea />
 
@@ -1410,7 +2465,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       >
         {/* 付费订阅套餐弹窗 */}
         <PaymentSubscriptionModal
-          open={openPaymentModal}
+          open={active && openPaymentModal}
           targetType="Agent"
           calledTrialCount={localCalledTrialCount}
           trialCount={agentDetail?.trialCount}
@@ -1434,9 +2489,68 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
 };
 
+/**
+ * 普通路由和内嵌宿主沿用全局 model；未包局部 Provider 时隐藏即卸载，
+ * 防止后台 SSE、轮询及 cleanup 改写当前页。客户端常驻入口另用 CachedChatPage。
+ */
+export const ChatCore: React.FC<ChatCoreProps> = ({
+  active = true,
+  ...props
+}) => (active ? <ChatCoreInner {...props} /> : null);
+
+/** 商业客户端的会话实例：独立 model 和固定路由快照随宿主实例存活。 */
+export const CachedChatPage: React.FC<ClientConversationPageInstanceProps> = ({
+  route,
+  active,
+}) => {
+  // 同 key 回访仍复用首次实例；后续导航 state/query 不得重放首条消息或改写渲染偏好。
+  const initialRouteRef = useRef(route);
+  const initialRoute = initialRouteRef.current;
+  return (
+    <ConversationPagePathnameContext.Provider value={initialRoute.pathname}>
+      <ConversationRendererRouteSearchContext.Provider
+        value={initialRoute.search}
+      >
+        <ConversationPageModelProvider>
+          <div
+            style={{ display: active ? 'contents' : 'none' }}
+            aria-hidden={!active}
+          >
+            <ChatCoreInner
+              id={initialRoute.conversationId}
+              agentId={Number(initialRoute.params.agentId)}
+              initialLocationState={initialRoute.state}
+              freezeRouteLocation
+              routeLocationSnapshot={initialRoute}
+              active={active}
+              enableDevTargetRedirect
+            />
+          </div>
+        </ConversationPageModelProvider>
+      </ConversationRendererRouteSearchContext.Provider>
+    </ConversationPagePathnameContext.Provider>
+  );
+};
+
 const ChatPage: React.FC = () => {
   const params = useParams();
   const location = useLocation();
+  const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
+  const isCacheableRoute =
+    keepAliveEnabled &&
+    // 仅主壳的 /home/chat 有常驻宿主；独立 /app/chat 必须在自身 Outlet 渲染。
+    location.pathname === `/home/chat/${params.id}/${params.agentId}` &&
+    /^\d+$/.test(String(params.id ?? '')) &&
+    /^\d+$/.test(String(params.agentId ?? '')) &&
+    Number(params.id) > 0 &&
+    Number(params.agentId) > 0;
+  useLayoutEffect(() => {
+    if (isCacheableRoute) {
+      registerClientConversationRenderer('conversation', CachedChatPage);
+    }
+  }, [isCacheableRoute, registerClientConversationRenderer]);
+  if (isCacheableRoute) return null;
   return (
     <ChatCore
       id={Number(params.id)}
@@ -1445,6 +2559,8 @@ const ChatPage: React.FC = () => {
       showSidebar={true}
       showPayment={true}
       enableResizable={true}
+      // 独立路由页启用项目型会话直开兜底跳转（内嵌宿主不传，默认 false）
+      enableDevTargetRedirect
     />
   );
 };

@@ -80,7 +80,6 @@ const SkillDetails: React.FC = () => {
     openImportSkillProject,
     setOpenImportSkillProject,
     loadingExportProject,
-    handleCheckUnsavedChanges,
     handleDeleteFile,
     handleCreateFileNode,
     handleConfirmRenameFile,
@@ -129,17 +128,11 @@ const SkillDetails: React.FC = () => {
 
   // 发布技能
   const handlePublishSkill = () => {
-    if (!handleCheckUnsavedChanges()) {
-      return;
-    }
     setOpen(true);
   };
 
   // 编辑技能信息
   const handleEditSkill = () => {
-    if (!handleCheckUnsavedChanges(t('PC.Pages.SkillDetails.actionEdit'))) {
-      return;
-    }
     setEditSkillModalOpen(true);
   };
 

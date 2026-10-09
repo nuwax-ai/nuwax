@@ -1,0 +1,67 @@
+@import '@/styles/token';
+
+.modal-body {
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding-right: @paddingXs;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.form {
+  :global(.ant-form-item) {
+    margin-bottom: @marginLg;
+  }
+
+  :global(.ant-form-item:last-child) {
+    margin-bottom: 0;
+  }
+}
+
+.icon-control {
+  position: relative;
+  width: 64px;
+  height: 64px;
+
+  &:hover .empty-icon {
+    opacity: 0;
+  }
+}
+
+.upload-trigger {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.icon {
+  border-radius: 8px;
+}
+
+.empty-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: @colorTextTertiary;
+  font-size: 20px;
+  pointer-events: none;
+}
+
+.clear-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 1;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: @lineWidth @lineType @colorBorderSecondary;
+  background-color: @colorBgElevated;
+
+  :global(.anticon) {
+    font-size: 12px;
+  }
+}

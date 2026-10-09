@@ -1,5 +1,5 @@
 import SiteFooter from '@/components/SiteFooter';
-import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
+import PurchaseModal from '@/components/business-component/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -14,12 +14,15 @@ const cx = classNames.bind(styles);
 interface CreditsBalanceProps {
   className?: string;
   showFooter?: boolean;
+  /** 展示时拉取一次余额；弹层收起即停（不发请求）。常驻余额栏默认启用。 */
+  active?: boolean;
   onClick?: () => void;
 }
 
 const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   className,
   showFooter = true,
+  active = true,
   onClick,
 }) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -28,6 +31,9 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   const location = useLocation();
 
   const showCredits = tenantConfigInfo?.enableSubscription !== 0;
+  const subscriptionRoute = location.pathname.includes('my-subscriptions')
+    ? location.pathname
+    : null;
 
   const { run: fetchCredits } = useRequest(apiGetCreditSummary, {
     manual: true,
@@ -37,25 +43,11 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   });
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    if (showCredits) {
-      fetchCredits();
-      // 增加定时刷新，每 1 分钟刷新一次
-      intervalId = setInterval(() => {
-        fetchCredits();
-      }, 60000);
-    }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [showCredits, fetchCredits]);
-
-  // 当路由切换至“我的订阅”相关页面时，主动刷新积分余额
-  useEffect(() => {
-    if (showCredits && location.pathname.includes('my-subscriptions')) {
-      fetchCredits();
-    }
-  }, [location, showCredits, fetchCredits]);
+    if (!showCredits || !active) return;
+    // 展示即拉一次（用户弹层展开 / 进入订阅页 / 常驻栏首次挂载）；不做轮询，
+    // 余额变化靠重新展示触发（如支付后重开弹层）。
+    fetchCredits();
+  }, [showCredits, active, subscriptionRoute, fetchCredits]);
 
   const handleClickBalance = () => {
     if (onClick) {

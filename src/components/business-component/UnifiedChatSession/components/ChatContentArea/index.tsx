@@ -2,13 +2,15 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import * as React from 'react';
 
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type {
   MessageInfo,
   RoleInfo,
@@ -19,7 +21,24 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 优先使用客户端稳定渲染 ID，历史消息则使用服务端 ID 作为 React key。
+ * 会话终态快照可能为历史消息补齐或调整 index；把 index 拼进 key 会导致整条消息
+ * 被卸载重挂，Markdown 内容在下一帧重新注入时产生可见闪烁。
+ */
+export const getChatMessageRenderKey = (
+  message: MessageInfo,
+  fallbackIndex: number,
+): string => {
+  const id = message.clientRenderKey || message.id;
+  if (id !== null && id !== undefined && String(id).trim() !== '') {
+    return `message-${String(id)}`;
+  }
+  return `message-fallback-${message.role}-${message.index ?? fallbackIndex}`;
+};
+
 export interface ChatContentAreaProps {
+  conversationId?: number | string;
   messageViewRef: React.RefObject<HTMLDivElement>;
   handleMouseEnter: () => void;
   handleMouseLeave: () => void;
@@ -30,7 +49,7 @@ export interface ChatContentAreaProps {
   userFillVariables?: any;
   isVariablesFilled?: boolean;
   isVariablesDisabled?: boolean;
-  variableParams?: Record<string, string | number> | null;
+  variableParams?: Record<string, string | number | null> | null;
   messageList?: MessageInfo[];
   isMoreMessage?: boolean;
   loadMoreRef: any;
@@ -48,9 +67,20 @@ export interface ChatContentAreaProps {
   handleMessageSend: (...args: any[]) => void;
   showTaskExecutingWait: boolean;
   renderEmptyState?: () => React.ReactNode;
+  /**
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView；
+   * v2 = ConversationRendererV2（轮次工作轨迹 + 最终回答）。
+   * renderMessageItem 自定义入口恒走原逻辑，不受本参数影响。
+   */
+  messageRenderer?: 'v1' | 'v2';
+  /** V2 工具详情资源点击（文件路径/URL），透传给 ConversationRendererV2 */
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
+  /** V2 OpenUI sidecar 打开联动，透传给 ConversationRendererV2 */
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
+  conversationId,
   messageViewRef,
   handleMouseEnter,
   handleMouseLeave,
@@ -76,6 +106,9 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   handleMessageSend,
   showTaskExecutingWait,
   renderEmptyState,
+  messageRenderer = 'v2',
+  onOpenToolResource,
+  onOpenOpenUiSidecar,
 }) => {
   const renderedMessageList = React.useMemo(() => {
     if (!messageList || messageList.length <= 1) {
@@ -90,6 +123,26 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     }
     return messageList;
   }, [messageList]);
+
+  // V1 列表渲染（显式回退分支与 V2 chunk 失败回退共用）
+  const renderV1MessageList = () =>
+    renderedMessageList?.map((item: MessageInfo, idx: number) => {
+      const isLastMessage = idx === renderedMessageList.length - 1;
+      if (renderMessageItem) {
+        return renderMessageItem(item, isLastMessage);
+      }
+      return (
+        <ChatView
+          key={getChatMessageRenderKey(item, idx)}
+          conversationId={conversationId}
+          messageInfo={item}
+          roleInfo={effectiveRoleInfo}
+          mode={messageBottomMode}
+          showDebug={showDebug}
+          showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+        />
+      );
+    });
 
   return (
     <div
@@ -119,41 +172,41 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
 
             {renderedMessageList?.length > 0 ? (
               <>
-                {/* 加载历史消息的触发探测节点 */}
-                {isMoreMessage &&
-                  (renderedMessageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                    <div
-                      ref={loadMoreRef}
-                      className={cx(styles['load-more-container'])}
-                    >
-                      {loadingMore ? (
-                        <span>
-                          <LoadingOutlined style={{ marginRight: 8 }} />
-                          {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
+                {/* 加载历史消息的触发探测节点。
+                    门槛只认 isMoreMessage：不能再用列表长度（原始或过滤后）对比
+                    MESSAGE_PAGE_SIZE——模型层水合/快照合并会把"整页 10 条"缩成 9，
+                    导致哨兵永不渲染、上滑加载失效；"可能有更多"的判定本来就该
+                    由模型层 isMoreMessage 单点负责 */}
+                {isMoreMessage && (
+                  <div
+                    ref={loadMoreRef}
+                    className={cx(styles['load-more-container'])}
+                  >
+                    {loadingMore ? (
+                      <span>
+                        <LoadingOutlined style={{ marginRight: 8 }} />
+                        {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
 
-                {/* 消息渲染列表 */}
-                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                  const isLastMessage = idx === renderedMessageList.length - 1;
-                  if (renderMessageItem) {
-                    return renderMessageItem(item, isLastMessage);
-                  }
-                  return (
-                    <ChatView
-                      key={`${item.id}-${item?.index || idx}`}
-                      messageInfo={item}
-                      roleInfo={effectiveRoleInfo}
-                      mode={messageBottomMode}
-                      showDebug={showDebug}
-                      showStatusDesc={
-                        agentInfo?.type !== AgentTypeEnum.TaskAgent
-                      }
-                    />
-                  );
-                })}
+                {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
+                {messageRenderer === 'v2' && !renderMessageItem ? (
+                  <ConversationRendererV2Lazy
+                    fallback={<>{renderV1MessageList()}</>}
+                    conversationId={conversationId}
+                    messageList={renderedMessageList}
+                    roleInfo={effectiveRoleInfo}
+                    messageBottomMode={messageBottomMode}
+                    showDebug={showDebug}
+                    showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+                    onOpenToolResource={onOpenToolResource}
+                    onOpenOpenUiSidecar={onOpenOpenUiSidecar}
+                  />
+                ) : (
+                  renderV1MessageList()
+                )}
 
                 {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
                 {shouldShowSessionSuggest && (

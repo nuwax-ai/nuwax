@@ -3,6 +3,11 @@ import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
+  FsChildrenResponse,
+  FsEntryItem,
+  FsMkdirParams,
+  FsRenameParams,
+  FsRootsResponse,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
   IUploadFilesParams,
@@ -16,16 +21,105 @@ import { request } from 'umi';
 // 查询文件列表
 export async function apiGetStaticFileList(
   cId: number,
+  options?: {
+    // 相对路径，点击文件夹时候传这个文件夹路径，列出子文件列表
+    relativePath?: string;
+    // 是否递归全文件。不传默认 true（原逻辑）；false 为单层浏览，新逻辑应该传false， 如果recursive=null，表示file-server没有升级，也是返回的全量，走原逻辑。
+    recursive?: boolean;
+    /** 服务端先按类型过滤，再按 limit 截取；不传则不限制。 */
+    // 返回条目类型：file-仅文件、dir-仅目录、all-全部（默认，非法值按 all 处理）
+    type?: 'file' | 'dir' | 'all';
+    // 最多返回条目数量（类型过滤后截取）。不传不限制
+    limit?: number;
+    /**
+     * 目标根目录（沙箱内绝对目录，可跳出会话工作区）。
+     * 网关侧仅个人电脑会话放行；云端会话放开为后端契约，未放开前接口会拒绝。
+     */
+    customTargetDir?: string;
+    // depth 展开层级，不传默认 2。1-当前层 2-多一层 以此类推
+    depth?: number;
+  },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
     method: 'GET',
     params: {
       cId,
+      ...(options
+        ? {
+            relativePath: options.relativePath || '',
+            recursive: options.recursive ?? false,
+            ...(options.type ? { type: options.type } : {}),
+            ...(options.limit !== undefined ? { limit: options.limit } : {}),
+            ...(options.customTargetDir
+              ? { customTargetDir: options.customTargetDir }
+              : {}),
+            depth: options.depth ?? 2,
+          }
+        : {}),
+    },
+  });
+}
+
+// 有界实时搜索（服务端限时限量递归，limit/maxVisit/timeoutMs 为 file-server 必填项；
+// 若网关未透传该端点会失败，调用方需准备本地过滤兜底）
+export interface ISearchFilesParams {
+  cId: number;
+  // 返回条目类型：file-仅文件、dir-仅目录、all-全部；不传默认 file（服务端缺省/非法按 all）
+  type?: 'file' | 'dir' | 'all';
+  // 搜索关键词（至少 1 个字符；目录名/相对路径子串也可命中）
+  kw: string;
+  // 自定义根目录（绝对路径）
+  customTargetDir?: string;
+  // 相对路径
+  relativePath?: string;
+  // 最多返回命中条数。未传时默认 100，上限 200
+  limit?: number;
+  // 最多访问节点数。未传时100000，上限 200000
+  maxVisit?: number;
+  // 搜索超时（毫秒）。未传时 默认 3000，上限 15000；到期后停止扫描并可能返回已截断
+  timeoutMs?: number;
+}
+
+export interface SearchFilesResponse extends StaticFileListResponse {
+  truncated?: boolean;
+  visited?: number;
+}
+
+// 搜索文件
+export async function apiSearchFiles(
+  params: ISearchFilesParams,
+): Promise<RequestResponse<SearchFilesResponse>> {
+  const {
+    cId,
+    kw,
+    customTargetDir = '',
+    relativePath = '',
+    limit = 200,
+    maxVisit = 20000,
+    timeoutMs = 2000,
+    type = 'file',
+  } = params;
+  return request('/api/computer/static/search-files', {
+    method: 'GET',
+    params: {
+      cId,
+      kw,
+      customTargetDir,
+      relativePath,
+      limit,
+      maxVisit,
+      timeoutMs,
+      type,
     },
   });
 }
 
 // 静态文件访问
+/**
+ * @deprecated 占位实现，路径中的 `**` 为字面量、不可用（历史遗留）。
+ * 单文件存在性检查请用 `apiGetStaticFileList(cId, { relativePath: 父目录,
+ * recursive: false })`；文件内容请用 `fetchContentFromUrl(静态预览 URL)`。
+ */
 export async function apiGetStaticFileDetail(
   cId: number,
 ): Promise<RequestResponse<any>> {
@@ -94,19 +188,39 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
     // 获取导出文件链接地址
     const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
     // 通过浏览器下载文件
-    exportFileViaBrowserDownload(linkUrl);
-    message.success(t('PC.Pages.Chat.exportSuccess'));
+    const saved = await exportFileViaBrowserDownload(linkUrl);
+    if (saved) message.success(t('PC.Pages.Chat.exportSuccess'));
   } catch (error) {
     console.error('Failed to export project:', error);
+    message.error(
+      error instanceof Error
+        ? error.message
+        : t('PC.Utils.ExportImport.exportFailed'),
+    );
   }
 }
 
+/** 网站应用环境，仅 AppDevPro 调用 computer/pod 老接口时传入 */
+export type ComputerPodAppStage = 'dev' | 'prod';
+
 const ENSURE_POD_THROTTLE_MS = 5000;
-let lastSuccessfulEnsurePod: { cId: number; time: number } | null = null;
+let lastSuccessfulEnsurePod: { key: string; time: number } | null = null;
 const ensurePodInFlightMap = new Map<
-  number,
+  string,
   Promise<RequestResponse<EnsurePodResponse>>
 >();
+
+/**
+ * 组装 computer/pod 请求参数：仅在传入 appStage 时附加，避免老页面带上空字段。
+ * @param cId 会话 ID
+ * @param appStage 网站应用环境，仅 AppDevPro 传入
+ */
+const buildPodRequestParams = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? { cId, appStage } : { cId };
+
+/** ensure 限流/并发去重 key：同一会话的 dev/prod 互不影响 */
+const getEnsurePodCacheKey = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? `${cId}:${appStage}` : String(cId);
 
 /** ensure 请求被 5s 限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
 export const isEnsurePodThrottledError = (error: unknown): boolean => {
@@ -117,15 +231,17 @@ export const isEnsurePodThrottledError = (error: unknown): boolean => {
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<EnsurePodResponse>> {
   const now = Date.now();
-  const inFlightRequest = ensurePodInFlightMap.get(cId);
+  const cacheKey = getEnsurePodCacheKey(cId, appStage);
+  const inFlightRequest = ensurePodInFlightMap.get(cacheKey);
   if (inFlightRequest) {
     return inFlightRequest;
   }
 
   if (
-    lastSuccessfulEnsurePod?.cId === cId &&
+    lastSuccessfulEnsurePod?.key === cacheKey &&
     now - lastSuccessfulEnsurePod.time < ENSURE_POD_THROTTLE_MS
   ) {
     console.log('Requests are too frequent. Please retry after 5s');
@@ -136,54 +252,52 @@ export async function apiEnsurePod(
 
   const ensureRequest = request('/api/computer/pod/ensure', {
     method: 'POST',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   })
     .then((result: RequestResponse<EnsurePodResponse>) => {
       if (result.code === SUCCESS_CODE) {
-        lastSuccessfulEnsurePod = { cId, time: Date.now() };
+        lastSuccessfulEnsurePod = { key: cacheKey, time: Date.now() };
       }
       return result;
     })
     .finally(() => {
-      ensurePodInFlightMap.delete(cId);
+      ensurePodInFlightMap.delete(cacheKey);
     });
 
-  ensurePodInFlightMap.set(cId, ensureRequest);
+  ensurePodInFlightMap.set(cacheKey, ensureRequest);
   return ensureRequest;
 }
 
 // 重启容器(销毁后重建)
 export async function apiRestartPod(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<RestartPodResponse>> {
   return request('/api/computer/pod/restart', {
     method: 'POST',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 
 // 重启智能体
 export async function apiRestartAgent(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<null>> {
   return request(`/api/computer/agent/stop/${cId}`, {
     method: 'POST',
+    params: appStage ? { appStage } : undefined,
   });
 }
 
 // 容器保活
 export async function apiKeepalivePod(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<EnsurePodResponse>> {
   return request('/api/computer/pod/keepalive', {
     method: 'POST',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 
@@ -201,12 +315,11 @@ export interface VncStatusResponse {
 
 export async function apiCheckVncStatus(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<VncStatusResponse>> {
   return request('/api/computer/pod/vnc-status', {
     method: 'GET',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 
@@ -238,5 +351,58 @@ export async function apiImportProject(
   return request('/api/computer/static/import-project', {
     method: 'POST',
     data: formData,
+  });
+}
+
+/**
+ * 目录选择弹窗数据源（wiki「选择目录/弹框选目录」，2026-09-10 契约）：
+ * 按绝对路径浏览个人电脑目录，不锚定工作区、不带会话上下文。
+ *
+ * 网关要求 sandboxId，必须指向当前选中的个人电脑。
+ */
+
+/** 根列表（包含根目录和用户 home），目录选择弹窗入口 */
+export async function apiBrowseFsRoots(
+  sandboxId: string,
+): Promise<RequestResponse<FsRootsResponse>> {
+  return request('/api/computer/static/fs/roots', {
+    method: 'GET',
+    params: { sandboxId },
+  });
+}
+
+/** 列出指定绝对路径下的一层子项 */
+export async function apiBrowseFsChildren(
+  path: string,
+  sandboxId: string,
+): Promise<RequestResponse<FsChildrenResponse>> {
+  return request('/api/computer/static/fs/children', {
+    method: 'GET',
+    params: { path, sandboxId },
+  });
+}
+
+/**
+ * 在 parentPath 下新建一层目录（目录选择弹窗用），返回新目录条目。
+ * body sandboxId 契约为 integer，此处由字符串链路转数字。
+ */
+export async function apiFsMkdir(
+  params: FsMkdirParams,
+): Promise<RequestResponse<FsEntryItem>> {
+  const { sandboxId, parentPath, dirName } = params;
+  return request('/api/computer/static/fs/mkdir', {
+    method: 'POST',
+    data: { sandboxId: Number(sandboxId), parentPath, dirName },
+  });
+}
+
+/** 同目录重命名（newName 仅名字，不支持跨目录移动），返回改后条目 */
+export async function apiFsRename(
+  params: FsRenameParams,
+): Promise<RequestResponse<FsEntryItem>> {
+  const { sandboxId, path, newName } = params;
+  return request('/api/computer/static/fs/rename', {
+    method: 'POST',
+    data: { sandboxId: Number(sandboxId), path, newName },
   });
 }

@@ -1,3 +1,4 @@
+import { CategoryTypeEnum } from '@/types/enums/agent';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   SquareCategoryInfo,
@@ -37,10 +38,130 @@ export async function apiPublishedKnowledgeList(
 }
 
 // 广场-已发布智能体列表接口
+// （专家&专家团-团队空间维度同用本接口：category=Agent +
+// justReturnSpaceData + spaceId 查空间内已发布智能体）
 export async function apiPublishedAgentList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/agent/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 女娲应用-应用列表接口参数
+export interface PublishedAppListParams {
+  /*目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill,Model,PageApp,Mcp,UserApp,NormalProject,Conversation */
+  targetType?: string;
+
+  /*子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp */
+  targetSubType?: string;
+
+  /*目标类型集合（2026.9月版本添加）,如 [Agent, UserApp] */
+  targetTypes?: string[];
+
+  /*子类型集合（2026.9月版本添加）,如 [PageApp, UserApp] */
+  targetSubTypes?: string[];
+
+  /*搜索范围：System-系统广场；Space-团队空间（2026.9月版本添加）,可用值:Square,System,Space */
+  searchScope?: string;
+
+  /*范围（2026.9月版本添加）,可用值:Tenant-本租户内,Space-团队空间 */
+  scope?: string;
+
+  /*智能体类型 */
+  agentTypes?: Record<string, unknown>[];
+
+  /*页码 */
+  page?: number;
+
+  /*上一页最后一条数据的时间戳，与page二选一 */
+  lastTimestamp?: number;
+
+  /*每页数量 */
+  pageSize?: number;
+
+  /*分类名称 */
+  category?: string;
+
+  /*关键字搜索 */
+  kw?: string;
+
+  /*空间ID（可选）需要通过空间过滤时有用 */
+  spaceId?: number;
+
+  /*只返回空间的组件 */
+  justReturnSpaceData?: boolean;
+
+  /*访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容 */
+  accessControl?: number;
+
+  /*是否只返回官方标识的内容 */
+  official?: boolean;
+
+  /*适用场景筛选参数，如 [TaskAgent, PageApp] */
+  usageScenarios?: Record<string, unknown>[];
+}
+
+/**
+ * 应用列表接口(app/list)的类型过滤口径——网页/全栈/三类应用聚合:
+ * 女娲应用页(系统应用/团队空间)与广场-网页应用共用,跨页消费勿各自复制
+ */
+export const APP_LIST_TARGET_TYPES: string[] = ['Agent', 'UserApp', 'ThirdApp'];
+
+/** 应用列表接口(app/list)的子类型过滤口径,与 APP_LIST_TARGET_TYPES 配套 */
+export const APP_LIST_TARGET_SUBTYPES: string[] = [
+  'PageApp',
+  'UserApp',
+  'ThirdApp',
+];
+
+/**
+ * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
+ * @description POST /api/published/app/list——两维度均携带
+ * targetTypes=[Agent, UserApp, ThirdApp] + targetSubTypes=[PageApp, UserApp, ThirdApp] 过滤；
+ * 系统应用：scope=Tenant（本租户内）+ official=true 查官方应用（category/kw 可选筛选）；
+ * 团队空间：scope=Space + justReturnSpaceData=true 查空间已发布应用，
+ * 选中具体空间追加 spaceId
+ */
+export async function apiPublishedAppList(
+  data: PublishedAppListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/app/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 女娲应用-最近使用列表接口
+ * @description POST /api/published/app/recentlyUsed/list——
+ * 按最近使用排序返回，pageSize 控制拉取条数上限（无分页游标）
+ */
+export async function apiPublishedAppRecentlyUsedList(data: {
+  /** 拉取条数上限 */
+  pageSize?: number;
+}): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
+  return request('/api/published/app/recentlyUsed/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 女娲应用-新增最近使用记录接口
+ * @description POST /api/published/app/recentlyUsed/add——
+ * 点击应用时上报使用记录：projectId=应用条目的 targetId、
+ * projectType=应用条目的 targetType；调用成功后由调用方
+ * 重拉最近使用与系统应用/团队空间应用列表
+ */
+export async function apiPublishedAppRecentlyUsedAdd(data: {
+  /** 目标对象 ID（应用条目的 targetId） */
+  projectId: number;
+  /** 目标类型（应用条目的 targetType,app/list 口径含 UserApp/ThirdApp） */
+  projectType: string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/published/app/recentlyUsed/add', {
     method: 'POST',
     data,
   });
@@ -53,6 +174,19 @@ export async function apiPublishedCategoryList(): Promise<
   return request('/api/published/category/list', {
     method: 'GET',
   });
+}
+
+/**
+ * 对话框智能体(ChatBox)分类列表:已发布分类接口中 type=ChatBox 根节点的 children。
+ * 首页会话框分类 pill 与系统管理-推荐管理「对话框智能体」下拉同源。
+ */
+export async function fetchChatboxCategories(): Promise<SquareCategoryInfo[]> {
+  const res = await apiPublishedCategoryList();
+  if (!res.success) return [];
+  const chatboxRoot = (res.data || []).find(
+    (item) => String(item.type) === CategoryTypeEnum.ChatBox,
+  );
+  return chatboxRoot?.children || [];
 }
 
 // 广场-收藏工作流接口
@@ -106,6 +240,34 @@ export async function apiPublishedSkillList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/skill/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 广场-启用技能接口（能力弹窗技能卡开关，skillId 为技能本体 ID）
+export async function apiPublishedSkillEnable(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/enable/${skillId}`, {
+    method: 'POST',
+  });
+}
+
+// 广场-取消启用技能接口
+export async function apiPublishedSkillUnEnable(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/unEnable/${skillId}`, {
+    method: 'POST',
+  });
+}
+
+// 广场-已启用的技能列表接口（返回全量数组，非分页）
+export async function apiPublishedSkillEnableList(
+  data: Partial<SquarePublishedListParams> = {},
+): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
+  return request('/api/published/skill/enable/list', {
     method: 'POST',
     data,
   });

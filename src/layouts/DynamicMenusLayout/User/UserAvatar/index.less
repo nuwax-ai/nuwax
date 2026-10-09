@@ -4,6 +4,8 @@
 .user {
   width: 32px;
   height: 32px;
+  // flex 行内禁收缩：名字过长时按比例收缩会把定宽头像压成椭圆（高度不变）
+  flex-shrink: 0;
   margin-top: 5px;
   margin-bottom: 5px;
   border-radius: 50%;

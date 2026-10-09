@@ -2,8 +2,9 @@
 @import '@/styles/token';
 
 .header {
-  padding: @paddingSm @padding @paddingSm 0;
-  overflow-x: auto;
+  padding: @paddingSm;
+  // 页头操作与下方工作区保留相同的右侧间距。
+  padding-right: 20px;
   flex-shrink: 0;
 
   .icon-backward {
@@ -61,7 +62,6 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    color: @navFirstMenuTextSecondary;
     cursor: pointer;
     border-radius: @borderRadius;
 

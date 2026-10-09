@@ -4,6 +4,8 @@ import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import McpAskQuestionCard from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({
+  // 依赖链（合并 pc-client-bridge 后）另有模块取 dict，兜底返回 key
+  dict: (key: string) => key,
   t: (key: string, ...args: string[]) => {
     const dict: Record<string, string> = {
       'PC.Common.Global.confirm': '确认',
@@ -13,6 +15,8 @@ vi.mock('@/services/i18nRuntime', () => ({
       'PC.Components.McpAskQuestionCard.fieldRequired': '请填写此项',
       'PC.Components.McpAskQuestionCard.multiSelectMin': '请至少选择一项',
       'PC.Components.McpAskQuestionCard.skip': '跳过',
+      'PC.Components.McpAskQuestionCard.expandDesc': '展开全文',
+      'PC.Components.McpAskQuestionCard.collapseDesc': '收起',
     };
     const template = dict[key] ?? key;
     return args.reduce(
@@ -76,6 +80,58 @@ const interaction: McpAskInteraction = {
 };
 
 describe('McpAskQuestionCard', () => {
+  it('keeps an unsubmitted choice when the same ask is refreshed', () => {
+    const defaultedInteraction: McpAskInteraction = {
+      ...interaction,
+      input: {
+        ...interaction.input,
+        ui: {
+          ...interaction.input.ui,
+          fields: interaction.input.ui.fields.map((field) =>
+            field.name === 'choice'
+              ? { ...field, initialValue: 'deploy' }
+              : { ...field },
+          ),
+        },
+      },
+    };
+    const { rerender } = render(
+      <McpAskQuestionCard
+        interaction={defaultedInteraction}
+        keyboardShortcutsEnabled={false}
+        onRespond={vi.fn()}
+      />,
+    );
+
+    const deploy = screen.getByRole('radio', { name: '直接部署' });
+    const test = screen.getByRole('radio', { name: '先跑测试' });
+    expect(deploy).toBeChecked();
+
+    fireEvent.click(test);
+    expect(test).toBeChecked();
+
+    rerender(
+      <McpAskQuestionCard
+        interaction={{
+          ...defaultedInteraction,
+          input: {
+            ...defaultedInteraction.input,
+            ui: {
+              ...defaultedInteraction.input.ui,
+              fields: defaultedInteraction.input.ui.fields.map((field) => ({
+                ...field,
+              })),
+            },
+          },
+        }}
+        keyboardShortcutsEnabled={false}
+        onRespond={vi.fn()}
+      />,
+    );
+
+    expect(test).toBeChecked();
+  });
+
   it('renders MCP Ask fields and submits form data as a normal response payload', async () => {
     const onRespond = vi.fn();
     render(
@@ -99,7 +155,7 @@ describe('McpAskQuestionCard', () => {
       target: { value: '先跑关键链路' },
     });
     fireEvent.click(screen.getByText('代码检查'));
-    fireEvent.click(screen.getByRole('button', { name: '提 交' }));
+    fireEvent.click(screen.getByRole('button', { name: /提交/ }));
 
     await waitFor(() => expect(onRespond).toHaveBeenCalledTimes(1));
     expect(onRespond).toHaveBeenCalledWith(
@@ -118,5 +174,101 @@ describe('McpAskQuestionCard', () => {
         answeredBy: { kind: 'web' },
       }),
     );
+  });
+
+  it('renders a long subTitle in full inside the expandable Paragraph host', () => {
+    // subTitle 由 antd Paragraph ellipsis 托管（超 1 行展开/收起），
+    // jsdom 无法测 CSS 溢出，这里锁「全文进 DOM、不再被 nowrap 硬剪丢内容」
+    const longSubTitle =
+      '第 3 轮画布填充确认：矩形 143 户型封窗报价单会挡在填满后的画布左侧，原文件在 S3 可重新取回，需要先核对报价再继续生成。';
+    render(
+      <McpAskQuestionCard
+        interaction={{
+          ...interaction,
+          input: { ...interaction.input, subTitle: longSubTitle },
+        }}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    const subTitleNode = document.querySelector('.subTitle');
+    expect(subTitleNode).toBeTruthy();
+    expect(subTitleNode?.textContent).toContain(
+      '矩形 143 户型封窗报价单会挡在填满后的画布左侧',
+    );
+    expect(subTitleNode?.textContent).toContain('需要先核对报价再继续生成。');
+  });
+
+  it('hides the desc expand toggle when the description fits two lines', () => {
+    // jsdom 无布局，scrollHeight===clientHeight===0 即「未溢出」，短文案不得渲染按钮
+    render(
+      <McpAskQuestionCard
+        interaction={interaction}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    expect(screen.getByText('Agent 需要你确认下一步。')).toBeTruthy();
+    expect(screen.queryByText('展开全文')).toBeNull();
+  });
+
+  it('shows the desc expand toggle and collapses back when the description overflows', () => {
+    // 原型上 mock 出溢出量（scrollHeight>clientHeight），锁「溢出才出按钮 + 展开/收起往返」
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => 60,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 36,
+    });
+    try {
+      render(
+        <McpAskQuestionCard
+          interaction={interaction}
+          keyboardShortcutsEnabled={false}
+        />,
+      );
+
+      fireEvent.click(screen.getByText('展开全文'));
+      expect(screen.getByText('收起')).toBeTruthy();
+      expect(document.querySelector('.desc-expanded')).toBeTruthy();
+
+      fireEvent.click(screen.getByText('收起'));
+      expect(screen.getByText('展开全文')).toBeTruthy();
+      expect(document.querySelector('.desc-expanded')).toBeNull();
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+    }
+  });
+
+  it('detects overflow when line-clamp collapses scrollHeight (WebKit/Chrome semantics)', () => {
+    // WebKit 及部分 Chromium 内核在 line-clamp 生效时会把 scrollHeight 塌缩成
+    // clamp 高度（此处 mock：-webkit-box 上下文恒 36），只有切到 display:block
+    // 解除 clamp 才能量出全文高 60；实现须临时切 block 再比对，直接比对必挂
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 36,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.style.display === 'block' ? 60 : 36;
+      },
+    });
+    try {
+      render(
+        <McpAskQuestionCard
+          interaction={interaction}
+          keyboardShortcutsEnabled={false}
+        />,
+      );
+
+      expect(screen.getByText('展开全文')).toBeTruthy();
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+    }
   });
 });

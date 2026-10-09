@@ -30,6 +30,13 @@
     }
   }
 
+  // 单栏窄窗口横向滚动收敛层：包住 section，min-width 挂在 section 上，
+  // 滚动条只出现在内容区底部，顶部 AgentHeader 不随滚
+  .section-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .section {
     overflow: hidden;
     border-radius: @pageContainerBorderRadius;
@@ -59,6 +66,12 @@
       border-right: @lineWidth solid @colorSplit;
       border-left: @lineWidth solid @colorSplit;
       background-color: @colorBgContainer;
+    }
+
+    // 调试详情第三栏收窄（ToggleWrap 默认 max-width 434 太占空间）；
+    // 挂在 .section 下提高特异度以稳定压过 ToggleWrap 的 .container
+    .debug-details-panel {
+      max-width: 320px;
     }
   }
 

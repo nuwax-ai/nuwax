@@ -1,7 +1,12 @@
 import { PATH_URL } from '@/constants/home.constants';
 import { MENU_PATH_NORMALIZATION_MAP } from '@/constants/menus.constants';
-import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { MenuItemDto } from '@/types/interfaces/menu';
+import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
+import { hostBridge, isImmersiveShell } from '@/utils/hostBridge';
+import {
+  resolveMicroAppIframePath,
+  resolveMicroAppMenuPath,
+} from '@/utils/microAppRoutes';
 import { history } from 'umi';
 
 /** 菜单路径中的站点 origin 占位符，点击时替换为当前 location.origin */
@@ -28,6 +33,8 @@ export const resolveSiteUrlPath = (
 /** 解析菜单路径中的 %siteUrl% 占位符 */
 export const resolveMenuPath = (menu: MenuItemDto): MenuItemDto => {
   const { path = '' } = menu;
+  const microAppPath = resolveMicroAppMenuPath(menu);
+  if (microAppPath) return { ...menu, path: microAppPath };
   if (!isSiteUrlMenuPath(path)) {
     return menu;
   }
@@ -35,6 +42,21 @@ export const resolveMenuPath = (menu: MenuItemDto): MenuItemDto => {
     ...menu,
     path: resolveSiteUrlPath(path),
   };
+};
+
+/** 按菜单 code 递归查找菜单节点（含子级） */
+export const findMenuByCode = (
+  menus: MenuItemDto[],
+  code: string,
+): MenuItemDto | undefined => {
+  for (const menu of menus) {
+    if (menu.code === code) return menu;
+    const found = menu.children
+      ? findMenuByCode(menu.children, code)
+      : undefined;
+    if (found) return found;
+  }
+  return undefined;
 };
 
 /** 是否为 http(s) 菜单路径（含 %siteUrl% 解析后） */
@@ -100,6 +122,8 @@ export const isInAppIframeMenu = (menu: MenuItemDto): boolean => {
  * 构建 open-iframe-page 路由路径
  */
 export const buildOpenIframePath = (menu: MenuItemDto): string => {
+  const microAppPath = resolveMicroAppMenuPath(menu);
+  if (microAppPath) return microAppPath;
   const { path = '', code } = menu;
   return `/open-iframe-page/${code}?url=${encodeURIComponent(path)}`;
 };
@@ -175,6 +199,11 @@ export const navigateOpenIframePath = (
   path: string,
   state?: Record<string, unknown>,
 ): void => {
+  const microAppPath = resolveMicroAppIframePath(path);
+  if (microAppPath) {
+    history.push(microAppPath, { _t: Date.now(), ...state });
+    return;
+  }
   if (isCurrentOpenIframePath(path)) {
     refreshOpenIframePath(path);
     return;
@@ -191,6 +220,38 @@ export const navigateOpenIframePath = (
 export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   const resolvedMenu = resolveMenuPath(menu);
   const { openType = OpenTypeEnum.CurrentTab, path = '' } = resolvedMenu;
+  const microAppPath = resolveMicroAppMenuPath(resolvedMenu);
+  if (microAppPath) {
+    if (parentCode) updatePathUrlToLocalStorage(parentCode, microAppPath);
+    // 重复点击恢复当前实例；显式刷新由 _refresh 标记交给宿主处理。
+    if (
+      `${history.location.pathname}${history.location.search}${
+        history.location.hash || ''
+      }` !== microAppPath
+    ) {
+      history.push(microAppPath, { _t: Date.now(), menuCode: menu.code });
+    }
+    return;
+  }
+  // 桌面端主窗口：NewTab 外链经宿主开独立窗口（独立窗口内 isImmersiveShell=false，
+  // 回落浏览器式行为）。CurrentTab 不再经 native.openWindow same-window——那是
+  // webview.loadURL 的 document 级整页导航，点击外链型菜单（消息/资源库/生态
+  // 市场）整个 SPA 重载闪白（2026-09-18 提测）；open-iframe-page 本就是站内
+  // 路由，直接 SPA 跳转（与 jumpTo 链 2026-09-11 的修法对齐，见 router.ts 头注）。
+  if (isImmersiveShell()) {
+    // 开窗失败（旧壳无 handler 等）回落浏览器式行为，保证点击有响应
+    if (openType === OpenTypeEnum.NewTab && /^https?:\/\//i.test(path)) {
+      void hostBridge.native.openWindow(path).then((res) => {
+        if (!res.success) window.open(path, '_blank');
+      });
+      return;
+    }
+    if (openType !== OpenTypeEnum.NewTab) {
+      const shellPath = buildOpenIframePath(resolvedMenu);
+      navigateOpenIframePath(shellPath);
+      return;
+    }
+  }
   if (openType === OpenTypeEnum.NewTab) {
     window.open(path, '_blank');
     return;

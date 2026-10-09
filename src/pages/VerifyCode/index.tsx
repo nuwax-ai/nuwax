@@ -1,6 +1,10 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
+import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import SvgIcon from '@/components/base/SvgIcon';
+import ImageCaptcha, {
+  useImageCaptcha,
+} from '@/components/business-component/ImageCaptcha';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import BasicLayout from '@/pages/Login/BasicLayout';
@@ -8,11 +12,17 @@ import { apiLoginCode } from '@/services/account';
 import { dict, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
 import { SendCodeEnum } from '@/types/enums/login';
-import type { ILoginResult } from '@/types/interfaces/login';
+import type {
+  ILoginResult,
+  ImageCaptchaParams,
+} from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
-import { getNumbersOnly, isWeakNumber } from '@/utils/common';
-import { LeftOutlined } from '@ant-design/icons';
-import { Button, Input, InputRef } from 'antd';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
+import { getNumbersOnly } from '@/utils/common';
+import { hostBridge } from '@/utils/hostBridge';
+import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
+import { Button, Input, InputRef, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -37,15 +47,28 @@ const VerifyCode: React.FC = () => {
   const elementId = 'aliyun-captcha-sms';
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { countDown, handleCount } = useCountDown();
+  const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
-    location.state;
+  const captchaRef = useRef<AliyunCaptchaRef>(null);
+  const {
+    phoneOrEmail,
+    areaCode,
+    authType,
+    captchaVerifyParam,
+    captchaId,
+    captchaCode,
+  } = location.state;
 
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+  // 首次发码用登录页带来的图形验证码；重发时用本页重新输入的（验证码一次性）
+  const resendCaptcha = useImageCaptcha(needImageCaptcha);
+  const initialCaptchaUsedRef = useRef(false);
+  // 重发前已校验并取好的参数（阿里云回调异步，经 ref 传递）
+  const pendingCaptchaRef = useRef<ImageCaptchaParams>({});
 
   const { runSendCode, sendLoading } = useSendCode();
 
@@ -67,7 +90,15 @@ const VerifyCode: React.FC = () => {
         token,
         redirect: responseRedirectUrl,
       } = result;
-      localStorage.setItem(ACCESS_TOKEN, token);
+      const authResult = await finishBusinessLogin(token);
+      if (authResult !== 'ready') {
+        message.error(
+          authResult === 'missing-dev-token'
+            ? '登录接口未返回本地调试所需的 Token'
+            : '客户端登录会话同步失败，请升级客户端后重试',
+        );
+        return;
+      }
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
       try {
@@ -82,16 +113,12 @@ const VerifyCode: React.FC = () => {
       if (!resetPass) {
         history.push('/set-password');
       } else {
-        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-        if (isWeakNumber(redirect)) {
-          history.go(Number(redirect));
-        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          window.location.href = responseRedirectUrl;
-        } else if (redirect) {
-          history.replace(redirect);
-        } else {
-          history.replace('/');
-        }
+        navigateAfterLogin(
+          history,
+          searchParams.get('redirect'),
+          responseRedirectUrl,
+          navigateToAuthUrl,
+        );
       }
     },
   });
@@ -138,15 +165,30 @@ const VerifyCode: React.FC = () => {
 
   // 发送验证码
   const handleSendCode = (captchaVerifyParam: string) => {
+    const imageCaptcha = initialCaptchaUsedRef.current
+      ? pendingCaptchaRef.current
+      : { captchaId, captchaCode };
+    initialCaptchaUsedRef.current = true;
+    pendingCaptchaRef.current = {};
     handleCount();
     const isPhone = authType === 1;
     const _params = {
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       [isPhone ? 'phone' : 'email']: phoneOrEmail,
       ...(captchaVerifyParam && { captchaVerifyParam }),
+      ...(imageCaptcha?.captchaId && {
+        captchaId: imageCaptcha.captchaId,
+        captchaCode: imageCaptcha.captchaCode,
+      }),
     };
     // 返回 Promise，让验证码组件在请求结束后再刷新实例
-    return runSendCode(_params);
+    return runSendCode(_params).catch((error: unknown) => {
+      // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
+      onClearTimer();
+      setCountDown(0);
+      resendCaptcha.refresh();
+      throw error;
+    });
   };
 
   const isNeedAliyunCaptcha = () => {
@@ -162,7 +204,8 @@ const VerifyCode: React.FC = () => {
   };
 
   const handlerSuccess = (value: string = '') => {
-    return handleSendCode(value);
+    // 自动发码和点击重发没有 Promise 接收方；失败反馈及重试状态已由发送链处理。
+    void handleSendCode(value).catch(() => {});
   };
 
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
@@ -185,6 +228,8 @@ const VerifyCode: React.FC = () => {
 
     // 设置页面title
     setTitle();
+    // 认证页无侧栏，撤销壳顶栏「展开/收起」按钮可用态（同 Login 页；无桥 no-op）
+    hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
   const handleReady = () => {
@@ -212,9 +257,15 @@ const VerifyCode: React.FC = () => {
       captchaPrefix !== '' &&
       openCaptcha
     );
-    // 如果需要阿里云验证码，则点击按钮触发验证码
+    // 如果需要阿里云验证码，则触发隐藏按钮 click（官方姿势）唤起验证码，
+    // 按钮不在 DOM 时以 show() 兜底，与登录页 triggerCaptchaPopup 行为对齐
     if (needAliyunCaptcha) {
-      document.getElementById(elementId)?.click();
+      const captchaBtn = document.getElementById(elementId);
+      if (captchaBtn) {
+        captchaBtn.click();
+      } else {
+        captchaRef.current?.show?.();
+      }
     } else {
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       handlerSuccess();
@@ -225,6 +276,9 @@ const VerifyCode: React.FC = () => {
     if (countDown > 0) {
       return;
     }
+    const imageCaptcha = resendCaptcha.take();
+    if (!imageCaptcha) return;
+    pendingCaptchaRef.current = imageCaptcha;
     handleSendCodeInit();
   }, [tenantConfigInfo, handlerSuccess]);
 
@@ -256,8 +310,10 @@ const VerifyCode: React.FC = () => {
               color="default"
               variant="filled"
               shape="circle"
-              icon={<LeftOutlined />}
-              onClick={() => history.back()}
+              icon={<SvgIcon name="icons-nav-backward" />}
+              onClick={() =>
+                replaceLoginStep(history, 'login', searchParams.get('redirect'))
+              }
             />
           </div>
           <h3>
@@ -308,6 +364,12 @@ const VerifyCode: React.FC = () => {
               {dict('PC.Pages.VerifyCode.resend')}
             </span>
           </div>
+          {/* 重发需重新输入图形验证码（倒计时结束才显示，避免干扰输入短信码） */}
+          {needImageCaptcha && countDown <= 0 && (
+            <div className={cx(styles['resend-captcha'])}>
+              <ImageCaptcha {...resendCaptcha.inputProps} />
+            </div>
+          )}
         </div>
         <Input
           ref={inputRef}
@@ -322,6 +384,7 @@ const VerifyCode: React.FC = () => {
           onVerify={handleCaptchaVerify}
           onReady={handleReady}
           elementId="aliyun-captcha-sms"
+          ref={captchaRef}
         />
       </div>
     </BasicLayout>

@@ -1,5 +1,15 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddUserGroup,
+  apiGetUserGroupById,
+  apiUpdateUserGroup,
+} from '@/services/menuPermission/userGroupManage';
+import {
+  UserGroupSourceEnum,
+  UserGroupStatusEnum,
+  type UserGroupInfo,
+} from '@/types/menuPermission/user-group-manage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -15,16 +25,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddUserGroup,
-  apiGetUserGroupById,
-  apiUpdateUserGroup,
-} from '../../services/user-group-manage';
-import {
-  UserGroupSourceEnum,
-  UserGroupStatusEnum,
-  type UserGroupInfo,
-} from '../../types/user-group-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

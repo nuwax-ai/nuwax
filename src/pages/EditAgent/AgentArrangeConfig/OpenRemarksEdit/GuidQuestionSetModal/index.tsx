@@ -121,6 +121,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         form.setFieldsValue({
           icon: currentGuidQuestionDto.icon,
           type: currentGuidQuestionDto.type,
+          title: currentGuidQuestionDto.title,
           info: currentGuidQuestionDto.info,
           url: currentGuidQuestionDto.url,
         });
@@ -402,13 +403,25 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           />
         </Form.Item>
         <Form.Item
+          name="title"
+          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.questionTitle')}
+        >
+          <Input
+            placeholder={t(
+              'PC.Pages.AgentArrangeGuidQuestionSetModal.questionTitlePlaceholder',
+            )}
+            showCount
+            maxLength={10}
+          />
+        </Form.Item>
+        <Form.Item
           name="info"
-          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfo')}
+          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.content')}
           rules={[
             {
               required: true,
               message: t(
-                'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfoRequired',
+                'PC.Pages.AgentArrangeGuidQuestionSetModal.contentRequired',
               ),
             },
           ]}

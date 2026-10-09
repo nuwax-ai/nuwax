@@ -4,14 +4,25 @@ export enum DisplayRecommendFunctionTypeEnum {
   SkillDev = 'SkillDev',
   PluginDev = 'PluginDev',
   Chat = 'Chat',
+  /** 网站应用开发 */
+  UserAppDev = 'UserAppDev',
+  /** 常规项目 */
+  NormalProjectDev = 'NormalProjectDev',
 }
 
 export enum DisplayRecommendTargetTypeEnum {
   Agent = 'Agent',
   PageApp = 'PageApp',
+  UserApp = 'UserApp',
   Skill = 'Skill',
   Plugin = 'Plugin',
   Workflow = 'Workflow',
+}
+
+export interface DisplayRecommendPrompt {
+  title: string;
+  content: string;
+  icon: string;
 }
 
 export interface DisplayRecommendInfo {
@@ -24,6 +35,8 @@ export interface DisplayRecommendInfo {
   label: string;
   icon?: string;
   placeholder?: string;
+  category?: string;
+  prompts?: DisplayRecommendPrompt[] | null;
   sort?: number;
   modified?: string;
   created?: string;
@@ -32,6 +45,7 @@ export interface DisplayRecommendInfo {
 export interface DisplayRecommendGroup {
   Agent?: DisplayRecommendInfo[];
   PageApp?: DisplayRecommendInfo[];
+  UserApp?: DisplayRecommendInfo[];
   Skill?: DisplayRecommendInfo[];
   Plugin?: DisplayRecommendInfo[];
   Workflow?: DisplayRecommendInfo[];

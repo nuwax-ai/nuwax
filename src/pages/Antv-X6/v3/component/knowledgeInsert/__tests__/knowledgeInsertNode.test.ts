@@ -1,6 +1,11 @@
 import type { AddNodeResponse } from '@/services/workflow';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { describe, expect, it, vi } from 'vitest';
 
 // i18nRuntime → ./i18n → umi 的 request，vitest 下触发 esbuild TextEncoder 崩溃；
@@ -19,6 +24,15 @@ describe('buildKnowledgeInsertNodeConfigOnAdd', () => {
       description: '',
       targetId: 99,
       targetType: AgentComponentTypeEnum.Knowledge,
+      allowCopy: AllowCopyEnum.Yes,
+      category: 'knowledge',
+      icon: '',
+      id: 99,
+      onlyTemplate: OnlyTemplateEnum.No,
+      publishedSpaceIds: [],
+      statistics: null,
+      type: NodeTypeEnum.Knowledge,
+      config: {},
     });
     expect(config.knowledgeBaseId).toBe(99);
     expect(config.name).toBe('产品知识库');
@@ -28,9 +42,23 @@ describe('buildKnowledgeInsertNodeConfigOnAdd', () => {
 
 describe('mergeNodeConfigAfterAddApi (KnowledgeInsert)', () => {
   // 工作流接口（apiAddNodeV3）回显：仅返回 nodeConfig.description，不含平铺 knowledgeBaseId
-  const makeApiResponse = (
-    nodeConfig: Record<string, unknown>,
-  ): AddNodeResponse => ({ nodeConfig } as unknown as AddNodeResponse);
+  const makeApiResponse = (nodeConfig: NodeConfig): AddNodeResponse => ({
+    created: '',
+    description: '',
+    id: 1,
+    innerEndNode: false,
+    modified: '',
+    name: 'Knowledge insert',
+    nextNodeIds: null,
+    nextNodes: null,
+    nodeConfig,
+    preNodes: null,
+    type: NodeTypeEnum.KnowledgeInsert,
+    unreachableNextNodeIds: null,
+    virtualExecute: false,
+    workflowId: 1,
+    icon: '',
+  });
 
   it('填写的描述优先于工作流接口返回的描述', () => {
     const merged = mergeNodeConfigAfterAddApi(

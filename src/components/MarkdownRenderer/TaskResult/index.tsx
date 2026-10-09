@@ -1,11 +1,7 @@
-import classNames from 'classnames';
-
-import { FileTextOutlined, RightOutlined } from '@ant-design/icons';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import React, { useContext } from 'react';
-import { useModel } from 'umi';
 import { TaskResultContext } from './context';
-import styles from './index.less';
-const cx = classNames.bind(styles);
+import TaskResultRow from './TaskResultRow';
 
 /**
  * TaskResult 组件
@@ -31,7 +27,7 @@ const TaskResult: React.FC<TaskResultProps> = ({
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   // 生成唯一 key
   const {
@@ -45,15 +41,18 @@ const TaskResult: React.FC<TaskResultProps> = ({
   }
 
   try {
+    // children 可能是单个元素而非数组（task-result 标签只包一个子节点时），
+    // 直接 .filter 会抛 "c?.filter is not a function"——统一 toArray 后再过滤
+    const childItems = React.Children.toArray(children);
     // 有文件描述显示文件描述
-    const fileDescription = (children as React.ReactNode[])
-      ?.filter((item: any) => item.type === 'description')
-      .map((item: any) => item.props.children)
+    const fileDescription = childItems
+      .filter((item: any) => item.type === 'description')
+      .map((item: any) => item.props?.children ?? '')
       .join('');
     // 有文件名显示文件名
-    const fileName = (children as React.ReactNode[])
-      ?.filter((item: any) => item.type === 'file')
-      .map((item: any) => item.props.children)
+    const fileName = childItems
+      .filter((item: any) => item.type === 'file')
+      .map((item: any) => item.props?.children ?? '')
       .join('');
     // 没有文件名不显示组件
     if (!fileName) {
@@ -84,30 +83,21 @@ const TaskResult: React.FC<TaskResultProps> = ({
       }
 
       const cId = Number(conversationId);
-      await openPreviewView(cId, { forceRefresh: true });
+      // 只打开预览，不刷新文件树。从桌面切到预览时默认会重拉根目录，
+      // 任务结果会另搜文件并加载它所在的那一层。
+      await openPreviewView(cId, { skipFileTreeRefresh: true });
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());
     };
 
     return (
-      <div
-        key={taskResultKey}
-        data-key={taskResultKey}
-        className={cx(styles['task-result'])}
+      <TaskResultRow
+        label={fileDescription ? fileDescription : fileName}
+        description={fileDescription}
+        dataKey={taskResultKey}
         onClick={handleClick}
-        title={fileDescription ? fileDescription : fileName}
-      >
-        <span className={cx(styles['task-result-icon'])}>
-          <FileTextOutlined />
-        </span>
-        <span className={cx(styles['task-result-action'])}>
-          {fileDescription ? fileDescription : fileName}
-        </span>
-        <span className={cx(styles['task-result-arrow'])}>
-          <RightOutlined />
-        </span>
-      </div>
+      />
     );
   } catch (error) {
     console.warn('TaskResult error', error);

@@ -7,12 +7,21 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import {
+  isWorkspaceLayeredTree,
+  locateWorkspaceChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
+import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
+import ImageViewer from '@/components/business-component/ImageViewer';
+import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
-import { fetchContentFromUrl } from '@/services/skill';
+import {
+  fetchContentFromUrl,
+  isPreviewFileTooLargeError,
+} from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -22,6 +31,7 @@ import {
   filterFlatFileListForVersionControl,
   findBestMatchingFileNode,
   findFileNode,
+  indexFileNodesById,
   isAudioFile,
   isDocumentFile,
   isIgnoredUploadRelativePath,
@@ -30,6 +40,7 @@ import {
   isVideoFile,
   processImageContent,
   resolveFileTreeUploadRelativePath,
+  sortFileTreeNodes,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -39,6 +50,13 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import {
+  getOpenUiArtifactIdFromFileName,
+  isBareOpenUiFileName,
+  isOpenUiDigestContractFailure,
+  isOpenUiFileName,
+  tryParseOpenUiFileContent,
+} from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -55,6 +73,9 @@ import type {
 import { ChangeFileInfo } from '../types/file-tree';
 
 /** 从文件树中移除指定 ID 的节点（含子树递归） */
+/** 压缩包后缀。这类文件不搜索、不拉内容，直接提示不支持预览 */
+const ARCHIVE_FILE_PATTERN = /\.(zip|skill|rar|7z|tar|tgz|gz|bz2|xz)$/i;
+
 const removeNodeByIdFromTree = (
   nodes: FileNode[],
   targetId: string,
@@ -66,6 +87,47 @@ const removeNodeByIdFromTree = (
         ? { ...node, children: removeNodeByIdFromTree(node.children, targetId) }
         : node,
     );
+
+/**
+ * 把新建中的临时节点插回文件树。
+ * 折叠目录展开后会重拉这一层，同步列表会丢掉本地输入框。
+ */
+const insertCreatingNode = (
+  nodes: FileNode[],
+  creating: FileNode,
+): FileNode[] => {
+  if (findFileNode(creating.id, nodes)) {
+    return nodes;
+  }
+  const parentPath = creating.parentPath;
+  if (!parentPath) {
+    return sortFileTreeNodes([creating, ...nodes]);
+  }
+  let inserted = false;
+  const next = nodes.map((node) => {
+    if (
+      node.type === 'folder' &&
+      (node.path === parentPath ||
+        node.relativePath === parentPath ||
+        node.id === parentPath)
+    ) {
+      inserted = true;
+      return {
+        ...node,
+        children: sortFileTreeNodes([creating, ...(node.children || [])]),
+      };
+    }
+    if (node.children?.length) {
+      const children = insertCreatingNode(node.children, creating);
+      if (children !== node.children) {
+        inserted = true;
+        return { ...node, children };
+      }
+    }
+    return node;
+  });
+  return inserted ? next : nodes;
+};
 
 /**
  * 文件树 + 预览视图 Hook
@@ -80,6 +142,8 @@ export function useFileTreePreviewView(
     taskAgentSelectedFileId,
     clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -133,8 +197,16 @@ export function useFileTreePreviewView(
     onFileRenamed,
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
+    onOpenDirectory,
     /** 刷新文件树后，当前选中文件已不存在时回调 */
     onSelectedFileMissing,
+    /** 懒加载宿主：目标所在目录是否已加载（未命中时等待而非判 miss） */
+    isAutoSelectDirectoryLoaded,
+    /**
+     * 目标不在当前已加载树中时解析文件节点（Chat 走搜索接口拿 fileProxyUrl）。
+     * 返回 null 表示未找到，再按原逻辑判 miss。
+     */
+    resolveAutoSelectFile,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -146,6 +218,9 @@ export function useFileTreePreviewView(
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  /** 按文件名搜索后，用路径没有命中文件。与「未选中文件」分开提示 */
+  const [workspaceFileNotFound, setWorkspaceFileNotFound] =
+    useState<boolean>(false);
   /**
    * 当前选中文件ID的同步引用
    * - 用途：在异步请求返回时，判断用户是否已经切换到其他文件
@@ -162,8 +237,14 @@ export function useFileTreePreviewView(
   const [selectedFileNode, setSelectedFileNode] = useState<FileNode | null>(
     null,
   );
+  /** 响应头 X-File-Size 大于 50MB 的文件，只提示无法预览 */
+  const [oversizedPreviewFileId, setOversizedPreviewFileId] = useState<
+    string | null
+  >(null);
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+  const renamingNodeRef = useRef(renamingNode);
+  renamingNodeRef.current = renamingNode;
   // 右键菜单目标节点
   const [contextMenuTarget, setContextMenuTarget] = useState<FileNode | null>(
     null,
@@ -235,6 +316,10 @@ export function useFileTreePreviewView(
   const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
     undefined,
   );
+  /** 已处理过的兜底刷新 trigger，避免同一 trigger 重复重拉当前打开文件正文 */
+  const handledFileTreeRefreshTriggerRef = useRef<number | undefined>(
+    undefined,
+  );
   // 用于记录创建文件成功后需要选择的文件路径
   const pendingSelectFileRef = useRef<string | null>(null);
   /** 文件树异步刷新完成后，是否需要基于新文件树处理当前选中文件 */
@@ -248,9 +333,11 @@ export function useFileTreePreviewView(
     trigger?: number | string;
   } | null>(null);
   /** 是否已发起过文件树拉取（用于区分「初始空数组」与「接口已返回空列表」） */
-  const fileTreeFetchStartedRef = useRef(false);
+  const fileTreeFetchStartedRef = useRef<boolean>(false);
   /** 是否已至少完成一次文件树拉取（含成功返回空列表） */
-  const fileTreeFetchResolvedRef = useRef(false);
+  const fileTreeFetchResolvedRef = useRef<boolean>(false);
+  /** 已同步进本地树的文件签名，内容未变时不再 setFiles */
+  const syncedOriginalFilesKeyRef = useRef<string>('');
 
   useEffect(() => {
     if (fileTreeDataLoading) {
@@ -275,12 +362,23 @@ export function useFileTreePreviewView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
-  /** html / md：预览或代码视图 */
+  // Markdown 由 FilePreview 统一加载；刷新信号不参与组件身份，保留正文和滚动位置。
+  const [markdownRefreshKey, setMarkdownRefreshKey] = useState(0);
+  /** html / md / .openui.json：预览或代码视图，默认预览 */
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
   const onSelectedFileMissingRef = useRef(onSelectedFileMissing);
   onSelectedFileMissingRef.current = onSelectedFileMissing;
+  const isAutoSelectDirectoryLoadedRef = useRef(isAutoSelectDirectoryLoaded);
+  isAutoSelectDirectoryLoadedRef.current = isAutoSelectDirectoryLoaded;
+  const resolveAutoSelectFileRef = useRef(resolveAutoSelectFile);
+  resolveAutoSelectFileRef.current = resolveAutoSelectFile;
+  /** 同一次任务结果点击的搜索状态，避免重复请求，也避免未命中后无法再判 miss */
+  const autoSelectSearchRef = useRef<{
+    key: string;
+    status: 'pending' | 'found' | 'empty';
+  } | null>(null);
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -316,8 +414,11 @@ export function useFileTreePreviewView(
   const fetchFileContentUpdateFiles = useCallback(
     async (fileProxyUrl: string, fileId: string) => {
       try {
-        // 获取文件内容
+        // 获取文件内容。体积头大于 50MB 时不读正文
         const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        setOversizedPreviewFileId((current) =>
+          current === fileId ? null : current,
+        );
 
         // 更新文件树中的文件内容
         setFiles((prevFiles) => {
@@ -333,6 +434,10 @@ export function useFileTreePreviewView(
 
         return fileContent;
       } catch (error) {
+        if (isPreviewFileTooLargeError(error)) {
+          setOversizedPreviewFileId(fileId);
+          return null;
+        }
         console.error('Failed to fetch file content:', error);
         return '';
       }
@@ -358,7 +463,7 @@ export function useFileTreePreviewView(
       );
       return {
         ...node,
-        content: fileContent,
+        content: fileContent || '',
       };
     },
     [fetchFileContentUpdateFiles],
@@ -381,6 +486,7 @@ export function useFileTreePreviewView(
     selectedFileIdRef.current = '';
     setSelectedFileId('');
     setSelectedFileNode(null);
+    setWorkspaceFileNotFound(false);
   }, []);
 
   /** 清空文件树选中态（文件 + 文件夹） */
@@ -394,12 +500,16 @@ export function useFileTreePreviewView(
    * 切换会话 / 工作区（targetId 变化）时重置文件树与预览区本地状态。
    * Chat 切换历史会话时组件不会卸载，若不清理会残留上一会话的 selectedFileNode 与预览内容。
    */
+  const clearSelectedFileRef = useRef(clearSelectedFile);
+  clearSelectedFileRef.current = clearSelectedFile;
+
   useEffect(() => {
     fileTreeFetchStartedRef.current = false;
     fileTreeFetchResolvedRef.current = false;
+    syncedOriginalFilesKeyRef.current = '';
     filesRef.current = [];
     setFiles([]);
-    clearSelectedFile();
+    clearSelectedFileRef.current();
     setSelectedFolderId('');
     setRenamingNode(null);
     setContextMenuVisible(false);
@@ -409,11 +519,13 @@ export function useFileTreePreviewView(
     setFileRefreshTimestamp(Date.now());
     prevTaskAgentSelectedFileIdRef.current = '';
     prevTaskAgentSelectTriggerRef.current = undefined;
+    handledFileTreeRefreshTriggerRef.current = undefined;
     userSelectedFileRef.current = null;
     pendingSelectFileRef.current = null;
     pendingTaskAgentAutoSelectRef.current = null;
     pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-  }, [targetId, clearSelectedFile, initViewFileType]);
+    // 只跟会话 / 视图类型走。clearSelectedFile 若放进依赖，引用一变就会 Date.now() 死循环
+  }, [targetId, initViewFileType]);
 
   /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
   const refreshSelectedFileContent = useCallback(
@@ -435,13 +547,20 @@ export function useFileTreePreviewView(
 
       const fileName = currentNode.name || '';
       const currentDocumentResult = isDocumentFile(fileName);
+      const isMarkdownPreview =
+        isMarkdownFile(fileName) && viewFileType === 'preview';
       const shouldOnlyRefreshPreview =
+        isMarkdownPreview ||
         isVideoFile(fileName) ||
         isAudioFile(fileName) ||
         currentDocumentResult?.isDoc ||
         isImageFile(fileName);
 
-      setFileRefreshTimestamp(Date.now());
+      if (isMarkdownPreview) {
+        setMarkdownRefreshKey((key) => key + 1);
+      } else {
+        setFileRefreshTimestamp(Date.now());
+      }
 
       if (shouldOnlyRefreshPreview) {
         setSelectedFileNode((prevNode) =>
@@ -459,6 +578,14 @@ export function useFileTreePreviewView(
       if (selectedFileIdRef.current !== currentSelectedFileId) {
         return;
       }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode || currentNode
+            ? { ...(prevNode || currentNode), ...currentNode, content: '' }
+            : prevNode,
+        );
+        return;
+      }
 
       setSelectedFileNode((prevNode) =>
         prevNode || currentNode
@@ -470,7 +597,12 @@ export function useFileTreePreviewView(
           : prevNode,
       );
     },
-    [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles],
+    [
+      selectedFileId,
+      selectedFileNode,
+      viewFileType,
+      fetchFileContentUpdateFiles,
+    ],
   );
 
   // 刷新文件树和文件内容
@@ -561,13 +693,14 @@ export function useFileTreePreviewView(
       setGitBranch(statusResponse.data.current || 'main');
 
       const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
+      const fileNodeById = indexFileNodesById(filesRef.current);
 
       setChangeFiles((prev) =>
         buildChangeFilesFromGitStatus(
           statusResponse.data!,
           statusFileIds,
           prev,
-          (fileId) => findFileNode(fileId, filesRef.current),
+          (fileId) => fileNodeById.get(fileId) ?? null,
         ),
       );
     } finally {
@@ -593,10 +726,65 @@ export function useFileTreePreviewView(
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
-    async (fileId: string, options?: { selectFolder?: boolean }) => {
+    async (
+      fileId: string,
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
+    ) => {
       const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
       let fileNode = findFileNode(fileId, currentFiles);
+
+      // 搜索结果可能尚未懒加载进树，用接口带回的节点直接打开
+      if (!fileNode && options?.fallbackNode?.id === fileId) {
+        fileNode = options.fallbackNode;
+      }
+
+      let workspaceSearchMiss = false;
+      const relativePath = workspaceRelativePath(fileId).replace(
+        /^\/+|\/+$/g,
+        '',
+      );
+      const fileBaseName = relativePath.split('/').pop() || '';
+      // 仅压缩包跳过搜索和内容请求，直接展示不支持预览
+      const unsupportedPreview =
+        !options?.selectFolder && ARCHIVE_FILE_PATTERN.test(fileBaseName);
+
+      if (!fileNode && unsupportedPreview) {
+        fileNode = {
+          id: fileId,
+          name: fileBaseName,
+          type: 'file',
+          path: relativePath,
+          fullPath: relativePath,
+          relativePath,
+          content: '',
+        };
+      }
+
+      // 分层树里没有这个文件时，按文件名搜索并用路径命中，再走下面原有的内容请求
+      if (
+        !fileNode &&
+        !unsupportedPreview &&
+        !options?.selectFolder &&
+        targetId &&
+        isWorkspaceLayeredTree(currentFiles, fileId)
+      ) {
+        try {
+          const locatedFile = await locateWorkspaceChangeFile(targetId, fileId);
+          if (locatedFile) {
+            fileNode = { ...locatedFile, id: fileId };
+          } else {
+            workspaceSearchMiss = true;
+          }
+        } catch (error) {
+          workspaceSearchMiss = true;
+          console.error('搜索工作区文件失败', error);
+        }
+      }
 
       // 如果仍然没有找到，尝试模糊匹配
       if (!fileNode && fileId && fileId.includes('.')) {
@@ -604,13 +792,25 @@ export function useFileTreePreviewView(
       }
 
       if (fileNode) {
-        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区
+        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区。
+        // 懒加载宿主会同时打开目录；选中态仍要记下，否则文件夹没有高亮，
+        // 工具栏新建也无法落到这个文件夹。
         if (fileNode.type === 'folder' && options?.selectFolder) {
+          setWorkspaceFileNotFound(false);
           setSelectedFolderId(fileNode.id);
+          // 折叠时 openDirectory 为 false，只保留选中态，不拉这一层
+          if (onOpenDirectory && options.openDirectory !== false) {
+            await onOpenDirectory(fileNode);
+          }
+          return;
+        }
+        if (fileNode.type === 'folder' && onOpenDirectory) {
+          await onOpenDirectory(fileNode);
           return;
         }
 
-        // 选中文件时清除文件夹选中态
+        // 选中文件时清除文件夹选中态，并收起「未搜索到」提示
+        setWorkspaceFileNotFound(false);
         setSelectedFolderId('');
 
         // 为本次“选中文件”生成唯一 token（后续异步回写时用于判定是否过期）
@@ -665,6 +865,9 @@ export function useFileTreePreviewView(
 
         // 更新刷新时间戳，触发预览区重渲染
         setFileRefreshTimestamp(Date.now());
+        if (isMarkdownFile(fileNode.name || '')) {
+          setMarkdownRefreshKey((key) => key + 1);
+        }
 
         // 先写 ref 再 setState，降低异步回调读取旧选中值的概率
         selectedFileIdRef.current = currentSelectedId;
@@ -674,7 +877,7 @@ export function useFileTreePreviewView(
           setViewFileType('preview');
         }
 
-        // 图片、视频、音频、office 等通过 FilePreview 渲染
+        // 图片、视频、音频、office 通过 src 预览，不检测体积
         if (
           isImageFileType ||
           isVideoFileType ||
@@ -696,7 +899,19 @@ export function useFileTreePreviewView(
 
           const fileNameLower = (fileNode?.name || '').toLowerCase();
           const _isMarkdownFile = isMarkdownFile(fileNameLower);
-          if (_isMarkdownFile && !initViewFileType) {
+          const isHtmlFile = /\.html?$/i.test(fileNameLower);
+
+          /**
+           * HTML 预览由 iframe 直接加载 fileProxyUrl，无需提前 fetch 正文：
+           * - 提前 fetch 会与 iframe 形成两条相同文件请求；
+           * - fetch 完成后会更新 fileRefreshTimestamp，使带时间戳 key 的 FilePreview
+           *   被重新挂载，iframe 再次加载并造成预览区闪烁。
+           * Markdown 同理由 FilePreview 自己按需加载；代码视图仍走下方正文请求。
+           */
+          if (
+            (_isMarkdownFile && initViewFileType !== 'code') ||
+            (isHtmlFile && !initViewFileType)
+          ) {
             setSelectedFileNode({
               ...fileNode,
               content: '',
@@ -723,6 +938,13 @@ export function useFileTreePreviewView(
           ) {
             return;
           }
+          if (newFileContent === null) {
+            setSelectedFileNode({
+              ...fileNode,
+              content: '',
+            });
+            return;
+          }
 
           // 设置选中文件节点
           setSelectedFileNode({
@@ -731,17 +953,28 @@ export function useFileTreePreviewView(
           });
         }
       } else {
-        // 所有匹配方式都失败，设置选中文件节点为 null
+        // 路径未命中时单独提示；其它未选中仍走原来的「请选择文件」
+        setWorkspaceFileNotFound(workspaceSearchMiss);
         setSelectedFileNode(null);
         setSelectedFileId('');
+        if (workspaceSearchMiss) {
+          setSelectedFolderId('');
+        }
       }
     },
-    [onFileSelectOpenPreview, initViewFileType],
+    [onFileSelectOpenPreview, initViewFileType, onOpenDirectory, targetId],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
   const handleFileSelect = useCallback(
-    async (fileId: string, options?: { selectFolder?: boolean }) => {
+    async (
+      fileId: string,
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
+    ) => {
       if (options?.selectFolder) {
         await handleFileSelectInternal(fileId, options);
         return;
@@ -768,9 +1001,32 @@ export function useFileTreePreviewView(
       originalFiles,
       enableVersionControl,
     );
+    const syncKey = `${String(enableVersionControl ?? '')}:${(
+      visibleOriginalFiles ?? []
+    )
+      .map((file) => {
+        const record = file as {
+          fileId?: string;
+          name?: string;
+          fileProxyUrl?: string;
+        };
+        return `${record.fileId ?? record.name ?? ''}:${
+          record.fileProxyUrl ?? ''
+        }`;
+      })
+      .join('|')}`;
+    // 父级每次传入新数组但内容未变时直接返回，避免 setFiles 把更新打满。
+    // 丢弃 / 回滚后要按最新树重拉当前文件，这类刷新不能被签名挡住。
+    if (
+      syncedOriginalFilesKeyRef.current === syncKey &&
+      !pendingRefreshSelectedAfterFilesUpdateRef.current
+    ) {
+      return;
+    }
+    syncedOriginalFilesKeyRef.current = syncKey;
 
     if (!visibleOriginalFiles || visibleOriginalFiles.length === 0) {
-      setFiles([]);
+      setFiles((prev) => (prev.length === 0 ? prev : []));
       filesRef.current = [];
       const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
       if (currentSelectedFileId) {
@@ -791,10 +1047,13 @@ export function useFileTreePreviewView(
       Array.isArray(visibleOriginalFiles) &&
       visibleOriginalFiles.length > 0
     ) {
-      const treeData: FileNode[] = transformFlatListToTree(
-        visibleOriginalFiles,
-        false,
-      );
+      const creating = renamingNodeRef.current;
+      const nextTree = transformFlatListToTree(visibleOriginalFiles, false);
+      // 展开未加载目录会重拉列表，把正在输入的临时节点留在父文件夹里
+      const treeData =
+        creating?.status === 'create'
+          ? insertCreatingNode(nextTree, creating)
+          : nextTree;
       filesRef.current = treeData;
       setFiles(treeData);
 
@@ -841,11 +1100,36 @@ export function useFileTreePreviewView(
   }, [originalFiles, enableVersionControl]);
 
   /**
+   * 会话结束（FINAL_RESULT）文件树刷新后，兜底重拉当前打开文件的正文。
+   *
+   * 场景：agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，正文停留在旧值。
+   * 模型层在树刷新完成后发出 fileTreeRefreshTrigger，这里监听并在树就绪后重拉内容。
+   *
+   * 声明在原文件列表同步 effect 之后，保证同一轮渲染内 filesRef.current
+   * 已是刷新后的最新树，refreshSelectedFileContent 能基于最新 fileProxyUrl 重拉。
+   */
+  useEffect(() => {
+    // 无触发（初始值 / 切换会话后重置）或同一 trigger 已处理过，避免重复重拉
+    if (!fileTreeRefreshTrigger) {
+      return;
+    }
+
+    if (handledFileTreeRefreshTriggerRef.current === fileTreeRefreshTrigger) {
+      return;
+    }
+    handledFileTreeRefreshTriggerRef.current = fileTreeRefreshTrigger;
+    // 无选中文件时 refreshSelectedFileContent 内部会直接返回，无需在此额外判断
+    void refreshSelectedFileContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileTreeRefreshTrigger]);
+
+  /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
    *
    * 典型入口：TaskResult、Markdown 内联文件链接点击。
-   * 调用方通常会先 openPreviewView({ forceRefresh: true }) 拉取最新文件树，
-   * 再设置 fileId + trigger；本 effect 负责在树就绪后完成选中，并避免重复请求文件列表。
+   * Chat 懒加载会先搜索并打开文件；文件已经选中时这里不再打开第二次。
    */
   useEffect(() => {
     // 重新导入项目后触发 taskAgentSelectTrigger 时，用最新 filesRef 判断是否可自动选中
@@ -908,12 +1192,60 @@ export function useFileTreePreviewView(
 
     /** 拉取已完成但文件树仍为空，放弃自动选中并通知外部清理 */
     const abandonAutoSelectWhenTreeEmpty = () => {
+      if (
+        prevTaskAgentSelectedFileIdRef.current === taskAgentSelectedFileId &&
+        prevTaskAgentSelectTriggerRef.current === taskAgentSelectTrigger
+      ) {
+        return;
+      }
       pendingTaskAgentAutoSelectRef.current = null;
       prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
       onSelectedFileMissingRef.current?.(taskAgentSelectedFileId);
+    };
+
+    /**
+     * 懒加载树里没有目标文件时，先用搜索结果打开（fileProxyUrl 走原预览）。
+     * 同一次点击只请求一次；搜索未命中且父目录已加载，再判 miss。
+     */
+    const resolveMissingFileFromSearch = () => {
+      const resolve = resolveAutoSelectFileRef.current;
+      if (!resolve) {
+        return false;
+      }
+      const key = `${taskAgentSelectedFileId}::${String(
+        taskAgentSelectTrigger,
+      )}`;
+      const current = autoSelectSearchRef.current;
+      if (current?.key === key) {
+        return current.status !== 'empty';
+      }
+      autoSelectSearchRef.current = { key, status: 'pending' };
+      void resolve(taskAgentSelectedFileId).then((node) => {
+        if (autoSelectSearchRef.current?.key !== key) {
+          return;
+        }
+        if (node) {
+          autoSelectSearchRef.current = { key, status: 'found' };
+          void handleFileSelectInternal(node.id, { fallbackNode: node });
+          prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+          if (taskAgentSelectTrigger !== undefined) {
+            prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+          }
+          pendingTaskAgentAutoSelectRef.current = null;
+          return;
+        }
+        autoSelectSearchRef.current = { key, status: 'empty' };
+        const directoryLoaded =
+          !isAutoSelectDirectoryLoadedRef.current ||
+          isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId);
+        if (directoryLoaded) {
+          abandonAutoSelectWhenTreeEmpty();
+        }
+      });
+      return true;
     };
 
     /**
@@ -931,11 +1263,26 @@ export function useFileTreePreviewView(
     // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
     if (!files?.length) {
       if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        // 懒加载宿主正在加载目标目录时，不要再刷当前层（通常是根目录）
+        if (
+          isAutoSelectDirectoryLoadedRef.current &&
+          !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
+        ) {
+          pendingTaskAgentAutoSelectRef.current = {
+            fileId: taskAgentSelectedFileId,
+            trigger: taskAgentSelectTrigger,
+          };
+          resolveMissingFileFromSearch();
+          return;
+        }
         if (
           hasFetchedOriginalFiles &&
           !originalFiles?.length &&
           !isFileTreeFetchInFlight
         ) {
+          if (resolveMissingFileFromSearch()) {
+            return;
+          }
           abandonAutoSelectWhenTreeEmpty();
           return;
         }
@@ -976,13 +1323,72 @@ export function useFileTreePreviewView(
       trigger: taskAgentSelectTrigger,
     };
 
+    const openedNode = findFileNode(taskAgentSelectedFileId, filesRef.current);
+    const openedId = selectedFileIdRef.current;
+    // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文。
+    // 技能导入会再次触发同一文件：正文在 fileProxyUrl 上，需重拉，不能用详情里可能为空的 contents 覆盖编辑器。
+    if (
+      openedId &&
+      (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
+    ) {
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      pendingTaskAgentAutoSelectRef.current = null;
+
+      /**
+       * 技能详情导入后刷新已打开文件
+       * 文件名不变时，用新的技能正文替换编辑器里的旧内容
+       */
+      if (isTriggerUpdate && isProjectSkill && openedNode) {
+        if (openedNode.fileProxyUrl) {
+          void refreshSelectedFileContent(openedNode);
+        } else {
+          const source = (originalFiles ?? []).find((file) => {
+            const record = file as { name?: string; fileId?: string };
+            return (
+              record.name === openedNode.id || record.fileId === openedNode.id
+            );
+          }) as { contents?: string } | undefined;
+          if (typeof source?.contents === 'string') {
+            setSelectedFileNode({ ...openedNode, content: source.contents });
+            setFileRefreshTimestamp(Date.now());
+          }
+        }
+      }
+      return;
+    }
+
+    // 分层文件树：先搜索并用完整路径打开，不用当前已加载列表做模糊匹配
+    if (isAutoSelectDirectoryLoadedRef.current) {
+      const directoryLoaded = isAutoSelectDirectoryLoadedRef.current(
+        taskAgentSelectedFileId,
+      );
+      if (!directoryLoaded) {
+        resolveMissingFileFromSearch();
+        return;
+      }
+      if (resolveMissingFileFromSearch()) {
+        return;
+      }
+      if (!openedNode) {
+        abandonAutoSelectWhenTreeEmpty();
+      }
+      return;
+    }
+
     if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
       applyAutoSelect(taskAgentSelectedFileId);
       return;
     }
 
-    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选。
+    // 分层文件树已在上面 return，这里只处理一次拿全量列表的页面。
     if (hasFetchedOriginalFiles) {
+      if (resolveMissingFileFromSearch()) {
+        return;
+      }
       abandonAutoSelectWhenTreeEmpty();
       return;
     }
@@ -1096,7 +1502,7 @@ export function useFileTreePreviewView(
     removeIfNew?: boolean;
     node?: FileNode | null;
   }) => {
-    // 如果是新建节点且未输入内容，则需要从文件树中移除该临时节点
+    // 取消新建时从文件树中移除临时节点（无论输入框是否已有内容）
     if (options?.removeIfNew && options.node) {
       const targetId = options.node.id;
 
@@ -1419,7 +1825,7 @@ export function useFileTreePreviewView(
       ): FileNode[] => {
         // 在根目录创建
         if (!targetParentId) {
-          return [newNode, ...nodes];
+          return sortFileTreeNodes([newNode, ...nodes]);
         }
 
         return nodes.map((node) => {
@@ -1427,7 +1833,7 @@ export function useFileTreePreviewView(
             const children = node.children || [];
             return {
               ...node,
-              children: [newNode, ...children],
+              children: sortFileTreeNodes([newNode, ...children]),
             };
           }
 
@@ -1722,6 +2128,12 @@ export function useFileTreePreviewView(
       if (selectedFileIdRef.current !== currentRefreshFileId) {
         return;
       }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode ? { ...prevNode, content: '' } : prevNode,
+        );
+        return;
+      }
       setSelectedFileNode((prevNode) =>
         prevNode
           ? {
@@ -1777,29 +2189,71 @@ export function useFileTreePreviewView(
       fileProxyUrl: string,
       selectedFileId: string,
     ): { key: string; url: string } => {
-      // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-      const triggerPart =
-        taskAgentSelectTrigger !== undefined
-          ? `trigger-${taskAgentSelectTrigger}`
-          : 'trigger-none';
+      if (fileType === 'markdown') {
+        return {
+          key: JSON.stringify([
+            fileType,
+            targetId,
+            selectedFileId,
+            fileProxyUrl,
+          ]),
+          url: fileProxyUrl,
+        };
+      }
+      /**
+       * taskAgentSelectTrigger 只负责驱动自动选中 effect；真正选中文件时会统一更新
+       * fileRefreshTimestamp。若两者都参与 key，一次消息文件点击会先因 trigger 重建，
+       * 再因 timestamp 重建，导致 Markdown 等资源连续请求两次。
+       */
       const timestampPart = `timestamp-${fileRefreshTimestamp}`;
-      const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
+      const fileKey = `${fileType}-${selectedFileId}-${timestampPart}`;
 
-      // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-      // 优先使用 taskAgentSelectTrigger，如果不存在则使用时间戳 ref
-      const triggerValue =
-        taskAgentSelectTrigger !== undefined
-          ? taskAgentSelectTrigger
-          : fileRefreshTimestamp;
       const separator = fileProxyUrl.includes('?') ? '&' : '?';
-      const fileUrl = triggerValue
-        ? `${fileProxyUrl}${separator}t=${triggerValue}`
+      const fileUrl = fileRefreshTimestamp
+        ? `${fileProxyUrl}${separator}t=${fileRefreshTimestamp}`
         : fileProxyUrl;
 
       return { key: fileKey, url: fileUrl };
     },
-    [taskAgentSelectTrigger, fileRefreshTimestamp],
+    [fileRefreshTimestamp, targetId],
   );
+
+  // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
+  // 产生新对象引用，导致 OpenUiRuntimeFrame 的拉取 effect 反复触发（多次/重复请求）。
+  // 内容已在内存时直接复用，不再请求 .openui.json（规避 static_k 失败导致的 loading 卡死）。
+  // 同时对误用的裸 `.openui` 做内容嗅探：合法 nuwax.openui-file 也可内联渲染。
+  const openUiInlineArtifact = useMemo(() => {
+    const name = selectedFileNode?.name;
+    if (
+      !name ||
+      (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) ||
+      !selectedFileNode?.content
+    ) {
+      return undefined;
+    }
+    return tryParseOpenUiFileContent(selectedFileNode.content) ?? undefined;
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
+
+  /**
+   * `.openui.json`（及内容合法的裸 `.openui`）预览契约失败提示：
+   * 常见于手改 source 后未更新 digest。
+   */
+  const openUiContractErrorDescription = useMemo(() => {
+    const name = selectedFileNode?.name;
+    const content = selectedFileNode?.content;
+    if (!name || !content) return undefined;
+    if (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) {
+      return undefined;
+    }
+    if (tryParseOpenUiFileContent(content)) return undefined;
+    if (isOpenUiDigestContractFailure(content)) {
+      return dict('PC.Components.FileTreeView.openUiDigestInvalid');
+    }
+    if (isBareOpenUiFileName(name)) {
+      return dict('PC.Components.FileTreeView.openUiWrongExtension');
+    }
+    return dict('PC.Components.FileTreeView.openUiContractInvalid');
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
 
   /**
    * 渲染内容区域
@@ -1838,6 +2292,18 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 点了变更文件但按路径没搜到：不要复用「未选中文件」的文案
+    if (workspaceFileNotFound && !selectedFileNode && !selectedFolderId) {
+      return (
+        <AppDevEmptyState
+          showTitle={false}
+          showIcon={false}
+          showButtons={false}
+          description={dict('PC.Components.FileTreeView.searchedFileNotFound')}
+        />
+      );
+    }
+
     // 未选择文件、选中文件夹或新建文件时
     if (
       !selectedFileNode ||
@@ -1850,6 +2316,17 @@ export function useFileTreePreviewView(
           showIcon={false}
           showButtons={false}
           description={dict('PC.Components.FileTreeView.selectFileToPreview')}
+        />
+      );
+    }
+
+    if (oversizedPreviewFileId && oversizedPreviewFileId === selectedFileId) {
+      return (
+        <AppDevEmptyState
+          type="error"
+          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+          showButtons={false}
+          description={dict('PC.Components.FileTreeView.fileTooLarge')}
         />
       );
     }
@@ -1921,9 +2398,12 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 展示用文件名。节点 id 带 workspace: 只用于树内选中，不能拿来当文件名
+    const selectedFileName = selectedFileNode.name || '';
+    const fileExtension = selectedFileName.split('.').pop() || selectedFileName;
+
     // 软链接文件不支持编辑预览
     if (selectedFileNode?.isLink) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (
         <AppDevEmptyState
           type="error"
@@ -1938,31 +2418,110 @@ export function useFileTreePreviewView(
     }
 
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
-    const selectedFileName =
-      selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
-    if (!isPreviewableFile(selectedFileName, true)) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
+
+    /**
+     * OpenUI 预览：
+     * - 契约后缀 `*.openui.json`：preview 走 Runtime；内容非法且无法 URL 回退时给出 digest/契约提示
+     * - 误用裸 `.openui`：内容合法则嗅探渲染；仅有 fileProxyUrl 时也尝试 Runtime 拉取
+     */
+    const isCanonicalOpenUi = isOpenUiFileName(selectedFileName);
+    const isBareOpenUi = isBareOpenUiFileName(selectedFileName);
+    if ((isCanonicalOpenUi || isBareOpenUi) && viewFileType === 'preview') {
+      const canTryRuntime = Boolean(openUiInlineArtifact || fileProxyUrl);
+
+      // 内存契约失败且没有 URL 可回退时，展示定向错误（避免挡住磁盘正确文件的 URL 拉取）
+      if (
+        !canTryRuntime &&
+        openUiContractErrorDescription &&
+        !openUiInlineArtifact
+      ) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={openUiContractErrorDescription}
+          />
+        );
+      }
+
+      if (!canTryRuntime) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              isBareOpenUi
+                ? 'PC.Components.FileTreeView.openUiWrongExtension'
+                : 'PC.Components.FileTreeView.openUiContractInvalid',
+            )}
+          />
+        );
+      }
+
+      const conversationId = staticFileBasePath?.match(
+        /\/api\/computer\/static\/(\d+)/,
+      )?.[1];
       return (
-        <AppDevEmptyState
-          type="error"
-          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
-          showButtons={false}
-          description={dict(
-            'PC.Components.FileTreeView.unsupportedFormat',
-            fileExtension,
-          )}
+        // 不加 key={selectedFileId}：让 openui 文件间复用同一 OpenUiRuntimeFrame 实例，
+        // 切换走 OPENUI_LOAD 增量更新（iframe 只加载一次），避免每文件重载 3.4MB runtime。
+        <OpenUiRuntimeFrame
+          artifact={openUiInlineArtifact}
+          artifactUrl={
+            openUiInlineArtifact ? undefined : fileProxyUrl || undefined
+          }
+          expectedArtifactId={
+            openUiInlineArtifact?.artifactId ||
+            getOpenUiArtifactIdFromFileName(selectedFileName)
+          }
+          expectedDigest={openUiInlineArtifact?.document.digest}
+          conversationId={conversationId}
+          variant="full"
         />
       );
     }
 
-    const fileName = selectedFileId?.split('/')?.pop() || '';
+    if (!isPreviewableFile(selectedFileName, true)) {
+      // 代码视图下允许查看裸 .openui 文本；预览模式才提示正确扩展名
+      if (isBareOpenUiFileName(selectedFileName) && viewFileType === 'code') {
+        // 落入下方 CodeViewer
+      } else if (isBareOpenUiFileName(selectedFileName)) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.openUiWrongExtension',
+            )}
+          />
+        );
+      } else {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.unsupportedFormat',
+              fileExtension,
+            )}
+          />
+        );
+      }
+    }
+
+    const fileName = selectedFileName;
     const fileNameLower = fileName?.toLowerCase() || '';
     const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
 
     if (
       (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
       viewFileType === 'preview' &&
-      (fileProxyUrl || selectedFileNode?.content)
+      (fileProxyUrl ||
+        selectedFileNode?.content ||
+        (!isHtmlInCondition && typeof selectedFileNode?.content === 'string'))
     ) {
       const fileTypeForPreview = isHtmlInCondition ? 'html' : 'markdown';
       const { key: filePreviewKey, url: filePreviewUrl } =
@@ -1972,7 +2531,13 @@ export function useFileTreePreviewView(
         <FilePreview
           key={filePreviewKey}
           src={filePreviewUrl}
-          content={selectedFileNode?.content}
+          // 远程 Markdown 不传编辑器缓存，避免旧正文覆盖预览自己的刷新结果。
+          content={
+            !isHtmlInCondition && fileProxyUrl
+              ? undefined
+              : selectedFileNode?.content
+          }
+          refreshKey={isHtmlInCondition ? undefined : markdownRefreshKey}
           fileType={fileTypeForPreview}
           staticFileBasePath={staticFileBasePath}
         />
@@ -2074,12 +2639,15 @@ export function useFileTreePreviewView(
       taskAgentSelectedFileId,
       selectedFileNode,
       selectedFileId,
+      selectedFolderId,
+      workspaceFileNotFound,
       isVideo,
       isAudio,
       isOfficeDocument,
       documentFileType,
       isImage,
       buildFilePreviewProps,
+      markdownRefreshKey,
       isDynamicTheme,
       onFullscreenPreview,
       handleContentChange,
@@ -2134,6 +2702,13 @@ export function useFileTreePreviewView(
       isExportingProject,
       isImportingProject,
       toolbarDisabled: fileTreeDataLoading || isUploadingFiles,
+    },
+    /** 源代码管理按路径没搜到文件时，预览区改提示，不影响未选中文案 */
+    markWorkspaceFileNotFound: (missing: boolean) => {
+      setWorkspaceFileNotFound(missing);
+      if (missing) {
+        setSelectedFolderId('');
+      }
     },
     preview: {
       selectedFileNode,

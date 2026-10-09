@@ -1,5 +1,6 @@
 import { ReactComponent as ICON_CSS } from '@/assets/filetree/icon_css.svg';
 import { ReactComponent as ICON_DEFAULT } from '@/assets/filetree/icon_default.svg';
+import { ReactComponent as ICON_FOLDER } from '@/assets/filetree/icon_folder.svg';
 import { ReactComponent as ICON_HTML } from '@/assets/filetree/icon_html.svg';
 import { ReactComponent as ICON_JS } from '@/assets/filetree/icon_js.svg';
 import { ReactComponent as ICON_JSON } from '@/assets/filetree/icon_json.svg';
@@ -13,6 +14,7 @@ import { ReactComponent as ICON_TSX } from '@/assets/filetree/icon_tsx.svg';
 export {
   ICON_CSS,
   ICON_DEFAULT,
+  ICON_FOLDER,
   ICON_HTML,
   ICON_JS,
   ICON_JSON,

@@ -149,18 +149,22 @@ const toSelectedDataResources = (infos?: any[]): DataResource[] => {
     .map((item): DataResource | null => {
       const id = item?.targetId ?? item?.id;
       const name = item?.name || item?.title;
-      if (!id || !name) {
+      if (!id) {
         return null;
       }
 
       const rawType = `${item?.targetType || item?.type || ''}`.toLowerCase();
+      if (!rawType.includes('plugin') && !rawType.includes('workflow')) {
+        return null;
+      }
       const type = rawType.includes('plugin')
         ? DataResourceType.PLUGIN
         : DataResourceType.WORKFLOW;
 
       return {
         id,
-        name,
+        // 首页/新建项目输入框只保留 id+type；名称缺失时仍需带上资源 ID。
+        name: name || String(id),
         type,
         isSelected: true,
         status: DataResourceStatus.ACTIVE,

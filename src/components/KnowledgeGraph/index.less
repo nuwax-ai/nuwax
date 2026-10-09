@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .knowledgeGraphContainer {
   display: flex;
@@ -52,8 +53,8 @@
   gap: 12px;
 
   .backIcon {
-    font-size: 16px;
-    color: @GRAY16;
+    // 统一返回图标方案：SvgIcon 默认内联 20px，色值走导航二级文字 token
+    color: @navFirstMenuTextSecondary;
     cursor: pointer;
     transition: color 0.2s;
 

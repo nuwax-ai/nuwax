@@ -1,4 +1,3 @@
-import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -6,6 +5,7 @@ import type {
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import type { ResourcePricingType } from '@/types/interfaces/resource';
 import React from 'react';
 import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
@@ -13,8 +13,8 @@ import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 export interface SquarePublishedListParams {
   // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType?: AgentComponentTypeEnum;
-  // 模板模式下，目标类型
-  targetSubType?: 'ChatBot' | 'PageApp';
+  // 子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp,ThirdApp
+  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp' | 'ThirdApp';
   // 页码，从1开始
   page: number;
   // 每页数量
@@ -25,6 +25,8 @@ export interface SquarePublishedListParams {
   kw?: string;
   // 空间ID（可选）需要通过空间过滤时有用
   spaceId?: number;
+  // 空间ID列表（可选）按多个空间聚合查询（如能力弹窗专家·团队空间「全部」页签）
+  spaceIds?: number[];
   // 只返回空间的组件
   justReturnSpaceData?: boolean;
   // 空间ID列表（可选）,查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
@@ -33,6 +35,8 @@ export interface SquarePublishedListParams {
   allowCopy?: AllowCopyEnum;
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
   accessControl?: number;
+  // 仅返回官方内容
+  official?: boolean;
 }
 
 // 广场-已发布的组件单项信息
@@ -43,8 +47,11 @@ export interface SquarePublishedItemInfo {
   spaceId: number;
   // ChatBot、PageApp
   agentType: 'ChatBot' | 'PageApp';
-  // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE
-  targetType: SquareAgentTypeEnum;
+  // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE;
+  // app/list 应用列表口径下还会返回 UserApp(网站应用)/ThirdApp(三方应用)
+  targetType: SquareAgentTypeEnum | AgentComponentTypeEnum;
+  // 目标子类型,可用值:ChatBot,PageApp,UserApp(UserApp=网站应用,卡片点击走 /user-app 路由)
+  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp' | string;
   // 目标对象（智能体、工作流、插件）ID
   targetId: number;
   // 发布名称
@@ -75,6 +82,9 @@ export interface SquarePublishedItemInfo {
   collect: boolean;
   // 扩展字段
   ext: Record<string, any>;
+  // 三方应用主页地址(app/list 回包顶层下发,仅 ThirdApp 有值;有值时跳
+  // /user-app/:id 附 homepageUrl query,UserApp 页直接 iframe 该地址)
+  homepageUrl?: string;
   // 适用场景列表，如 [TaskAgent, PageApp]
   usageScenarios: string[];
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
@@ -83,6 +93,10 @@ export interface SquarePublishedItemInfo {
   paymentRequired: boolean;
   // 是否已订阅
   subscribed: boolean;
+  // 是否已启用（技能维度；能力弹窗技能卡开关状态）
+  enabled?: boolean;
+  // 是否官方内容（卡片「官方」标识）
+  official?: boolean;
   // 价格
   price?: number;
   /** 计价周期，与工具定价配置一致：ONE_TIME / SECOND / MILLION_TOKEN 等 */
@@ -95,6 +109,8 @@ export interface SquareCategoryInfo {
   key: string;
   // 类别描述
   label: string;
+  // 分类图标,后端非必填,为空前端不展示
+  icon?: string;
   type: SquareAgentTypeEnum;
   children?: SquareCategoryInfo[];
 }
@@ -122,6 +138,8 @@ export interface SingleAgentProps {
   showCollectCount?: boolean;
   collectApi?: (targetId: number) => Promise<any>;
   unCollectApi?: (targetId: number) => Promise<any>;
+  // 卡片图标形态：方形圆角（默认）/ 圆形（智能体「人」形资源口径）
+  iconShape?: 'square' | 'circle';
 }
 
 // 广场单个组件（插件、工作流等）

@@ -16,6 +16,7 @@ import type {
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
+  TaskStatus,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
@@ -29,6 +30,7 @@ import type {
   AgentTypeEnum,
   HistoryActionTypeEnum,
   OpenCloseEnum,
+  SpaceTypeEnum,
 } from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
@@ -50,6 +52,21 @@ export interface AgentBaseInfo {
   description: string;
 }
 
+/** 最近使用智能体中用于展示任务状态的会话信息。 */
+export interface AgentRecentConversationInfo {
+  id: number | string;
+  topic?: string | null;
+  taskStatus?: TaskStatus;
+  /** 会话级服务端置顶状态 */
+  pinned?: boolean;
+  /** 会话级服务端归档状态 */
+  archived?: boolean;
+  /** 会话级服务端收藏状态（2026-09-13 collect/unCollect 上线，列表回读打标） */
+  collected?: boolean;
+  /** 会话更新时间(接口当前未返回,后端补字段后自动展示) */
+  modified?: string;
+}
+
 // 智能体信息
 export interface AgentInfo extends AgentBaseInfo {
   id: number;
@@ -63,6 +80,8 @@ export interface AgentInfo extends AgentBaseInfo {
   spaceId: number;
   // ChatBot、PageApp、TaskAgent、AgentFlow
   agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
+  // 最近使用列表中的智能体会话，接口可能返回 null
+  conversationList?: AgentRecentConversationInfo[] | null;
 }
 
 // 新增智能体输入参数
@@ -106,7 +125,9 @@ export interface AgentPublishApplyParams {
 export interface GuidQuestionDto {
   // 问题类型,可用值:Question,Page,Link
   type: GuidQuestionSetTypeEnum;
-  // 问题信息
+  // 标题，最多 10 个字
+  title?: string;
+  // 问题内容
   info: string;
   // 图标
   icon?: string;
@@ -551,12 +572,18 @@ export interface AgentConfigInfo {
   allowAtSkill: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox: DefaultSelectedEnum;
-  // 扩展信息
+  // 扩展信息, 用于存储智能体额外信息, 可以是任何后端返回的额外信息
   extra?: {
     prodProxyMcpId?: number;
     private?: boolean;
     sandboxId?: number;
     devProxyMcpId?: number;
+    deviceId?: string;
+    // 设备类型，例如：DeskBuddy
+    deviceType?: string;
+    // 是否是设备Agent
+    isDeviceAgent?: boolean;
+    [key: string]: any;
   };
   /** 是否有权限使用该智能体 */
   hasPermission?: boolean;
@@ -792,6 +819,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   trialCount?: number;
   // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
   allowChooseMode?: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许；作为会话框配置未配置过时的默认值
+  enableVersionControl?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件
@@ -944,6 +973,18 @@ export interface ModelOptionDto {
   enabled: number;
   accessControl: number;
   usageScenarios: string[];
+  /** 模型标签(仅系统公共模型维度维护,接口可能不返回) */
+  tag?: string;
+  /** 模型标签颜色(hex,如 #1668DC;接口可能不返回) */
+  tagColor?: string;
+  /** 模型倍率(仅系统公共模型维度维护,接口可能不返回) */
+  cost?: string;
+  /** 所属空间名称(团队模型展示"空间名.模型名"前缀,接口可能不返回) */
+  spaceName?: string;
+  /** 所属空间类型(scope 为 Space 时区分个人/团队模型,接口可能不返回) */
+  spaceType?: SpaceTypeEnum;
+  /** 模型供应商 icon 地址(为空时前端兜底 custom.png,接口可能不返回) */
+  providerIcon?: string;
 }
 
 // 日志查询响应-工作空间

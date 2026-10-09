@@ -21,6 +21,7 @@ export const useConversationScrollDetection = (
   allowAutoScrollRef: React.MutableRefObject<boolean>,
   scrollTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
   setShowScrollBtn: (show: boolean) => void,
+  enabled = true,
 ) => {
   // 记录上一次滚动位置，用于判断滚动方向
   const lastScrollTopRef = useRef<number>(0);
@@ -31,15 +32,19 @@ export const useConversationScrollDetection = (
         ? messageViewTarget.current
         : messageViewTarget;
 
-    if (!messageView) {
+    if (!enabled || !messageView) {
       return;
     }
 
     // 初始化上一次滚动位置
     lastScrollTopRef.current = messageView.scrollTop;
+    let lastScrollHeight = messageView.scrollHeight;
+    let lastClientHeight = messageView.clientHeight;
 
     // 节流版本（用于向下滚动等非紧急情况）
     const handleScrollThrottled = throttle(() => {
+      // display:none 的容器尺寸为零，不能据此把手动阅读误判为到底部。
+      if (messageView.clientHeight === 0) return;
       const { scrollTop, scrollHeight, clientHeight } = messageView;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
@@ -62,6 +67,26 @@ export const useConversationScrollDetection = (
     // 使用 scroll 事件替代 wheel 事件，可以捕获所有类型的滚动行为
     const scrollHandler = () => {
       const { scrollTop, scrollHeight, clientHeight } = messageView;
+      if (clientHeight === 0) return;
+      const previousMaxScrollTop = Math.max(
+        0,
+        lastScrollHeight - lastClientHeight,
+      );
+      const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+      const clampedToBottom =
+        maxScrollTop < previousMaxScrollTop &&
+        lastScrollTopRef.current >= maxScrollTop &&
+        Math.abs(scrollTop - maxScrollTop) <= 1;
+      lastScrollHeight = scrollHeight;
+      lastClientHeight = clientHeight;
+
+      // 正文收缩或视口增大时，浏览器会把旧位置夹紧到新的底部；仅豁免
+      // 这种精确贴底的排版修正，保留键盘、触摸和拖滚动条的上滑打断。
+      if (clampedToBottom && allowAutoScrollRef.current) {
+        lastScrollTopRef.current = scrollTop;
+        setShowScrollBtn(false);
+        return;
+      }
 
       // 如果内容不足以滚动（没有滚动条），确保隐藏按钮并直接返回
       if (scrollHeight <= clientHeight) {
@@ -166,10 +191,12 @@ export const useConversationScrollDetection = (
 
     // 组件卸载时移除滚动事件监听器
     return () => {
+      handleScrollThrottled.cancel();
       messageView.removeEventListener('scroll', scrollHandler);
       messageView.removeEventListener('wheel', wheelHandler);
     };
   }, [
+    enabled,
     messageViewTarget,
     (messageViewTarget as any)?.current,
     allowAutoScrollRef,

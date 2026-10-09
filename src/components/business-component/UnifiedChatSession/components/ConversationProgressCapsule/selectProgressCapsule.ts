@@ -1,0 +1,315 @@
+import {
+  isOpenUiToolNode,
+  projectConversation,
+  type ConversationProcessNode,
+} from '@/features/conversation/presentation-v2';
+import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
+import { t } from '@/services/i18nRuntime';
+import { AssistantRoleEnum } from '@/types/enums/agent';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import {
+  extractOpenUiArtifactId,
+  resolveOpenUiDisplayState,
+} from '@/utils/openUiArtifact';
+
+export type ProgressStepStatus = 'completed' | 'active' | 'pending';
+
+export interface ProgressCapsuleStep {
+  content: string;
+  status: ProgressStepStatus;
+}
+
+/** 胶囊常驻行（终端 / 子智能体），终态保留各自最终状态 */
+export interface ProgressCapsuleNode {
+  id: string;
+  title: string;
+  command?: string;
+  status: ConversationProcessNode['status'];
+}
+
+/** <task-result> 标签产物行：描述优先展示，file 为产物路径 */
+export interface ProgressCapsuleTaskResult {
+  key: string;
+  description: string;
+  file: string;
+}
+
+/** OpenUI 产物行（仅 Backend.Sandbox.Event.renderUI，inline/sidecar 两形态）：
+ *  title 取产物标题，artifactId 用于从面板重开预览（data/{id}.openui.json） */
+export interface ProgressCapsuleOpenUi {
+  key: string;
+  title: string;
+  artifactId: string;
+  status: ConversationProcessNode['status'];
+}
+
+/** 该轮文件编辑（V2 投影口径：编辑行数，非 git 统计） */
+export interface ProgressCapsuleFileEdit {
+  id: string;
+  /** 单文件路径；多文件节点为空串，展示层用「N 个文件」词条 */
+  path: string;
+  fileCount: number;
+  additions: number;
+  deletions: number;
+  status: ConversationProcessNode['status'];
+}
+
+export interface ProgressCapsuleModel {
+  turnKey: string;
+  /** 会话语义仍在执行（active && turn.running），决定 spinner / 终态图标 */
+  running: boolean;
+  /** 轮次终态，仅会话结束后给出 */
+  terminalStatus?: 'complete' | 'error' | 'stopped';
+  currentAction: string;
+  /** 消息内 <task-result> 标签产物（会话输出同源口径） */
+  taskResults: ProgressCapsuleTaskResult[];
+  /** OpenUI 产物（按 artifactId 去重保序，同 id 更新替换旧行） */
+  openuiRenders: ProgressCapsuleOpenUi[];
+  steps: ProgressCapsuleStep[];
+  terminals: ProgressCapsuleNode[];
+  subagents: ProgressCapsuleNode[];
+  fileEdits: ProgressCapsuleFileEdit[];
+  completedCount: number;
+  totalCount: number;
+}
+
+const normalizeStepStatus = (status: string): ProgressStepStatus => {
+  const normalized = status.toLowerCase().replace(/[_\s]+/g, '-');
+  if (
+    ['completed', 'complete', 'finished', 'success', 'done'].includes(
+      normalized,
+    )
+  ) {
+    return 'completed';
+  }
+  if (['in-progress', 'running', 'executing', 'active'].includes(normalized)) {
+    return 'active';
+  }
+  return 'pending';
+};
+
+const nodeAction = (node: ConversationProcessNode | undefined): string =>
+  node?.summary?.trim() || node?.title?.trim() || '';
+
+/** OpenUI 节点的动作文案：协议工具名不外露，三态词条 + 产物标题（有则拼） */
+const openUiActionText = (node: ConversationProcessNode): string => {
+  const label = t(
+    `PC.Components.ConversationRendererV2.toolActionOpenUi${
+      node.status === 'running'
+        ? 'Running'
+        : node.status === 'failed'
+        ? 'Failed'
+        : 'Finished'
+    }`,
+  );
+  const state = resolveOpenUiDisplayState(node.processing?.result);
+  const title =
+    state.status === 'ready'
+      ? state.artifact?.title
+      : state.status === 'input-only'
+      ? state.renderInput?.title
+      : undefined;
+  return title ? `${label} · ${title}` : label;
+};
+
+const nodeActionText = (node: ConversationProcessNode | undefined): string => {
+  if (!node) return '';
+  return isOpenUiToolNode(node) ? openUiActionText(node) : nodeAction(node);
+};
+
+const nodeDisplayTitle = (node: ConversationProcessNode): string =>
+  node.title?.trim() || nodeAction(node);
+
+const TASK_RESULT_TAG = /<task-result[^>]*>([\s\S]*?)<\/task-result>/g;
+const pickTaskResultChild = (inner: string, tag: string): string =>
+  (inner.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))?.[1] ?? '')
+    .trim()
+    .replace(/<[^>]+>/g, '');
+
+/** 从轮内 assistant 消息原文提取 <task-result> 标签（会话输出同源口径） */
+const extractTaskResults = (
+  messages: MessageInfo[],
+): ProgressCapsuleTaskResult[] => {
+  const results: ProgressCapsuleTaskResult[] = [];
+  for (const message of messages) {
+    if (message.role !== AssistantRoleEnum.ASSISTANT) continue;
+    for (const match of message.text?.matchAll(TASK_RESULT_TAG) ?? []) {
+      const description = pickTaskResultChild(match[1], 'description');
+      const file = pickTaskResultChild(match[1], 'file');
+      if (description || file) {
+        results.push({
+          key: `${message.id}-${results.length}`,
+          description,
+          file,
+        });
+      }
+    }
+  }
+  return results;
+};
+
+/**
+ * 从 V2 投影抽取最近一轮的 Plan / 终端 / 子智能体。
+ * 终态常驻：会话结束后继续产出最后一轮内容；无可展示内容（steps/
+ * terminals/subagents/fileEdits/taskResults/openuiRenders 全空，currentAction
+ * 文案不算内容——面板无分区时不展示空壳）时才返回 null（胶囊隐藏）。
+ */
+export function selectProgressCapsule(
+  messageList: MessageInfo[] | undefined,
+  active: boolean,
+  presentation?: ReturnType<typeof projectConversation>,
+): ProgressCapsuleModel | null {
+  const turns = (presentation ?? projectConversation(messageList)).turns;
+  const turn =
+    [...turns].reverse().find((item) => item.running) ?? turns.at(-1);
+  if (!turn) return null;
+
+  const planNode = [...turn.nodes]
+    .reverse()
+    .find((node) => node.kind === 'plan');
+  const detail = planNode
+    ? normalizeV2ToolDetail({
+        componentType: planNode.processing?.type ?? planNode.componentType,
+        name: planNode.processing?.name ?? planNode.title,
+        result: planNode.processing?.result,
+      })
+    : null;
+  const steps = (detail?.steps ?? [])
+    .map((step) => ({
+      content: step.content.trim(),
+      status: normalizeStepStatus(step.status),
+    }))
+    .filter((step) => Boolean(step.content));
+
+  const terminals: ProgressCapsuleNode[] = [];
+  const subagents: ProgressCapsuleNode[] = [];
+  const fileEdits: ProgressCapsuleFileEdit[] = [];
+  for (const node of turn.nodes) {
+    if (node.kind === 'subagent') {
+      subagents.push({
+        id: node.id,
+        title: nodeDisplayTitle(node),
+        status: node.status,
+      });
+      continue;
+    }
+    if (node.kind !== 'tool') continue;
+    const componentType = node.processing?.type ?? node.componentType;
+    const name = node.processing?.name ?? node.title;
+    const result = node.processing?.result;
+    const detail = normalizeV2ToolDetail({ componentType, name, result });
+    if (detail.kind === 'terminal') {
+      terminals.push({
+        id: node.id,
+        title: nodeDisplayTitle(node),
+        command: detail.command,
+        status: node.status,
+      });
+    } else if (detail.kind === 'file-edit') {
+      fileEdits.push({
+        id: node.id,
+        path:
+          detail.diffs.length > 1
+            ? ''
+            : detail.diffs[0]?.path || detail.filePath || '',
+        fileCount: detail.diffs.length || 1,
+        additions: detail.additions,
+        deletions: detail.deletions,
+        status: node.status,
+      });
+    }
+  }
+
+  const runningNode = [...turn.nodes]
+    .reverse()
+    .find(
+      (node) =>
+        (node.kind === 'tool' || node.kind === 'subagent') &&
+        node.status === 'running',
+    );
+  const activeStep = steps.find((step) => step.status === 'active');
+  // 终态后取最后执行过的工具/子智能体动作；兜底留空，由展示层用词条渲染。
+  const lastActionNode = [...turn.nodes]
+    .reverse()
+    .find((node) => node.kind === 'tool' || node.kind === 'subagent');
+  const running = active && turn.running;
+  const currentAction = running
+    ? nodeActionText(runningNode) || activeStep?.content || nodeAction(planNode)
+    : nodeActionText(runningNode) ||
+      nodeActionText(lastActionNode) ||
+      activeStep?.content ||
+      nodeAction(planNode);
+
+  // 标签产物单独成行展示，正文里剥掉避免重复
+  const taskResults = extractTaskResults(turn.assistantMessages);
+
+  // OpenUI 产物行：仅 renderUI 且产物为 inline/sidecar 两形态（ready/input-only），
+  // 同 artifactId 的更新渲染替换旧行；无 artifactId（无法重开预览）不收集
+  const openuiRenders: ProgressCapsuleOpenUi[] = [];
+  const openuiSeen = new Set<string>();
+  for (const node of turn.nodes) {
+    if (node.kind !== 'tool' || !isOpenUiToolNode(node)) continue;
+    const state = resolveOpenUiDisplayState(node.processing?.result);
+    if (state.status === 'absent') continue;
+    const artifactId =
+      state.status === 'ready'
+        ? state.artifact.artifactId
+        : state.renderInput.artifactId ??
+          extractOpenUiArtifactId(node.processing?.result);
+    if (!artifactId) continue;
+    const title =
+      (state.status === 'ready'
+        ? state.artifact.title
+        : state.renderInput.title) ||
+      t(
+        `PC.Components.ConversationRendererV2.toolActionOpenUi${
+          node.status === 'failed'
+            ? 'Failed'
+            : node.status === 'running'
+            ? 'Running'
+            : 'Finished'
+        }`,
+      );
+    const row: ProgressCapsuleOpenUi = {
+      key: node.id,
+      title,
+      artifactId,
+      status: node.status,
+    };
+    if (openuiSeen.has(artifactId)) {
+      const index = openuiRenders.findIndex(
+        (item) => item.artifactId === artifactId,
+      );
+      if (index > -1) openuiRenders[index] = row;
+    } else {
+      openuiSeen.add(artifactId);
+      openuiRenders.push(row);
+    }
+  }
+
+  // currentAction 只是触发器文案，不算可展示内容：六类分区内容全空时
+  // 胶囊整体隐藏，避免「✓ 动作文案」空壳点开无分区。
+  const hasContent =
+    steps.length > 0 ||
+    terminals.length > 0 ||
+    subagents.length > 0 ||
+    fileEdits.length > 0 ||
+    taskResults.length > 0 ||
+    openuiRenders.length > 0;
+  if (!hasContent) return null;
+
+  return {
+    turnKey: turn.key,
+    running,
+    terminalStatus: active ? undefined : turn.terminalStatus,
+    currentAction,
+    taskResults,
+    openuiRenders,
+    steps,
+    terminals,
+    subagents,
+    fileEdits,
+    completedCount: steps.filter((step) => step.status === 'completed').length,
+    totalCount: steps.length,
+  };
+}

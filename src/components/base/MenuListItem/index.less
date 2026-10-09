@@ -2,7 +2,10 @@
 @import '@/styles/token';
 
 .row {
-  padding: @paddingXs;
+  padding: var(--xagi-nav-second-row-padding, @paddingXs);
+  // 单栏（style3）二级列通过容器上的 --xagi-nav-second-* 变量同步一级列规格；
+  // 经典布局不设变量走默认值，行为与原版一致
+  min-height: var(--xagi-nav-second-row-height, auto);
   cursor: default;
   color: @navSecondMenuTextSecondary;
 
@@ -11,7 +14,7 @@
 
     .name {
       color: @navSecondMenuTextSecondary;
-      font-size: @fontSize;
+      font-size: var(--xagi-nav-second-leaf-font-size, @fontSize);
       line-height: @fontHeightLg;
       white-space: nowrap;
     }
@@ -24,20 +27,31 @@
   }
 
   &.active {
-    background-color: @colorBgContainer;
+    background-color: var(--xagi-nav-second-row-active-bg, @colorBgContainer);
     color: @colorPrimary;
-    border-radius: @borderRadius;
-    box-shadow: @boxShadowTertiary;
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
+    // 选中阴影走变量：单栏白底列注入 none（原型 tm-item.on 平 pill），
+    // 经典布局不设变量保持白卡阴影
+    box-shadow: var(--xagi-nav-second-row-active-shadow, @boxShadowTertiary);
+    // 字重仅选中加粗（2026-09-12 单栏需求）：单栏二级列容器注入 500，
+    // 经典布局不设变量回落 normal（与原行为一致）
+    font-weight: var(--xagi-nav-second-row-active-font-weight, normal);
 
     .name {
       color: @colorPrimary;
     }
+
+    // 选中项 hover 保持选中底色不被通用 hover 灰底顶掉（原型 .on 恒持浅紫）；
+    // (0,3,0) 特异性压过下方 .row:hover
+    &:hover {
+      background-color: var(--xagi-nav-second-row-active-bg, @colorBgContainer);
+    }
   }
 
   &:hover {
-    background-color: @colorBgContainer;
-    border-radius: @borderRadius;
-    box-shadow: @boxShadowTertiary;
+    background-color: var(--xagi-nav-second-row-hover-bg, @colorBgContainer);
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
+    box-shadow: var(--xagi-nav-second-row-hover-shadow, @boxShadowTertiary);
     color: @colorTextSecondary;
 
     .name {
@@ -51,14 +65,14 @@
   }
 
   .icon-box {
-    font-size: 20px;
+    font-size: var(--xagi-nav-second-icon-size, 20px);
     border-radius: @borderRadiusSm;
     overflow: hidden;
     flex-shrink: 0;
 
     .icon-image {
-      width: 20px;
-      height: 20px;
+      width: var(--xagi-nav-second-icon-size, 20px);
+      height: var(--xagi-nav-second-icon-size, 20px);
     }
   }
 

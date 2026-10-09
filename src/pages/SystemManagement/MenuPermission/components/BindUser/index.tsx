@@ -3,10 +3,21 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddRoleUser,
+  apiGetRoleBoundUserList,
+  apiRemoveRoleUser,
+} from '@/services/menuPermission/roleManage';
+import {
+  apiAddUserGroupUser,
+  apiGetGroupUserList,
+  apiRemoveUserGroupUser,
+} from '@/services/menuPermission/userGroupManage';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import { Page } from '@/types/interfaces/request';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
+import { UserInfo } from '@/types/menuPermission/role-manage';
 import { CloseOutlined } from '@ant-design/icons';
 import {
   Avatar,
@@ -21,17 +32,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddRoleUser,
-  apiGetRoleBoundUserList,
-  apiRemoveRoleUser,
-} from '../../services/role-manage';
-import {
-  apiAddUserGroupUser,
-  apiGetGroupUserList,
-  apiRemoveUserGroupUser,
-} from '../../services/user-group-manage';
-import { UserInfo } from '../../types/role-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -194,6 +194,7 @@ const BindUser: React.FC<BindUserProps> = ({
         return;
       }
 
+      // 设置左侧当前可选成员
       setLeftMember(candidate);
       setLeftChecked(false);
     },
@@ -427,7 +428,7 @@ const BindUser: React.FC<BindUserProps> = ({
     >
       <div className={cx(styles.contentWrapper)}>
         {/* 左侧：搜索并选择成员 */}
-        <div className={cx(styles['add-member-left-column'], 'flex-1')}>
+        <div className={cx(styles['add-member-left-column'], 'flex-1', 'overflow-hide')}>
           <Input.Search
             placeholder={t('PC.Pages.SystemMenuBindUser.leftSearchPlaceholder')}
             allowClear
@@ -439,14 +440,16 @@ const BindUser: React.FC<BindUserProps> = ({
               checked={leftChecked}
               onChange={(e) => handleSingleCheckChange(e.target.checked)}
             >
-              <Avatar src={leftMember.avatar || personalImage} />{' '}
-              {leftMember.nickName || leftMember.userName}
+              <div className="flex items-center gap-4 overflow-hide">
+                <Avatar src={leftMember.avatar || personalImage} />
+                <span className="text-ellipsis">{leftMember.nickName || leftMember.userName}</span>
+              </div>
             </Checkbox>
           )}
         </div>
 
         {/* 右侧：已选成员列表，支持关键字后端搜索 + 滚动加载更多 */}
-        <div className={cx('flex-1', styles.rightColumn)}>
+        <div className={cx('flex-1', styles.rightColumn, 'overflow-hide')}>
           <Input.Search
             placeholder={t(
               'PC.Pages.SystemMenuBindUser.rightSearchPlaceholder',

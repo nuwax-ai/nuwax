@@ -1,0 +1,318 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
+import {
+  apiConnectorImport,
+  apiConnectorImportApply,
+} from '@/services/systemManage';
+import type { ConnectorImportDiff } from '@/types/interfaces/systemManage';
+import { UploadOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Drawer,
+  Input,
+  Table,
+  Tag,
+  Tooltip,
+  Upload,
+  message,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import styles from './index.less';
+
+export interface ConnectorImportDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  /** 导入成功回调（父组件用它刷新连接器列表） */
+  onImported?: () => void;
+}
+
+/** diff 条目操作列文案映射（op → 中文标签）；包成函数避免 dict 在模块顶层早于 i18n 初始化 */
+const getOpLabelMap = (): Record<string, string> => ({
+  add: dict('PC.Common.Global.add'),
+  update: dict('PC.Pages.ConnectorManage.opUpdate'),
+  unchanged: dict('PC.Pages.ConnectorManage.opUnchanged'),
+  skip: dict('PC.Pages.ConnectorManage.opSkip'),
+});
+
+/** diff 条目操作列颜色映射（antd Tag 预设色） */
+const OP_COLOR_MAP: Record<string, string> = {
+  add: 'green',
+  update: 'default',
+  unchanged: 'default',
+  skip: 'orange',
+};
+
+/** 表格行：diff 条目 + 展开后的「对象」展示值与行 key */
+interface ConnectorImportDiffItemRow {
+  key: string;
+  type: string;
+  object: string;
+  op: string;
+  reason?: string | null;
+}
+
+/** diff 明细列：类型（连接器/工具）、对象（service / actionKey）、操作（op 标签） */
+const getDiffColumns = (): ColumnsType<ConnectorImportDiffItemRow> => [
+  {
+    title: dict('PC.Pages.ConnectorManage.colType'),
+    dataIndex: 'type',
+    width: 88,
+    render: (type: string) =>
+      type === 'provider'
+        ? dict('PC.Pages.ConnectorManage.labelConnector')
+        : type === 'action'
+        ? dict('PC.Pages.ConnectorManage.labelTool')
+        : type ?? '-',
+  },
+  {
+    title: dict('PC.Pages.ConnectorManage.colObject'),
+    dataIndex: 'object',
+    render: (object: string) => (
+      <span className={styles.diffObject}>{object}</span>
+    ),
+  },
+  {
+    title: dict('PC.Common.Global.operation'),
+    dataIndex: 'op',
+    width: 88,
+    render: (op: string, row) => {
+      const tag = (
+        <Tag color={OP_COLOR_MAP[op] ?? 'default'}>
+          {getOpLabelMap()[op] ?? op ?? '-'}
+        </Tag>
+      );
+      // skip 时展示跳过原因（Tooltip 悬浮查看）
+      return row.reason ? <Tooltip title={row.reason}>{tag}</Tooltip> : tag;
+    },
+  },
+];
+
+/** diff.items → 表格行（对象 = service 或 service / actionKey） */
+const toDiffRows = (
+  items: ConnectorImportDiff['items'],
+): ConnectorImportDiffItemRow[] =>
+  (items ?? []).map((item, index) => ({
+    key: `${item.type ?? ''}-${item.service ?? ''}-${
+      item.actionKey ?? ''
+    }-${index}`,
+    type: item.type ?? '',
+    object: item.actionKey
+      ? `${item.service ?? ''} / ${item.actionKey}`
+      : item.service ?? '-',
+    op: item.op ?? '',
+    reason: item.reason,
+  }));
+
+const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
+  open,
+  onClose,
+  onImported,
+}) => {
+  // 导入包 JSON 内容（粘贴或选择文件自动带入）
+  const [content, setContent] = useState<string>('');
+  // 已选择的文件名（未选择时展示「未选择任何文件」）
+  const [fileName, setFileName] = useState<string>('');
+  // 预览结果（含 importId，确认导入时引用；内容变更后失效需重新预览）
+  const [diff, setDiff] = useState<ConnectorImportDiff | null>(null);
+  // 预览中：给「预览导入 diff」按钮加 loading，防止重复提交
+  const [previewing, setPreviewing] = useState<boolean>(false);
+  // 导入中：给「确认导入」按钮加 loading，防止重复提交
+  const [importing, setImporting] = useState<boolean>(false);
+
+  const drawerWidth = useMemo(() => {
+    if (typeof window === 'undefined') return 720;
+    const w = window.innerWidth || 720;
+    return Math.min(720, Math.max(360, Math.floor(w * 0.92)));
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setContent('');
+      setFileName('');
+      setDiff(null);
+    }
+  }, [open]);
+
+  /** 选择文件：读取文本内容自动粘贴到输入框（不上传）；内容变了旧 diff 失效 */
+  const handleFileSelected = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      setContent(text);
+      setFileName(file.name);
+      setDiff(null);
+    } catch {
+      message.error(dict('PC.Pages.ConnectorManage.toastReadFileFailed'));
+    }
+  }, []);
+
+  /**
+   * 预览导入 diff：POST /api/connector/import
+   * 入参即输入框中的导入包 JSON（解析后提交），响应返回 importId +
+   * 四类变更计数 + items 明细，不执行导入
+   */
+  const handlePreviewDiff = useCallback(async () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content.trim());
+    } catch {
+      message.error(dict('PC.Pages.ConnectorManage.toastInvalidJson'));
+      return;
+    }
+
+    try {
+      setPreviewing(true);
+      const response = await apiConnectorImport(parsed);
+      if (response?.code !== SUCCESS_CODE || !response.data) {
+        throw new Error(response?.message || 'preview import failed');
+      }
+      setDiff(response.data);
+    } catch {
+      message.error(dict('PC.Pages.ConnectorManage.toastPreviewDiffFailed'));
+    } finally {
+      setPreviewing(false);
+    }
+  }, [content]);
+
+  /**
+   * 确认导入：POST /api/connector/import/apply，入参仅预览返回的 importId
+   * 成功后关闭抽屉并触发 onImported —— 父组件刷新连接器列表
+   * （GET /api/system/connector/providers）
+   */
+  const handleConfirmImport = useCallback(async () => {
+    const importId = diff?.importId;
+    if (!importId) return;
+
+    try {
+      setImporting(true);
+      const response = await apiConnectorImportApply({ importId });
+      if (response?.code !== SUCCESS_CODE) {
+        throw new Error(response?.message || 'apply import failed');
+      }
+      message.success(dict('PC.Pages.ConnectorManage.toastImportSuccess'));
+      onClose();
+      onImported?.();
+    } catch {
+      message.error(dict('PC.Pages.ConnectorManage.toastConfirmImportFailed'));
+    } finally {
+      setImporting(false);
+    }
+  }, [diff, onClose, onImported]);
+
+  /** 内容变更（粘贴/编辑/重新选文件）：已预览的 diff 与 importId 失效，清掉 */
+  const handleContentChange = useCallback((text: string) => {
+    setContent(text);
+    setDiff(null);
+  }, []);
+
+  return (
+    <Drawer
+      className={styles.drawer}
+      title={dict('PC.Pages.ConnectorManage.drawerImportOfficialTitle')}
+      placement="right"
+      open={open}
+      onClose={onClose}
+      width={drawerWidth}
+      destroyOnHidden
+      rootStyle={{ overflow: 'hidden' }}
+      styles={{ body: { padding: 0 }, footer: { padding: '12px 24px 16px' } }}
+      // 钉死基础层级（bug 2456，同查看/编辑抽屉）：防 antd 默认 1100 压过
+      // 壳工具栏层（1099–1101）
+      zIndex={1000}
+      footer={
+        /* 原生 footer 插槽：结构上位于滚动区之外，diff 明细再长按钮也吸底常驻 */
+        <div className={styles.footer}>
+          {/* 输入框无内容时禁用预览 */}
+          <Button
+            disabled={!content.trim()}
+            loading={previewing}
+            onClick={handlePreviewDiff}
+          >
+            {dict('PC.Pages.ConnectorManage.btnPreviewDiff')}
+          </Button>
+          {/* importId 来自预览结果：未预览（或内容已变更）时不可确认 */}
+          <Button
+            type="primary"
+            disabled={!diff?.importId}
+            loading={importing}
+            onClick={handleConfirmImport}
+          >
+            {dict('PC.Pages.ConnectorManage.btnConfirmImport')}
+          </Button>
+        </div>
+      }
+    >
+      <div className={styles.content}>
+        <div className={styles.fieldLabel}>
+          {dict('PC.Pages.ConnectorManage.formImportPackageLabel')}
+        </div>
+        <Input.TextArea
+          className={styles.jsonInput}
+          value={content}
+          onChange={(event) => handleContentChange(event.target.value)}
+          rows={8}
+          placeholder={
+            '{"source":"open_connector","providers":[\n  {"service":"...","authType":"...","baseUrl":"...","actions":[\n    {"actionKey":"...","httpSpec":{...}}]}]}'
+          }
+          autoComplete="off"
+        />
+        {/* 选择文件：读取内容自动填入上方输入框（beforeUpload 返回 false 阻止上传） */}
+        <div className={styles.fileRow}>
+          <Upload
+            accept=".json,application/json"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              void handleFileSelected(file);
+              return false;
+            }}
+          >
+            <Button icon={<UploadOutlined />}>
+              {dict('PC.Pages.ConnectorManage.btnSelectFile')}
+            </Button>
+          </Upload>
+          <span className={styles.fileHint}>
+            {fileName || dict('PC.Pages.ConnectorManage.emptyNoFileSelected')}
+          </span>
+        </div>
+        {/* 预览结果：四类变更计数 chips + 明细表格 */}
+        {diff ? (
+          <div className={styles.diffSection}>
+            <div className={styles.diffStats}>
+              <span className={styles.statPill}>
+                {dict('PC.Pages.ConnectorManage.statAdd', diff.addCount ?? 0)}
+              </span>
+              <span className={styles.statPill}>
+                {dict(
+                  'PC.Pages.ConnectorManage.statUpdate',
+                  diff.updateCount ?? 0,
+                )}
+              </span>
+              <span className={styles.statPill}>
+                {dict(
+                  'PC.Pages.ConnectorManage.statUnchanged',
+                  diff.unchangedCount ?? 0,
+                )}
+              </span>
+              {/* 受保护跳过以警示色区分 */}
+              <span className={`${styles.statPill} ${styles.statPillWarning}`}>
+                {dict(
+                  'PC.Pages.ConnectorManage.statSkip',
+                  diff.skipProtectedCount ?? 0,
+                )}
+              </span>
+            </div>
+            <Table<ConnectorImportDiffItemRow>
+              className={styles.diffTable}
+              columns={getDiffColumns()}
+              dataSource={toDiffRows(diff.items)}
+              size="small"
+              pagination={{ pageSize: 10, showSizeChanger: false }}
+            />
+          </div>
+        ) : null}
+      </div>
+    </Drawer>
+  );
+};
+
+export default memo(ConnectorImportDrawer);
