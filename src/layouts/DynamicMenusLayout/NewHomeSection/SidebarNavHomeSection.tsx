@@ -124,7 +124,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     setProjectCollapsed((prev) => !prev);
   };
 
-  // 两个分组头共用滚动包含块：项目固定在顶部，任务在项目头下方吸顶。
+  // 两个分组头共用滚动包含块；项目可见时，任务才在项目头下方吸顶。
   const renderSectionHeader = (options: {
     label: string;
     collapsed: boolean;
@@ -134,6 +134,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     <div
       className={cx(styles['section-tabs'], {
         [styles['task-section-tabs']]: options.task,
+        [styles['task-section-tabs-with-project']]:
+          options.task && aiOSCommercialEdition,
         [styles['section-tabs-collapsed']]: options.collapsed,
         [styles['section-tabs-sticky']]: true,
       })}

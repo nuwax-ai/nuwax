@@ -158,15 +158,26 @@ vi.mock('@/hooks/useCommercialEdition', () => ({
   }),
 }));
 
-it('未授权隐藏项目分组；授权刷新后恢复，撤销后收起', () => {
+it('项目授权刷新时，任务吸顶偏移随项目标题显隐同步更新', () => {
   commercialState.enabled = false;
   const view = render(<SidebarNavHomeSection shell={shell} />);
   const title = 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab';
+  const taskHeader = screen.getByRole('button', {
+    name: 'PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask',
+  });
   expect(screen.queryByText(title)).toBeNull();
+  expect(taskHeader).not.toHaveClass('task-section-tabs-with-project');
   commercialState.enabled = true;
   view.rerender(<SidebarNavHomeSection shell={shell} />);
   expect(screen.getByText(title)).toBeTruthy();
+  expect(taskHeader).toHaveClass('task-section-tabs-with-project');
+
+  // 收起项目内容仍保留项目标题，任务偏移不能提前归零。
+  fireEvent.click(screen.getByText(title));
+  expect(taskHeader).toHaveClass('task-section-tabs-with-project');
+
   commercialState.enabled = false;
   view.rerender(<SidebarNavHomeSection shell={shell} />);
   expect(screen.queryByText(title)).toBeNull();
+  expect(taskHeader).not.toHaveClass('task-section-tabs-with-project');
 });
