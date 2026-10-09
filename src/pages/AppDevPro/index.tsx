@@ -2911,6 +2911,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
     const envToStop = dbEnv;
+    const appStatus =
+      serviceReadinessRef.current.readinessByEnvRef.current[envToStop]?.status;
+    // 应用启动中时停止不可点。只看当前环境，另一侧的 starting 不挡这边。
+    if (appStatus === UserAppReadinessStatusEnum.Starting) {
+      return;
+    }
     modalConfirm(
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
