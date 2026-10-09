@@ -2066,7 +2066,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isConversationActive ||
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
   // 进度面板可用性：与胶囊组件同源纯选择器；有内容才渲染页头「会话进度」按钮，
-  // running 只驱动按钮转圈，面板内状态以胶囊组件内部模型为准
+  // 按钮图标固定，面板内状态以胶囊组件内部模型为准
   const capsuleModel = useMemo(
     () => selectProgressCapsule(messageList, effectiveConversationActive),
     [messageList, effectiveConversationActive],
@@ -2116,7 +2116,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setOpenPaymentModal,
     isAgentDetailModalOpen,
     handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
-    // 会话进度面板（TaskAgent）：有内容才显示页头按钮，运行中按钮转圈
+    // 会话进度面板（TaskAgent）：有内容才显示页头按钮
     hasCapsuleContent: capsuleModel !== null,
     capsuleRunning: capsuleModel?.running ?? false,
     isCapsulePanelOpen: capsulePanelOpen,

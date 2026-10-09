@@ -1,11 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { t } from '@/services/i18nRuntime';
-import {
-  CodeOutlined,
-  LoadingOutlined,
-  OrderedListOutlined,
-} from '@ant-design/icons';
+import { CodeOutlined, OrderedListOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 
@@ -59,11 +55,7 @@ const ConversationPanelActions: React.FC<ConversationPanelActionsProps> = ({
             'progress',
             progress,
             t('PC.Pages.Chat.conversationProgress'),
-            progress.running ? (
-              <LoadingOutlined spin style={{ fontSize: 16 }} />
-            ) : (
-              <OrderedListOutlined style={{ fontSize: 16 }} />
-            ),
+            <OrderedListOutlined style={{ fontSize: 16 }} />,
           )}
         </span>
       )}
