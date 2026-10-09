@@ -1614,6 +1614,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * ready 后打开当前环境预览。
    * 已经正常渲染过的环境不再因为后续探测把页面刷掉。
+   * 启动 stream 失败后，只要当前环境又变成 ready 且 ready 为 true，就收起失败状态，直接预览。
    */
   useEffect(() => {
     const data = serviceReadiness.readinessByEnv[dbEnv];
@@ -1626,16 +1627,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (computerRestartHoldEnvRef.current === dbEnv) {
       return;
     }
-    if (previewPresentedByEnvRef.current[dbEnv]) {
-      return;
-    }
     const previewUrl = appPreviewUrlRef.current?.trim();
     if (!previewUrl) {
       return;
     }
-    setPreviewIframeUrl(previewUrl);
+    const presented = previewPresentedByEnvRef.current[dbEnv];
+    const failedStream =
+      previewRuntime.phase === 'failed' || previewRuntime.phase === 'cancelled';
+    if (presented && !failedStream && previewRunningRef.current) {
+      return;
+    }
+    if (!presented) {
+      setPreviewIframeUrl(previewUrl);
+    }
     markPreviewReadyRef.current(dbEnv);
-  }, [dbEnv, serviceReadiness.readinessByEnv]);
+  }, [dbEnv, previewRuntime.phase, serviceReadiness.readinessByEnv]);
 
   /**
    * stopped 且页面还没正常渲染时，直接 restart 把服务拉起来。
@@ -2843,6 +2849,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const handleRestartPreviewRuntime = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
+    const appStatus =
+      serviceReadinessRef.current.readinessByEnvRef.current[envToRestart]
+        ?.status;
+    // 只拦当前环境。另一侧的 starting / stopping 留在自己的槽位里，不挡这边。
+    if (
+      appStatus === UserAppReadinessStatusEnum.Starting ||
+      appStatus === UserAppReadinessStatusEnum.Stopping
+    ) {
+      return;
+    }
     if (restartPreviewWaitRef.current) {
       return;
     }
@@ -2903,6 +2919,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewDevActionLocked,
       previewConversationActive,
       previewWaitingConfirmation: hasPendingIntervention,
+      previewAppStatus: serviceReadiness.readinessByEnv[dbEnv]?.status ?? null,
       // 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览）
       previewWorkspaceManifestReady: hasFileTreeData,
     }),
@@ -2921,6 +2938,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewRuntime.restarting,
       previewRuntime.stopping,
       awaitingContainerForRestart,
+      dbEnv,
+      serviceReadiness.readinessByEnv,
     ],
   );
 

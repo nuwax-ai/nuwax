@@ -116,9 +116,9 @@ const buildReadinessViewKey = (data: UserAppReadiness | null): string => {
 /**
  * 页面停留期间持续请求 /api/userapp/readiness。
  * 只探测当前选中的环境，开发 / 线上不会同时请求。
+ * 切到另一侧时停掉刚才那一侧的轮询，只留当前环境这一份。
  * 结果仍按环境分开保存，切走后另一侧的上次结果留着，不会被覆盖。
- * 当前环境已经真正就绪（status 为 ready 且 ready 为 true）后停止轮询。
- * 若仍有人在等计算容器 running（例如重启智能体电脑后要再 restart 应用），即使业务已就绪也继续探测。
+ * 应用已经 ready 且 ready 为 true 时也不停，继续按间隔探测当前环境。
  * watchNonce 变化时重新开始，用于用户重启应用、停止应用或重启智能体电脑之后。
  *
  * @param appId 应用 ID
@@ -145,9 +145,8 @@ export function useUserAppReadinessWatch(
   const stopWatchRef = useRef<number | null>(null);
   const generationRef = useRef(0);
   const boundAppIdRef = useRef(appId);
-  const watchNonceRef = useRef(watchNonce);
   /**
-   * 重新打一轮当前探测。不走 watchNonce，避免把「等状态离开就绪」的暂停打开。
+   * 重新打一轮当前环境的探测。
    * ensure 成功后用来丢掉已经发出、可能还停在旧容器状态上的那一次请求。
    */
   const [pollEpoch, setPollEpoch] = useState(0);
@@ -156,11 +155,6 @@ export function useUserAppReadinessWatch(
     pollEpochRef.current += 1;
     setPollEpoch(pollEpochRef.current);
   }, []);
-  /**
-   * 用户刚触发重启 / 停止时，当前结果可能还是上一次的 ready。
-   * 为 true 时先等到状态离开就绪，再允许下一次就绪停掉轮询。
-   */
-  const holdReadyStopRef = useRef(false);
 
   const clearStopWatch = useCallback(() => {
     if (stopWatchRef.current === null) {
@@ -287,18 +281,6 @@ export function useUserAppReadinessWatch(
   );
 
   useEffect(() => {
-    const nonceChanged = watchNonceRef.current !== watchNonce;
-    watchNonceRef.current = watchNonce;
-    if (!nonceChanged) {
-      holdReadyStopRef.current = false;
-      return;
-    }
-    holdReadyStopRef.current = isUserAppReadinessAccessible(
-      slotsRef.current[env].data,
-    );
-  }, [env, watchNonce]);
-
-  useEffect(() => {
     if (!enabled || !appId) {
       return;
     }
@@ -320,23 +302,10 @@ export function useUserAppReadinessWatch(
         timers.add(timer);
       });
 
-    const hasContainerRunningWaiter = (targetEnv: UserAppDbEnvEnum) =>
-      waitersRef.current.some(
-        (waiter) =>
-          waiter.env === targetEnv && waiter.kind === 'container-running',
-      );
-
     const watchEnv = async (targetEnv: UserAppDbEnvEnum) => {
-      if (
-        !holdReadyStopRef.current &&
-        isUserAppReadinessAccessible(slotsRef.current[targetEnv].data) &&
-        !hasContainerRunningWaiter(targetEnv)
-      ) {
-        return;
-      }
       while (!cancelled && generationRef.current === generation) {
-        // 头部切到另一环境后，这边只为等容器 running 才顺带打。等完就停，避免一直双份轮询。
-        if (targetEnv !== env && !hasContainerRunningWaiter(targetEnv)) {
+        // 切到另一环境后，这一侧立刻停。只留当前环境这一份轮询。
+        if (targetEnv !== env) {
           return;
         }
         const epoch = pollEpochRef.current;
@@ -352,16 +321,6 @@ export function useUserAppReadinessWatch(
           const picked = pickReadinessPayload(result);
           if (picked.ok) {
             commitSlot(targetEnv, picked.data);
-            if (isUserAppReadinessAccessible(picked.data)) {
-              if (
-                !holdReadyStopRef.current &&
-                !hasContainerRunningWaiter(targetEnv)
-              ) {
-                return;
-              }
-            } else {
-              holdReadyStopRef.current = false;
-            }
           } else {
             markSettled(targetEnv);
           }
@@ -382,22 +341,14 @@ export function useUserAppReadinessWatch(
         ) {
           return;
         }
-        if (targetEnv !== env && !hasContainerRunningWaiter(targetEnv)) {
+        if (targetEnv !== env) {
           return;
         }
         await delay(READINESS_WATCH_INTERVAL_MS);
       }
     };
 
-    const targets = new Set<UserAppDbEnvEnum>([env]);
-    waitersRef.current.forEach((waiter) => {
-      if (waiter.kind === 'container-running') {
-        targets.add(waiter.env);
-      }
-    });
-    targets.forEach((targetEnv) => {
-      void watchEnv(targetEnv);
-    });
+    void watchEnv(env);
 
     return () => {
       cancelled = true;

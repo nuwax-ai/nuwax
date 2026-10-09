@@ -137,4 +137,100 @@ describe('ensure 之后的容器 running 等待', () => {
       await expect(next).resolves.toMatchObject({ status: 'ready' });
     });
   });
+
+  it('应用 ready 且 ready 为 true 后仍继续轮询当前环境', async () => {
+    const responses: Array<(value: unknown) => void> = [];
+    readiness.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          responses.push(resolve);
+        }),
+    );
+    renderHook(() => useUserAppReadinessWatch(9, UserAppDbEnvEnum.Dev, true));
+
+    await act(async () => {
+      responses[0]?.({
+        code: '0000',
+        data: {
+          ready: true,
+          status: 'ready',
+          container: { status: 'running' },
+        },
+      });
+      await Promise.resolve();
+    });
+    expect(readiness).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(readiness).toHaveBeenCalledTimes(2);
+    expect(readiness).toHaveBeenLastCalledWith(9, UserAppDbEnvEnum.Dev);
+  });
+
+  it('切换环境只轮询当前侧，另一侧已保存的结果还在', async () => {
+    const responses: Array<(value: unknown) => void> = [];
+    readiness.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          responses.push(resolve);
+        }),
+    );
+    const { result, rerender } = renderHook(
+      ({ env }) => useUserAppReadinessWatch(9, env, true),
+      { initialProps: { env: UserAppDbEnvEnum.Dev } },
+    );
+
+    await act(async () => {
+      responses[0]?.({
+        code: '0000',
+        data: {
+          ready: true,
+          status: 'ready',
+          container: { status: 'running' },
+        },
+      });
+      await Promise.resolve();
+    });
+    expect(result.current.readinessByEnv[UserAppDbEnvEnum.Dev]?.status).toBe(
+      'ready',
+    );
+
+    rerender({ env: UserAppDbEnvEnum.Prod });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const prodCallIndex = readiness.mock.calls.findIndex(
+      (call) => call[1] === UserAppDbEnvEnum.Prod,
+    );
+    expect(prodCallIndex).toBeGreaterThanOrEqual(0);
+
+    await act(async () => {
+      responses[prodCallIndex]?.({
+        code: '0000',
+        data: {
+          ready: false,
+          status: 'stopped',
+          container: { status: 'running' },
+        },
+      });
+      await Promise.resolve();
+    });
+    expect(result.current.readinessByEnv[UserAppDbEnvEnum.Dev]?.status).toBe(
+      'ready',
+    );
+    expect(result.current.readinessByEnv[UserAppDbEnvEnum.Prod]?.status).toBe(
+      'stopped',
+    );
+
+    const devCalls = () =>
+      readiness.mock.calls.filter((call) => call[1] === UserAppDbEnvEnum.Dev)
+        .length;
+    const devCallsBefore = devCalls();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(devCalls()).toBe(devCallsBefore);
+    expect(readiness.mock.calls.at(-1)?.[1]).toBe(UserAppDbEnvEnum.Prod);
+  });
 });
