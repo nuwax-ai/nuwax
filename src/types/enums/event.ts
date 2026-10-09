@@ -1,4 +1,6 @@
 export enum EventTypeEnum {
+  // 用户客户端沙箱上线，刷新用户电脑列表
+  SandboxOnline = 'sandbox_online',
   // 有新的通知消息
   NewNotifyMessage = 'new_notify_message',
   // 会话消息列表需要刷新
