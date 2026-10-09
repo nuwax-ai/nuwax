@@ -1,0 +1,1 @@
+import{Y as t}from"./index-CxVRFL6Z.js";class n{constructor(){this.userId="",this.displayName="",this.avatar=""}}let s=null,a="";function r(){a!=t()&&(s=null,a=t())}function e(t,a,e){if(r(),0==t.length)return null;const i=new n;i.userId=t,i.displayName=a,i.avatar=e,s=i}function i(){return r(),s}export{i as g,e as s};
