@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-09",
+  "fixture": "scripts/e2e/direct-web-assets-update-fixture.cjs",
+  "browser": {
+    "surface": "Ego Chromium browser",
+    "checks": [
+      "browser version check without host bridge",
+      "single update entry with shared copy",
+      "current/latest version, gitHash and build time in hover card",
+      "A CSS retained after B publish",
+      "no automatic reload or draft interruption",
+      "card button enters B preserving URL/cookie/localStorage",
+      "matching B hides update"
+    ],
+    "screenshot": "/Users/apple/.codex/visualizations/2026/10/09/01a11ff6-d86f-73d1-96d3-ab6da22961d3/web-update-comparison.png"
+  },
+  "electron": {
+    "surface": "Electron webview",
+    "electron": "40.8.2",
+    "checks": [
+      "A CSS retained after B publish",
+      "A marker remains fixed",
+      "update badge appears without reload",
+      "client update takes priority, then restores the web update",
+      "hover card compares current/latest version, gitHash and build time",
+      "user click loads B",
+      "address/cookie/localStorage preserved",
+      "B hides matching badge",
+      "loopback never checks or shows web updates after B publish"
+    ]
+  },
+  "loopbackVersionRequestCount": 0,
+  "boundary": "Real Chromium and Electron webview, mocked bridge and local cookie/localStorage login markers. No deployed build or installed-package acceptance."
+}
