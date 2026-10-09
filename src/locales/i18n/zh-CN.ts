@@ -3778,7 +3778,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MyComputerManage.filterOffline": "离线",
   "PC.Pages.MyComputerManage.filterOnline": "在线",
   "PC.Pages.MyComputerManage.pageTitle": "我的电脑管理",
-  "PC.Pages.MyComputerManage.sessionTooltip": "会话",
+  "PC.Pages.MyComputerManage.sessionTooltip": "在消息中打开",
   "PC.Pages.MyComputerManage.statusDeactivated": "已停用",
   "PC.Pages.MyComputerManage.statusOffline": "离线",
   "PC.Pages.MyComputerManage.statusOnline": "在线",
