@@ -173,6 +173,17 @@ resolve_machine_conflicts() { # $1=合并提交信息
     git checkout --ours -- src/constants/version.ts
     git add src/constants/version.ts
   fi
+  # 微应用适配 patch 冲突取传入侧（merge dev 进 test 时即 dev 侧——部署数据源的适配重制版；
+  # 2026-10-09 实证：两侧各有一版重制时人肉 -theirs 易漏）
+  local patches
+  patches=$(git diff --name-only --diff-filter=U -- 'micro-frontends/*/adapter.patch' 2>/dev/null || true)
+  if [ -n "$patches" ]; then
+    log "merge 冲突含微应用 adapter.patch，取传入侧（部署数据源适配版）：${patches}"
+    echo "$patches" | while IFS= read -r pf; do
+      git checkout --theirs -- "$pf"
+      git add "$pf"
+    done
+  fi
   rgit commit --no-verify -m "$1"
   return 0
 }
