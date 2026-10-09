@@ -22,7 +22,7 @@
     "build:prod": "cross-env UMI_ENV=production max build",
     "postbuild:prod": "node scripts/write-dist-version.js",
     "pull:micro-app-pins": "node scripts/pull-micro-app-pins.mjs",
-    "build:prod:m": "pull:micro-app-pins && npm run build:prod && node scripts/download-mobile-build.js && node scripts/deploy-asset-retention.mjs merge",
+    "build:prod:m": "npm pull:micro-app-pins && npm run build:prod && node scripts/download-mobile-build.js && node scripts/deploy-asset-retention.mjs merge",
     "check:file-preview-pptx": "node scripts/build-file-preview-pptx.mjs --check",
     "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development NODE_OPTIONS=--max-old-space-size=8192 max dev",
