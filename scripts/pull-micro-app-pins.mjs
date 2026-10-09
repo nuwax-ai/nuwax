@@ -1,14 +1,17 @@
 /**
  * 把已登记微应用的远端 main 最新提交拉到本地，并同时写入 gitlink 与 adapter.pin。
  * 只接受相对当前 gitlink 的快进，不把指针退回更旧的提交。
- * 会暂存这两处，不提交、不推送。
+ * 补丁若不能直接贴到这份新源码上，就按三方合并重算 adapter.patch 并一起暂存。
+ * 同一处被两边改过、合并不了时停止，不猜测冲突结果。
+ * 不提交、不推送。
  *
  * 用法：pnpm pull:micro-app-pins
  *       pnpm pull:micro-app-pins -- repo
  *       pnpm pull:micro-app-pins -- message
  */
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -86,6 +89,145 @@ const writePin = (file, nextPin) => {
 };
 
 /**
+ * 执行命令。失败时抛出 stderr，便于看到 git apply 对不上的文件。
+ *
+ * @param command 可执行文件
+ * @param args 参数
+ * @param options.cwd 工作目录
+ * @param options.input 标准输入
+ * @param options.encoding 输出编码；二进制归档不传
+ * @returns spawn 结果
+ */
+const run = (command, args, options = {}) => {
+  const result = spawnSync(command, args, {
+    cwd: options.cwd,
+    input: options.input,
+    encoding: options.encoding,
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    const detail = `${result.stderr || ''}${result.stdout || ''}`.trim();
+    throw new Error(detail || `${command} ${args.join(' ')} 失败`);
+  }
+  return result;
+};
+
+/**
+ * 构建使用的是空仓库里的 git apply --check，这里用同样方式判断补丁能否直接贴上。
+ *
+ * @param source 子模块目录
+ * @param commit 要贴补丁的提交
+ * @param patchFile 补丁绝对路径
+ * @returns 能否直接应用
+ */
+const patchApplies = (source, commit, patchFile) => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'nuwax-patch-check-'));
+  try {
+    const archive = run('git', ['archive', '--format=tar', commit], {
+      cwd: source,
+    });
+    run('tar', ['-xf', '-'], { cwd: dir, input: archive.stdout });
+    run('git', ['init', '--quiet', '--template='], { cwd: dir });
+    run('git', ['apply', '--check', patchFile], { cwd: dir });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+/**
+ * 在仍保留旧文件版本的子仓里三方合并补丁，再导出相对新提交的 diff。
+ * 构建目录是新建的空仓库，没有这些旧版本，所以不能在那边重算。
+ *
+ * @param id 应用 id
+ * @param source 子模块目录
+ * @param commit 新的 main 提交
+ * @param patchFile 当前补丁
+ * @returns 重算后的补丁内容
+ */
+const rebasePatch = (id, source, commit, patchFile) => {
+  const parent = mkdtempSync(path.join(tmpdir(), 'nuwax-patch-rebase-'));
+  const work = path.join(parent, 'work');
+  try {
+    run('git', ['worktree', 'add', '--detach', '--quiet', work, commit], {
+      cwd: source,
+    });
+    try {
+      run('git', ['apply', '--3way', patchFile], { cwd: work });
+    } catch (error) {
+      const conflicts = spawnSync(
+        'git',
+        ['diff', '--name-only', '--diff-filter=U'],
+        { cwd: work, encoding: 'utf8' },
+      ).stdout;
+      const files = (conflicts || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      throw new Error(
+        `${id} 的适配补丁无法自动合并到 ${commit.slice(0, 9)}。` +
+          (files.length ? `\n冲突文件：\n${files.join('\n')}` : '') +
+          `\n${error instanceof Error ? error.message : ''}`,
+      );
+    }
+    run('git', ['add', '-A'], { cwd: work });
+    const diff = run(
+      'git',
+      ['diff', '--cached', '--binary', '--find-renames'],
+      { cwd: work, encoding: 'utf8' },
+    );
+    const text = diff.stdout.endsWith('\n') ? diff.stdout : `${diff.stdout}\n`;
+    return Buffer.from(text);
+  } finally {
+    spawnSync('git', ['worktree', 'remove', '--force', work], {
+      cwd: source,
+      stdio: 'ignore',
+    });
+    rmSync(parent, { recursive: true, force: true });
+  }
+};
+
+/**
+ * 补丁能直接贴上就保持原文件。贴不上则重算；重算结果仍贴不上时恢复原文件并停止。
+ *
+ * @param id 应用 id
+ * @param source 子模块目录
+ * @param commit 新的 main 提交
+ * @param patchFile 补丁绝对路径
+ * @returns 是否写回了新补丁
+ */
+const refreshAdapterPatch = (id, source, commit, patchFile) => {
+  if (patchApplies(source, commit, patchFile)) {
+    console.log(
+      `[pull-pins] ${id}: 适配补丁可直接应用到 ${commit.slice(0, 9)}`,
+    );
+    return false;
+  }
+  const original = readFileSync(patchFile);
+  const next = rebasePatch(id, source, commit, patchFile);
+  if (next.equals(original)) {
+    throw new Error(
+      `${id} 的适配补丁无法直接应用到 ${commit.slice(0, 9)}，三方合并也没有产生新补丁`,
+    );
+  }
+  writeFileSync(patchFile, next);
+  if (!patchApplies(source, commit, patchFile)) {
+    writeFileSync(patchFile, original);
+    throw new Error(
+      `${id} 重算后的适配补丁仍无法直接应用到 ${commit.slice(0, 9)}，已恢复原补丁`,
+    );
+  }
+  console.log(`[pull-pins] ${id}: 适配补丁已按 ${commit.slice(0, 9)} 重算`);
+  return true;
+};
+
+/**
  * 拉取一个应用的远端 main，快进 gitlink，并把 pin 写成同一个提交号。
  *
  * @param id 应用 id，仅用于输出
@@ -137,7 +279,13 @@ const pullApp = (id, adapterPath) => {
   }
 
   writePin(adapterFile, remote);
-  git(root, ['add', '--', sourceDir, adapterPath]);
+  const patchFile = path.resolve(path.dirname(adapterFile), adapter.patch);
+  const patchRefreshed = refreshAdapterPatch(id, source, remote, patchFile);
+  const stagePaths = [sourceDir, adapterPath];
+  if (patchRefreshed) {
+    stagePaths.push(path.relative(root, patchFile));
+  }
+  git(root, ['add', '--', ...stagePaths]);
 
   const pinned = JSON.parse(readFileSync(adapterFile, 'utf8')).pin;
   const linked = readGitlink(sourceDir);
@@ -149,6 +297,7 @@ const pullApp = (id, adapterPath) => {
       adapter.pin,
     ).slice(0, 9)} -> ${remote.slice(0, 9)}`,
   );
+  return patchRefreshed;
 };
 
 const wanted = process.argv.slice(2).filter((arg) => arg !== '--');
@@ -164,7 +313,12 @@ if (wanted.length && apps.length !== wanted.length) {
   );
 }
 
+let refreshedPatch = false;
 for (const app of apps) {
-  pullApp(app.id, app.adapter);
+  refreshedPatch = pullApp(app.id, app.adapter) || refreshedPatch;
 }
-console.log('[pull-pins] 已暂存 gitlink 与 adapter.pin，尚未提交。');
+console.log(
+  refreshedPatch
+    ? '[pull-pins] 已暂存 gitlink、adapter.pin，以及本次重算过的适配补丁。尚未提交。'
+    : '[pull-pins] 已暂存 gitlink 与 adapter.pin。适配补丁可直接应用，尚未提交。',
+);
