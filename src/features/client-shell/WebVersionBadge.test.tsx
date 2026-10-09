@@ -56,8 +56,10 @@ describe('WebVersionBadge', () => {
       name: 'PC.Components.WebUpdate.update',
     });
     await userEvent.hover(button);
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'PC.Components.WebUpdate.refreshHint',
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('PC.Components.WebUpdate.refreshHint');
+    expect(tooltip.closest('.ant-tooltip')).toHaveClass(
+      'ant-tooltip-placement-bottom',
     );
     expect(mocks.reload).not.toHaveBeenCalled();
     await userEvent.click(button);
