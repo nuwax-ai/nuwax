@@ -354,9 +354,7 @@ async function idp() {
   );
   assert.equal(
     await page.evaluate(() =>
-      Array.from(document.querySelectorAll('button')).some((n) =>
-        n.innerText.includes('验收微信公众号'),
-      ),
+      Boolean(document.querySelector('button[aria-label="验收微信公众号"]')),
     ),
     false,
     'PC普通UA不展示公众号登录',
@@ -366,7 +364,7 @@ async function idp() {
     () =>
       document.querySelector('form input[type="checkbox"]')?.checked === false,
   );
-  await clickButton('验收 CAS');
+  await page.click('button[aria-label="验收 CAS"]');
   await visible('服务协议与隐私保护');
   assert.equal(
     await requestCount('/api/auth/idp/authorize'),
@@ -399,7 +397,7 @@ async function idp() {
     () =>
       document.querySelector('form input[type="checkbox"]')?.checked === false,
   );
-  await clickButton('验收 CAS');
+  await page.click('button[aria-label="验收 CAS"]');
   await clickButton('同 意');
   await visible('E2E授权失败');
   assert.ok((await page.url()).includes('idpError='));

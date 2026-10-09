@@ -21,18 +21,16 @@
 .item {
   display: inline-flex;
   align-items: center;
-  max-width: 100%;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  min-width: 36px;
   height: 36px;
   border: 1px solid @colorBorderSecondary !important;
   background: @colorBgContainer;
 
   :global(.ant-btn-icon) {
     display: inline-flex;
-  }
-
-  > span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
