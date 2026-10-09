@@ -20,8 +20,8 @@
   position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
   //（子行 .child-actions 内缩 11px；2026-09-12 需求）
-  // 行首槽由 20px 统一为 24px 后同步收紧纵向 padding，经典行高保持 42px。
-  padding: 9px 11px 9px 10px;
+  // 行尾操作槽保持 24px，收紧纵向内边距后经典行高为 38px。
+  padding: 7px 11px 7px 8px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -335,10 +335,9 @@
 
 .conversation-item.compact {
   position: relative;
-  min-height: 36px;
+  min-height: 32px;
   box-sizing: border-box;
-  padding: 6px @sidebarRowCompactTrailingPadding 6px
-    @sidebarRowCompactLeadingPadding;
+  padding: 4px @sidebarRowCompactTrailingPadding 4px 8px;
   transition: background 0.18s ease;
 
   .conversation-item-content .conversation-topic-row {
