@@ -5,6 +5,7 @@ import { LoadingOutlined, PoweroffOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { UserAppReadinessStatusEnum } from '../../services/appDevPro';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -32,6 +33,12 @@ export interface PreviewRuntimeButtonsProps {
   previewConversationActive?: boolean;
   /** 仍有待回复的确认卡，重启不可点 */
   previewWaitingConfirmation?: boolean;
+  /**
+   * 当前环境 readiness 的应用状态。
+   * 只传正在看的这一侧；开发 / 线上各自保存在 readiness 槽位里，切换时读另一侧，互不影响。
+   * starting、stopping 时禁用重启图标。
+   */
+  previewAppStatus?: UserAppReadinessStatusEnum | null;
   /**
    * 查询出的文件树非空且根目录含 workspace.manifest.toml。
    * 为 false 时重启 / 停止均不可点。
@@ -61,6 +68,7 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewDevActionLocked = false,
   previewConversationActive = false,
   previewWaitingConfirmation = false,
+  previewAppStatus = null,
   previewWorkspaceManifestReady = true,
   variant = 'text',
   iconButtonClassName,
@@ -79,12 +87,18 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
    * 已经有有效文件列表后，这两种状态不再禁用。
    * 没有有效文件时，workspaceManifestBlocked 已经禁用，悬停仍按会话 / 确认优先提示。
    */
+  const appStarting =
+    previewAppStatus === UserAppReadinessStatusEnum.Starting;
+  const appStopping =
+    previewAppStatus === UserAppReadinessStatusEnum.Stopping;
   const restartDisabled =
     workspaceManifestBlocked ||
     podActionBlocked ||
     previewDevActionLocked ||
     previewRuntimeBusy ||
-    previewRuntimeStopping;
+    previewRuntimeStopping ||
+    appStarting ||
+    appStopping;
 
   const stopDisabled =
     workspaceManifestBlocked ||
@@ -94,7 +108,7 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
 
   /**
    * 禁用时悬停说明当前为什么不能点。
-   * 优先说正在进行的重启 / 停止 / 启动，再说明容器、会话和项目文件。
+   * 应用启动中、停止中优先提示；再说明正在进行的重启 / 停止，以及容器、会话和项目文件。
    *
    * @param action 要提示的按钮
    * @returns 禁用原因；可点击时返回空，沿用「重启应用 / 停止应用」
@@ -103,6 +117,12 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     const disabled = action === 'restart' ? restartDisabled : stopDisabled;
     if (!disabled) {
       return '';
+    }
+    if (action === 'restart' && appStarting) {
+      return dict('PC.Pages.AppDevPro.appStarting');
+    }
+    if (action === 'restart' && appStopping) {
+      return dict('PC.Pages.AppDevPro.appStopping');
     }
     if (action === 'restart' && previewRuntimeRestarting) {
       return dict('PC.Pages.AppDevPro.previewRestarting');

@@ -395,9 +395,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessReady,
   );
   /**
+   * 启动 stream 已经失败，但当前环境探测到应用真正就绪。
+   * 不再停在失败日志上，直接用预览地址打开页面。
+   */
+  const previewReadyDespiteFailedStream =
+    startFailed &&
+    readinessKind === 'access' &&
+    !!previewUrl &&
+    !suppressReadinessStatus;
+  /**
    * 页面还没正常打开时，才用就绪状态替换预览。
    * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
-   * 启动失败仍走原来的失败面板，避免把错误藏进状态文案。
+   * 启动失败但应用已经 ready 且 ready 为 true 时，跳过失败流，直接预览。
    * 已经在调 start 时不再用就绪失败盖住启动过程。
    * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
    * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
@@ -686,6 +695,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
   if (
     !canShowIframe &&
+    !previewReadyDespiteFailedStream &&
     (isGeneratingFiles || isWaitingForUserConfirmation || !podReady)
   ) {
     return (
@@ -709,7 +719,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (isStarting || startFailed) {
+  if ((isStarting || startFailed) && !previewReadyDespiteFailedStream) {
     const headText = startFailed
       ? phase === 'cancelled'
         ? dict('PC.Pages.AppDevPro.startCancelled')
@@ -786,7 +796,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (canShowIframe) {
+  if (canShowIframe || previewReadyDespiteFailedStream) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.iframeWrap)}>
