@@ -12,6 +12,7 @@ import {
   getHostVisibility,
   subscribeHostVisibility,
 } from '@/services/hostVisibility';
+import type { ConversationChangedEvent } from '@/types/directorySync';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import type {
   ConversationInfo,
@@ -150,6 +151,9 @@ export function useConversationStreamResume(
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
   const [isResumeSubscribed, setIsResumeSubscribed] = useState(false);
+  // model 可能仍保留上一轮终态；一旦外部快照证实新执行，重试不能再等终态的 30 秒。
+  const [hasObservedExternalExecution, setHasObservedExternalExecution] =
+    useState(false);
   // 先由 entry effect 决定是否恢复 sub，避免 ahooks 挂载时与历史 reload 并发拉全量详情。
   const [entryConversationId, setEntryConversationId] = useState<number>();
   // 用 ref 保存最新值，避免轮询 onSuccess / subscribe 异步回调闭包过期
@@ -404,6 +408,7 @@ export function useConversationStreamResume(
             return;
           }
           if (terminalDecision.type === 'terminal.confirmed') {
+            setHasObservedExternalExecution(false);
             // 本地消息无法自证终态（source=snapshot-fallback）＝ sub 未回放完整
             // 输出（任务已结束时 sub 秒关 / 只推终态不推正文）：本地最后一轮
             // assistant 是空占位或残缺内容，若只写终态不补快照，服务端已落库的
@@ -485,6 +490,8 @@ export function useConversationStreamResume(
     }
 
     const status = decision.observedTaskStatus;
+    if (status !== undefined)
+      setHasObservedExternalExecution(status === TaskStatus.EXECUTING);
     if (
       status !== undefined &&
       status !== TaskStatus.EXECUTING &&
@@ -562,9 +569,10 @@ export function useConversationStreamResume(
     {
       // 终态退避（bug 2477）：终态会话轮询周期 5s → 30s；EXECUTING / 未知状态
       // 维持原 5s（执行检测灵敏度不变）。pollingInterval 每轮重排时读取最新值。
-      pollingInterval: isTerminalTaskStatus(taskStatus)
-        ? TERMINAL_POLLING_INTERVAL_MS
-        : GLOBAL_POLLING_INTERVAL,
+      pollingInterval:
+        isTerminalTaskStatus(taskStatus) && !hasObservedExternalExecution
+          ? TERMINAL_POLLING_INTERVAL_MS
+          : GLOBAL_POLLING_INTERVAL,
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
@@ -591,7 +599,10 @@ export function useConversationStreamResume(
           requestToken,
           {
             conversationId: latestRef.current.conversationId,
-            isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
+            isLocallyStreaming: !!(
+              latestRef.current.isLocallyStreaming ||
+              latestRef.current.isAwaitingChatTerminal
+            ),
           },
           snapshot,
         );
@@ -633,6 +644,7 @@ export function useConversationStreamResume(
   // 这里主动 cancel，避免该窗口继续发出下一轮请求。
   useEffect(() => {
     if (isLocallyStreaming) {
+      setHasObservedExternalExecution(false);
       // local live 接管输出；清旧 sub 标记而不等待 abort 的延迟 onClose。
       // 旧回调已因代际改变失效，发送结束后仍能由 ready 恢复轮询。
       if (isResumeSubscribedRef.current) abortSub?.();
@@ -652,6 +664,7 @@ export function useConversationStreamResume(
   useEffect(() => {
     isResumeSubscribedRef.current = false;
     setIsResumeSubscribed(false);
+    setHasObservedExternalExecution(false);
     // 退避状态不跨会话继承：新会话的失败计数从零开始
     resumeConsistencyControllerRef.current.resetFailureBackoff();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -672,11 +685,14 @@ export function useConversationStreamResume(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
 
-  // 切回可见页签时检查是否有任务在执行；同值终态不写回，避免无变化时触发下游 reload 闪烁
+  // 可见性恢复或侧栏观察到执行态时立即校验详情；不等终态的 30 秒轮询。
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const checkExternalExecution = (
+      trigger: 'visibility' | 'status-observed',
+    ) => {
       if (
         document.visibilityState === 'visible' &&
+        getHostVisibility() &&
         conversationId &&
         !isLocallyStreaming &&
         !isAwaitingChatTerminal &&
@@ -684,12 +700,12 @@ export function useConversationStreamResume(
         resumeStream
       ) {
         const requestToken = consistencyControllerRef.current.beginRequest(
-          'visibility',
+          trigger,
           conversationId,
         );
         if (!requestToken) {
           conversationPollLogger.info(
-            'skip visibility snapshot: request in flight',
+            'skip external snapshot: request in flight',
             { conversationId },
           );
           return;
@@ -701,20 +717,59 @@ export function useConversationStreamResume(
               requestToken,
               {
                 conversationId: latestRef.current.conversationId,
-                isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
+                isLocallyStreaming: !!(
+                  latestRef.current.isLocallyStreaming ||
+                  latestRef.current.isAwaitingChatTerminal
+                ),
               },
               snapshot,
             );
             applySnapshotDecision(decision);
+          })
+          .catch((error) => {
+            conversationPollLogger.warn('external snapshot failed', {
+              conversationId,
+              trigger,
+              error,
+            });
           })
           .finally(() => {
             consistencyControllerRef.current.release(requestToken);
           });
       }
     };
+    const handleVisibilityChange = () => checkExternalExecution('visibility');
+    const handleObservedStatus = (event: {
+      conversationId?: number | string;
+      taskStatus?: TaskStatus;
+    }) => {
+      if (
+        String(event.conversationId) === String(conversationId) &&
+        event.taskStatus === TaskStatus.EXECUTING
+      ) {
+        checkExternalExecution('status-observed');
+      }
+    };
+    const handleConversationChanged = (event: ConversationChangedEvent) => {
+      if (event.operation === 'updated')
+        handleObservedStatus({
+          conversationId: event.conversationId,
+          taskStatus: event.patch?.taskStatus,
+        });
+    };
+    eventBus.on(
+      EVENT_TYPE.ConversationTaskStatusObserved,
+      handleObservedStatus,
+    );
+    eventBus.on(EVENT_TYPE.ConversationChanged, handleConversationChanged);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      eventBus.off(
+        EVENT_TYPE.ConversationTaskStatusObserved,
+        handleObservedStatus,
+      );
+      eventBus.off(EVENT_TYPE.ConversationChanged, handleConversationChanged);
     };
   }, [
     conversationId,

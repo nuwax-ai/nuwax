@@ -1,3 +1,4 @@
+const commercialState = vi.hoisted(() => ({ enabled: true }));
 import RecommendFormModal from '@/pages/SystemManagement/RecommendManage/components/RecommendFormModal';
 import {
   apiSystemSaveDisplayRecommend,
@@ -6,6 +7,7 @@ import {
 import type { DisplayRecommendInfo } from '@/pages/SystemManagement/RecommendManage/types';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -13,6 +15,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { Form } from 'antd';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
@@ -127,6 +130,7 @@ const record = (
 });
 
 beforeEach(() => {
+  commercialState.enabled = true;
   vi.clearAllMocks();
   vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
     code: '0000',
@@ -610,4 +614,113 @@ it('删除前项后设置剩余问题，更新正确的嵌套字段', async () =
       }),
     ),
   );
+});
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: commercialState.enabled,
+    workCommercialEdition: commercialState.enabled,
+    pending: false,
+  }),
+}));
+
+const openSubtypeOptions = () => {
+  const caption = screen.getByText(key('colSubType'));
+  fireEvent.mouseDown(
+    caption.parentElement!.querySelector('.ant-select-selector')!,
+  );
+  return Array.from(
+    document.querySelectorAll(
+      '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-content',
+    ),
+  ).map((node) => node.textContent);
+};
+
+it('新增非商业版子类型仅 Chat，保存仍提交 Chat', async () => {
+  commercialState.enabled = false;
+  render(<RecommendFormModal open defaultSort={10} {...callbacks} />);
+  expect(openSubtypeOptions()).toEqual([key('functionType.chat')]);
+  fireEvent.click(screen.getByText(key('clickToAddAgent')));
+  fireEvent.click(screen.getByRole('button', { name: '选择智能体' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await waitFor(() =>
+    expect(apiSystemSaveDisplayRecommend).toHaveBeenCalledWith(
+      expect.objectContaining({ functionType: 'Chat' }),
+    ),
+  );
+});
+
+it('商业版新增保留七类；授权撤销后已有选中值回到 Chat', async () => {
+  const view = render(
+    <RecommendFormModal open defaultSort={10} {...callbacks} />,
+  );
+  expect(openSubtypeOptions()).toHaveLength(7);
+  fireEvent.click(screen.getByText(key('functionType.agentDev')));
+  commercialState.enabled = false;
+  view.rerender(<RecommendFormModal open defaultSort={10} {...callbacks} />);
+  fireEvent.click(screen.getByText(key('clickToAddAgent')));
+  fireEvent.click(screen.getByRole('button', { name: '选择智能体' }));
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await waitFor(() =>
+    expect(apiSystemSaveDisplayRecommend).toHaveBeenCalledWith(
+      expect.objectContaining({ functionType: 'Chat' }),
+    ),
+  );
+});
+
+it('非商业版编辑历史推荐继续保存原子类型，不强制转换', async () => {
+  commercialState.enabled = false;
+  render(
+    <RecommendFormModal
+      open
+      editingRecord={record({ functionType: 'UserAppDev' })}
+      defaultSort={10}
+      {...callbacks}
+    />,
+  );
+  expect(screen.getByText(key('functionType.userAppDev'))).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  await waitFor(() =>
+    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
+      expect.objectContaining({ functionType: 'UserAppDev' }),
+    ),
+  );
+});
+
+it('新增推荐校验期间撤销授权，阻止旧子类型请求并允许改为 Chat 后重试', async () => {
+  const useForm = Form.useForm;
+  let form: ReturnType<typeof useForm>[0] | undefined;
+  const formSpy = vi.spyOn(Form, 'useForm').mockImplementation(() => {
+    const result = useForm();
+    form = result[0];
+    return result;
+  });
+  try {
+    const view = render(
+      <RecommendFormModal open defaultSort={10} {...callbacks} />,
+    );
+    openSubtypeOptions();
+    fireEvent.click(screen.getByText(key('functionType.agentDev')));
+    fireEvent.click(screen.getByText(key('clickToAddAgent')));
+    fireEvent.click(screen.getByRole('button', { name: '选择智能体' }));
+    let finishValidation!: (values: any) => void;
+    vi.spyOn(form!, 'validateFields').mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishValidation = resolve;
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    commercialState.enabled = false;
+    view.rerender(<RecommendFormModal open defaultSort={10} {...callbacks} />);
+    await act(async () => finishValidation({ prompts: [] }));
+    expect(apiSystemSaveDisplayRecommend).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() =>
+      expect(apiSystemSaveDisplayRecommend).toHaveBeenCalledWith(
+        expect.objectContaining({ functionType: 'Chat' }),
+      ),
+    );
+  } finally {
+    formSpy.mockRestore();
+  }
 });

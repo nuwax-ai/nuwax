@@ -1,10 +1,11 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
-import CustomPopover from '@/components/CustomPopover';
 import SvgIcon from '@/components/base/SvgIcon';
+import CustomPopover from '@/components/CustomPopover';
 import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
 } from '@/constants/library.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
@@ -13,7 +14,7 @@ import { jumpBack } from '@/utils/router';
 import { DownOutlined, FormOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';
 
@@ -34,8 +35,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 }) => {
   const { spaceId } = useParams();
 
-  // 商用版判断暂时禁用（tenantConfigInfo 未使用已移除），图谱入口固定放开
-  const isShowGRAPH = true;
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  useEffect(() => {
+    if (!aiOSCommercialEdition && docType === KnowledgeDocTypeEnum.GRAPH) {
+      onChangeDocType(KnowledgeDocTypeEnum.DOC);
+    }
+  }, [aiOSCommercialEdition, docType, onChangeDocType]);
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -91,7 +96,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           styles['radio-group-box'],
         )}
         optionType="button"
-        defaultValue={docType}
+        value={docType}
         onChange={handleChange}
       >
         <Radio value={KnowledgeDocTypeEnum.DOC}>
@@ -100,7 +105,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.QA}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
         </Radio>
-        {isShowGRAPH && (
+        {aiOSCommercialEdition && (
           <Radio value={KnowledgeDocTypeEnum.GRAPH}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Radio>

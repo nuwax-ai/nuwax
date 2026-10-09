@@ -6,7 +6,7 @@ import {
   selectConversationSessionView,
   type ConversationSessionViewInput,
 } from '@/features/conversation/domain/sessionView';
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
@@ -145,6 +145,66 @@ describe('selectConversationSessionView', () => {
     );
     expect(view.phase).toBe('streaming');
     expect(view.shouldShowTaskWait).toBe(false);
+  });
+
+  it.each([true, false, undefined])(
+    '本轮 FINAL_RESULT 已到但后端任务状态滞后时，不显示结束后的等待提示（success=%s）',
+    (success) => {
+      const view = selectConversationSessionView(
+        baseInput({
+          taskStatus: TaskStatus.EXECUTING,
+          messageList: [
+            { role: AssistantRoleEnum.USER } as MessageInfo,
+            {
+              ...completeMessage,
+              role: AssistantRoleEnum.ASSISTANT,
+              finalResult: { success, outputText: '已完成' },
+            } as MessageInfo,
+          ],
+        }),
+      );
+      expect(view.phase).toBe('idle');
+      expect(view.shouldShowTaskWait).toBe(false);
+    },
+  );
+
+  it('续接收尾的空占位不会遮蔽本轮 FINAL_RESULT，重新显示等待提示', () => {
+    const view = selectConversationSessionView(
+      baseInput({
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          { role: AssistantRoleEnum.USER } as MessageInfo,
+          {
+            ...completeMessage,
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: '已完成' },
+          } as MessageInfo,
+          {
+            role: AssistantRoleEnum.ASSISTANT,
+            text: '',
+            status: MessageStatusEnum.Stopped,
+          } as MessageInfo,
+        ],
+      }),
+    );
+    expect(view.shouldShowTaskWait).toBe(false);
+  });
+
+  it('上一轮 FINAL_RESULT 不能隐藏新用户轮次的后台执行等待提示', () => {
+    const view = selectConversationSessionView(
+      baseInput({
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            ...completeMessage,
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: '上一轮已完成' },
+          } as MessageInfo,
+          { role: AssistantRoleEnum.USER } as MessageInfo,
+        ],
+      }),
+    );
+    expect(view.shouldShowTaskWait).toBe(true);
   });
 
   it('队列有消息或流式活跃时不显示建议', () => {

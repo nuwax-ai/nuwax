@@ -354,7 +354,7 @@
 .node-row-wrapper {
   min-width: 0;
 
-  &.is-failed .node-title {
+  &.is-failed:not([data-node-kind='tool']) .node-title {
     color: var(--v2-color-error, #ff4d4f);
   }
 }
@@ -661,10 +661,6 @@ a.tool-detail-resource {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.tool-detail.is-failed .tool-detail-text.is-output {
-  border-left: 2px solid var(--v2-color-error, #ff4d4f);
 }
 
 .tool-detail-steps {

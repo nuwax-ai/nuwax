@@ -219,15 +219,24 @@ const isPlainEventSegment = (segment: MessageSegment): boolean =>
 /** 计划呈现语义段：Plan 组件，或名称命中 todo 启发式的工具段（TodoWrite） */
 const isTodoPresentingSegment = (
   segment: Extract<MessageSegment, { type: 'process' }>,
-): boolean =>
-  getToolPresentationKind({
-    componentType: segment.componentType,
-    name: segment.name,
-  }) === 'todo';
+  processingByKey: ReadonlyMap<string, ProcessingInfo>,
+): boolean => {
+  const detail = processingByKey.get(segment.executeId ?? '');
+  // live 标签可能保留启动时名称（如 TodoWrite），返回结果已更新为「N todos」。
+  // 去重与待办卡使用同一份最新工具信息，避免 Plan 与 ToolCall 重复呈现。
+  return (
+    getToolPresentationKind({
+      componentType: detail?.type ?? segment.componentType,
+      name: detail?.name || segment.name,
+      result: detail?.result,
+    }) === 'todo'
+  );
+};
 
 /** process 段过滤+去重：丢弃纯 Event 与无 executeId 段（与 V1 渲染 null 分支一致）；executeId 去重保留最后一次出现 */
 const dedupeProcessSegments = (
   segments: MessageSegment[],
+  processingByKey: ReadonlyMap<string, ProcessingInfo>,
 ): MessageSegment[] => {
   const lastIndexOf = new Map<string, number>();
   segments.forEach((segment, index) => {
@@ -249,8 +258,8 @@ const dedupeProcessSegments = (
     if (
       segment.type === 'process' &&
       prev?.type === 'process' &&
-      isTodoPresentingSegment(segment) &&
-      isTodoPresentingSegment(prev)
+      isTodoPresentingSegment(segment, processingByKey) &&
+      isTodoPresentingSegment(prev, processingByKey)
     ) {
       result.pop();
     }
@@ -475,6 +484,7 @@ const projectTurn = (
       ),
   );
   const nodes: ConversationProcessNode[] = [];
+  const processNodePositions = new Map<string, number>();
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
     const processingByKey = collectProcessingByKey(message);
@@ -517,7 +527,8 @@ const projectTurn = (
       });
     }
 
-    dedupeProcessSegments(segments).forEach((segment, segmentIndex) => {
+    const processSegments = dedupeProcessSegments(segments, processingByKey);
+    processSegments.forEach((segment, segmentIndex) => {
       if (segment.type === 'think') {
         const thinkNodeId = `${messageKey}-think-${segmentIndex}`;
         const thinkRunning = segment.status === 'thinking';
@@ -548,7 +559,7 @@ const projectTurn = (
             : segment.componentType === AgentComponentTypeEnum.Plan
             ? 'plan'
             : 'tool';
-        nodes.push({
+        const node: ConversationProcessNode = {
           id: segment.executeId ?? `${messageKey}-process-${segmentIndex}`,
           kind,
           title: detail?.name || segment.name || segment.componentType || '',
@@ -567,7 +578,21 @@ const projectTurn = (
             typeof detail?.result?.endTime === 'number'
               ? detail.result.endTime
               : undefined,
-        });
+        };
+        // 同轮恢复流会重放快照已有的执行。维持节点位置和 key，只更新其状态。
+        const previousIndex = processNodePositions.get(node.id);
+        if (previousIndex !== undefined) {
+          const previous = nodes[previousIndex];
+          nodes[previousIndex] = {
+            ...node,
+            processing: node.processing ?? previous.processing,
+            startTime: node.startTime ?? previous.startTime,
+            endTime: node.endTime ?? previous.endTime,
+          };
+        } else {
+          processNodePositions.set(node.id, nodes.length);
+          nodes.push(node);
+        }
         return;
       }
       if (segment.type === 'unknown') {

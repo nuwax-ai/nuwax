@@ -1,18 +1,22 @@
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { microAppHostStore } from '@/layouts/MicroAppHost/store';
+import { isWorkCommercialApp } from '@/utils/commercialEdition';
 import { findMicroAppRoute } from '@/utils/microAppRoutes';
 import { useLocation, useNavigate } from '@umijs/max';
 import { useEffect } from 'react';
 
 /** 路由仅控制持久宿主，微应用 DOM 由 SidebarShell 内的宿主容器承载。 */
 const MicroAppEntry = () => {
-  const { pathname, search, hash } = useLocation();
+  const { pathname, search, hash, key, state } = useLocation();
   const navigate = useNavigate();
   const app = findMicroAppRoute(pathname);
+  const { workCommercialEdition } = useCommercialEdition();
+  const blocked = isWorkCommercialApp(app?.name) && !workCommercialEdition;
   const isStableEntry =
     app !== undefined && pathname.replace(/\/+$/, '') === app.stableEntry;
 
   useEffect(() => {
-    if (!app) return;
+    if (!app || blocked) return;
     if (isStableEntry) {
       navigate(`${app.path}${search}${hash}`, { replace: true });
       return;
@@ -23,6 +27,10 @@ const MicroAppEntry = () => {
       name: app.name,
       path,
       refreshToken,
+      navigationKey: (state as { microAppRestore?: boolean } | null)
+        ?.microAppRestore
+        ? undefined
+        : key,
     });
     if (effectiveEntry) {
       const currentUrl = new URL(path, window.location.origin);
@@ -38,16 +46,26 @@ const MicroAppEntry = () => {
           effectiveUrl.searchParams.set('_refresh', refreshToken);
         navigate(
           `${effectiveUrl.pathname}${effectiveUrl.search}${effectiveUrl.hash}`,
-          { replace: true },
+          { replace: true, state: { microAppRestore: true } },
         );
       }
     }
-  }, [app?.name, isStableEntry, pathname, search, hash, navigate]);
+  }, [
+    app?.name,
+    blocked,
+    isStableEntry,
+    pathname,
+    search,
+    hash,
+    key,
+    state,
+    navigate,
+  ]);
 
   useEffect(() => {
-    if (!app || isStableEntry) return;
+    if (!app || blocked || isStableEntry) return;
     return () => microAppHostStore.deactivate(app.name);
-  }, [app?.name, isStableEntry]);
+  }, [app?.name, blocked, isStableEntry]);
 
   return null;
 };

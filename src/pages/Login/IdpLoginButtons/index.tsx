@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
-import { Button, Divider } from 'antd';
+import { Button, Divider, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -15,7 +15,7 @@ interface IdpLoginButtonsProps {
 }
 
 /**
- * 登录页「其他登录方式」：分隔线 + 图标名称按钮，点击后由页面整页跳转 IdP。
+ * 登录页「其他登录方式」：图标按钮通过悬停或聚焦展示名称，点击后整页跳转 IdP。
  */
 const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
   items,
@@ -30,23 +30,23 @@ const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
       </Divider>
       <div className={cx(styles.list)}>
         {items.map((item) => (
-          <Button
-            key={item.id}
-            disabled={disabled}
-            className={cx(styles.item)}
-            icon={
-              item.icon ? (
-                <img className={cx(styles.icon)} src={item.icon} alt="" />
-              ) : (
-                <span className={cx(styles.fallback)}>
-                  {item.name?.slice(0, 1)}
-                </span>
-              )
-            }
-            onClick={() => onSelect(item)}
-          >
-            {item.name}
-          </Button>
+          <Tooltip key={item.id} title={item.name} trigger={['hover', 'focus']}>
+            <Button
+              aria-label={item.name}
+              disabled={disabled}
+              className={cx(styles.item)}
+              icon={
+                item.icon ? (
+                  <img className={cx(styles.icon)} src={item.icon} alt="" />
+                ) : (
+                  <span className={cx(styles.fallback)}>
+                    {item.name?.slice(0, 1)}
+                  </span>
+                )
+              }
+              onClick={() => onSelect(item)}
+            />
+          </Tooltip>
         ))}
       </div>
     </div>

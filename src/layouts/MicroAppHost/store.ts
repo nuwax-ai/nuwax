@@ -2,6 +2,7 @@ export interface MicroAppActivation {
   name: string;
   path: string;
   refreshToken?: string;
+  navigationKey?: string;
 }
 
 export interface MicroAppHostEntry {
@@ -9,6 +10,7 @@ export interface MicroAppHostEntry {
   path: string;
   refreshToken: string;
   generation: number;
+  navigationRevision: number;
 }
 
 export interface MicroAppHostSnapshot {
@@ -27,6 +29,7 @@ export function createMicroAppHostStore() {
   let nextGeneration = 0;
   let snapshot: MicroAppHostSnapshot = { entries: [], activeName: null };
   const listeners = new Set<() => void>();
+  const navigationKeys = new Map<string, string>();
 
   const publish = (next: MicroAppHostSnapshot) => {
     snapshot = next;
@@ -49,6 +52,12 @@ export function createMicroAppHostStore() {
           ? old.path
           : requestedPath;
       const refreshToken = input.refreshToken || '';
+      const explicitNavigation =
+        !isBasePath &&
+        !!input.navigationKey &&
+        navigationKeys.get(input.name) !== input.navigationKey;
+      if (input.navigationKey)
+        navigationKeys.set(input.name, input.navigationKey);
       const shouldReload =
         !!old && old.refreshToken !== refreshToken && !!refreshToken;
       const entry: MicroAppHostEntry = {
@@ -56,13 +65,22 @@ export function createMicroAppHostStore() {
         path,
         refreshToken,
         generation: old && !shouldReload ? old.generation : ++nextGeneration,
+        navigationRevision: old
+          ? old.navigationRevision +
+            (explicitNavigation ||
+            old.path !== path ||
+            (snapshot.activeName !== input.name && !isBasePath)
+              ? 1
+              : 0)
+          : 0,
       };
       if (
         old &&
         snapshot.activeName === input.name &&
         old.path === entry.path &&
         old.refreshToken === entry.refreshToken &&
-        old.generation === entry.generation
+        old.generation === entry.generation &&
+        old.navigationRevision === entry.navigationRevision
       ) {
         return old;
       }
@@ -91,6 +109,7 @@ export function createMicroAppHostStore() {
     },
     invalidateAll: () => {
       if (!snapshot.entries.length && snapshot.activeName === null) return;
+      navigationKeys.clear();
       publish({ entries: [], activeName: null });
     },
   };

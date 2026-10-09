@@ -101,12 +101,7 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
         <ToolPresentationIcon
           kind={firstKind}
           className={cx(styles['tool-group-icon'])}
-          style={{
-            color:
-              group.status === 'failed'
-                ? token.colorError
-                : token.colorTextTertiary,
-          }}
+          style={{ color: token.colorTextTertiary }}
           aria-hidden="true"
         />
         <span
@@ -120,7 +115,7 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
         {group.status === 'failed' && (
           <CloseCircleOutlined
             className={cx(styles['tool-group-status'])}
-            style={{ color: token.colorError }}
+            style={{ color: token.colorTextTertiary }}
             aria-hidden="true"
           />
         )}

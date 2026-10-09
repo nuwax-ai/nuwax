@@ -171,6 +171,9 @@ function initialState() {
       hasPassword: true,
       registrationRequired: false,
       idpError: '',
+      aiOSCommercialEdition: true,
+      workCommercialEdition: true,
+      commercialScenario: false,
     },
     failNext: null as { path: string; message?: string; code?: string } | null,
     words: [
@@ -370,6 +373,9 @@ export function createRelease0930Mock() {
       'hasPassword',
       'registrationRequired',
       'idpError',
+      'aiOSCommercialEdition',
+      'workCommercialEdition',
+      'commercialScenario',
     ] as const) {
       if (body[key] !== undefined) (state.config as any)[key] = body[key];
     }
@@ -431,6 +437,8 @@ export function createRelease0930Mock() {
         authType: 1,
         enableSubscription: 0,
         commercialEdition: true,
+        aiOSCommercialEdition: state.config.aiOSCommercialEdition,
+        workCommercialEdition: state.config.workCommercialEdition,
         enabledSandbox: true,
         supportCustomDomain: false,
         homeRecommendQuestions: [],
@@ -493,10 +501,38 @@ export function createRelease0930Mock() {
         })),
     });
     success(res, [
+      ...(state.config.commercialScenario
+        ? [
+            menu(90, 'homepage', '主页', '/home'),
+            menu(91, 'message', '伙伴', '/instant-message'),
+            menu(92, 'repo', '资料库', '/repo'),
+            menu(
+              95,
+              'zhuanjia_jineng_lianjieqi',
+              '专家·技能·连接器',
+              '/resources',
+            ),
+          ]
+        : []),
       menu(93, 'workspace', '工作空间', '/space', [
         menu(94, 'create_project', '项目', '/space/93/project-manage'),
+        ...(state.config.commercialScenario
+          ? [menu(96, 'agent_dev', '智能体开发', '/space/93/develop')]
+          : []),
       ]),
       menu(100, 'system_manage', '系统管理', '/system', [
+        ...(state.config.commercialScenario
+          ? [
+              menu(110, 'recommend_manage', '推荐管理', '#', [
+                menu(
+                  111,
+                  'chatbox_recommend',
+                  '对话框智能体',
+                  '/system/recommend-manage/chatbox',
+                ),
+              ]),
+            ]
+          : []),
         menu(101, 'system_config', '系统配置', '/system/config', [
           menu(105, 'license_config', 'License 授权', '/system/config/license'),
           menu(
@@ -521,6 +557,17 @@ export function createRelease0930Mock() {
       ]),
     ]);
   });
+  // 商业授权验收场景仍使用真实 PC 页面，仅补本地空列表供数。
+  add('POST', '/api/system/display/recommend/list', (req, res) =>
+    page([], req.body || {}, res),
+  );
+  add('GET', '/api/agent/list/:spaceId', (_req, res) => success(res, []));
+  add('GET', '/api/knowledge/config/detailById', (_req, res) =>
+    success(res, { id: 930, name: '商业授权验收知识库', fileSize: 0 }),
+  );
+  add('POST', '/api/knowledge/document/list', (req, res) =>
+    page([], req.body || {}, res),
+  );
   add('GET', '/api/space/list', (_req, res) =>
     success(res, [
       {

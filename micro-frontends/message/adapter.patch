@@ -2424,10 +2424,15 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index e8d59d8..616d7a9 100644
+index e8d59d87f..ea40c7f54 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
-@@ -153,7 +153,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
+@@ -1,3 +1,4 @@
++import { getMessageHostSnapshot } from '../hostRuntime';
+ /**
+  * ★全局聊天 store（zustand）。
+  *
+@@ -153,7 +154,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
  // ★DEV-226 需求⑤：桌面通知（判据与出口都在那个文件里，store 只负责"有这么一条消息"）。
  import { notifyContentOf, pushNotify } from '../lib/notify';
  import { isPlatformMode, PLATFORM_LOGIN_URL } from '../authMode';
@@ -2436,7 +2441,7 @@ index e8d59d8..616d7a9 100644
  import { currentDeviceId, KickReason } from '../ws/protocol';
  // ★DEV-260：通讯录变更帧 → 「该不该打扰、说什么」的纯函数（含单测）。
  //   ★文案与判据<b>都</b>在 lib 层：store 一 import 就拉起 zustand/React/api，
-@@ -226,7 +226,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
+@@ -226,7 +227,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
   * 否则会出现"同一个会话两个 key、合并失效"（而它<b>没有任何症状</b>：
   * 只是偶尔多一个请求，永远不会有人来报）。见 {@code lib/singleFlight.ts}。
   */
@@ -2445,7 +2450,7 @@ index e8d59d8..616d7a9 100644
  
  /**
   * ★★DEV-247：同一个会话的「资料库」空间<b>并发只建一次</b>。
-@@ -244,7 +244,7 @@ const membersFlight = createSingleFlight<string, void>();
+@@ -244,7 +245,7 @@ const membersFlight = createSingleFlight<string, void>();
   * 会话行上的 {@code spaceId} 判（第 ① 步的短路），不靠这个 Map。
   * ★与 {@code membersFlight} 同一个理由用 {@code String(convId)} 做 key。
   */
@@ -2454,7 +2459,7 @@ index e8d59d8..616d7a9 100644
  
  /**
   * ★★DEV-347：同一个会话的 tail 拉取<b>并发只发一次</b>。
-@@ -267,7 +267,7 @@ const docsFlight = createSingleFlight<string, Id>();
+@@ -267,7 +268,7 @@ const docsFlight = createSingleFlight<string, Id>();
   * 下一次调用照常真的请求（见 {@code lib/singleFlight.ts} 文件头）。
   * ★key 同样用 {@code String(convId)}：store 各处 {@code messagesByConv} 的口径是字符串。
   */
@@ -2463,7 +2468,7 @@ index e8d59d8..616d7a9 100644
  
  /**
   * ★★DEV-347：增量同步（含续拉链）<b>并发只跑一条</b>。
-@@ -282,7 +282,7 @@ const tailFlight = createSingleFlight<string, void>();
+@@ -282,7 +283,7 @@ const tailFlight = createSingleFlight<string, void>();
   * 的第二次照常真的同步（这一点很重要：断线期间的新消息正是靠它补的）。
   * 键是常量，因为"增量同步"这件事本身全局只该有一条在飞。
   */
@@ -2472,7 +2477,7 @@ index e8d59d8..616d7a9 100644
  
  let tempMsgIdSeq = 1;
  const nextTempMsgId = (): Id => `tmp-${tempMsgIdSeq++}`;
-@@ -584,7 +584,7 @@ export const EMPTY_SESSION = {
+@@ -584,9 +585,10 @@ export const EMPTY_SESSION = {
   * 被关的那条再触发客户端重连 —— 线上表现为"页面一直在请求接口"。
   * 收口放在 store 而不是各调用点：调用点会继续增加，单飞只有一处。
   */
@@ -2480,8 +2485,11 @@ index e8d59d8..616d7a9 100644
 +// 单飞 Promise 随 store 实例创建，卸载后的探测不能占用下一次挂载。
  
  interface ChatState {
++  openHostDirectConversation: () => Promise<void>;
    // ---- 登录态
-@@ -1792,7 +1792,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
+   /** ★{@code IdInput}（string|number）而不是 number：平台模式下 userId 由 whoami 给出，
+    *  经 {@code json.ts} 归一化后是 <b>string</b>；mock 模式下是 number。
+@@ -1792,7 +1794,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
  }
  
  /** 落盘调度器（debounce + maxWait，见 lib/cacheFlush.ts）。 */
@@ -2490,7 +2498,7 @@ index e8d59d8..616d7a9 100644
  
  /**
   * ★★DEV-173 决策②：冷启动要预展示的那一份快照。
-@@ -1917,7 +1917,33 @@ function preloadSnapshot(): Partial<ChatState> | null {
+@@ -1917,7 +1919,33 @@ function preloadSnapshot(): Partial<ChatState> | null {
    }
  }
  
@@ -2525,7 +2533,7 @@ index e8d59d8..616d7a9 100644
    // ★★DEV-173 决策②：冷启动预展示。★求值一次，覆盖点只有下面那一处 spread。
    const preload = preloadSnapshot();
    // ------------------------------------------------------------------
-@@ -2444,6 +2470,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2444,6 +2472,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 重连路径是"刚断过线，必须重问一次"。
     */
    async function loadTailFromServer(convId: Id): Promise<void> {
@@ -2533,7 +2541,7 @@ index e8d59d8..616d7a9 100644
      const key = String(convId);
      // ★★DEV-173：先把磁盘上那一页【同步】贴出来 —— 这一步没有 await，
      //   所以浏览器会在下面那次网络往返期间把聊天记录画出来。
-@@ -2462,6 +2489,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2462,6 +2491,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   "当前水位线之后的最后一页"，续拉（A）把水位线推平之后，
      //   只有再问一次才知道这一页该长什么样。
      const page = await msgApi.history(convId, undefined, MSG_PAGE_SIZE);
@@ -2541,7 +2549,7 @@ index e8d59d8..616d7a9 100644
      set((s) => {
        const prev = s.messagesByConv[key] ?? [];
        // ★★断层判定（见 lib/convCache.hasSeqGapBetween）：贴出来的那一页是
-@@ -2543,6 +2571,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2543,6 +2573,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 它不是缓存，settle 即清键）。
     */
    function loadTailOnce(convId: Id): Promise<void> {
@@ -2549,7 +2557,7 @@ index e8d59d8..616d7a9 100644
      return tailFlight.run(String(convId), () => loadTailFromServer(convId));
    }
  
-@@ -2665,10 +2694,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2665,10 +2696,11 @@ export const useChatStore = create<ChatState>((set, get) => {
     */
    let lookingRetryTimer: ReturnType<typeof setTimeout> | null = null;
    function scheduleLookingRetry(): void {
@@ -2562,7 +2570,7 @@ index e8d59d8..616d7a9 100644
        if (isLooking(document)) {
          // ★判据翻真了：走正常补报入口（它自己会再查一遍判据，这里不抄近路）
          get().flushPendingRead();
-@@ -2708,7 +2738,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2708,7 +2740,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   于是变成 1 秒一次的连接乒乓，每次重连还顺带拉一份完整会话列表。
      //   ★判据用 imSocket.active（connected/connecting/reconnecting），不是 connected：
      //   两次调用是并发到达的，第一次的 CONNECT_ACK 尚未回来时 state 还是 connecting。
@@ -2571,7 +2579,7 @@ index e8d59d8..616d7a9 100644
      set({
        userId: opts.userId,
        userName: opts.userName,
-@@ -2736,6 +2766,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2736,6 +2768,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      } catch {
        // 注册失败不阻塞登录（设备表是推送用的辅助数据）
      }
@@ -2579,7 +2587,7 @@ index e8d59d8..616d7a9 100644
      imSocket.connect(opts.token);
      // ★★DEV-172：这里【必须】吞掉失败，两个理由各自都成立：
      //   ① enterSession 被 probePlatformSession 的 try 包着 —— 会话列表拉取失败冒出去
-@@ -2744,7 +2775,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2744,7 +2777,9 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   ② 本次给"加载失败"做了可见的终态（failed + 重试按钮），不吞的话那条路径
      //      根本走不到：界面在跳登录页，用户永远看不到重试入口。
      await get().loadConversations().catch(() => undefined);
@@ -2589,7 +2597,7 @@ index e8d59d8..616d7a9 100644
      // ★★DEV-168：默认打开第一个会话（用户需求第三条："直接进去消息对话列表，默认打开第一个会话"）。
      //   ★★为什么放在【这里】而不是 loadConversations 里（这是个真坑，不是风格问题）：
      //   loadConversations 有 8 个调用者（onReconnected / createP2p / createGroup /
-@@ -2756,6 +2789,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2756,6 +2791,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   拉历史消息失败若冒出去，会被那个 catch 当成【鉴权失败】——于是一次网络抖动
      //   会把用户送去登录页。这正是"两个不相干的失败共用一个 catch"的典型事故。
      await openDefaultConv().catch(() => undefined);
@@ -2597,7 +2605,106 @@ index e8d59d8..616d7a9 100644
      // ★通讯录必须**容错**：新表上线初期、平台侧资料服务抖动都可能让它失败，
      //   而它只是侧栏第二个 Tab 的内容 —— 让它把登录流程整个拖垮
      //   （症状：会话列表已经好了，界面却卡在登录页）是完全不成比例的。
-@@ -3737,6 +3771,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2775,7 +2811,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+    * 这条不是为了单测 —— 判据全在 {@code lib/directOpen.ts}）。
+    */
+   function currentSearch(): string {
+-    return typeof window === 'undefined' ? '' : window.location.search;
++    return typeof window === 'undefined' ? '' : new URL(getMessageHostSnapshot().path, window.location.origin).search;
+   }
+ 
+   /**
+@@ -2832,8 +2868,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+    * 这条路径跑在登录链路里，一次"我给了个过期的群号"绝不能让整个 IM 起不来。
+    * 用户看得到 {@link DIRECT_OPEN_FAILED_TEXT} 那句提示，而排查细节在 {@code console.warn} 里。
+    */
+-  async function applyDirectOpen(): Promise<boolean> {
+-    const search = currentSearch();
++  async function applyDirectOpen(search: string, isCurrent: () => boolean): Promise<boolean> {
+     // ★★DEV-356：邀请链接在场时，{@code ?groupNo=} 必须**让开**。
+     //   ★理由只有一条但很硬：那条直达<b>参数一到就提交一条入群申请单</b>，
+     //     而邀请链路的拍板是 {@code confirm}（点确认才提交）—— 两个都跑的话，
+@@ -2889,25 +2924,32 @@ export const useChatStore = create<ChatState>((set, get) => {
+           if (!get().convs.some((c) => sameId(c.convId, plan.convId))) {
+             throw new Error(DIRECT_OPEN_FAILED_TEXT);
+           }
++          if (!isCurrent()) return true;
+           await get().selectConv(plan.convId);
+           return true;
+         }
+ 
+         case 'p2p':
+           // ★服务端幂等：已经在聊的人不会建出第二条。
+-          await get().selectConv(await get().createP2p(plan.userId));
++          const p2pId = await get().createP2p(plan.userId);
++          if (!isCurrent()) return true;
++          await get().selectConv(p2pId);
+           return true;
+ 
+         case 'agent':
+           // ★★换算只在服务端做（原生 agentId 与真人 userId 同一个数值域，
+           //   前端自己换 = 串号且不报错，见 lib/directOpen 文件头）。
+-          await get().selectConv(await get().createP2pWithAgent(plan.agentId));
++          const agentConvId = await get().createP2pWithAgent(plan.agentId);
++          if (!isCurrent()) return true;
++          await get().selectConv(agentConvId);
+           return true;
+ 
+         case 'space':
+           // ★拍板④：接受懒建（首次会真的在平台上建出该空间的群会话并写成员表）。
+           //   ★注意上面的 spaceId 分支已经试过"列表里有没有"了 —— 走到这里说明确实要建。
+-          await get().selectConv(await get().openSpaceConv(plan.spaceId));
++          const spaceConvId = await get().openSpaceConv(plan.spaceId);
++          if (!isCurrent()) return true;
++          await get().selectConv(spaceConvId);
+           return true;
+ 
+         case 'join': {
+@@ -2915,6 +2957,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+           //   不在就真的提交一条申请。★文案复用 lib/joinGroup 的 joinOutcomeOf，
+           //   与「加入群组」弹窗<b>逐字相同</b>（同一句"申请已提交，等待管理员审核"）。
+           const dto = await get().applyJoinByGroupNo(plan.groupNo, null);
++          if (!isCurrent()) return true;
+           const outcome = joinOutcomeOf(dto);
+           set({ directOpenNotice: { level: outcome.level, text: outcome.text } });
+           // ★★回执里带 convId ≠ 能进（pending / rejected 也带）—— 判据在 joinConvIdOf 里，
+@@ -2926,6 +2969,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+         }
+       }
+     } catch (e) {
++      if (!isCurrent()) return true;
+       // ★失败了：留一句 warn（带原始参数，便于排查）+ 落一条提示，然后退回默认会话。
+       console.warn('[IM-DIRECT] 直达失败，退回默认会话', req.kind, req.raw, e);
+       set({ directOpenNotice: { level: 'error', text: DIRECT_OPEN_FAILED_TEXT } });
+@@ -2950,8 +2994,16 @@ export const useChatStore = create<ChatState>((set, get) => {
+    * 再试一遍还是坏的，只会把同一句提示弹两遍。
+    */
+   let directOpenTask: Promise<boolean> | null = null;
++  let directOpenKey = '';
++  let directOpenGeneration = 0;
++  const currentDirectKey = () => JSON.stringify([getMessageHostSnapshot().navigationRevision, currentSearch()]);
+   function runDirectOpenOnce(): Promise<boolean> {
+-    if (directOpenTask == null) directOpenTask = applyDirectOpen();
++    const key = currentDirectKey();
++    if (directOpenTask == null || key !== directOpenKey) {
++      directOpenKey = key;
++      const generation = ++directOpenGeneration;
++      directOpenTask = applyDirectOpen(currentSearch(), () => !disposed && generation === directOpenGeneration && key === currentDirectKey());
++    }
+     return directOpenTask;
+   }
+ 
+@@ -2993,7 +3045,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+     //
+     //   <p>★返回 true = 参数已经处理掉（成功进了会话）⇒ 默认打开<b>整个跳过</b>；
+     //   返回 false = 没参数 / 失败了 ⇒ 照常走默认逻辑（拍板⑤："然后退回默认会话"）。
++    const targetKey = currentDirectKey();
+     if (await runDirectOpenOnce()) return;
++    if (disposed || targetKey !== currentDirectKey()) return;
+ 
+     const st = get();
+     let id = pickDefaultConvId(st.convs, st.activeConvId);
+@@ -3737,6 +3791,7 @@ export const useChatStore = create<ChatState>((set, get) => {
          .syncIncremental()
          .catch(() => undefined)
          .then(() => {
@@ -2605,7 +2712,7 @@ index e8d59d8..616d7a9 100644
            // ★现读 activeConvId（不缓存）：断线期间用户可能已经切走或关掉会话，
            //   缓存下来的值会把一次请求打在一条没人看的会话上。
            const active = get().activeConvId == null ? null : String(get().activeConvId);
-@@ -3768,6 +3803,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3768,6 +3823,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 详见 {@code lib/syncResume.tailKeysToInvalidate}。
     */
    function applySyncResult(r: SyncResult): void {
@@ -2613,7 +2720,7 @@ index e8d59d8..616d7a9 100644
      if (r.messages) {
        for (const m of r.messages) {
          // ★自发消息不重复：sync 服务端已排除来源端补发语义，前端再按幂等合并兜底
-@@ -3854,6 +3890,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3854,6 +3910,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -2621,7 +2728,7 @@ index e8d59d8..616d7a9 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -3895,6 +3932,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3895,6 +3952,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const pendingReportSeq = new Map<string, number>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -2629,7 +2736,7 @@ index e8d59d8..616d7a9 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -3944,6 +3982,19 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3944,6 +4002,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -2649,7 +2756,7 @@ index e8d59d8..616d7a9 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -4057,12 +4108,14 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4057,12 +4128,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -2664,7 +2771,7 @@ index e8d59d8..616d7a9 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -4070,8 +4123,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4070,8 +4143,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -2675,7 +2782,16 @@ index e8d59d8..616d7a9 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -5722,6 +5776,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4862,6 +4936,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+       return conv.convId;
+     },
+ 
++    openHostDirectConversation: openDefaultConv,
++
+     createP2pWithAgent: async (agentId) => {
+       // ★★DEV-354：与上面 createP2p 逐行同款，只差一个入参 —— 服务端负责把
+       //   **平台原生 agentId** 换算成 subject id（前端做不了，见 lib/directOpen 文件头）。
+@@ -5722,6 +5798,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       * （这正是服务端 javadoc 说的"停在中间"—— 本批把它从<b>永久</b>变成<b>下一次</b>）。
       */
      syncIncremental: async () => {
@@ -2683,7 +2799,7 @@ index e8d59d8..616d7a9 100644
        // ★★DEV-347：并发合并 —— 同一次重连里 {@code onReconnected} 与 WS 的
        //   {@code SYNC_RESP} 帧可能同时触发；没有它，两者会各自把整条续拉链
        //   完整跑一遍（风暴），而它们读的是同一份水位线、写的是同一个 store。
-@@ -5729,6 +5784,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5729,6 +5806,7 @@ export const useChatStore = create<ChatState>((set, get) => {
          let prev: SyncCursor | null = null;
          let rounds = 0;
          for (;;) {
@@ -2691,7 +2807,7 @@ index e8d59d8..616d7a9 100644
            const r = await syncApi.sync({
              // ★每轮都重算水位线：上一轮刚合并进来的消息会把水位线推高，
              //   服务端据此跳过已补的段（cursor 只决定"这一轮处理哪个会话"）。
-@@ -5739,6 +5795,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5739,6 +5817,7 @@ export const useChatStore = create<ChatState>((set, get) => {
              //   之后每轮都必须带上，否则服务端会把已经补过的会话再算一遍。
              ...(prev == null ? {} : { cursor: prev }),
            });
@@ -2699,7 +2815,7 @@ index e8d59d8..616d7a9 100644
            applySyncResult(r);
            rounds += 1;
            const step = nextSyncStep(prev, r, rounds);
-@@ -5786,7 +5843,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5786,7 +5865,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -2712,7 +2828,7 @@ index e8d59d8..616d7a9 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -5808,7 +5869,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5808,7 +5891,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -2722,7 +2838,7 @@ index e8d59d8..616d7a9 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -5819,7 +5881,28 @@ useChatStore.subscribe((st, prev) => {
+@@ -5819,7 +5903,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -2752,7 +2868,7 @@ index e8d59d8..616d7a9 100644
  
  // ======================================================================
  // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
-@@ -5836,7 +5919,8 @@ useChatStore.subscribe((st, prev) => {
+@@ -5836,7 +5941,8 @@ useChatStore.subscribe((st, prev) => {
  // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
  //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
  //   且宿主若用引用比较做变更检测会一直误判成"变了"。
@@ -2762,7 +2878,7 @@ index e8d59d8..616d7a9 100644
    if (s.unreadTotal !== prev.unreadTotal) {
      emitImUnread(s.unreadTotal);
      setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
-@@ -5855,7 +5939,6 @@ useChatStore.subscribe((s, prev) => {
+@@ -5855,7 +5961,6 @@ useChatStore.subscribe((s, prev) => {
  //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
  //   于是它们永远停在模块默认值（未读 0、未登录）上，
  //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
@@ -2770,7 +2886,7 @@ index e8d59d8..616d7a9 100644
    const s0 = useChatStore.getState();
    setImBridgeSnapshot({
      connState: s0.connState,
-@@ -5863,7 +5946,9 @@ useChatStore.subscribe((s, prev) => {
+@@ -5863,7 +5968,9 @@ useChatStore.subscribe((s, prev) => {
      unreadTotal: s0.unreadTotal,
      userId: s0.userId == null ? null : String(s0.userId),
    });

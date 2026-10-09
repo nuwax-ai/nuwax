@@ -46,7 +46,10 @@ export interface UseAgentInterventionLayerOptions {
    * 避免没展示模式切换的会话框误用别的会话切换留下的 ask。
    */
   allowChooseMode?: DefaultSelectedEnum | number;
-  onSendMessage: (message: string, files?: UploadFileInfo[]) => void;
+  onSendMessage: (
+    message: string,
+    files?: UploadFileInfo[],
+  ) => void | Promise<unknown>;
   /**
    * 非 conversationInfo 会话源时传入（如 ConversationAgent 预览 Tab），
    * 使 Dock 回执与停止会话作用于正确的 model。
@@ -63,7 +66,10 @@ export interface UseAgentInterventionLayerResult {
   agentMode: AgentMode;
   chatLayerProps: Pick<
     AgentInterventionChatLayerProps,
-    'messageList' | 'onRespondAcpPermission' | 'onRespondMcpAsk'
+    | 'conversationId'
+    | 'messageList'
+    | 'onRespondAcpPermission'
+    | 'onRespondMcpAsk'
   >;
   agentModeInputProps: AgentModeInputProps;
 }
@@ -401,7 +407,12 @@ export function useAgentInterventionLayer(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
       const resume = await respondMcpAsk(interaction, payload);
       if (resume?.text) {
-        onSendMessage(resume.text, resume.files);
+        try {
+          await onSendMessage(resume.text, resume.files);
+        } catch (error) {
+          resume.rollback?.();
+          throw error;
+        }
       }
     },
     [respondMcpAsk, onSendMessage],
@@ -410,6 +421,7 @@ export function useAgentInterventionLayer(
   return {
     agentMode,
     chatLayerProps: {
+      conversationId: options.conversationId,
       messageList,
       onRespondAcpPermission: handleRespondAcpPermission,
       onRespondMcpAsk: handleRespondMcpAsk,

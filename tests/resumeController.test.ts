@@ -65,6 +65,73 @@ describe('resumeController', () => {
     localStorage.clear();
   });
 
+  it('旧轮 USER 重放的 requestId 后续消息和终态也被拦截，新轮相同正文正常接收', () => {
+    const handler = vi.fn();
+    const { controller } = createTestController({
+      handleChangeMessageList: handler,
+    });
+    controller.resumeConversationStream(1001, [
+      { id: 'old-user', role: AssistantRoleEnum.USER },
+      {
+        id: 'old-assistant',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '相同回答',
+      },
+      { id: 'new-user', role: AssistantRoleEnum.USER },
+    ] as MessageInfo[]);
+    const { onMessage } = mockCreateSSEConnection.mock.calls[0][0];
+    onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      requestId: 'old',
+      data: { id: 'old-user', role: AssistantRoleEnum.USER },
+    });
+    onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      requestId: 'old',
+      data: { text: '相同回答' },
+    });
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'old',
+      data: { outputText: '相同回答' },
+    });
+    expect(handler).not.toHaveBeenCalled();
+    onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      requestId: 'new',
+      data: { text: '相同回答' },
+    });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('历史 requestId 和 assistant id 均可排除旧轮，不依赖时间字段', () => {
+    const handler = vi.fn();
+    const { controller } = createTestController({
+      handleChangeMessageList: handler,
+    });
+    controller.resumeConversationStream(1001, [
+      { id: 'old-user', role: AssistantRoleEnum.USER, requestId: 'known-old' },
+      { id: 'old-answer', role: AssistantRoleEnum.ASSISTANT },
+      { id: 'new-user', role: AssistantRoleEnum.USER },
+    ] as MessageInfo[]);
+    const { onMessage } = mockCreateSSEConnection.mock.calls[0][0];
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'known-old',
+      data: {},
+    });
+    onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { id: 'old-answer', text: '旧回答' },
+    });
+    expect(handler).not.toHaveBeenCalled();
+    onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: '无标识的兼容消息' },
+    });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
   it('订阅 sub 时追加新的 assistant 占位，不复用历史残留 Incomplete 消息', () => {
     let list: MessageInfo[] = [
       {

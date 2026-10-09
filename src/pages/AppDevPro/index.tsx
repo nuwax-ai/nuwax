@@ -1391,9 +1391,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * （已有轮询则只补打一次，不重置间隔）。
    * 容器 running 后再看应用状态。
    * 开发环境：not_deployed 且已有有效项目文件才调 dev/restart；
-   * starting 继续轮询；status 为 ready 且 ready 为 true 时直接打开预览。
+   * starting、unknown 继续轮询；status 为 ready 且 ready 为 true 时直接打开预览。
    * 其它状态与线上一致：有可重启条件才调应用 restart，否则停住。
-   * 线上环境：starting 继续轮询，status 为 ready 直接预览，其它状态才调应用 restart。
+   * 线上环境：starting、unknown 继续轮询；status 为 ready 且 ready 为 true 时直接预览，其它状态才调应用 restart。
    * 线上未部署则不调。iframe 只在直接预览或应用重启完成后再挂。
    */
   const handleRestartComputer = useCallback(async () => {
@@ -1463,8 +1463,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     let readiness =
       serviceReadinessRef.current.readinessByEnvRef.current[envToRestart];
-    // starting 继续等下一次探测，不在启动过程中重连预览或再打 restart
-    while (readiness?.status === UserAppReadinessStatusEnum.Starting) {
+    // starting、unknown 继续等下一次探测，不在状态未定时空重连预览或再打 restart
+    while (
+      readiness?.status === UserAppReadinessStatusEnum.Starting ||
+      readiness?.status === UserAppReadinessStatusEnum.Unknown
+    ) {
       if (switchedAway()) {
         releaseComputerRestartHold(envToRestart);
         return;
@@ -1490,12 +1493,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       setPreviewRefreshKey((prev) => prev + 1);
       markPreviewReadyRef.current(envToRestart);
     };
-    // 开发：status 为 ready 且 ready 为 true 才直接预览。线上：status 为 ready 即预览。
-    if (
-      isProd
-        ? readiness?.status === UserAppReadinessStatusEnum.Ready
-        : isUserAppReadinessAccessible(readiness)
-    ) {
+    // 开发和线上一样：status 为 ready 且 ready 为 true 才直接预览。
+    if (isUserAppReadinessAccessible(readiness)) {
       showPreview();
       return;
     }

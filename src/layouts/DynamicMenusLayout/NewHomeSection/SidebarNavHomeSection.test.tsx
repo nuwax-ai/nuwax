@@ -3,13 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { HomeSectionDataShell } from './useHomeSectionData';
 
-const { route, refreshList, revalidateVisible, hasExecutingChildren } =
-  vi.hoisted(() => ({
-    route: { pathname: '/home' },
-    refreshList: vi.fn(),
-    revalidateVisible: vi.fn(),
-    hasExecutingChildren: vi.fn(() => false),
-  }));
+const {
+  route,
+  refreshList,
+  revalidateVisible,
+  hasExecutingChildren,
+  commercialState,
+} = vi.hoisted(() => ({
+  route: { pathname: '/home' },
+  commercialState: { enabled: true },
+  refreshList: vi.fn(),
+  revalidateVisible: vi.fn(),
+  hasExecutingChildren: vi.fn(() => false),
+}));
 
 vi.mock('umi', () => ({ useLocation: () => route }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
@@ -48,6 +54,7 @@ const shell = {
 
 describe('style3 侧栏切回同步', () => {
   beforeEach(() => {
+    commercialState.enabled = true;
     vi.useFakeTimers();
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
     route.pathname = '/home';
@@ -141,4 +148,25 @@ describe('style3 侧栏切回同步', () => {
       }),
     ).toBeNull();
   });
+});
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: commercialState.enabled,
+    workCommercialEdition: commercialState.enabled,
+    pending: false,
+  }),
+}));
+
+it('未授权隐藏项目分组；授权刷新后恢复，撤销后收起', () => {
+  commercialState.enabled = false;
+  const view = render(<SidebarNavHomeSection shell={shell} />);
+  const title = 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab';
+  expect(screen.queryByText(title)).toBeNull();
+  commercialState.enabled = true;
+  view.rerender(<SidebarNavHomeSection shell={shell} />);
+  expect(screen.getByText(title)).toBeTruthy();
+  commercialState.enabled = false;
+  view.rerender(<SidebarNavHomeSection shell={shell} />);
+  expect(screen.queryByText(title)).toBeNull();
 });

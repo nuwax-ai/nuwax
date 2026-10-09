@@ -2,6 +2,7 @@ import ConditionRender from '@/components/ConditionRender';
 import LabelStar from '@/components/LabelStar';
 import SelectList from '@/components/custom/SelectList';
 import { KNOWLEDGE_SEGMENT_IDENTIFIER_LIST } from '@/constants/library.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import { KnowledgeSegmentIdentifierEnum } from '@/types/enums/library';
 import type { CreateSetProps } from '@/types/interfaces/knowledge';
@@ -34,8 +35,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
     setSegmentDelimiter(_value);
   };
 
-  // 商用版判断暂时禁用（tenantConfigInfo 未使用已移除），图谱入口固定放开
-  const isShowGRAPH = true;
+  const { aiOSCommercialEdition } = useCommercialEdition();
   //console.log("2===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
 
   return (
@@ -60,7 +60,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
         <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean')}</h3>
         <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc')}</p>
       </div>
-      {isShowGRAPH && (
+      {aiOSCommercialEdition && (
         <div
           className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
             [styles.active]: isAiSegment,

@@ -1703,7 +1703,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   const pendingWorkspaceRestoreRef = useRef<{
     key: string;
-    view: 'desktop' | 'pagePreview';
+    view: 'terminal' | 'desktop' | 'pagePreview';
   } | null>(null);
   const workspaceRestoreActionsRef = useRef({
     openPreviewView,
@@ -1720,22 +1720,27 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   const restoredWorkspaceKeyRef = useRef<string | null>(null);
 
-  // 离开会话页时卸掉终端。页面隐藏期间不再保留终端连接，切回后是未打开状态。
+  useEffect(
+    () => () => {
+      conversationPageCacheManager.updateResources(pageCacheKey, {
+        terminalMounted: false,
+        terminalConnected: false,
+      });
+    },
+    [pageCacheKey],
+  );
+
+  // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
   useLayoutEffect(() => {
-    if (active) {
-      return;
-    }
+    if (active) return;
+    restoredWorkspaceKeyRef.current = null;
+    pendingWorkspaceRestoreRef.current = null;
     setTerminalConsoleVisible(false);
     setHasTerminalConsoleRendered(false);
     setTerminalConsoleLayoutMode('collapsed');
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleCollapseSignal(0);
-    if (
-      conversationPageCacheManager.getEntry(pageCacheKey)?.view === 'terminal'
-    ) {
-      rememberWorkspaceView('filePreview');
-    }
-  }, [active, pageCacheKey, rememberWorkspaceView]);
+  }, [active, pageCacheKey]);
 
   // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
   useEffect(() => {
@@ -1750,23 +1755,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
     restoredWorkspaceKeyRef.current = pageCacheKey;
     const targetView =
-      defaultFileTreeVisible || entry.view === 'terminal'
+      defaultFileTreeVisible && entry.view === 'closed'
         ? 'filePreview'
         : entry.view;
-
-    if (
-      entry.view === 'terminal' ||
-      (defaultFileTreeVisible && entry.view !== 'filePreview')
-    ) {
-      rememberWorkspaceView('filePreview');
-    }
+    if (targetView !== entry.view) rememberWorkspaceView(targetView);
     pendingWorkspaceRestoreRef.current = null;
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
       workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
       return deactivate;
     }
-    if (targetView === 'desktop' || targetView === 'pagePreview') {
+    if (
+      targetView === 'terminal' ||
+      targetView === 'desktop' ||
+      targetView === 'pagePreview'
+    ) {
       pendingWorkspaceRestoreRef.current = {
         key: pageCacheKey,
         view: targetView,
@@ -1804,9 +1807,26 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   // desktop/pagePreview 依赖异步到达的 agent/沙箱信息，仅消费当前 key 的待恢复任务一次。
   useEffect(() => {
     const pending = pendingWorkspaceRestoreRef.current;
-    if (!pending || pending.key !== pageCacheKey || !effectiveAgent) return;
+    if (
+      !active ||
+      !pending ||
+      pending.key !== pageCacheKey ||
+      !effectiveAgent ||
+      conversationInfo?.id !== id
+    )
+      return;
 
     pendingWorkspaceRestoreRef.current = null;
+    if (pending.view === 'terminal') {
+      workspaceRestoreActionsRef.current.openPreviewView(id);
+      setHasTerminalConsoleRendered(true);
+      setTerminalConsoleVisible(true);
+      setTerminalConsoleLayoutMode('expanded');
+      setTerminalConsoleActiveTab('terminal');
+      setTerminalConsoleCollapseSignal(0);
+      setTerminalConsoleExpandSignal((signal) => signal + 1);
+      return;
+    }
     if (pending.view === 'desktop') {
       if (finalSelectedId === '-1') {
         conversationPageCacheManager.setSharedVncOwner(id);
@@ -1817,7 +1837,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       return;
     }
     workspaceRestoreActionsRef.current.openPagePreview(effectiveAgent, false);
-  }, [pageCacheKey, effectiveAgent, finalSelectedId, rememberWorkspaceView]);
+  }, [
+    active,
+    id,
+    conversationInfo?.id,
+    pageCacheKey,
+    effectiveAgent,
+    finalSelectedId,
+    rememberWorkspaceView,
+  ]);
 
   useEffect(() => {
     conversationPageCacheManager.updateResources(pageCacheKey, {
@@ -1904,23 +1932,25 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   );
 
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
-  const terminalConsole = hasTerminalConsoleRendered ? (
-    <ConversationBottomConsole
-      className={cx(styles['terminal-console'])}
-      conversationId={finalSelectedId === '-1' ? id : undefined}
-      visible={active && terminalConsoleVisible}
-      wsUrl={terminalWsUrl}
-      wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-      wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-      defaultActiveTab="terminal"
-      defaultLayoutMode="default"
-      expandSignal={terminalConsoleExpandSignal}
-      collapseSignal={terminalConsoleCollapseSignal}
-      onLayoutModeChange={setTerminalConsoleLayoutMode}
-      onActiveTabChange={setTerminalConsoleActiveTab}
-      showLogsTab={false}
-    />
-  ) : null;
+  const terminalConsole =
+    active && conversationInfo?.id === id && hasTerminalConsoleRendered ? (
+      <ConversationBottomConsole
+        key={`${id}:${finalSelectedId}`}
+        className={cx(styles['terminal-console'])}
+        conversationId={finalSelectedId === '-1' ? id : undefined}
+        visible={active && terminalConsoleVisible}
+        wsUrl={terminalWsUrl}
+        wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+        wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+        defaultActiveTab="terminal"
+        defaultLayoutMode="default"
+        expandSignal={terminalConsoleExpandSignal}
+        collapseSignal={terminalConsoleCollapseSignal}
+        onLayoutModeChange={setTerminalConsoleLayoutMode}
+        onActiveTabChange={setTerminalConsoleActiveTab}
+        showLogsTab={false}
+      />
+    ) : null;
 
   /** 文件树侧边栏 props */
   const isVersionControlEnabled = isAgentVersionControlEnabled(
@@ -2066,7 +2096,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isConversationActive ||
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
   // 进度面板可用性：与胶囊组件同源纯选择器；有内容才渲染页头「会话进度」按钮，
-  // running 只驱动按钮转圈，面板内状态以胶囊组件内部模型为准
+  // 按钮图标固定，面板内状态以胶囊组件内部模型为准
   const capsuleModel = useMemo(
     () => selectProgressCapsule(messageList, effectiveConversationActive),
     [messageList, effectiveConversationActive],
@@ -2116,7 +2146,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setOpenPaymentModal,
     isAgentDetailModalOpen,
     handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
-    // 会话进度面板（TaskAgent）：有内容才显示页头按钮，运行中按钮转圈
+    // 会话进度面板（TaskAgent）：有内容才显示页头按钮
     hasCapsuleContent: capsuleModel !== null,
     capsuleRunning: capsuleModel?.running ?? false,
     isCapsulePanelOpen: capsulePanelOpen,
