@@ -29,9 +29,17 @@ type HostProps = {
   path: string;
   active: boolean;
   onNavigate: (path: string, replace: boolean) => void;
+  // 仅 IM：由主站适配层接线，原仓业务无需消费乾坤 props。
+  host?: {
+    navigate: (path: string, options?: { replace?: boolean }) => boolean;
+  };
   onAuthExpired: (target: string) => void;
 };
 ```
+
+主站通过乾坤 `loadMicroApp` 的 `props.host` 传递路由能力。主站维护的 IM overlay 入口及 runtime 在 mount/update/unmount 中暴露、更新和按对象身份清理 `window.NuwaxHost`；主站不直接写此全局。IM 原仓入口不改，业务仅调用 `window.NuwaxHost?.navigate(path, { replace })`，无需了解乾坤、跨工程 import 或安装 SDK。旧 `onNavigate` 仍只允许本应用路径。类型声明和联调步骤见 [IM 接入宿主页面路由](./im-host-navigation-integration.md)。
+
+导航同步返回 boolean：隐藏、卸载或加载/挂载/更新失败后返回 false；失败后全局对象可能暂留至卸载，但宿主已禁用其方法。true 表示宿主接受导航，不保证目标页加载及授权成功。
 
 隐藏实例不消费其它应用路径。资料库适配层限制样式、全局快捷键、弹层、滚动锁与标题副作用，生命周期管理广播通道；保活切换保留编辑状态，真正重建时清理旧账号的内存缓存。消息固定 `VITE_IM_AUTH_MODE=platform`，复用主站 Cookie 会话，生命周期释放 WS、监听、定时器和原生通知。两应用的鉴权失效通过 `onAuthExpired` 交给宿主清理；请求发起时捕获实例代次，卸载后晚到的 401 不会清除新会话或影响新实例。
 

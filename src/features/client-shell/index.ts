@@ -11,6 +11,8 @@ import { subscribeNativeImUnread } from '@/services/imEventBridge';
 import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
 import { initImNotificationPreference } from './imNotificationPreference';
+import { getPageBuildInfo } from './pageBuildInfo';
+import { initWebUpdateCheck } from './webUpdateService';
 
 /**
  * 聚合初始化：AppContainer 挂载时调用一次，返回清理函数。
@@ -21,25 +23,19 @@ export function initClientShell(): () => void {
   const disposeImPreference = initImNotificationPreference();
   const disposeImUnread = subscribeNativeImUnread();
   // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）。
-  // gitHash 不再构建期烤入源码（每次提交都会扰动入口 chunk 的 contenthash），
-  // 改从构建产物 version.json 运行时读取补报；读取失败仅缺省，不影响首报。
-  hostBridge.meta.syncWebInfo({ appVersion: APP_VERSION });
-  fetch('/version.json', { cache: 'no-store' })
-    .then((res) => (res.ok ? res.json() : null))
-    .then((info: { gitHash?: string } | null) => {
-      if (info?.gitHash) {
-        hostBridge.meta.syncWebInfo({
-          appVersion: APP_VERSION,
-          gitHash: info.gitHash,
-        });
-      }
-    })
-    .catch(() => {});
+  // hash 留在入口 HTML：保持业务 chunk 稳定，并准确上报当前页面实际版本。
+  const pageBuildInfo = getPageBuildInfo();
+  hostBridge.meta.syncWebInfo({
+    appVersion: pageBuildInfo.appVersion || APP_VERSION,
+    ...(pageBuildInfo.gitHash ? { gitHash: pageBuildInfo.gitHash } : {}),
+  });
+  const disposeWebUpdateCheck = initWebUpdateCheck();
 
   // 标题栏手势（mousedown 命中判定→壳主进程拖窗/双击缩放；壳层无覆盖零吞点击）
   const disposeDragGesture = initTitlebarDragGesture();
 
   return () => {
+    disposeWebUpdateCheck();
     disposeDragGesture();
     disposeImPreference();
     disposeImUnread();
@@ -53,3 +49,4 @@ export {
 } from './clientUpdateService';
 export { default as ClientVersionBadge } from './ClientVersionBadge';
 export { default as DesktopShellPreviewChrome } from './DesktopShellPreviewChrome';
+export { default as WebVersionBadge } from './WebVersionBadge';
