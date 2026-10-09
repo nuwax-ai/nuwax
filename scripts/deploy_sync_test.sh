@@ -214,6 +214,19 @@ verify_microapp_pins() {
   fi
 }
 
+# push 带自愈：远端被直推（非快进拒绝）时先并远端再推——同事直推 gitlab 的
+# 工作流下 test/版本分支 push 三连拒的场景脚本自动消化（2026-10-09 实证）。
+push_with_heal() { # push_with_heal <remote> <branch>
+  if retry_git 3 push "$1" "$2"; then return 0; fi
+  log "push 被拒（远端有新提交），先合并远端再推：$1/$2"
+  retry_git 3 fetch "$1" "$2" || return 1
+  if ! rgit merge "refs/remotes/$1/$2" --no-verify -m "merge: 合拢 $1/$2 直推提交"; then
+    resolve_machine_conflicts "merge: 合拢 $1/$2 直推提交（机器产物冲突自动消化）" ||
+      { git merge --abort 2>/dev/null || true; return 1; }
+  fi
+  retry_git 3 push "$1" "$2"
+}
+
 # pull 带自愈：远端分叉时 pull 走 merge，dist/version.ts 机器产物冲突会让 pull 失败且
 # 在 index 留 unmerged 态（下次重跑被拦，死循环——2026-09-30 四连挂实证）；
 # 失败即按机器产物消化提交合并，源码冲突才回滚交人工。
@@ -576,6 +589,16 @@ if [ "${UPGRADE_MICRO_APPS:-auto}" != "0" ]; then
   fi
 fi
 
+# 版本分支双远端盲区根治：同事直推 gitlab/VERSION 的提交不再漏（2026-10-09 用户实证）
+if git show-ref --verify --quiet refs/remotes/gitlab/"${VERSION_BRANCH}" 2>/dev/null &&
+  ! git merge-base --is-ancestor "gitlab/${VERSION_BRANCH}" "$FEATURE_BRANCH"; then
+  log "gitlab/${VERSION_BRANCH} 有独有提交，一并合入（同事直推 gitlab 场景）"
+  if ! rgit merge "gitlab/${VERSION_BRANCH}" --no-verify     -m "Merge remote-tracking branch 'gitlab/${VERSION_BRANCH}' into ${REAL_FEATURE}"; then
+    resolve_machine_conflicts "Merge gitlab/${VERSION_BRANCH}（机器产物冲突自动消化）" ||
+      { git merge --abort 2>/dev/null || true; conflict_files_die "合并 gitlab/${VERSION_BRANCH} 冲突：已回滚。解决后 git commit，再重跑本脚本"; }
+  fi
+fi
+
 CURRENT_STEP="推送 GitHub 个人分支"
 log "步骤 3/8：推送 ${REAL_FEATURE} 到 GitHub（origin）"
 if [ -n "$WT_DIR" ]; then
@@ -612,7 +635,7 @@ else
     fi
   fi
 fi
-retry_git 3 push origin "$VERSION_BRANCH"
+push_with_heal origin "$VERSION_BRANCH"
 
 CURRENT_STEP="合入 ${DEV_BRANCH}"
 log "步骤 6/8：合入本地 ${DEV_BRANCH}（部署数据源，不推送远端）"
@@ -687,8 +710,8 @@ run_combined_source_gate "$TEST_BRANCH" "$TEST_VERIFIED_HEAD" "$TEST_GATE_RECORD
 mkdir -p "$(dirname "$TEST_GATE_RECORD")"
 printf '%s\n' "$(git rev-parse HEAD)" >"$TEST_GATE_RECORD"
 CURRENT_STEP="推送 ${TEST_BRANCH} 产物"
-retry_git 3 push origin "$TEST_BRANCH"
-retry_git 3 push gitlab "$TEST_BRANCH"
+push_with_heal origin "$TEST_BRANCH"
+push_with_heal gitlab "$TEST_BRANCH"
 
 # 部署核验：推送成功后远端跟踪引用已更新，打印三处落点头部（可直接贴提测单，免手工 fetch 比对）
 log "部署核验（三处远端落点）："
