@@ -10,7 +10,12 @@ const WebVersionBadge: React.FC = () => {
 
   if (!available) return null;
   return (
-    <Tooltip title={dict('PC.Components.WebUpdate.refreshHint')}>
+    <Tooltip
+      title={dict('PC.Components.WebUpdate.refreshHint')}
+      // 顶部是客户端宿主菜单层，网页弹层无法覆盖它；固定向下避免文字重叠。
+      placement="bottom"
+      autoAdjustOverflow={false}
+    >
       <button
         type="button"
         aria-label={dict('PC.Components.WebUpdate.update')}
