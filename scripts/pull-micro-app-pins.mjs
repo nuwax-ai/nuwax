@@ -1,6 +1,7 @@
 /**
  * 把已登记微应用的远端 main 最新提交拉到本地，并同时写入 gitlink 与 adapter.pin。
  * 只接受相对当前 gitlink 的快进，不把指针退回更旧的提交。
+ * 某个应用的远端不存在、没有凭证或超时连不上时，跳过该应用，沿用已有 pin，不中断后续构建。
  * 补丁若不能直接贴到这份新源码上，就按三方合并重算 adapter.patch 并一起暂存。
  * 同一处被两边改过、合并不了时停止，不猜测冲突结果。
  * 不提交、不推送。
@@ -28,8 +29,50 @@ const git = (cwd, args) =>
   execFileSync('git', args, {
     cwd,
     encoding: 'utf8',
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
+
+/** 远端 fetch 最长等待，避免没有凭证或网络不通时停在拉 pin。 */
+const FETCH_TIMEOUT_MS = 20000;
+
+/**
+ * 拉取 origin/main。失败、超时或没有交互终端时返回 null，由调用方跳过该应用。
+ *
+ * @param source 子模块目录
+ * @returns 远端 main 提交号；不可用时为 null
+ */
+const fetchOriginMain = (source) => {
+  const result = spawnSync(
+    'git',
+    [
+      'fetch',
+      '--no-tags',
+      '--recurse-submodules=no',
+      'origin',
+      '+refs/heads/main:refs/remotes/origin/main',
+    ],
+    {
+      cwd: source,
+      encoding: 'utf8',
+      timeout: FETCH_TIMEOUT_MS,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  if (result.error || result.status !== 0) {
+    const detail = `${result.stderr || ''}${result.error?.message || ''}`.trim();
+    if (detail) {
+      console.warn(`[pull-pins] ${detail.split('\n')[0]}`);
+    }
+    return null;
+  }
+  try {
+    return git(source, ['rev-parse', 'refs/remotes/origin/main^{commit}']);
+  } catch {
+    return null;
+  }
+};
 
 /**
  * 判断 ancestor 是否为 descendant 的祖先（含两者相同）。
@@ -241,19 +284,19 @@ const pullApp = (id, adapterPath) => {
   const gitlink = readGitlink(sourceDir);
   const toplevel = git(source, ['rev-parse', '--show-toplevel']);
   if (path.resolve(toplevel) !== path.resolve(source)) {
-    throw new Error(
-      `${id} 的 ${sourceDir} 不是独立 Git 仓库，当前命令落到了 ${toplevel}。镜像构建里没有子模块检出，不能在这里拉取远端；请在本机初始化子模块后单独执行 pnpm pull:micro-app-pins。`,
+    console.warn(
+      `[pull-pins] ${id}: 找不到独立源码仓库，跳过，沿用已有 pin ${gitlink.slice(0, 9)}`,
     );
+    return 'skipped';
   }
 
-  git(source, [
-    'fetch',
-    '--no-tags',
-    '--recurse-submodules=no',
-    'origin',
-    '+refs/heads/main:refs/remotes/origin/main',
-  ]);
-  const remote = git(source, ['rev-parse', 'refs/remotes/origin/main^{commit}']);
+  const remote = fetchOriginMain(source);
+  if (!remote) {
+    console.warn(
+      `[pull-pins] ${id}: 找不到远端 main，跳过，沿用已有 pin ${gitlink.slice(0, 9)}`,
+    );
+    return 'skipped';
+  }
 
   if (!isAncestor(source, gitlink, remote)) {
     throw new Error(
@@ -314,11 +357,21 @@ if (wanted.length && apps.length !== wanted.length) {
 }
 
 let refreshedPatch = false;
+let skipped = false;
 for (const app of apps) {
-  refreshedPatch = pullApp(app.id, app.adapter) || refreshedPatch;
+  const result = pullApp(app.id, app.adapter);
+  if (result === 'skipped') {
+    skipped = true;
+    continue;
+  }
+  refreshedPatch = result || refreshedPatch;
 }
-console.log(
-  refreshedPatch
-    ? '[pull-pins] 已暂存 gitlink、adapter.pin，以及本次重算过的适配补丁。尚未提交。'
-    : '[pull-pins] 已暂存 gitlink 与 adapter.pin。适配补丁可直接应用，尚未提交。',
-);
+if (skipped && !refreshedPatch) {
+  console.log('[pull-pins] 找不到的远端已跳过，沿用已有 pin，继续后续构建。');
+} else if (refreshedPatch) {
+  console.log(
+    '[pull-pins] 已暂存 gitlink、adapter.pin，以及本次重算过的适配补丁。尚未提交。',
+  );
+} else {
+  console.log('[pull-pins] 已暂存 gitlink 与 adapter.pin。适配补丁可直接应用，尚未提交。');
+}
