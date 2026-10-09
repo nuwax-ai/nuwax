@@ -97,6 +97,12 @@ const pullApp = (id, adapterPath) => {
   const sourceDir = adapter.sourceDir;
   const source = path.join(root, sourceDir);
   const gitlink = readGitlink(sourceDir);
+  const toplevel = git(source, ['rev-parse', '--show-toplevel']);
+  if (path.resolve(toplevel) !== path.resolve(source)) {
+    throw new Error(
+      `${id} 的 ${sourceDir} 不是独立 Git 仓库，当前命令落到了 ${toplevel}。镜像构建里没有子模块检出，不能在这里拉取远端；请在本机初始化子模块后单独执行 pnpm pull:micro-app-pins。`,
+    );
+  }
 
   git(source, [
     'fetch',
