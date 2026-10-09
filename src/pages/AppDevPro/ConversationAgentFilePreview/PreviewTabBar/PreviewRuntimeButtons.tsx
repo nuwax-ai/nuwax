@@ -36,7 +36,7 @@ export interface PreviewRuntimeButtonsProps {
   /**
    * 当前环境 readiness 的应用状态。
    * 只传正在看的这一侧；开发 / 线上各自保存在 readiness 槽位里，切换时读另一侧，互不影响。
-   * starting、stopping 时禁用重启图标。
+   * starting 时重启和停止都不可点；stopping 时禁用重启图标。
    */
   previewAppStatus?: UserAppReadinessStatusEnum | null;
   /**
@@ -104,7 +104,8 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     workspaceManifestBlocked ||
     podActionBlocked ||
     previewRuntimeStopping ||
-    previewRuntimeRestarting;
+    previewRuntimeRestarting ||
+    appStarting;
 
   /**
    * 禁用时悬停说明当前为什么不能点。
@@ -118,7 +119,7 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     if (!disabled) {
       return '';
     }
-    if (action === 'restart' && appStarting) {
+    if (appStarting) {
       return dict('PC.Pages.AppDevPro.appStarting');
     }
     if (action === 'restart' && appStopping) {
