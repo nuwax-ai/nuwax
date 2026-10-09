@@ -40,11 +40,15 @@ describe('构建版本元信息', () => {
     const html = withBuildMetadata(`<html>${head}<body></body></html>`, {
       version: '1.2.0',
       gitHash: 'aaaaaaaa',
+      buildAt,
     });
     expect(html.indexOf('nuwax-build-version')).toBeLessThan(
       html.indexOf('<script'),
     );
     expect(html.indexOf('nuwax-build-git-hash')).toBeLessThan(
+      html.indexOf('<script'),
+    );
+    expect(html.indexOf('nuwax-build-at')).toBeLessThan(
       html.indexOf('<script'),
     );
     if (html.includes('charset')) {
@@ -53,7 +57,11 @@ describe('构建版本元信息', () => {
       );
     }
     expect(
-      withBuildMetadata(html, { version: '1.2.0', gitHash: 'aaaaaaaa' }),
+      withBuildMetadata(html, {
+        version: '1.2.0',
+        gitHash: 'aaaaaaaa',
+        buildAt,
+      }),
     ).toBe(html);
   });
   it('同一 payload 写入 HTML 与 version.json，不改变业务 JS', () => {
@@ -75,6 +83,9 @@ describe('构建版本元信息', () => {
       '<meta name="nuwax-build-git-hash" content="4dfea90cd2">',
     );
     expect(html).toContain('<meta name="nuwax-build-version" content="1.2.0">');
+    expect(html).toContain(
+      `<meta name="nuwax-build-at" content="${payload.buildAt}">`,
+    );
     expect(html).toContain('<meta charset="utf-8">');
     expect(
       fs.readFileSync(path.join(options.distDir, 'umi.aabbccdd.js'), 'utf8'),
@@ -92,13 +103,26 @@ describe('构建版本元信息', () => {
     expect(
       fs.readFileSync(path.join(options.distDir, 'index.html'), 'utf8'),
     ).toBe(firstHtml);
-    writeDistVersion({ ...options, resolveGitHash: () => '22222222' });
+    const nextBuildAt = '2026-10-10T00:00:00.000Z';
+    const nextPayload = writeDistVersion({
+      ...options,
+      buildAt: nextBuildAt,
+      resolveGitHash: () => '22222222',
+    });
     const html = fs.readFileSync(
       path.join(options.distDir, 'index.html'),
       'utf8',
     );
     expect(html.match(/name="nuwax-build-git-hash"/g)).toHaveLength(1);
     expect(html.match(/name="nuwax-build-version"/g)).toHaveLength(1);
+    expect(html.match(/name="nuwax-build-at"/g)).toHaveLength(1);
+    expect(html).toContain(`content="${nextBuildAt}"`);
+    expect(html).not.toContain(buildAt);
+    expect(
+      JSON.parse(
+        fs.readFileSync(path.join(options.distDir, 'version.json'), 'utf8'),
+      ).buildAt,
+    ).toBe(nextPayload.buildAt);
     expect(html).toContain('content="22222222"');
     expect(html).not.toContain('11111111');
   });
@@ -144,6 +168,21 @@ describe('构建版本元信息', () => {
     expect(html).toContain('content="1.2.0&quot;&amp;&lt;&gt;&#39;"');
     expect(html).not.toContain('old');
     expect(html.match(/nuwax-build-git-hash/g)).toHaveLength(1);
+  });
+
+  it('构建时间沿用属性转义标准，并清除所有旧时间标记', () => {
+    const html = withBuildMetadata(
+      '<html><head><meta content="old-time" name=\'nuwax-build-at\'><meta name="nuwax-build-at" content="another-old-time"><script src="umi.aabbccdd.js"></script></head></html>',
+      { version: '1.2.0', buildAt: '2026-10-09T00:00:00.000Z"&<>\'' },
+    );
+    expect(html).toContain(
+      'content="2026-10-09T00:00:00.000Z&quot;&amp;&lt;&gt;&#39;"',
+    );
+    expect(html.match(/name="nuwax-build-at"/g)).toHaveLength(1);
+    expect(html).not.toContain('old-time');
+    expect(html.indexOf('nuwax-build-at')).toBeLessThan(
+      html.indexOf('<script'),
+    );
   });
 
   it('缺少入口 head 时失败，避免 version.json 单独更新', () => {
