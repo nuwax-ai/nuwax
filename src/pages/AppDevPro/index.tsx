@@ -27,7 +27,10 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
-import { latestRoundChangedWorkspaceFiles } from '@/features/conversation/react/workspaceFileChange';
+import {
+  latestRoundChangedWorkspaceFiles,
+  latestRoundNeedsPreviewRebuild,
+} from '@/features/conversation/react/workspaceFileChange';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -352,6 +355,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     useRef<AppDevWorkspaceView>('files');
   /** 本轮改过文件时，会话结束后回到开发环境预览。具体动作在预览回调里赋值 */
   const returnToDevAppPreviewRef = useRef<() => void>(() => {});
+  /** 本轮改了非文本文件时，等 readiness 合适后再重启开发环境编译 */
+  const rebuildDevPreviewAfterWorkspaceChangeRef = useRef<() => void>(() => {});
+  /** 连续两次会话结束时，让上一轮等待停掉 */
+  const previewRebuildTokenRef = useRef(0);
   /** 数据库工作区当前 Tab */
   const [databaseTabId, setDatabaseTabId] = useState(() =>
     getToolTabId('database'),
@@ -1529,6 +1536,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
+  const previewPhaseRef = useRef(previewRuntime.phase);
+  previewPhaseRef.current = previewRuntime.phase;
+  const previewRestartingRef = useRef(previewRuntime.restarting);
+  previewRestartingRef.current = previewRuntime.restarting;
+  const awaitingContainerForRestartRef = useRef(awaitingContainerForRestart);
+  awaitingContainerForRestartRef.current = awaitingContainerForRestart;
   const dismissPreviewLoadErrorRef = useRef(
     previewRuntime.dismissPreviewLoadError,
   );
@@ -1778,13 +1791,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // 本轮有新增、修改、删除等文件变化时，回到开发环境应用预览。只查阅文件不切换。
     // 判断或切换失败时只记日志，不影响上面的文件树和 Git 刷新。
     try {
+      // 还有待确认卡片时，本轮不算文件修改，不切预览，也不重新编译
+      if (hasPendingIntervention) {
+        return;
+      }
       if (latestRoundChangedWorkspaceFiles(endedMessages)) {
         returnToDevAppPreviewRef.current();
+        // 只改 md、txt、json 等文本时不打包；代码或资源有变化才重启编译
+        if (latestRoundNeedsPreviewRebuild(endedMessages)) {
+          rebuildDevPreviewAfterWorkspaceChangeRef.current();
+        }
       }
     } catch (error) {
       console.error('[AppDevPro] 会话结束后回到开发环境预览失败', error);
     }
   }, [
+    hasPendingIntervention,
     messageList,
     queryConversationId,
     refreshFileListImmediately,
@@ -2857,6 +2879,95 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     startEnvPodIfNeeded,
   ]);
   returnToDevAppPreviewRef.current = returnToDevAppPreview;
+
+  /**
+   * 会话改了非文本文件后，重新编译开发环境预览。
+   * 应用已经在启动或重启时不再编译。
+   * 先等容器 running。应用若是 stopping、unknown，就继续等，离开这些状态后再 restart。
+   */
+  const rebuildDevPreviewAfterWorkspaceChange = useCallback(async () => {
+    const token = ++previewRebuildTokenRef.current;
+    // 又来一轮会话结束，或已经离开开发环境：这次等待作废，不再编译
+    const stale = () =>
+      previewRebuildTokenRef.current !== token ||
+      dbEnvRef.current !== UserAppDbEnvEnum.Dev;
+    /**
+     * 本页启动流、构建流或重启流还在进行。
+     * 含「等容器 running 后再重启」的那段等待，避免叠一次编译。
+     */
+    const devCompileBusy = () => {
+      const phase = previewPhaseRef.current;
+      return (
+        phase === 'starting' ||
+        phase === 'building' ||
+        previewRestartingRef.current ||
+        awaitingContainerForRestartRef.current
+      );
+    };
+    // stopping、unknown 先等到离开再编译；starting 直接放弃，不在这里等它结束
+    const waitStatuses = new Set<string>([
+      UserAppReadinessStatusEnum.Stopping,
+      UserAppReadinessStatusEnum.Unknown,
+    ]);
+    try {
+      const initialStatus =
+        serviceReadinessRef.current.readinessByEnvRef.current[
+          UserAppDbEnvEnum.Dev
+        ]?.status;
+      // 应用已在启动，或本页正在启动/重启：不再重新编译
+      if (
+        initialStatus === UserAppReadinessStatusEnum.Starting ||
+        devCompileBusy()
+      ) {
+        return;
+      }
+      // 丢掉可能还在路上的旧探测，用当前开发环境的结果判断
+      resumeReadinessWatch();
+      // 容器已是 running 就用当前结果；否则等到 readiness 里容器 running
+      const containerRunning =
+        await serviceReadinessRef.current.waitUntilContainerRunning(
+          UserAppDbEnvEnum.Dev,
+          stale,
+          { acceptCached: true },
+        );
+      // 容器没起来，或等待过程中切走了环境：停止
+      if (!containerRunning || stale()) {
+        return;
+      }
+      let snapshot =
+        serviceReadinessRef.current.readinessByEnvRef.current[
+          UserAppDbEnvEnum.Dev
+        ];
+      while (snapshot?.status && waitStatuses.has(snapshot.status)) {
+        if (stale()) {
+          return;
+        }
+        const next = await serviceReadinessRef.current.waitForNextPoll(
+          UserAppDbEnvEnum.Dev,
+          stale,
+        );
+        if (stale() || !next) {
+          return;
+        }
+        snapshot = next;
+      }
+      if (
+        stale() ||
+        snapshot?.status === UserAppReadinessStatusEnum.Starting ||
+        devCompileBusy()
+      ) {
+        return;
+      }
+      setPreviewStoppedForEnv(UserAppDbEnvEnum.Dev, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current(UserAppDbEnvEnum.Dev);
+    } catch (error) {
+      console.error('[AppDevPro] 会话结束后重新打包预览失败', error);
+    }
+  }, [resumeReadinessWatch, setPreviewStoppedForEnv]);
+  rebuildDevPreviewAfterWorkspaceChangeRef.current = () => {
+    void rebuildDevPreviewAfterWorkspaceChange();
+  };
 
   /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
