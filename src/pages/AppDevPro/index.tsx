@@ -2091,11 +2091,26 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
 
+  /**
+   * 线上终端折叠到底部后回到应用预览。
+   * 开发环境只记录布局，不改工作区。
+   */
+  const handleDevConsoleLayoutModeChange = useCallback(
+    (mode: ConsoleLayoutMode) => {
+      setDevConsoleLayoutMode(mode);
+      if (dbEnvRef.current === UserAppDbEnvEnum.Prod && mode === 'collapsed') {
+        setWorkspaceView('app-preview');
+      }
+    },
+    [],
+  );
+
   /** 打开 / 收起底部终端全屏（与文件树、应用预览、数据库、智能体电脑互斥；再次点击仅折叠，不影响 ensure/连接） */
   const handleOpenTerminalPanel = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
     const revealingRepoDoc = closeRepoDocPreviewOverlay();
+    const isProd = dbEnv === UserAppDbEnvEnum.Prod;
 
     // 资料库页盖住且终端已全屏：只关掉嵌入页，不把终端收起。
     if (revealingRepoDoc && isTerminalExpanded) {
@@ -2104,19 +2119,27 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
+      if (isProd) {
+        setWorkspaceView('app-preview');
+      }
       return;
     }
 
-    // 从独立工作区切回文件工作区，保证 Header 仅终端图标高亮
-    if (workspaceView !== 'files') {
+    // 线上不进入文件工作区，避免把版本控制和开发环境打开的文件头露在终端上面。
+    // 开发环境仍切回文件工作区，保证 Header 仅终端图标高亮。
+    if (isProd) {
+      setWorkspaceView('app-preview');
+    } else if (workspaceView !== 'files') {
       setWorkspaceView('files');
     }
 
     // 先按当前环境接入容器：已启动稍后直接连；未启动或失败则先拉起
     startEnvPodIfNeeded(dbEnv);
 
-    setSelectedChangeFile(null);
-    void openPreviewView(queryConversationId);
+    if (!isProd) {
+      setSelectedChangeFile(null);
+      void openPreviewView(queryConversationId);
+    }
     // 清除陈旧 collapse 信号，避免从智能体电脑切回时 remount 折叠 effect 覆盖 expand
     setDevConsoleCollapseSignal(0);
     setDevConsoleExpandSignal((n) => n + 1);
@@ -3573,10 +3596,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
+    // 线上终端展开时盖住工作区头：版本控制、开发环境打开的文件页签、预览地址栏都不露出来。
+    const prodTerminalCoversHeader =
+      dbEnv === UserAppDbEnvEnum.Prod && devConsoleLayoutMode === 'expanded';
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
-          {isFilesWorkspace ? (
+          {prodTerminalCoversHeader ? null : isFilesWorkspace ? (
             <PreviewTabBar
               active={active}
               tabs={previewTabs.tabs}
@@ -3704,7 +3730,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 layoutResetSignal={devConsoleLayoutResetSignal}
                 expandSignal={devConsoleExpandSignal}
                 collapseSignal={devConsoleCollapseSignal}
-                onLayoutModeChange={setDevConsoleLayoutMode}
+                onLayoutModeChange={handleDevConsoleLayoutModeChange}
                 onActiveTabChange={(tab) => {
                   setDevConsoleActiveTab(tab);
                 }}
