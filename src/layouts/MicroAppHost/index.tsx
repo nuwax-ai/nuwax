@@ -1,7 +1,9 @@
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { t } from '@/services/i18nRuntime';
 import { subscribeImEvents } from '@/services/imEventBridge';
 import { expireMicroAppSession } from '@/services/microAppAuth';
 import { prepareMicroAppAuthSession } from '@/utils/businessAuth';
+import { isWorkCommercialApp } from '@/utils/commercialEdition';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { findMicroAppRoute, MICRO_APP_ROUTES } from '@/utils/microAppRoutes';
 import { Button, Spin } from 'antd';
@@ -179,6 +181,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
 
 /** 固定在主站内容插槽内；仅当前微应用占位，其余实例常驻隐藏。 */
 const MicroAppHost: React.FC = () => {
+  const { workCommercialEdition } = useCommercialEdition();
   const snapshot = useSyncExternalStore(
     microAppHostStore.subscribe,
     microAppHostStore.getSnapshot,
@@ -186,6 +189,13 @@ const MicroAppHost: React.FC = () => {
   );
   // 子应用滚动条统一「滚动时才出现」：样式锚点 styles.host + 本 hook 的事件委托
   const hostRef = useDelegatedScrollbarScrollShow();
+  // 已挂载实例在授权撤销后也必须释放，不能仅隐藏路由出口。
+  const allowedEntries = snapshot.entries.filter(
+    (entry) => workCommercialEdition || !isWorkCommercialApp(entry.name),
+  );
+  const hasActiveEntry = allowedEntries.some(
+    (entry) => entry.name === snapshot.activeName,
+  );
 
   useEffect(() => {
     const clear = () => microAppHostStore.invalidateAll();
@@ -201,10 +211,10 @@ const MicroAppHost: React.FC = () => {
       style={{
         height: '100%',
         width: '100%',
-        display: snapshot.activeName ? 'block' : 'none',
+        display: hasActiveEntry ? 'block' : 'none',
       }}
     >
-      {snapshot.entries.map((entry) => (
+      {allowedEntries.map((entry) => (
         <MicroAppInstance
           key={`${entry.name}:${entry.generation}`}
           entry={entry}

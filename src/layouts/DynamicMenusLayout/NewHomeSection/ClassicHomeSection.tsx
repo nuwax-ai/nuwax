@@ -3,6 +3,7 @@
  * 数据经 HomeSectionDataShell 注入；本文件只管形态——tab 态（localStorage 持久化）、
  * 关键词搜索防抖、初始按 tab 决定首载、任务 tab 触底加载。
  */
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import { useDebounceFn } from 'ahooks';
 import classNames from 'classnames';
@@ -40,10 +41,17 @@ const ClassicHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 }) => {
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
+  const { aiOSCommercialEdition } = useCommercialEdition();
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() =>
-    getInitialActiveTab(),
+    aiOSCommercialEdition ? getInitialActiveTab() : 'conversation',
   );
+  // 配置刷新后，已缓存的项目 Tab 不能继续占用任务入口。
+  useEffect(() => {
+    if (!aiOSCommercialEdition && activeTab === 'project') {
+      handleTabChange('conversation');
+    }
+  }, [aiOSCommercialEdition, activeTab]);
 
   // 初始停留在任务 tab 才首载（停留在项目 tab 时延后到切换时加载；单栏形态由
   // 数据壳挂载恒发）——与数据壳初始 loading 的互补语义由 initialLoad 内部保证
@@ -145,24 +153,28 @@ const ClassicHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
         >
           {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
         </button>
-        <button
-          type="button"
-          className={cx(styles.tab, {
-            [styles.active]: activeTab === 'project',
-          })}
-          onClick={() => handleTabChange('project')}
-        >
-          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
-        </button>
+        {aiOSCommercialEdition && (
+          <button
+            type="button"
+            className={cx(styles.tab, {
+              [styles.active]: activeTab === 'project',
+            })}
+            onClick={() => handleTabChange('project')}
+          >
+            {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
+          </button>
+        )}
         {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
-        <span className={cx(styles['tab-indicator'])} aria-hidden />
+        {aiOSCommercialEdition && (
+          <span className={cx(styles['tab-indicator'])} aria-hidden />
+        )}
       </div>
 
       <div
         ref={shell.scrollShowRef}
         className={cx(styles['conversation-list-wrapper'])}
       >
-        {activeTab === 'project' ? (
+        {aiOSCommercialEdition && activeTab === 'project' ? (
           <ProjectPanel
             onVisibleCountChange={shell.handleProjectCountChange}
             onConversationClick={shell.handleConversationClick}

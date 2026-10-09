@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { fetchChatboxCategories } from '@/services/square';
@@ -80,6 +81,9 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     value: DisplayRecommendPrompt;
   } | null>(null);
   const isEdit = !!editingRecord;
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  const commercialEditionRef = useRef(aiOSCommercialEdition);
+  commercialEditionRef.current = aiOSCommercialEdition;
 
   /** 提交保存 loading */
   const [loading, setLoading] = useState<boolean>(false);
@@ -118,11 +122,24 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       ),
     ];
 
-    return orderedTypes.map((type) => ({
-      value: type,
-      label: getChatboxFunctionTypeLabel(type),
-    }));
-  }, []);
+    return orderedTypes
+      .filter(
+        (type) =>
+          isEdit ||
+          aiOSCommercialEdition ||
+          type === DisplayRecommendFunctionTypeEnum.Chat,
+      )
+      .map((type) => ({
+        value: type,
+        label: getChatboxFunctionTypeLabel(type),
+      }));
+  }, [aiOSCommercialEdition, isEdit]);
+
+  useEffect(() => {
+    if (!isEdit && !aiOSCommercialEdition) {
+      setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
+    }
+  }, [aiOSCommercialEdition, isEdit]);
 
   const selectTargetLabel = getSquareTargetTypeTitle(TARGET_TYPE);
 
@@ -210,11 +227,31 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
    */
   const handleSubmit = async () => {
     if (submittingRef.current) return;
+    const subtypeAllowed = () => {
+      if (
+        isEdit ||
+        commercialEditionRef.current ||
+        functionType === DisplayRecommendFunctionTypeEnum.Chat
+      ) {
+        return true;
+      }
+      setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
+      message.warning(
+        dict('PC.Components.CommercialLicense.authorizationRequired'),
+      );
+      return false;
+    };
+    if (!subtypeAllowed()) return;
     submittingRef.current = true;
     let values: { prompts: DisplayRecommendPrompt[] };
     try {
       values = await form.validateFields();
     } catch {
+      submittingRef.current = false;
+      return;
+    }
+    // 表单异步校验期间租户配置也可能刷新，发请求前按最新授权再检查。
+    if (!subtypeAllowed()) {
       submittingRef.current = false;
       return;
     }

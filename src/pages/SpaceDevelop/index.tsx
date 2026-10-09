@@ -12,6 +12,7 @@ import {
   CREATE_LIST,
   FILTER_STATUS,
 } from '@/constants/space.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentConfigList,
@@ -37,6 +38,7 @@ import {
 } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { isCommercialAgentType } from '@/utils/commercialEdition';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
@@ -94,6 +96,13 @@ const getFilterFromSearchParams = (params: URLSearchParams) => ({
 const SpaceDevelop: React.FC = () => {
   // ✅ umi 中的 useSearchParams
   const [searchParams, setSearchParams] = useSearchParams();
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  const agentTypeOptions = AGENT_TYPE_LIST.filter(
+    (item) => aiOSCommercialEdition || !isCommercialAgentType(item.value),
+  );
+  const agentFilterOptions = AGENT_TYPE_LIST_DEV.filter(
+    (item) => aiOSCommercialEdition || !isCommercialAgentType(item.value),
+  );
 
   // ✅ 当 select 改变时同步 URL
   const handleChange = (key: IQuery, value: string) => {
@@ -143,6 +152,12 @@ const SpaceDevelop: React.FC = () => {
   const [currentAgentType, setCurrentAgentType] = useState<AgentTypeEnum>(
     AgentTypeEnum.ChatBot,
   );
+  useEffect(() => {
+    if (!aiOSCommercialEdition && isCommercialAgentType(currentAgentType)) {
+      setOpenCreateAgent(false);
+      setCurrentAgentType(AgentTypeEnum.ChatBot);
+    }
+  }, [aiOSCommercialEdition, currentAgentType]);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
   const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
@@ -193,6 +208,13 @@ const SpaceDevelop: React.FC = () => {
       keyword,
     } = getFilterFromSearchParams(searchParams);
 
+    if (!aiOSCommercialEdition && isCommercialAgentType(nextSubType)) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('subType');
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
+
     setSubType(nextSubType);
     setStatus(status);
     setCreate(create);
@@ -200,7 +222,7 @@ const SpaceDevelop: React.FC = () => {
 
     filterRef.current = { subType: nextSubType, status, create, keyword };
     handleFilterList(nextSubType, status, create, keyword);
-  }, [searchParams]);
+  }, [searchParams, aiOSCommercialEdition]);
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
@@ -524,7 +546,7 @@ const SpaceDevelop: React.FC = () => {
           <>
             <SelectList
               value={subType}
-              options={AGENT_TYPE_LIST_DEV}
+              options={agentFilterOptions}
               onChange={handlerChangeSubType}
               size="middle"
             />
@@ -561,7 +583,7 @@ const SpaceDevelop: React.FC = () => {
 
             {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
             <CustomPopover
-              list={AGENT_TYPE_LIST}
+              list={agentTypeOptions}
               onClick={handlerClickAgentType}
             >
               <Button type="primary" icon={<PlusOutlined />}>

@@ -188,3 +188,7 @@ describe('SidebarShell variant 翻转不重挂 children', () => {
     expect(asyncSpaceListFunMock).toHaveBeenCalledTimes(1);
   });
 });
+
+vi.mock('@/components/business-component/WorkCommercialRouteBoundary', () => ({
+  default: ({ children }: any) => <>{children}</>,
+}));

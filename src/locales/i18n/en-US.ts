@@ -7192,4 +7192,5 @@ export const EN_US: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "Sensitive",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "Grants access to sensitive data or actions on the user's behalf; request only if needed",
   "PC.Components.OAuthScopeSetting.submitted": "Saved. The scope change was submitted for review",
+  "PC.Components.CommercialLicense.authorizationRequired": "Please contact the official team for a trial or commercial license.",
 };
