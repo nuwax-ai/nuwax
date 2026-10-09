@@ -2841,6 +2841,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.appPreview": "App preview",
   "PC.Pages.AppDevPro.appPreviewEmpty": "No preview URL available for this environment",
   "PC.Pages.AppDevPro.previewGeneratingHint": "Generating project files from the conversation",
+  "PC.Pages.AppDevPro.previewDevErrorIgnoreHint":
+    "Preview errors during development are normal. Please ignore them.",
   "PC.Pages.AppDevPro.previewPreparing": "Preparing preview…",
   "PC.Pages.AppDevPro.previewPreparingHint": "Preview will start automatically after project files are generated",
   "PC.Pages.AppDevPro.previewNoProjectFiles": "No previewable project yet",
