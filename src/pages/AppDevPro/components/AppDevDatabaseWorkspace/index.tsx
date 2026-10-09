@@ -29,6 +29,14 @@ export interface AppDevDatabaseWorkspaceProps {
   prodIframeKey?: number;
   /** 数据库工作区是否正在展示（不在应用预览等其它页时为 false） */
   visible?: boolean;
+  /**
+   * dbx/readiness 回包里的容器状态。
+   * 只对当前正在看的环境回调。
+   */
+  onContainerStatus?: (
+    env: UserAppDbEnvEnum,
+    containerStatus: string | null,
+  ) => void;
 }
 
 /**
@@ -50,6 +58,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   devIframeKey = 0,
   prodIframeKey = 0,
   visible = true,
+  onContainerStatus,
 }) => {
   const showDevDatabase =
     visible && activeTab === 'database' && env === UserAppDbEnvEnum.Dev;
@@ -72,6 +81,12 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           onRetryContainer={
             env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
           }
+          onContainerStatus={
+            showDevDatabase
+              ? (containerStatus) =>
+                  onContainerStatus?.(UserAppDbEnvEnum.Dev, containerStatus)
+              : undefined
+          }
         />
       </div>
       <div
@@ -87,6 +102,12 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           active={showProdDatabase}
           onRetryContainer={
             env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined
+          }
+          onContainerStatus={
+            showProdDatabase
+              ? (containerStatus) =>
+                  onContainerStatus?.(UserAppDbEnvEnum.Prod, containerStatus)
+              : undefined
           }
         />
       </div>
