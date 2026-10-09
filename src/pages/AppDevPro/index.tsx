@@ -27,7 +27,10 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
-import { latestRoundChangedWorkspaceFiles } from '@/features/conversation/react/workspaceFileChange';
+import {
+  latestRoundChangedWorkspaceFiles,
+  latestRoundNeedsPreviewRebuild,
+} from '@/features/conversation/react/workspaceFileChange';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -118,7 +121,10 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
-import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
+import {
+  useUserAppEnvPod,
+  type EnsurePodOptions,
+} from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppReadinessWatch } from './hooks/useUserAppReadinessWatch';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -141,7 +147,10 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { isProjectNameDefined } from './utils/isProjectNameDefined';
-import { decideProdSwitchAppAction } from './utils/isUserAppContainerRunning';
+import {
+  decideDatabaseContainerAction,
+  decideProdSwitchAppAction,
+} from './utils/isUserAppContainerRunning';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 
@@ -352,6 +361,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     useRef<AppDevWorkspaceView>('files');
   /** 本轮改过文件时，会话结束后回到开发环境预览。具体动作在预览回调里赋值 */
   const returnToDevAppPreviewRef = useRef<() => void>(() => {});
+  /** 本轮改了非文本文件时，等 readiness 合适后再重启开发环境编译 */
+  const rebuildDevPreviewAfterWorkspaceChangeRef = useRef<() => void>(() => {});
+  /** 文本改动或没有文件改动时，刷新当前开发环境预览 iframe */
+  const refreshDevPreviewIframeRef = useRef<() => void>(() => {});
+  /** 连续两次会话结束时，让上一轮等待停掉 */
+  const previewRebuildTokenRef = useRef(0);
   /** 数据库工作区当前 Tab */
   const [databaseTabId, setDatabaseTabId] = useState(() =>
     getToolTabId('database'),
@@ -708,10 +723,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * @returns 容器是否就绪
    */
   const ensureEnvPod = useCallback(
-    (targetEnv: UserAppDbEnvEnum, force = false): Promise<boolean> =>
+    (
+      targetEnv: UserAppDbEnvEnum,
+      force = false,
+      options?: EnsurePodOptions,
+    ): Promise<boolean> =>
       targetEnv === UserAppDbEnvEnum.Prod
-        ? prodPod.ensure(force)
-        : devPod.ensure(force),
+        ? prodPod.ensure(force, options)
+        : devPod.ensure(force, options),
     [devPod.ensure, prodPod.ensure],
   );
   const ensureEnvPodRef = useRef(ensureEnvPod);
@@ -1529,6 +1548,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
+  const previewPhaseRef = useRef(previewRuntime.phase);
+  previewPhaseRef.current = previewRuntime.phase;
+  const previewRestartingRef = useRef(previewRuntime.restarting);
+  previewRestartingRef.current = previewRuntime.restarting;
+  const awaitingContainerForRestartRef = useRef(awaitingContainerForRestart);
+  awaitingContainerForRestartRef.current = awaitingContainerForRestart;
   const dismissPreviewLoadErrorRef = useRef(
     previewRuntime.dismissPreviewLoadError,
   );
@@ -1761,6 +1786,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 聊天会话结束后统一刷新页面数据
    * - 刷新文件树
    * - 刷新 Git 源代码管理列表
+   * - 非文本文件有改动时重启开发环境预览
+   * - 只有文本改动或没有文件改动，且正在看开发环境预览时，重新加载 iframe
    */
   const handleConversationEnd = useCallback(() => {
     const refreshFileTreeAndSelectedFile =
@@ -1778,13 +1805,31 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // 本轮有新增、修改、删除等文件变化时，回到开发环境应用预览。只查阅文件不切换。
     // 判断或切换失败时只记日志，不影响上面的文件树和 Git 刷新。
     try {
+      // 还有待确认卡片时，本轮不算文件修改，不切预览，也不重新编译
+      if (hasPendingIntervention) {
+        return;
+      }
+      // 刷新只看结束当下是否正在看开发环境预览，避免切过去之后误刷新
+      const showingDevAppPreview =
+        dbEnvRef.current === UserAppDbEnvEnum.Dev &&
+        workspaceViewRef.current === 'app-preview';
       if (latestRoundChangedWorkspaceFiles(endedMessages)) {
         returnToDevAppPreviewRef.current();
+        // 代码或资源有变化才重启编译；只改文本时不打包
+        if (latestRoundNeedsPreviewRebuild(endedMessages)) {
+          rebuildDevPreviewAfterWorkspaceChangeRef.current();
+        } else if (showingDevAppPreview) {
+          refreshDevPreviewIframeRef.current();
+        }
+      } else if (showingDevAppPreview) {
+        // 本轮没有文件改动，开发环境预览仍在前台时重新加载页面
+        refreshDevPreviewIframeRef.current();
       }
     } catch (error) {
       console.error('[AppDevPro] 会话结束后回到开发环境预览失败', error);
     }
   }, [
+    hasPendingIntervention,
     messageList,
     queryConversationId,
     refreshFileListImmediately,
@@ -2788,6 +2833,36 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void ensureEnvPodRef.current(dbEnv);
   }, [dbEnv, podStatus, prodPod.status, workspaceView]);
 
+  /**
+   * 数据库还没 ready 时，才看 dbx 回包里的容器状态。
+   * starting、restarting、stopping 或没有容器字段：继续轮询。
+   * 其它明确的非 running 状态：这个环境只 ensure 一次，后面的轮询不再打。
+   * 离开数据库页后清掉，下次进来可以再试一次。
+   */
+  const databaseEnsuredRef = useRef<Partial<Record<UserAppDbEnvEnum, boolean>>>(
+    {},
+  );
+  const handleDatabaseContainerStatus = useCallback(
+    (env: UserAppDbEnvEnum, containerStatus: string | null) => {
+      if (
+        decideDatabaseContainerAction(containerStatus) !== 'ensure' ||
+        databaseEnsuredRef.current[env]
+      ) {
+        return;
+      }
+      databaseEnsuredRef.current[env] = true;
+      void ensureEnvPodRef.current(env, true, { reensure: true });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (workspaceView === 'database') {
+      return;
+    }
+    databaseEnsuredRef.current = {};
+  }, [workspaceView]);
+
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
     const revealingRepoDoc = closeRepoDocPreviewOverlay();
@@ -2857,6 +2932,95 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     startEnvPodIfNeeded,
   ]);
   returnToDevAppPreviewRef.current = returnToDevAppPreview;
+
+  /**
+   * 会话改了非文本文件后，重新编译开发环境预览。
+   * 应用已经在启动或重启时不再编译。
+   * 先等容器 running。应用若是 stopping、unknown，就继续等，离开这些状态后再 restart。
+   */
+  const rebuildDevPreviewAfterWorkspaceChange = useCallback(async () => {
+    const token = ++previewRebuildTokenRef.current;
+    // 又来一轮会话结束，或已经离开开发环境：这次等待作废，不再编译
+    const stale = () =>
+      previewRebuildTokenRef.current !== token ||
+      dbEnvRef.current !== UserAppDbEnvEnum.Dev;
+    /**
+     * 本页启动流、构建流或重启流还在进行。
+     * 含「等容器 running 后再重启」的那段等待，避免叠一次编译。
+     */
+    const devCompileBusy = () => {
+      const phase = previewPhaseRef.current;
+      return (
+        phase === 'starting' ||
+        phase === 'building' ||
+        previewRestartingRef.current ||
+        awaitingContainerForRestartRef.current
+      );
+    };
+    // stopping、unknown 先等到离开再编译；starting 直接放弃，不在这里等它结束
+    const waitStatuses = new Set<string>([
+      UserAppReadinessStatusEnum.Stopping,
+      UserAppReadinessStatusEnum.Unknown,
+    ]);
+    try {
+      const initialStatus =
+        serviceReadinessRef.current.readinessByEnvRef.current[
+          UserAppDbEnvEnum.Dev
+        ]?.status;
+      // 应用已在启动，或本页正在启动/重启：不再重新编译
+      if (
+        initialStatus === UserAppReadinessStatusEnum.Starting ||
+        devCompileBusy()
+      ) {
+        return;
+      }
+      // 丢掉可能还在路上的旧探测，用当前开发环境的结果判断
+      resumeReadinessWatch();
+      // 容器已是 running 就用当前结果；否则等到 readiness 里容器 running
+      const containerRunning =
+        await serviceReadinessRef.current.waitUntilContainerRunning(
+          UserAppDbEnvEnum.Dev,
+          stale,
+          { acceptCached: true },
+        );
+      // 容器没起来，或等待过程中切走了环境：停止
+      if (!containerRunning || stale()) {
+        return;
+      }
+      let snapshot =
+        serviceReadinessRef.current.readinessByEnvRef.current[
+          UserAppDbEnvEnum.Dev
+        ];
+      while (snapshot?.status && waitStatuses.has(snapshot.status)) {
+        if (stale()) {
+          return;
+        }
+        const next = await serviceReadinessRef.current.waitForNextPoll(
+          UserAppDbEnvEnum.Dev,
+          stale,
+        );
+        if (stale() || !next) {
+          return;
+        }
+        snapshot = next;
+      }
+      if (
+        stale() ||
+        snapshot?.status === UserAppReadinessStatusEnum.Starting ||
+        devCompileBusy()
+      ) {
+        return;
+      }
+      setPreviewStoppedForEnv(UserAppDbEnvEnum.Dev, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current(UserAppDbEnvEnum.Dev);
+    } catch (error) {
+      console.error('[AppDevPro] 会话结束后重新打包预览失败', error);
+    }
+  }, [resumeReadinessWatch, setPreviewStoppedForEnv]);
+  rebuildDevPreviewAfterWorkspaceChangeRef.current = () => {
+    void rebuildDevPreviewAfterWorkspaceChange();
+  };
 
   /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
@@ -3057,6 +3221,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     setPreviewRefreshKey((prev) => prev + 1);
   }, []);
+  refreshDevPreviewIframeRef.current = handleRefreshPreview;
 
   /** 切换构建包版本记录侧栏；与发布版本记录互斥 */
   const handleToggleBuildVersionRecords = useCallback(() => {
@@ -3423,6 +3588,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         onRetryContainer={() => {
           void handleRetryContainer();
         }}
+        onContainerStatus={handleDatabaseContainerStatus}
       />
     ),
     [
@@ -3432,6 +3598,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       databaseIframeKeyByEnv,
       dbEnv,
       envPodConversationId,
+      handleDatabaseContainerStatus,
       handleRetryContainer,
       podStatus,
       prodPod.status,
@@ -3651,6 +3818,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                     onNavigatePreview={handleNavigatePreview}
                     onRefreshPreview={handleRefreshPreview}
                   />
+                  {previewConversationActive ? (
+                    <span className={cx(styles['preview-session-error-hint'])}>
+                      {dict('PC.Pages.AppDevPro.previewDevErrorIgnoreHint')}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
             </div>
