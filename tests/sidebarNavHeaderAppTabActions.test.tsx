@@ -58,6 +58,7 @@ vi.mock('@/utils/hostBridge', () => ({
 
 vi.mock('@/features/client-shell', () => ({
   ClientVersionBadge: () => null,
+  WebVersionBadge: () => null,
 }));
 
 vi.mock('@/components/base/SvgIcon', () => ({
