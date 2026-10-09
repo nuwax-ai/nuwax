@@ -2,7 +2,7 @@
  * 侧栏顶部导航区
  * @description 主导航改造（单栏模式）：顶栏 = Logo + 搜索 + 折叠（固定），
  * 下方为「新建任务」入口 + 后端菜单接口下发的一级导航项（新建任务按新对话菜单显隐；
- * 按 source 分组：系统菜单在前，女娲应用多开标签区插中间（顶部分割线），自定义菜单在后）。
+ * 保留 list-menu 返回顺序；女娲应用多开标签区在菜单列表之后展示）。
  * 点导航项时右侧并列展开原二级菜单列；分离菜单（文档/通知/我的电脑/更多）在侧栏底部栏展示。
  */
 import agentImage from '@/assets/images/agent_image.png';
@@ -13,7 +13,6 @@ import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
 import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { MenuSourceEnum } from '@/types/menuPermission/menu-manage';
 import eventBus, {
   EVENT_NAMES,
   type AppTabPreviewCommandPayload,
@@ -130,17 +129,6 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   const navMenus = useMemo(
     () => (menus || []).filter((menu) => menu.code !== 'new_conversation'),
     [menus],
-  );
-
-  /** 一级菜单按来源分组：系统内置在前、用户自定义在后；女娲应用多开标签区
-   * 固定插在两组之间（顶部带分割线），不随女娲应用菜单位置走 */
-  const systemMenus = useMemo(
-    () => navMenus.filter((menu) => menu.source !== MenuSourceEnum.UserDefined),
-    [navMenus],
-  );
-  const customMenus = useMemo(
-    () => navMenus.filter((menu) => menu.source === MenuSourceEnum.UserDefined),
-    [navMenus],
   );
 
   /** 标签点击：跳对应应用（三方应用带 homepageUrl query 直载），并刷新
@@ -355,14 +343,12 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
         </div>
       )}
 
-      {/* 导航行：走菜单接口，选中时右侧展开原二级菜单列。
-          分组排布：系统菜单 → 女娲应用多开标签区（顶部分割线）→ 自定义菜单 */}
+      {/* 导航行：保留菜单接口返回顺序，选中时右侧展开原二级菜单列。 */}
       <div className={cx(styles['nav-list'])}>
-        {systemMenus.map(renderNavItem)}
-        {/* 女娲应用多开标签：固定插在系统菜单与自定义菜单之间（顶部带分割线，
-            有已打开标签才渲染；内存态，刷新即失） */}
+        {navMenus.map(renderNavItem)}
+        {/* 女娲应用多开标签：在菜单列表之后展示（顶部带分割线，
+            有已打开标签才渲染；内存态，刷新即失）。 */}
         {renderAppTabs()}
-        {customMenus.map(renderNavItem)}
       </div>
     </div>
   );
