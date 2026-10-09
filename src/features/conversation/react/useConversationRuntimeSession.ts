@@ -120,7 +120,6 @@ export function useConversationRuntimeSession(
   const [conversationInfo, setConversationInfo] = useState<
     ConversationInfo | null | undefined
   >(null);
-  const [loadingStopConversation, setLoadingStopConversation] = useState(false);
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [isMoreMessage, setIsMoreMessage] = useState(false);
@@ -214,7 +213,11 @@ export function useConversationRuntimeSession(
         dict('PC.Models.ConversationInfo.taskConflictTitle'),
         dict('PC.Models.ConversationInfo.taskConflictContent'),
         () => {
-          sessionRef.current?.stop(targetConversationId);
+          void sessionRef.current
+            ?.stop(targetConversationId)
+            .catch((error) =>
+              console.error('[runtimeSession] stop request failed', error),
+            );
           return new Promise((resolve) => {
             setTimeout(resolve, 2000);
           });
@@ -243,14 +246,7 @@ export function useConversationRuntimeSession(
         setConversationInfo,
         getResources: () => effectsResourcesRef.current,
       }),
-      stopRequest: async (id) => {
-        setLoadingStopConversation(true);
-        try {
-          return await runtimeLineHttp.stopConversation(String(id));
-        } finally {
-          setLoadingStopConversation(false);
-        }
-      },
+      stopRequest: (id) => runtimeLineHttp.stopConversation(String(id)),
       loadRequest: (id) => runtimeLineHttp.loadConversation(id),
       applyTaskStatus: (conversationId, status) => {
         applyTerminalTaskStatus(setConversationInfo, conversationId, status);
@@ -459,7 +455,7 @@ export function useConversationRuntimeSession(
 
   const runStopConversation = useCallback(
     async (id: string) => {
-      session?.stop(id);
+      await session?.stop(id);
     },
     [session],
   );
@@ -527,7 +523,8 @@ export function useConversationRuntimeSession(
   const state = session.getState();
   const taskExecuting = conversationInfo?.taskStatus === 'EXECUTING';
   // 完整活跃（本地流式 || 后台执行中）：与旧线入口合成规则一致
-  const effectiveIsActive = state.isConversationActive || taskExecuting;
+  const effectiveIsActive =
+    state.isConversationActive || state.isStopping || taskExecuting;
 
   const conversationProps: Record<string, unknown> = {
     messageList,
@@ -536,7 +533,7 @@ export function useConversationRuntimeSession(
     isAwaitingChatTerminal: state.isAwaitingChatTerminal,
     onSendMessage,
     runStopConversation,
-    loadingStopConversation,
+    loadingStopConversation: state.isStopping,
     onResumeConversationStream,
     onAbortResumeStream,
     onReloadConversationHistoryAsync,

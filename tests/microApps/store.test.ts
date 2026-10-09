@@ -15,6 +15,32 @@ describe('微应用保活状态', () => {
     expect(resumed.generation).toBe(doc.generation);
   });
 
+  it('明确电脑直达每次计入导航，菜单返回沿用原会话且不重建', () => {
+    const store = createMicroAppHostStore();
+    const first = store.activate({
+      name: 'im',
+      path: '/instant-message?agentId=1',
+    });
+    store.deactivate('im');
+    const menu = store.activate({ name: 'im', path: '/instant-message' });
+    expect(menu.navigationRevision).toBe(first.navigationRevision);
+    store.deactivate('im');
+    const explicit = store.activate({
+      name: 'im',
+      path: '/instant-message?agentId=1',
+    });
+    expect(explicit.navigationRevision).toBe(first.navigationRevision + 1);
+    expect(explicit.generation).toBe(first.generation);
+    expect(
+      store.activate({ name: 'im', path: '/instant-message?agentId=1' }),
+    ).toBe(explicit);
+    const next = store.activate({
+      name: 'im',
+      path: '/instant-message?agentId=2',
+    });
+    expect(next.navigationRevision).toBe(explicit.navigationRevision + 1);
+  });
+
   it('应用之间保持各自深链，迟到的旧控制页 cleanup 不隐藏新应用', () => {
     const store = createMicroAppHostStore();
     store.activate({ name: 'repo', path: '/repo/doc/a' });
@@ -77,5 +103,26 @@ describe('微应用保活状态', () => {
     unsubscribe();
     store.invalidateAll();
     expect(count).toBe(1);
+  });
+  it('当前实例收到相同地址的明确导航也再次消费，重复 effect 不消费', () => {
+    const store = createMicroAppHostStore();
+    store.activate({
+      name: 'message',
+      path: '/instant-message?agentId=1',
+      navigationKey: 'first',
+    });
+    const again = store.activate({
+      name: 'message',
+      path: '/instant-message?agentId=1',
+      navigationKey: 'second',
+    });
+    expect(again.navigationRevision).toBe(1);
+    expect(
+      store.activate({
+        name: 'message',
+        path: '/instant-message?agentId=1',
+        navigationKey: 'second',
+      }).navigationRevision,
+    ).toBe(1);
   });
 });

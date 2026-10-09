@@ -211,7 +211,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         ) => {
           const id = conversationInfo?.id;
           if (id) {
-            onMessageSend({
+            return onMessageSend({
               id,
               messageInfo,
               files,

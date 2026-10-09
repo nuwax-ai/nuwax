@@ -73,7 +73,7 @@ describe('微应用路由控制页', () => {
     render(<MicroAppEntry />);
     expect(navigate).toHaveBeenCalledWith(
       '/repo/doc/a?mode=read&_refresh=42#title',
-      { replace: true },
+      { replace: true, state: { microAppRestore: true } },
     );
   });
 

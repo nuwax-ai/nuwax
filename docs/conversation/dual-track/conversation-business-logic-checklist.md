@@ -84,7 +84,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 | ID | 业务行为 | 预期结果 | 自动验收 | 人工验收要点 | 负责人/状态 |
 | --- | --- | --- | --- | --- | --- |
 | C1 | 〔双〕停止按钮显示 | 合成活跃=model isConversationActive ‖ 末条 Loading/Incomplete ‖ taskStatus===EXECUTING（工具状态不参与——架构解耦 `1f8c77bd9`） | runtimeSelectors · createConversationSessionModel · conversationSessionView | 后台任务执行中(无流式)也显示停止按钮;终态后按钮立即恢复 | ➖ |
-| C2 | 〔双〕停止链路 | abort live+sub→ 本地尾消息 Stopped、EXECUTING processing→FAILED→ 调后端 stop;isStopping 防重 | conversationInfoModel · conversationRuntimeSession | 流式中点停止 → 立即停、消息标已停止、可继续发送 | ➖ |
+| C2 | 〔双〕停止链路 | 先调后端 stop→ isStopping 锁住发送/重复停止 → 保留 live/sub 接收尾部 → 后台终态或断流查询收尾 | conversationInfoModel · conversationRuntimeSession | 流式中点停止 → 连接保留、失败可重试、终态后允许发送 | ➖ |
 | C3 | 〔双〕取消无输出删空气泡 | 用户主动取消且消息无文本 →splice 删除,不显示空气泡 | conversationTerminalEvent | 秒停场景不留空 Loading 气泡 | ➖ |
 | C4 | ERROR/onError 落终态 | SSE ERROR 与网络 onError 都立刻 taskStatus=FAILED+侧栏清除执行中(历史 bug:只改消息不落会话态) | conversationInfoModel · conversationRuntimeSession(R6) | 拔网/断流 → 输入区不卡停止按钮 | ➖ |
 | C5 | onClose 终态兜底 | FINAL 已解析终态则不再查询;未解析才 `syncTerminalConversationTaskStatus`;查询未返回也先释放活跃态 | conversationInfoModel · conversationRuntimeSession | — | ➖ |

@@ -36,7 +36,7 @@ export interface UseUnifiedChatQueueParams {
     selectedAgentMode?: AgentMode,
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: QueuedMessage['expertComponents'],
-  ) => void;
+  ) => void | Promise<unknown>;
   /**
    * 队列消费下一条前的最小等待间隔（ms），默认 1200，从「流式结束（消费阻塞解除）时刻」起算。
    * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
@@ -96,7 +96,7 @@ export const useUnifiedChatQueue = ({
       selectedDocs?: SelectedDocInfo[],
       expertComponents?: QueuedMessage['expertComponents'],
     ) => {
-      onSendMessage?.(
+      return onSendMessage?.(
         messageInfo,
         files,
         skillIds,

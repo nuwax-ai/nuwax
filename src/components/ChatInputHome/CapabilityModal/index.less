@@ -78,6 +78,15 @@
     background: transparent;
   }
 
+  &.menu :global(.ant-menu-item-selected) {
+    background: color-mix(in srgb, @colorPrimary 12%, @colorBgContainer);
+    color: @colorPrimary;
+
+    :global(.anticon) {
+      color: @colorPrimary;
+    }
+  }
+
   // Tab 停靠菜单项的键盘聚焦态：主色内缩描边对齐全弹窗停靠控件
   //（双写提权压过 antd 的 accessibilityFocus 描边与 outline 重置）
   &.menu :global(.ant-menu-item:focus-visible) {

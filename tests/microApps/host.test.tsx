@@ -369,6 +369,7 @@ describe('持久微应用宿主', () => {
       expect(handle.update).toHaveBeenCalledWith({
         path: '/repo/doc/a',
         active: true,
+        navigationRevision: 0,
       }),
     );
     expect(view.container.querySelector('[data-micro-app]')).toBe(container);

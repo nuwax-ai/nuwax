@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 /** 路由仅控制持久宿主，微应用 DOM 由 SidebarShell 内的宿主容器承载。 */
 const MicroAppEntry = () => {
-  const { pathname, search, hash } = useLocation();
+  const { pathname, search, hash, key, state } = useLocation();
   const navigate = useNavigate();
   const app = findMicroAppRoute(pathname);
   const isStableEntry =
@@ -23,6 +23,10 @@ const MicroAppEntry = () => {
       name: app.name,
       path,
       refreshToken,
+      navigationKey: (state as { microAppRestore?: boolean } | null)
+        ?.microAppRestore
+        ? undefined
+        : key,
     });
     if (effectiveEntry) {
       const currentUrl = new URL(path, window.location.origin);
@@ -38,11 +42,11 @@ const MicroAppEntry = () => {
           effectiveUrl.searchParams.set('_refresh', refreshToken);
         navigate(
           `${effectiveUrl.pathname}${effectiveUrl.search}${effectiveUrl.hash}`,
-          { replace: true },
+          { replace: true, state: { microAppRestore: true } },
         );
       }
     }
-  }, [app?.name, isStableEntry, pathname, search, hash, navigate]);
+  }, [app?.name, isStableEntry, pathname, search, hash, key, state, navigate]);
 
   useEffect(() => {
     if (!app || isStableEntry) return;
