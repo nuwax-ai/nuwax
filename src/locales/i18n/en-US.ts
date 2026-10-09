@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "Custom schedule",
   "PC.Pages.Login.hostSessionSyncFailed": "Could not sync the desktop login session. Retry or update the client.",
   "PC.Layouts.Setting.AccountBind.loadFailed": "Unable to load linked accounts. Please refresh and retry.",
   "PC.Routes.licenseConfig": "License",
@@ -295,7 +296,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationRendererV2.toolGroupCountFileEdit": "Edited {0} files",
   "PC.Components.ConversationRendererV2.toolGroupCountFileCreate": "Created {0} files",
   "PC.Components.ConversationRendererV2.toolGroupCountSearch": "Searched {0} times",
-  "PC.Components.ConversationRendererV2.toolGroupCountBrowser": "Browsed {0} pages",
+  "PC.Components.ConversationRendererV2.toolGroupCountBrowser": "Performed {0} browser actions",
   "PC.Components.ConversationRendererV2.toolGroupCountSkill": "Invoked {0} skills",
   "PC.Components.ConversationRendererV2.toolGroupCountTodo": "Updated the plan {0} times",
   "PC.Components.ConversationRendererV2.toolGroupCountGeneric": "Executed {0} operations",
@@ -321,9 +322,9 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationRendererV2.toolActionSearchRunning": "Searching",
   "PC.Components.ConversationRendererV2.toolActionSearchFinished": "Searched",
   "PC.Components.ConversationRendererV2.toolActionSearchFailed": "Search failed",
-  "PC.Components.ConversationRendererV2.toolActionBrowserRunning": "Browsing page",
-  "PC.Components.ConversationRendererV2.toolActionBrowserFinished": "Browsed page",
-  "PC.Components.ConversationRendererV2.toolActionBrowserFailed": "Browsing failed",
+  "PC.Components.ConversationRendererV2.toolActionBrowserRunning": "Using browser",
+  "PC.Components.ConversationRendererV2.toolActionBrowserFinished": "Used browser",
+  "PC.Components.ConversationRendererV2.toolActionBrowserFailed": "Browser action failed",
   "PC.Components.ConversationRendererV2.toolActionSkillRunning": "Using skill",
   "PC.Components.ConversationRendererV2.toolActionSkillFinished": "Used skill",
   "PC.Components.ConversationRendererV2.toolActionSkillFailed": "Skill failed",
@@ -7193,4 +7194,5 @@ export const EN_US: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "Sensitive",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "Grants access to sensitive data or actions on the user's behalf; request only if needed",
   "PC.Components.OAuthScopeSetting.submitted": "Saved. The scope change was submitted for review",
+  "PC.Components.CommercialLicense.authorizationRequired": "Please contact the official team for a trial or commercial license.",
 };

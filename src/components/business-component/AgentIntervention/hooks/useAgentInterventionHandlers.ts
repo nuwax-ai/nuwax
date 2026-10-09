@@ -4,7 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
-import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useRef, type Dispatch, type SetStateAction } from 'react';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
@@ -19,6 +19,7 @@ import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPerm
 /** MCP Ask resume 发送结果：正文 + 可选附件（走 chat attachments） */
 export interface McpAskResumeSendResult {
   text: string;
+  rollback?: () => void;
   files?: UploadFileInfo[];
 }
 
@@ -31,6 +32,8 @@ export function useAgentInterventionHandlers({
   setMessageList,
   conversationId,
 }: UseAgentInterventionHandlersOptions) {
+  const currentConversation = useRef(conversationId);
+  currentConversation.current = conversationId;
   const updateAcpPermissionInteraction = useCallback(
     (interventionId: string, updates: Partial<AcpPermissionInteraction>) => {
       setMessageList((list) =>
@@ -58,7 +61,11 @@ export function useAgentInterventionHandlers({
   );
 
   const updateMcpAskInteraction = useCallback(
-    (requestId: string, updates: Partial<McpAskInteraction>) => {
+    (
+      requestId: string,
+      updates: Partial<McpAskInteraction>,
+      revision?: number,
+    ) => {
       setMessageList((list) =>
         list.map((item) => {
           const interactions = item.mcpAskInteractions;
@@ -68,7 +75,9 @@ export function useAgentInterventionHandlers({
           return {
             ...item,
             mcpAskInteractions: interactions.map((interaction) =>
-              interaction.input.requestId === requestId
+              interaction.input.requestId === requestId &&
+              (revision === undefined ||
+                interaction.input.revision === revision)
                 ? { ...interaction, ...updates }
                 : interaction,
             ),
@@ -170,18 +179,37 @@ export function useAgentInterventionHandlers({
         return 'submitted';
       };
 
-      updateMcpAskInteraction(requestId, {
-        responseStatus: resolveStatus(),
-        formData: payload.formData,
-      });
+      updateMcpAskInteraction(
+        requestId,
+        {
+          responseStatus: resolveStatus(),
+          formData: payload.formData,
+        },
+        interaction.input.revision,
+      );
       const text = buildMcpAskResumeMessage(interaction, payload);
       const files =
         action === 'submit' && payload.files?.length
           ? payload.files
           : undefined;
-      return { text, files };
+      const owner = conversationId;
+      return {
+        text,
+        files,
+        rollback: () => {
+          if (currentConversation.current !== owner) return;
+          updateMcpAskInteraction(
+            requestId,
+            {
+              responseStatus: interaction.responseStatus,
+              formData: interaction.formData,
+            },
+            interaction.input.revision,
+          );
+        },
+      };
     },
-    [updateMcpAskInteraction],
+    [updateMcpAskInteraction, conversationId],
   );
 
   return {

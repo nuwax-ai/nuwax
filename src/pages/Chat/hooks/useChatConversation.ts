@@ -44,7 +44,7 @@ export interface UseChatConversationProps {
   setIsSelectionLocked: (locked: boolean) => void;
   setHasUserSentMessage: (sent: boolean) => void;
   setIsLoadingOtherInterface: (loading: boolean) => void;
-  onMessageSend: (params: SendMessageParams) => void;
+  onMessageSend: (params: SendMessageParams) => void | Promise<unknown>;
   allowAutoScrollRef: React.MutableRefObject<boolean>;
   messageViewRef: React.RefObject<HTMLDivElement>;
   incrementCalledTrialCount: () => void;
@@ -167,8 +167,7 @@ export const useChatConversation = ({
   ) => {
     // 变量参数为空，不发送消息
     if (isChatInputDisabled) {
-      form.validateFields(); // 触发表单验证以显示error
-      return;
+      return form.validateFields(); // 验证失败交给调用链消费，问答卡片可恢复重试
     }
 
     // 标记用户已发送消息
@@ -204,7 +203,7 @@ export const useChatConversation = ({
     };
 
     incrementCalledTrialCount();
-    onMessageSend(sendParams);
+    return onMessageSend(sendParams);
   };
 
   // 监听会话更新事件，更新会话记录

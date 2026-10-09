@@ -232,6 +232,13 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     // 停止操作是否正在进行中
     const [isStoppingConversation, setIsStoppingConversation] =
       useState<boolean>(false);
+    const stopAttemptRef = useRef(0);
+    const stopOwnerId =
+      stopConversationIdOverride ?? getCurrentConversationId();
+    useEffect(() => {
+      stopAttemptRef.current += 1;
+      setIsStoppingConversation(false);
+    }, [stopOwnerId]);
     // @ 提及编辑器引用
     const mentionEditorRef = useRef<MentionEditorHandle>(null);
 
@@ -312,10 +319,15 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // 监听会话状态变化，当会话结束时重置停止状态
     useEffect(() => {
-      if (!isConversationActive) {
+      if (
+        !isConversationActive &&
+        !effectiveTaskExecuting &&
+        !loadingStopConversation
+      ) {
+        stopAttemptRef.current += 1;
         setIsStoppingConversation(false);
       }
-    }, [isConversationActive]);
+    }, [isConversationActive, effectiveTaskExecuting, loadingStopConversation]);
 
     // 发送按钮disabled
     const disabledSend = useMemo(() => {
@@ -356,6 +368,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // enter事件 - 确认发送消息
     const confirmSendMessage = (value: string) => {
+      if (isStoppingConversation || loadingStopConversation) return;
       // 如果输入框内容不为空 或者 附件文件列表不为空
       if (!!value.trim() || !!files?.length) {
         onEnter(value, files, skillIds, selectedModelId, agentMode);
@@ -662,6 +675,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       }
       // 设置停止操作状态
       setIsStoppingConversation(true);
+      const attempt = ++stopAttemptRef.current;
 
       // 获取当前会话请求ID
       const requestId = getCurrentConversationRequestId();
@@ -670,14 +684,20 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
       // 修复：即使 requestId 为空也应该调用停止接口
       // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
-      if (onTempChatStop && requestId) {
-        // 临时聊天需要 requestId
-        onTempChatStop(requestId);
-      } else if (onStopConversationOverride && conversationId) {
-        onStopConversationOverride(conversationId);
-      } else if (conversationId) {
-        // 正常会话只需要 conversationId 即可停止
-        runStopConversation(conversationId);
+      try {
+        if (onTempChatStop && requestId) {
+          await onTempChatStop(requestId);
+        } else if (onStopConversationOverride && conversationId) {
+          await onStopConversationOverride(conversationId);
+        } else if (conversationId) {
+          await runStopConversation(conversationId);
+        } else {
+          setIsStoppingConversation(false);
+        }
+      } catch (error) {
+        if (stopAttemptRef.current === attempt)
+          setIsStoppingConversation(false);
+        console.error('[chatInput] stop request failed', error);
       }
     }, [
       isStoppingConversation,

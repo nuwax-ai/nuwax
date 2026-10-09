@@ -1,4 +1,5 @@
 import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
+import { createResumeEventGuard } from '@/features/conversation/domain/resumeEventGuard';
 import type { ConversationRuntime } from '@/features/conversation/runtime/createConversationRuntime';
 import {
   AssistantRoleEnum,
@@ -311,6 +312,7 @@ export function createResumeController(
     );
     const runController = runtime.resumeConnection;
     const runId = runController.startRun();
+    const rejectPreviousTurn = createResumeEventGuard(currentList);
     const abortConnection = createSSEConnection({
       url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
       method: 'GET',
@@ -323,6 +325,16 @@ export function createResumeController(
             source: debugSource,
             conversationId,
             runId,
+          });
+          return;
+        }
+        const rejectionReason = rejectPreviousTurn(res);
+        if (rejectionReason) {
+          resumeStreamLogger.info('ignore previous turn replay', {
+            conversationId,
+            eventType: res.eventType,
+            requestId: res.requestId,
+            reason: rejectionReason,
           });
           return;
         }

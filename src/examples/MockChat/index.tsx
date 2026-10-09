@@ -295,7 +295,9 @@ const MockChat: React.FC = () => {
     /** 停止会话 */
     stop: async (): Promise<void> => {
       if (runtimeLine) {
-        (runtimeProps.runStopConversation as (id: string) => void)(
+        await (
+          runtimeProps.runStopConversation as (id: string) => Promise<void>
+        )(
           String(
             (runtimeProps.getCurrentConversationId as () => number | null)() ??
               MOCK_CONVERSATION_ID,
@@ -304,7 +306,7 @@ const MockChat: React.FC = () => {
         return;
       }
       await model.runStopConversation(
-        model.getCurrentConversationRequestId() || MOCK_CONVERSATION_ID,
+        model.getCurrentConversationId() || MOCK_CONVERSATION_ID,
       );
     },
     /** sub 流续接（两轨签名一致：id, currentList, onClose, debugSource） */
@@ -512,9 +514,9 @@ const MockChat: React.FC = () => {
       files?: UploadFileInfo[],
       skillIds?: number[],
       modelId?: number,
-      selectedAgentMode?: 'yolo' | 'ask',
+      selectedAgentMode?: 'yolo' | 'ask' | 'plan',
     ) => {
-      void model.onMessageSend({
+      return model.onMessageSend({
         id: MOCK_CONVERSATION_ID,
         messageInfo,
         files,
@@ -704,7 +706,11 @@ const MockChat: React.FC = () => {
             <Button
               danger
               disabled={!lineIsConversationActive}
-              onClick={() => void stop()}
+              onClick={() =>
+                void stop().catch((error) =>
+                  console.error('[mockChat] stop failed', error),
+                )
+              }
             >
               停止会话
             </Button>

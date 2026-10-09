@@ -691,6 +691,48 @@ describe('useHomeSectionData', () => {
     );
   });
 
+  it.each([false, true])(
+    '列表已有完成任务=%s：IM 导航刷新通知可发现跨端任务并更新完成状态',
+    async (hasCompletedTask) => {
+      const initialRows = hasCompletedTask
+        ? [buildConversation({ id: 1, taskStatus: TaskStatus.COMPLETE })]
+        : [];
+      apiAgentConversationListMock.mockResolvedValueOnce({ data: initialRows });
+      const useHomeSectionData = await freshHook();
+      const { default: eventBus } = await import('@/utils/eventBus');
+      const { EVENT_TYPE } = await import('@/constants/event.constants');
+      const { result } = renderHook(() =>
+        useHomeSectionData({ isSidebarNavMode: true }),
+      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      apiAgentConversationListMock.mockResolvedValue({
+        data: [
+          buildConversation({ id: 31, taskStatus: TaskStatus.EXECUTING }),
+          ...initialRows,
+        ],
+      });
+      act(() => eventBus.emit(EVENT_TYPE.RefreshConversationList));
+      await waitFor(() =>
+        expect(result.current.visibleConversationList[0]?.taskStatus).toBe(
+          TaskStatus.EXECUTING,
+        ),
+      );
+      apiAgentConversationListMock.mockResolvedValue({
+        data: [
+          buildConversation({ id: 31, taskStatus: TaskStatus.COMPLETE }),
+          ...initialRows,
+        ],
+      });
+      act(() => eventBus.emit(EVENT_TYPE.RefreshConversationList));
+      await waitFor(() =>
+        expect(result.current.visibleConversationList[0]?.taskStatus).toBe(
+          TaskStatus.COMPLETE,
+        ),
+      );
+      expect(apiAgentConversationListMock).toHaveBeenCalledTimes(3);
+    },
+  );
+
   it('后台任务结束时按会话 ID 查询终态，旧列表回包仍保留完成状态', async () => {
     apiAgentConversationListMock.mockResolvedValue({
       data: [buildConversation({ id: 1, taskStatus: TaskStatus.EXECUTING })],

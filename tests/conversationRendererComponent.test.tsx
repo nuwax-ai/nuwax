@@ -444,14 +444,15 @@ describe('ConversationRendererV2 · 三层结构', () => {
       ] as MessageInfo['processingList'],
     });
     renderV2(messages, PREFS('balanced'));
-    // 收起的合并组只挂载摘要，思考也在组内。
-    expect(document.querySelector('[data-node-kind="reasoning"]')).toBeNull();
+    // 思考独立显示，尾部活动工具组默认展开。
+    expect(
+      document.querySelector('[data-node-kind="reasoning"]'),
+    ).not.toBeNull();
     expect(
       document.querySelector(
         '[data-tool-group-id] > button [class*="shimmer"]',
       ),
     ).not.toBeNull();
-    fireEvent.click(document.querySelector('[data-tool-group-id] > button')!);
     // 运行中思考行：标题/摘要挂扫光 class（css-modules 哈希用子串匹配；focused 预设下思考节点隐藏，用 balanced）
     const reasoningRow = document.querySelector('[data-node-kind="reasoning"]');
     expect(reasoningRow).not.toBeNull();
@@ -709,7 +710,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     });
   });
 
-  it('连续工具压缩为动作摘要组，活动尾组默认收起，首次点击展开且逐条保序', () => {
+  it('连续工具压缩为动作摘要组，活动尾组默认展开，连续工具逐条保序并可手动收起', () => {
     renderV2(buildGroupedTurn(false));
     const group = document.querySelector(
       '[data-tool-group-id="tool-group:read-1"]',
@@ -717,18 +718,18 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(group).not.toBeNull();
     expect(group?.getAttribute('data-tool-group-active')).toBe('true');
     const toggle = group?.querySelector('button');
-    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
-    expect(group?.querySelector('[data-node-id]')).toBeNull();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     // 终态动作类按组内节点数计数（2026-09-19 组头计数定调）
     expect(toggle?.textContent).toContain('toolGroupCountFileRead');
     expect(toggle?.textContent).toContain('toolGroupCountTerminal');
-    fireEvent.click(toggle!);
-    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(
       Array.from(group?.querySelectorAll('[data-node-id]') ?? []).map((item) =>
         item.getAttribute('data-node-id'),
       ),
     ).toEqual(['read-1', 'run-1']);
+    fireEvent.click(toggle!);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(group?.querySelector('[data-node-id]')).toBeNull();
   });
 
   it.each([
@@ -737,7 +738,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     ['balanced', MessageStatusEnum.Complete],
     ['focused', MessageStatusEnum.Complete],
   ] as const)(
-    '%s / %s：交替工具与思考形成收起组，组标题只统计工具，展开后保留原序',
+    '%s / %s：思考独立展示并切断工具组，隐藏思考也不合并前后工具',
     (preset, status) => {
       const text = [
         thinkTag('finished', '先检查项目'),
@@ -779,17 +780,8 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
         'aria-expanded',
         'true',
       );
-      expect(document.querySelectorAll('[data-tool-group-id]')).toHaveLength(1);
-      const group = document.querySelector('[data-tool-group-id]')!;
-      const toggle = group.querySelector('button')!;
-      expect(toggle).toHaveAttribute('aria-expanded', 'false');
-      expect(toggle).toHaveTextContent('toolGroupCountFileRead:1');
-      expect(toggle).toHaveTextContent('toolGroupCountTerminal:1');
-      expect(toggle).toHaveTextContent('toolGroupCountFileEdit:1');
-      expect(toggle).not.toHaveTextContent('toolGroupCountGeneric');
-      expect(group.querySelector('[data-node-id]')).toBeNull();
-      fireEvent.click(toggle);
-      const kinds = [...group.querySelectorAll('[data-node-kind]')].map(
+      expect(document.querySelectorAll('[data-tool-group-id]')).toHaveLength(0);
+      const kinds = [...document.querySelectorAll('[data-node-kind]')].map(
         (node) => node.getAttribute('data-node-kind'),
       );
       expect(kinds).toEqual(
@@ -806,14 +798,14 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
             ],
       );
       expect(
-        [...group.querySelectorAll('[data-node-kind="tool"]')].map((node) =>
+        [...document.querySelectorAll('[data-node-kind="tool"]')].map((node) =>
           node.getAttribute('data-node-id'),
         ),
       ).toEqual(['read-1', 'run-1', 'edit-1']);
     },
   );
 
-  it('工具被隐藏时保留组内思考，恢复隐藏内容后仍以收起组展示', () => {
+  it('工具被隐藏时保留独立思考，恢复工具后仍按思考边界分隔', () => {
     const text = [
       processTag({ executeId: 'read-1', type: 'ToolCall', status: 'FINISHED' }),
       thinkTag('finished', '读取完成，继续验证'),
@@ -832,13 +824,13 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
       document.querySelectorAll('[data-node-kind="reasoning"]'),
     ).toHaveLength(1);
     fireEvent.click(screen.getByTestId('v2-hidden-entry'));
-    expect(document.querySelectorAll('[data-tool-group-id]')).toHaveLength(1);
-    expect(
-      document.querySelector('[data-tool-group-id] > button'),
-    ).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelectorAll('[data-tool-group-id]')).toHaveLength(0);
+    expect(document.querySelectorAll('[data-node-kind="tool"]')).toHaveLength(
+      2,
+    );
   });
 
-  it('手动展开后追加思考或工具都留在同组，保持展开和原有组 ID', () => {
+  it('追加思考关闭旧活动组，后续工具独立展示；手动重开旧组保持选择', () => {
     const toolText = (executeId: string) =>
       processTag({ executeId, type: 'ToolCall', status: 'FINISHED' });
     const initialText = toolText('read-1') + toolText('run-1');
@@ -867,9 +859,10 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
           preferences={PREFS('balanced')}
         />,
       );
-    fireEvent.click(toggle());
-    rerender(firstThinkText);
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    rerender(firstThinkText);
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle());
     const appendedText = firstThinkText + toolText('edit-1');
     rerender(appendedText);
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
@@ -877,14 +870,14 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
       [
         ...document.querySelectorAll('[data-tool-group-id] [data-node-kind]'),
       ].map((node) => node.getAttribute('data-node-kind')),
-    ).toEqual(['tool', 'tool', 'reasoning', 'tool']);
+    ).toEqual(['tool', 'tool']);
     rerender(appendedText + thinkTag('thinking', '整理结论'));
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
     expect(
       document.querySelector(
         '[data-tool-group-id] > button [class*="shimmer"]',
       ),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(
       document.querySelector('[data-node-kind="reasoning"]:last-child'),
     ).not.toBeNull();
@@ -892,12 +885,6 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
 
   it('正文开启新工具组时旧活动组自动收起一次，用户重开后保持手动状态', async () => {
     const view = renderV2(buildGroupedTurn(false));
-    // 用户主动打开活动组后，被新段超越仍应自动收起一次。
-    fireEvent.click(
-      document.querySelector(
-        '[data-tool-group-id="tool-group:read-1"] > button',
-      )!,
-    );
     view.rerender(
       <ConversationRendererV2
         messageList={buildGroupedTurn(true)}
@@ -924,7 +911,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
         document
           .querySelector(activeGroupSelector)
           ?.getAttribute('aria-expanded'),
-      ).toBe('false');
+      ).toBe('true');
     });
     const activeGroup = document.querySelector(
       '[data-tool-group-id="tool-group:edit-1"]',
@@ -951,7 +938,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     ).toBe('true');
   });
 
-  it('live 外层自动展开，仅内部多工具组默认收起，增量只更新组摘要', () => {
+  it('live 活动工具组默认展开，流式追加保持组内节点和展开状态', () => {
     const ids = ['read-1', 'run-1', 'edit-1', 'run-2'];
     const buildMessages = (count: number, lastFinished = false) => {
       const messages = buildGroupedTurn(false);
@@ -999,10 +986,10 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
       expect(document.querySelectorAll('[data-tool-group-id]')).toHaveLength(1);
       expect(
         document.querySelector('[data-tool-group-id] > button'),
-      ).toHaveAttribute('aria-expanded', 'false');
+      ).toHaveAttribute('aria-expanded', 'true');
       expect(
-        document.querySelector('[data-tool-group-id] [data-node-id]'),
-      ).toBeNull();
+        document.querySelectorAll('[data-tool-group-id] [data-node-id]'),
+      ).toHaveLength(count);
     }
     expect(
       document.querySelector('[data-tool-group-id] > button'),
@@ -1025,10 +1012,15 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     ).toBeNull();
     expect(
       document.querySelector('[data-tool-group-id] > button'),
-    ).toHaveAttribute('aria-expanded', 'false');
+    ).toHaveAttribute('aria-expanded', 'true');
     expect(
-      document.querySelector('[data-tool-group-id] [data-node-id]'),
-    ).toBeNull();
+      document.querySelectorAll('[data-tool-group-id] [data-node-id]'),
+    ).toHaveLength(4);
+    fireEvent.click(document.querySelector('[data-tool-group-id] > button')!);
+    rerender(4, true);
+    expect(
+      document.querySelector('[data-tool-group-id] > button'),
+    ).toHaveAttribute('aria-expanded', 'false');
   });
 
   it.each([
@@ -1036,7 +1028,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     ['没有用户消息的分页半轮', false, false],
     ['含执行中助手消息的半途快照', true, true],
   ] as const)(
-    'sub 续接%s：外层自动展开，内部工具组合并后默认折叠',
+    'sub 续接%s：连续工具组默认展开，思考切断并收起旧活动组',
     (_, hasUser, hasRunningHistory) => {
       let messages = hasUser
         ? [msg({ id: 'sub-user', role: AssistantRoleEnum.USER, index: 42 })]
@@ -1131,37 +1123,38 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
       expect(
         document.querySelector('[data-trace-segment-active="true"]'),
       ).toHaveAttribute('data-trace-segment-expanded', 'true');
+      // 思考隔开的前两次工具保持独立，不跨边界合并。
+      expect(document.querySelector('[data-tool-group-id]')).toBeNull();
+      receiveTool(2);
       const groupToggle = document.querySelector(
         '[data-tool-group-id] > button',
       )!;
+      expect(groupToggle).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        [
+          ...document.querySelectorAll('[data-tool-group-id] [data-node-id]'),
+        ].map((node) => node.getAttribute('data-node-id')),
+      ).toEqual(['sub-tool-2', 'sub-tool-3']);
+      receiveThink('准备整理结论');
+      expectOuterExpanded();
       expect(groupToggle).toHaveAttribute('aria-expanded', 'false');
       expect(
         document.querySelector('[data-tool-group-id] [data-node-id]'),
       ).toBeNull();
-      fireEvent.click(groupToggle);
-      receiveTool(2);
-      receiveThink('准备整理结论');
-      expectOuterExpanded();
-      expect(groupToggle).toHaveAttribute('aria-expanded', 'true');
       expect(
-        [
-          ...document.querySelectorAll(
-            '[data-tool-group-id] [data-node-kind="tool"]',
-          ),
-        ].map((node) => node.getAttribute('data-node-id')),
-      ).toEqual(['sub-tool-1', 'sub-tool-2', 'sub-tool-3']);
+        document.querySelector('[data-node-id="sub-tool-1"]'),
+      ).not.toBeNull();
+      fireEvent.click(groupToggle);
+      receiveTool(3);
+      expect(groupToggle).toHaveAttribute('aria-expanded', 'true');
       expect(
         [
           ...document.querySelectorAll('[data-tool-group-id] [data-node-kind]'),
         ].map((node) => node.getAttribute('data-node-kind')),
-      ).toEqual([
-        'reasoning',
-        'tool',
-        'reasoning',
-        'tool',
-        'tool',
-        'reasoning',
-      ]);
+      ).toEqual(['tool', 'tool']);
+      expect(
+        document.querySelector('[data-node-id="sub-tool-4"]'),
+      ).not.toBeNull();
       receive({
         eventType: 'FINAL_RESULT',
         requestId: 'sub-request',
@@ -1173,9 +1166,10 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
         'false',
       );
       fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+      // 旧组已被思考超越后手动重开，结束时不重复覆盖该选择。
       expect(
         document.querySelector('[data-tool-group-id] > button'),
-      ).toHaveAttribute('aria-expanded', 'false');
+      ).toHaveAttribute('aria-expanded', 'true');
       expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
         '续接任务完成。',
       );
@@ -1186,6 +1180,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
   it('手动展开后追加同组工具保持展开，结束后自动收起整轮与工具组', () => {
     const messages = buildGroupedTurn(false);
     const view = renderV2(messages);
+    fireEvent.click(document.querySelector('[data-tool-group-id] > button')!);
     fireEvent.click(document.querySelector('[data-tool-group-id] > button')!);
     const appended = [
       { ...messages[0] },
@@ -1258,8 +1253,8 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
           preferences={PREFS('balanced')}
         />,
       );
-    // 同段思考与工具一起合并收起。
-    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(0);
+    // 思考独立展示，交替工具不合并；过程段本身的收起规则保持不变。
+    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(4);
     expect(screen.queryByTestId('v2-trace-segment-toggle')).toBeNull();
 
     rerender(`${processText}这一阶段已完成`);
@@ -1274,8 +1269,6 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     );
 
     fireEvent.click(summary);
-    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(0);
-    fireEvent.click(document.querySelector('[data-tool-group-id] > button')!);
     expect(document.querySelectorAll('[data-node-id]')).toHaveLength(4);
     const thinkToggle = document.querySelector(
       '[data-node-kind="reasoning"] button',

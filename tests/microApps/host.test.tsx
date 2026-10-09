@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   load: vi.fn(),
+  commercial: true,
   auth: vi.fn(async () => true),
   expire: vi.fn(async () => undefined),
   loggedIn: true,
@@ -52,6 +53,7 @@ vi.mock('@/layouts/MicroAppHost/index.less', () => ({
   default: { container: 'micro-app-container' },
 }));
 
+import { EVENT_TYPE } from '@/constants/event.constants';
 import useEventPolling from '@/hooks/useEventPolling';
 import MicroAppHost from '@/layouts/MicroAppHost';
 import { microAppHostStore } from '@/layouts/MicroAppHost/store';
@@ -126,6 +128,7 @@ function activateMessage() {
 }
 
 beforeEach(() => {
+  mocks.commercial = true;
   mocks.load.mockReset();
   mocks.auth.mockResolvedValue(true);
   mocks.history.push.mockClear();
@@ -152,6 +155,28 @@ afterEach(() => {
 });
 
 describe('IM 事件桥与未读展示生命周期', () => {
+  it.each(['chat_start', 'chat_finished'])(
+    'IM %s 保留项目事件分发，同时通知导航任务刷新',
+    async (eventType) => {
+      const bridge = installImBridge();
+      const projectHandler = vi.fn();
+      const refreshTasks = vi.fn();
+      eventBus.on(eventType, projectHandler);
+      eventBus.on(EVENT_TYPE.RefreshConversationList, refreshTasks);
+      activateMessage();
+      render(<MicroAppHost />);
+      await waitFor(() => expect(bridge.onCustomEvent).toHaveBeenCalledOnce());
+      act(() => microAppHostStore.deactivate('nuwax-im-web'));
+      act(() => bridge.emit({ ...finished, eventType }));
+      expect(projectHandler).toHaveBeenCalledWith(finished.payload);
+      // 不带 ID，项目面板沿用原事件处理，避免重复请求项目子会话。
+      expect(refreshTasks).toHaveBeenCalledOnce();
+      expect(refreshTasks).toHaveBeenCalledWith();
+      expect(mocks.collect).not.toHaveBeenCalled();
+      expect(mocks.clear).not.toHaveBeenCalled();
+    },
+  );
+
   it('只在已登录且消息挂载完成后订阅，读取未读快照初值', async () => {
     const bridge = installImBridge(120);
     let finishMount!: () => void;
@@ -191,7 +216,9 @@ describe('IM 事件桥与未读展示生命周期', () => {
   it('切换菜单保留唯一订阅，隐藏时仍分发所有自定义事件及未读变化', async () => {
     const bridge = installImBridge(1);
     const paid = vi.fn();
+    const refreshTasks = vi.fn();
     eventBus.on('order_paid', paid);
+    eventBus.on(EVENT_TYPE.RefreshConversationList, refreshTasks);
     activateMessage();
     render(<MicroAppHost />);
     await waitFor(() => expect(bridge.onCustomEvent).toHaveBeenCalledOnce());
@@ -202,6 +229,7 @@ describe('IM 事件桥与未读展示生命周期', () => {
       bridge.unread(100);
     });
     expect(paid).toHaveBeenCalledWith(payload);
+    expect(refreshTasks).not.toHaveBeenCalled();
     expect(imUnreadState.getSnapshot()).toBe(100);
     act(activateMessage);
     expect(bridge.onCustomEvent).toHaveBeenCalledOnce();
@@ -343,6 +371,7 @@ describe('持久微应用宿主', () => {
       expect(handle.update).toHaveBeenCalledWith({
         path: '/repo/doc/a',
         active: true,
+        navigationRevision: 0,
       }),
     );
     expect(view.container.querySelector('[data-micro-app]')).toBe(container);
@@ -425,3 +454,33 @@ describe('持久微应用宿主', () => {
     expect(mocks.load).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: mocks.commercial,
+    workCommercialEdition: mocks.commercial,
+    pending: false,
+  }),
+}));
+
+it.each(['nuwax-im-web', 'nuwax-repo-web'])(
+  '未授权宿主不加载 %s；授权撤销释放常驻实例',
+  async (name) => {
+    mocks.commercial = false;
+    microAppHostStore.activate({
+      name,
+      path: name === 'nuwax-im-web' ? '/instant-message' : '/repo',
+    });
+    const view = render(<MicroAppHost />);
+    expect(mocks.auth).not.toHaveBeenCalled();
+    expect(mocks.load).not.toHaveBeenCalled();
+    mocks.commercial = true;
+    act(() => view.rerender(<MicroAppHost />));
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const handle = mocks.load.mock.results[0].value;
+    mocks.commercial = false;
+    act(() => view.rerender(<MicroAppHost />));
+    await waitFor(() => expect(handle.unmount).toHaveBeenCalledOnce());
+    expect(view.container.querySelector('[data-micro-app]')).toBeNull();
+  },
+);

@@ -113,7 +113,7 @@ export interface ConversationRuntimeSession {
   readonly store: ConversationMessageStore;
   readonly runtime: ConversationRuntime;
   send(input: RuntimeSessionSendInput): void;
-  stop(conversationId: number | string): void;
+  stop(conversationId: number | string): Promise<void>;
   /** 切换会话时完整释放上一会话连接、消息与派生态。 */
   resetForConversationSwitch(): void;
   /** 对齐 legacy 的轮询/sub/live 终态统一清算。 */
@@ -142,6 +142,7 @@ export interface ConversationRuntimeSession {
   ): void;
   dispose(): void;
   getState(): {
+    isStopping: boolean;
     isConversationActive: boolean;
     isAwaitingChatTerminal: boolean;
     currentRequestId: string;
@@ -159,10 +160,10 @@ export interface ConversationRuntimeSession {
  * 的消息面），差异仅：写入经 store、副作用经 effects、连接经 transport。
  * load/snapshot/干预/恢复编排在 R3 片补全。
  *
- * 活跃态复位语义：所有非活跃路径（用户停止 stop / 连接关闭 onClose / 网络
+ * 活跃态复位语义：所有非活跃路径（连接关闭 onClose / 网络
  * 错误 onError / 协议终态）一律走 disableConversationActive 强制复位，
  * 不做「发送后 N 秒保活」——保活窗口会让发送后快速停止的会话永久卡在
- * 「执行中」（禅道 bug2528），且旧线停止路径同样是强制复位（user-stop）。
+ * 「执行中」（禅道 bug2528），用户停止仅等待后台终态，不主动复位。
  */
 export function createConversationRuntimeSession(
   config: RuntimeSessionConfig,
@@ -174,6 +175,8 @@ export function createConversationRuntimeSession(
   const store = createConversationMessageStore();
 
   // 会话级派生态（React 绑定经 subscribeState 消费）
+  let isStopping = false;
+  let stopPromise: Promise<void> | null = null;
   let isConversationActive = false;
   let isAwaitingChatTerminal = false;
   let currentRequestId = '';
@@ -207,45 +210,28 @@ export function createConversationRuntimeSession(
     notifyState();
   };
 
-  const stop = (conversationId: number | string) => {
+  const stop = (conversationId: number | string): Promise<void> => {
+    if (String(currentConversationId) !== String(conversationId))
+      return Promise.resolve();
+    if (isStopping) return stopPromise ?? Promise.resolve();
     const stopGeneration = ++stopRequestGeneration;
-    // 1. 同时中断 live/sub；恢复流已接管时，只关闭 live 会使订阅标记与轮询永久悬挂。
-    runtime.liveConnection.abortCurrent();
-    resumeController.abortResumeStream();
-    runtime.resetStreamProjection();
-    // 2. 消息终态：Loading → Stopped，执行中 processing → FAILED
-    store.finalizeOnClose();
-    // 3. 活跃态：用户主动停止必须强制复位（对齐旧线 runStopConversation 的
-    //    disabledConversationActive('user-stop')），不走 setConversationActive——
-    //    它受「发送后 3s 保活」窗口约束，发送后快速停止时活跃态会被窗口
-    //    拒绝落 false 而永久卡「执行中」，输入框停止/发送双双失效（禅道 bug2528）
-    isAwaitingChatTerminal = false;
-    disableConversationActive();
-    // 4. 后端 stop 请求（绑定层注入句柄）
-    if (config.stopRequest) {
-      void config
-        .stopRequest(String(conversationId))
-        .then(() => {
-          if (
-            stopGeneration !== stopRequestGeneration ||
-            String(currentConversationId) !== String(conversationId)
-          ) {
-            return;
-          }
-          // 等待停止接口期间可能已续接 sub，再清理一次；成功终态须写回绑定层，
-          // 否则页面仍被 conversationInfo 的 EXECUTING 撑住，发送按钮不能恢复。
-          resumeController.abortResumeStream();
-          finalizeConversationTerminal(conversationId, TaskStatus.CANCEL);
-          runtime.effects.dispatch({
-            type: 'recent.status.patch',
-            conversationId,
-            status: TaskStatus.CANCEL,
-          });
-        })
-        .catch((error) => {
-          console.error('[runtimeSession] stop request failed:', error);
-        });
-    }
+    isStopping = true;
+    notifyState();
+    // 停止请求不结束 live/sub；保留尾部输出，终态由后台事件或查询确认。
+    const request = Promise.resolve().then(() =>
+      config.stopRequest?.(String(conversationId)),
+    );
+    stopPromise = request
+      .then(() => undefined)
+      .catch((error) => {
+        if (stopGeneration === stopRequestGeneration) {
+          isStopping = false;
+          stopPromise = null;
+          notifyState();
+        }
+        throw error;
+      });
+    return stopPromise;
   };
 
   const finalizeConversationTerminal = (
@@ -261,6 +247,8 @@ export function createConversationRuntimeSession(
     }
     isConversationActive = false;
     isAwaitingChatTerminal = false;
+    isStopping = false;
+    stopPromise = null;
     settledTerminalStatus = status;
     store.finalizeOnTerminalTaskStatus(status);
     config.applyTaskStatus?.(conversationId, status);
@@ -473,6 +461,7 @@ export function createConversationRuntimeSession(
   };
 
   const send = (input: RuntimeSessionSendInput) => {
+    if (isStopping) return;
     stopRequestGeneration += 1;
     const { conversationId, message } = input;
     // 取代上一轮连接：中断、重置投影
@@ -630,7 +619,7 @@ export function createConversationRuntimeSession(
               if (!ownsClose() || !status || !isTerminalTaskStatus(status)) {
                 return;
               }
-              config.applyTaskStatus?.(conversationId, status);
+              finalizeConversationTerminal(conversationId, status);
               emitConversationListTaskStatus(conversationId, status);
             })
             .catch((error) => {
@@ -663,6 +652,8 @@ export function createConversationRuntimeSession(
           return;
         }
         store.markStreamError(currentMessageId);
+        isStopping = false;
+        stopPromise = null;
         isAwaitingChatTerminal = false;
         if (conversationId) {
           config.applyTaskStatus?.(conversationId, TaskStatus.FAILED);
@@ -715,6 +706,8 @@ export function createConversationRuntimeSession(
 
   const resetForConversationSwitch = () => {
     stopRequestGeneration += 1;
+    isStopping = false;
+    stopPromise = null;
     runtime.liveConnection.abortCurrent();
     resumeController.abortResumeStream();
     runtime.resetStreamProjection();
@@ -768,6 +761,7 @@ export function createConversationRuntimeSession(
       resetForConversationSwitch();
     },
     getState: () => ({
+      isStopping,
       isConversationActive,
       isAwaitingChatTerminal,
       currentRequestId,

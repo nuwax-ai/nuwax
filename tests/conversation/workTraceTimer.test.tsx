@@ -126,7 +126,46 @@ describe('运行中工作轨迹计时隔离', () => {
     vi.useRealTimers();
   });
 
-  it('默认收起的活动工具组只更新耗时，不重复处理折叠工具结果或正文', () => {
+  it.each([undefined, 0, 500, 999])(
+    '终态耗时为 %s 时不显示零秒或缺失耗时',
+    (elapsedMs) => {
+      const turn = createTurn();
+      render(
+        <WorkTraceDisclosure
+          turn={{
+            ...turn,
+            running: false,
+            metrics: { ...turn.metrics, elapsedMs },
+          }}
+          preferences={preferences}
+          onManualToggle={vi.fn()}
+        />,
+      );
+      const toggle = screen.getByTestId('v2-trace-toggle');
+      expect(toggle).toHaveTextContent('traceMetricTools:2');
+      expect(toggle).not.toHaveTextContent('traceMetricElapsed');
+    },
+  );
+
+  it('终态耗时满一秒时显示实际耗时', () => {
+    const turn = createTurn();
+    render(
+      <WorkTraceDisclosure
+        turn={{
+          ...turn,
+          running: false,
+          metrics: { ...turn.metrics, elapsedMs: 1000 },
+        }}
+        preferences={preferences}
+        onManualToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('v2-trace-toggle')).toHaveTextContent(
+      'traceMetricElapsed:1',
+    );
+  });
+
+  it('默认展开的活动工具组只更新耗时，不重复处理折叠工具结果或正文', () => {
     const { container } = render(
       <WorkTraceDisclosure
         turn={createTurn()}
@@ -139,8 +178,8 @@ describe('运行中工作轨迹计时隔离', () => {
     expect(traceToggle).toHaveTextContent('00:00');
     expect(
       container.querySelector('[data-tool-group-id] > button'),
-    ).toHaveAttribute('aria-expanded', 'false');
-    expect(container.querySelectorAll('[data-node-id]')).toHaveLength(0);
+    ).toHaveAttribute('aria-expanded', 'true');
+    expect(container.querySelectorAll('[data-node-id]')).toHaveLength(2);
     expect(container.querySelector('[data-tool-detail-kind]')).toBeNull();
     const normalizedAtMount = vi.mocked(normalizeV2ToolDetail).mock.calls
       .length;
@@ -165,9 +204,6 @@ describe('运行中工作轨迹计时隔离', () => {
         manualExpanded
         onManualToggle={vi.fn()}
       />,
-    );
-    fireEvent.click(
-      view.container.querySelector('[data-tool-group-id] > button')!,
     );
     fireEvent.click(screen.getByRole('button', { name: /npm test/ }));
     expect(

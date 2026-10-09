@@ -219,15 +219,24 @@ const isPlainEventSegment = (segment: MessageSegment): boolean =>
 /** 计划呈现语义段：Plan 组件，或名称命中 todo 启发式的工具段（TodoWrite） */
 const isTodoPresentingSegment = (
   segment: Extract<MessageSegment, { type: 'process' }>,
-): boolean =>
-  getToolPresentationKind({
-    componentType: segment.componentType,
-    name: segment.name,
-  }) === 'todo';
+  processingByKey: ReadonlyMap<string, ProcessingInfo>,
+): boolean => {
+  const detail = processingByKey.get(segment.executeId ?? '');
+  // live 标签可能保留启动时名称（如 TodoWrite），返回结果已更新为「N todos」。
+  // 去重与待办卡使用同一份最新工具信息，避免 Plan 与 ToolCall 重复呈现。
+  return (
+    getToolPresentationKind({
+      componentType: detail?.type ?? segment.componentType,
+      name: detail?.name || segment.name,
+      result: detail?.result,
+    }) === 'todo'
+  );
+};
 
 /** process 段过滤+去重：丢弃纯 Event 与无 executeId 段（与 V1 渲染 null 分支一致）；executeId 去重保留最后一次出现 */
 const dedupeProcessSegments = (
   segments: MessageSegment[],
+  processingByKey: ReadonlyMap<string, ProcessingInfo>,
 ): MessageSegment[] => {
   const lastIndexOf = new Map<string, number>();
   segments.forEach((segment, index) => {
@@ -249,8 +258,8 @@ const dedupeProcessSegments = (
     if (
       segment.type === 'process' &&
       prev?.type === 'process' &&
-      isTodoPresentingSegment(segment) &&
-      isTodoPresentingSegment(prev)
+      isTodoPresentingSegment(segment, processingByKey) &&
+      isTodoPresentingSegment(prev, processingByKey)
     ) {
       result.pop();
     }
@@ -346,25 +355,35 @@ const projectTurn = (
       ? 'stopped'
       : 'complete';
 
-  // ---- 最终回答第一优先级：最后一条非空 finalResult.outputText（剥标签后仍非空）----
+  const parsedSegments = assistantMessages.map((message) =>
+    parseCachedMessage(message, state),
+  );
+
+  // ---- 最终回答第一优先级：最新输出的 finalResult（剥标签后仍非空）----
   let answerFromFinalResult: string | undefined;
   let answerFromFinalResultMessageIndex: number | undefined;
   for (let i = assistantMessages.length - 1; i >= 0; i -= 1) {
     if (!isAnswerCandidateMessage(assistantMessages[i])) continue;
     const outputText = assistantMessages[i].finalResult?.outputText;
-    if (!outputText) continue;
-    const stripped = stripCustomTags(outputText);
+    const stripped = outputText ? stripCustomTags(outputText) : '';
     if (stripped) {
       answerFromFinalResult = stripped;
       answerFromFinalResultMessageIndex = i;
       break;
     }
+    // 续接的新输出尚无 finalResult 时，旧结果不得盖过新正文或流式占位。
+    // SYSTEM/QUESTION 等非回答消息已跳过；空的已完成消息仍允许历史回退。
+    if (
+      isRunningStatus(assistantMessages[i].status) ||
+      parsedSegments[i].some(
+        (segment) => segment.type === 'text' && !!segment.content.trim(),
+      )
+    ) {
+      break;
+    }
   }
 
-  // ---- 预解析各消息段，确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
-  const parsedSegments = assistantMessages.map((message) =>
-    parseCachedMessage(message, state),
-  );
+  // ---- 确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
   const lastAnswerSegment = findLastAnswerCandidateSegment(
     assistantMessages,
     parsedSegments,
@@ -465,6 +484,7 @@ const projectTurn = (
       ),
   );
   const nodes: ConversationProcessNode[] = [];
+  const processNodePositions = new Map<string, number>();
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
     const processingByKey = collectProcessingByKey(message);
@@ -507,7 +527,8 @@ const projectTurn = (
       });
     }
 
-    dedupeProcessSegments(segments).forEach((segment, segmentIndex) => {
+    const processSegments = dedupeProcessSegments(segments, processingByKey);
+    processSegments.forEach((segment, segmentIndex) => {
       if (segment.type === 'think') {
         const thinkNodeId = `${messageKey}-think-${segmentIndex}`;
         const thinkRunning = segment.status === 'thinking';
@@ -538,7 +559,7 @@ const projectTurn = (
             : segment.componentType === AgentComponentTypeEnum.Plan
             ? 'plan'
             : 'tool';
-        nodes.push({
+        const node: ConversationProcessNode = {
           id: segment.executeId ?? `${messageKey}-process-${segmentIndex}`,
           kind,
           title: detail?.name || segment.name || segment.componentType || '',
@@ -557,7 +578,21 @@ const projectTurn = (
             typeof detail?.result?.endTime === 'number'
               ? detail.result.endTime
               : undefined,
-        });
+        };
+        // 同轮恢复流会重放快照已有的执行。维持节点位置和 key，只更新其状态。
+        const previousIndex = processNodePositions.get(node.id);
+        if (previousIndex !== undefined) {
+          const previous = nodes[previousIndex];
+          nodes[previousIndex] = {
+            ...node,
+            processing: node.processing ?? previous.processing,
+            startTime: node.startTime ?? previous.startTime,
+            endTime: node.endTime ?? previous.endTime,
+          };
+        } else {
+          processNodePositions.set(node.id, nodes.length);
+          nodes.push(node);
+        }
         return;
       }
       if (segment.type === 'unknown') {

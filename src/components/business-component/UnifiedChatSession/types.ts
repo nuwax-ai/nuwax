@@ -87,7 +87,7 @@ export interface UnifiedChatSessionProps {
     selectedAgentMode?: AgentMode,
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
-  ) => void;
+  ) => void | Promise<unknown>;
   onClear?: () => Promise<void>; // 刷新/清空会话的回调
   onLoadMoreMessage?: (id: number) => void; // 向上滚动到顶加载历史消息的回调
 

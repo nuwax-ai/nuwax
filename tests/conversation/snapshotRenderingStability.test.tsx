@@ -5,6 +5,7 @@
  */
 import ConversationRendererV2 from '@/features/conversation/presentation-v2/react/ConversationRendererV2';
 import { createConversationMessageStore } from '@/features/conversation/runtime/conversationMessageStore';
+import { appendOutgoingConversationMessages } from '@/models/conversationInfoMessageList';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -272,5 +273,107 @@ describe('#2486 快照渲染稳定性', () => {
     expect(
       container.querySelector('[data-key^="v2-answer-turn-u1"]')?.textContent,
     ).toContain('旧回答已修订');
+  });
+
+  it('回答整体被续接结果替换时，在下一帧之前已清除旧正文', async () => {
+    const store = createConversationMessageStore(messages());
+    const { container } = render(<Harness store={store} />);
+    await flushMarkdown();
+
+    await act(async () => {
+      store.patchMessage('a2', { text: '手机续接的新回答' });
+    });
+    // 不推进 rAF：提交后留下旧正文，用户就会在这一帧看到它闪现。
+    expect(
+      container.querySelector('[data-key^="v2-answer-turn-u2"]')?.textContent,
+    ).toBe('手机续接的新回答');
+  });
+
+  it('首屏挂载完成的历史回答无需空白一帧等待 Markdown 推送', () => {
+    const store = createConversationMessageStore(messages());
+    const { container } = render(<Harness store={store} />);
+    expect(
+      container.querySelector('[data-key^="v2-answer-turn-u1"]')?.textContent,
+    ).toBe('旧回答');
+  });
+
+  it('StrictMode 重跑 effect 不重复推送首屏正文', async () => {
+    const store = createConversationMessageStore(messages());
+    const { container } = render(
+      <React.StrictMode>
+        <Harness store={store} />
+      </React.StrictMode>,
+    );
+    await flushMarkdown();
+
+    expect(probe.push).toHaveBeenCalledTimes(2);
+    expect(
+      container.querySelector('[data-key^="v2-answer-turn-u1"]')?.textContent,
+    ).toBe('旧回答');
+  });
+
+  it('手机新轮从 user-only 到空占位再到新正文，全程不显示上一轮 UUID 回答', async () => {
+    const userId = '06e63270-f77b-4284-9ec6-e6d7ca0e91bc';
+    const assistantId = '975c4fb5-dfcc-45c7-9739-448a01273409';
+    const previous = messages().slice(0, 2);
+    // 实际乐观消息尚无服务端 index；不能借用历史消息的 index 掩盖合并顺序错误。
+    const local = appendOutgoingConversationMessages(
+      [],
+      {
+        ...previous[0],
+        id: userId,
+        index: undefined,
+      } as unknown as MessageInfo,
+      {
+        ...previous[1],
+        id: assistantId,
+        index: undefined,
+      } as unknown as MessageInfo,
+    );
+    const store = createConversationMessageStore(local);
+    const { container } = render(<Harness store={store} />);
+    const mobileUser = { ...messages()[2], index: 3 };
+    const mobileAssistant = {
+      ...messages()[3],
+      index: 4,
+      text: '',
+      status: MessageStatusEnum.Loading,
+    };
+    const snapshots = [
+      [...previous, mobileUser],
+      [...previous, mobileUser, mobileAssistant],
+      [
+        ...previous,
+        mobileUser,
+        {
+          ...mobileAssistant,
+          text: '手机的新输出',
+          status: MessageStatusEnum.Incomplete,
+        },
+      ],
+      [
+        ...previous,
+        mobileUser,
+        {
+          ...mobileAssistant,
+          text: '手机的新输出已完成',
+          status: MessageStatusEnum.Complete,
+        },
+      ],
+    ];
+    for (const [index, incoming] of snapshots.entries()) {
+      await act(async () => {
+        store.mergeSnapshot(incoming);
+      });
+      await flushMarkdown();
+      const mobileTurn = container.querySelector('[data-turn-key="turn-u2"]');
+      expect(mobileTurn?.textContent || '').not.toContain('旧回答');
+      expect(
+        [
+          ...container.querySelectorAll('[data-testid="markdown-command"]'),
+        ].filter((node) => node.textContent === '旧回答'),
+      ).toHaveLength(1);
+      if (index >= 2) expect(mobileTurn?.textContent).toContain('手机的新输出');
+    }
   });
 });

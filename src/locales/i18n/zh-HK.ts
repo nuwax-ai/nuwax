@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_HK: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "自訂週期",
   "PC.Pages.Login.hostSessionSyncFailed": "客戶端登入工作階段同步失敗，請重試或升級客戶端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "帳號綁定資訊載入失敗，請重新整理後重試",
   "PC.Routes.licenseConfig": "License 授權",
@@ -7034,4 +7035,5 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "敏感",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可訪問用戶敏感數據或代用戶執行操作，請按需申請",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授權範圍變更已提交審核",
+  "PC.Components.CommercialLicense.authorizationRequired": "請聯絡官方取得試用授權或商業授權",
 };

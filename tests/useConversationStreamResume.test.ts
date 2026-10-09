@@ -40,6 +40,8 @@ vi.mock('ahooks', () => ({
 vi.mock('@/utils/eventBus', () => ({
   default: {
     emit: mockEventBusEmit,
+    on: vi.fn(),
+    off: vi.fn(),
   },
 }));
 

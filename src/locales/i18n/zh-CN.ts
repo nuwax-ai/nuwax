@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "自定义周期",
   "PC.Pages.Login.hostSessionSyncFailed": "客户端登录会话同步失败，请重试或升级客户端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "账号绑定信息加载失败，请刷新重试",
   "PC.Routes.licenseConfig": "License 授权",
@@ -295,7 +296,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.toolGroupCountFileEdit": "编辑了 {0} 个文件",
   "PC.Components.ConversationRendererV2.toolGroupCountFileCreate": "创建了 {0} 个文件",
   "PC.Components.ConversationRendererV2.toolGroupCountSearch": "搜索了 {0} 次",
-  "PC.Components.ConversationRendererV2.toolGroupCountBrowser": "浏览了 {0} 个页面",
+  "PC.Components.ConversationRendererV2.toolGroupCountBrowser": "进行了 {0} 次浏览器操作",
   "PC.Components.ConversationRendererV2.toolGroupCountSkill": "调用了 {0} 次技能",
   "PC.Components.ConversationRendererV2.toolGroupCountTodo": "更新了 {0} 次计划",
   "PC.Components.ConversationRendererV2.toolGroupCountGeneric": "执行了 {0} 项操作",
@@ -321,9 +322,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.toolActionSearchRunning": "正在搜索",
   "PC.Components.ConversationRendererV2.toolActionSearchFinished": "搜索了内容",
   "PC.Components.ConversationRendererV2.toolActionSearchFailed": "搜索失败",
-  "PC.Components.ConversationRendererV2.toolActionBrowserRunning": "正在浏览页面",
-  "PC.Components.ConversationRendererV2.toolActionBrowserFinished": "浏览了页面",
-  "PC.Components.ConversationRendererV2.toolActionBrowserFailed": "浏览页面失败",
+  "PC.Components.ConversationRendererV2.toolActionBrowserRunning": "正在操作浏览器",
+  "PC.Components.ConversationRendererV2.toolActionBrowserFinished": "操作了浏览器",
+  "PC.Components.ConversationRendererV2.toolActionBrowserFailed": "浏览器操作失败",
   "PC.Components.ConversationRendererV2.toolActionSkillRunning": "正在使用技能",
   "PC.Components.ConversationRendererV2.toolActionSkillFinished": "使用了技能",
   "PC.Components.ConversationRendererV2.toolActionSkillFailed": "技能执行失败",
@@ -7153,4 +7154,5 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "敏感",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可访问用户敏感数据或代用户执行操作，请按需申请",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授权范围变更已提交审核",
+  "PC.Components.CommercialLicense.authorizationRequired": "请联系官方获取试用授权或商业授权",
 };

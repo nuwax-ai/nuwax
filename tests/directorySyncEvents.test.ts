@@ -5,6 +5,7 @@ import {
   applyProjectChangedToList,
   emitConversationChanged,
   installDirectorySyncLegacyBridge,
+  observeConversationTaskStatuses,
   subscribeConversationChanged,
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
@@ -18,6 +19,26 @@ afterEach(() => {
 });
 
 describe('directorySyncEvents', () => {
+  it('列表执行态观察唤醒会话检查，但不产生可回放的目录补丁', () => {
+    const observed = vi.fn();
+    const changed = vi.fn();
+    eventBus.on(EVENT_TYPE.ConversationTaskStatusObserved, observed);
+    disposers.push(subscribeConversationChanged(changed));
+    observeConversationTaskStatuses(
+      [
+        { id: 12, taskStatus: TaskStatus.EXECUTING },
+        { id: 13, taskStatus: TaskStatus.COMPLETE },
+      ],
+      new Map(),
+    );
+    expect(observed).toHaveBeenCalledTimes(1);
+    expect(observed).toHaveBeenCalledWith({
+      conversationId: '12',
+      taskStatus: TaskStatus.EXECUTING,
+    });
+    expect(changed).not.toHaveBeenCalled();
+  });
+
   it('发送标准化的会话事件并支持退订', () => {
     const handler = vi.fn();
     const unsubscribe = subscribeConversationChanged(handler);
@@ -121,9 +142,9 @@ describe('directorySyncEvents', () => {
     );
     expect(archivedList[0]).toMatchObject({ id: 1, archived: true });
     // 同值重放幂等：返回原引用不触发无谓重渲染
-    expect(
-      applyConversationChangedToList(archivedList, archiveEvent),
-    ).toBe(archivedList);
+    expect(applyConversationChangedToList(archivedList, archiveEvent)).toBe(
+      archivedList,
+    );
   });
 
   it('项目补丁按项目类型和空间匹配', () => {

@@ -1,12 +1,20 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { location, navigate, activate, deactivate } = vi.hoisted(() => ({
-  location: { pathname: '/repo', search: '', hash: '' },
-  navigate: vi.fn(),
-  activate: vi.fn(),
-  deactivate: vi.fn(),
-}));
+const { location, navigate, activate, deactivate, commercialState } =
+  vi.hoisted(() => ({
+    location: {
+      pathname: '/repo',
+      search: '',
+      hash: '',
+      key: undefined as string | undefined,
+      state: null as { microAppRestore?: boolean } | null,
+    },
+    commercialState: { enabled: true },
+    navigate: vi.fn(),
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+  }));
 
 vi.mock('@umijs/max', () => ({
   useLocation: () => location,
@@ -19,9 +27,16 @@ vi.mock('@/layouts/MicroAppHost/store', () => ({
 import MicroAppEntry from '@/pages/MicroAppEntry';
 
 beforeEach(() => {
+  commercialState.enabled = true;
   vi.clearAllMocks();
   activate.mockImplementation((entry) => entry);
-  Object.assign(location, { pathname: '/repo', search: '', hash: '' });
+  Object.assign(location, {
+    pathname: '/repo',
+    search: '',
+    hash: '',
+    key: undefined,
+    state: null,
+  });
 });
 afterEach(cleanup);
 
@@ -73,7 +88,7 @@ describe('微应用路由控制页', () => {
     render(<MicroAppEntry />);
     expect(navigate).toHaveBeenCalledWith(
       '/repo/doc/a?mode=read&_refresh=42#title',
-      { replace: true },
+      { replace: true, state: { microAppRestore: true } },
     );
   });
 
@@ -104,4 +119,66 @@ describe('微应用路由控制页', () => {
     });
     expect(deactivate).not.toHaveBeenCalledWith('nuwax-im-web');
   });
+});
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: commercialState.enabled,
+    workCommercialEdition: commercialState.enabled,
+    pending: false,
+  }),
+}));
+
+it.each(['/repo', '/repo-entry', '/instant-message', '/message-entry'])(
+  '未授权的 %s 不激活应用或执行稳定入口跳转',
+  (pathname) => {
+    commercialState.enabled = false;
+    location.pathname = pathname;
+    render(<MicroAppEntry />);
+    expect(activate).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  },
+);
+
+it('同一路由授权恢复后激活，撤销后停用', () => {
+  commercialState.enabled = false;
+  const view = render(<MicroAppEntry />);
+  commercialState.enabled = true;
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).toHaveBeenCalledOnce();
+  commercialState.enabled = false;
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(deactivate).toHaveBeenCalledWith('nuwax-repo-web');
+});
+
+it('授权后同一路径的明确导航仍更新 navigationKey，缓存恢复不重复消费', () => {
+  location.key = 'navigation-1';
+  const view = render(<MicroAppEntry />);
+  expect(activate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ navigationKey: 'navigation-1' }),
+  );
+  location.key = 'navigation-2';
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ navigationKey: 'navigation-2' }),
+  );
+  location.state = { microAppRestore: true };
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ navigationKey: undefined }),
+  );
+});
+
+it('未授权期间路由 key 更新不会激活，恢复后使用最新导航', () => {
+  commercialState.enabled = false;
+  location.key = 'navigation-1';
+  const view = render(<MicroAppEntry />);
+  location.key = 'navigation-2';
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).not.toHaveBeenCalled();
+  commercialState.enabled = true;
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).toHaveBeenLastCalledWith(
+    expect.objectContaining({ navigationKey: 'navigation-2' }),
+  );
 });

@@ -36,7 +36,7 @@ interface McpAskQuestionCardProps {
   interaction: McpAskInteraction;
   dockShellClassName?: string;
   keyboardShortcutsEnabled?: boolean;
-  onRespond?: (payload: McpAskRespondPayload) => void;
+  onRespond?: (payload: McpAskRespondPayload) => void | Promise<void>;
 }
 
 const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
@@ -52,7 +52,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const ui = input.ui;
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const isSubmitting = interaction.responseStatus === 'submitting';
+  const submitLock = useRef(false);
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+  const isSubmitting =
+    localSubmitting || interaction.responseStatus === 'submitting';
   const isSubmitted = interaction.responseStatus === 'submitted';
   const isCancelled = interaction.responseStatus === 'cancelled';
   const isSkipped = interaction.responseStatus === 'skipped';
@@ -192,6 +195,9 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (disabled || submitLock.current) return;
+    submitLock.current = true;
+    setLocalSubmitting(true);
     try {
       if (isWizard) {
         for (let i = 0; i < steps.length; i += 1) {
@@ -203,7 +209,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
       const rawValues = form.getFieldsValue(true);
       const files = extractMcpAskFormAttachments(rawValues, ui);
       const values = normalizeMcpAskFormData(rawValues, ui);
-      onRespond?.(buildPayload('submit', values, files));
+      await onRespond?.(buildPayload('submit', values, files));
     } catch (errorInfo: any) {
       if (errorInfo?.errorFields?.length > 0) {
         form.scrollToField(errorInfo.errorFields[0].name, {
@@ -211,6 +217,9 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           behavior: 'smooth',
         });
       }
+    } finally {
+      submitLock.current = false;
+      setLocalSubmitting(false);
     }
   };
 
@@ -249,16 +258,20 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleCancel = useCallback(() => {
-    onRespond?.({
-      interventionId: input.requestId,
-      toolCallId,
-      revision: input.revision,
-      source: 'mcp_ask',
-      protocol: 'mcp',
-      action: 'cancel',
-      answeredAt: Date.now(),
-      answeredBy: { kind: 'web' },
-    });
+    void Promise.resolve()
+      .then(() =>
+        onRespond?.({
+          interventionId: input.requestId,
+          toolCallId,
+          revision: input.revision,
+          source: 'mcp_ask',
+          protocol: 'mcp',
+          action: 'cancel',
+          answeredAt: Date.now(),
+          answeredBy: { kind: 'web' },
+        }),
+      )
+      .catch((error) => console.error('[mcpAsk] cancel failed', error));
   }, [onRespond, input.requestId, input.revision, toolCallId]);
 
   useInterventionEscapeKey({
@@ -268,7 +281,9 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   });
 
   const handleSkip = () => {
-    onRespond?.(buildPayload('skip'));
+    void Promise.resolve()
+      .then(() => onRespond?.(buildPayload('skip')))
+      .catch((error) => console.error('[mcpAsk] skip failed', error));
   };
 
   const stepItems = steps.map((step) => ({
