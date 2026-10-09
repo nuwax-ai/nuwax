@@ -191,6 +191,7 @@ const AuthMethod: React.FC = () => {
     {
       title: dict('PC.Pages.SystemAuthMethod.configInfo'),
       dataIndex: 'config',
+      width: 340,
       ellipsis: false,
       render: (_, record) => <ConfigSummary record={record} />,
     },
@@ -222,7 +223,7 @@ const AuthMethod: React.FC = () => {
         </Tooltip>
       ),
       dataIndex: 'autoRedirect',
-      width: 130,
+      width: 160,
       render: (_, record) =>
         record.enabled === 1 ? (
           <Switch
@@ -308,6 +309,7 @@ const AuthMethod: React.FC = () => {
         request={request}
         search={false}
         pagination={false}
+        scroll={{ x: 1090 }}
         showQueryButtons={false}
         hideToolbar
       />
