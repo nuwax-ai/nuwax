@@ -916,23 +916,23 @@ const Login: React.FC = () => {
                 items={idpItems}
                 onSelect={startIdpLogin}
                 disabled={idpNavigating}
+                trailingAction={
+                  // 仅商业桌面宿主可见；保留无第三方登录时的企业入口。
+                  isDesktopHost() && (
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => {
+                        setEnterpriseError('');
+                        setEnterpriseOpen(true);
+                      }}
+                    >
+                      {dict('PC.Pages.Login.enterpriseLogin')}
+                    </Button>
+                  )
+                }
               />
-
-              {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
-                  （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}
-              {isDesktopHost() && (
-                <Button
-                  type="link"
-                  size="small"
-                  style={{ padding: 0, height: 'auto' }}
-                  onClick={() => {
-                    setEnterpriseError('');
-                    setEnterpriseOpen(true);
-                  }}
-                >
-                  {dict('PC.Pages.Login.enterpriseLogin')}
-                </Button>
-              )}
 
               <Modal
                 title={dict('PC.Pages.Login.enterpriseLoginTitle')}

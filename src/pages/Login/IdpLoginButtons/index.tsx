@@ -12,6 +12,8 @@ interface IdpLoginButtonsProps {
   items: AuthIdpLoginItem[];
   onSelect: (item: AuthIdpLoginItem) => void;
   disabled?: boolean;
+  /** 同排末尾的附加登录入口 */
+  trailingAction?: React.ReactNode;
 }
 
 /**
@@ -21,8 +23,9 @@ const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
   items,
   onSelect,
   disabled,
+  trailingAction,
 }) => {
-  if (!items.length) return null;
+  if (!items.length && !trailingAction) return null;
   return (
     <div className={cx(styles.container)}>
       <Divider plain className={cx(styles.divider)}>
@@ -48,6 +51,14 @@ const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
             />
           </Tooltip>
         ))}
+        {trailingAction && (
+          <div className={cx(styles.trailingAction)}>
+            {items.length > 0 && (
+              <Divider type="vertical" className={cx(styles.actionDivider)} />
+            )}
+            {trailingAction}
+          </div>
+        )}
       </div>
     </div>
   );

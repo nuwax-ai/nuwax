@@ -12,9 +12,24 @@
 
 .list {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
+}
+
+.trailingAction {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  height: 36px;
+}
+
+.actionDivider {
+  height: 16px;
+  margin: 0;
+  border-color: @colorBorderSecondary;
 }
 
 // 登录页全局把 .ant-btn 去了边框，这里恢复成浅色描边按钮
