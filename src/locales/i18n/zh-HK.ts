@@ -2762,6 +2762,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.appPreview": "應用預覽",
   "PC.Pages.AppDevPro.appPreviewEmpty": "暫無該環境的預覽地址",
   "PC.Pages.AppDevPro.previewGeneratingHint": "正在通過會話生成項目文件",
+  "PC.Pages.AppDevPro.previewDevErrorIgnoreHint":
+    "開發過程中預覽出現錯誤屬於正常，請忽略",
   "PC.Pages.AppDevPro.previewPreparing": "預覽準備中…",
   "PC.Pages.AppDevPro.previewPreparingHint": "項目文件生成後將自動啟動預覽",
   "PC.Pages.AppDevPro.previewNoProjectFiles": "暫無可預覽的項目",

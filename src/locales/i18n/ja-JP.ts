@@ -2783,6 +2783,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.appPreview": "アプリプレビュー",
   "PC.Pages.AppDevPro.appPreviewEmpty": "この環境のプレビュー先がありません",
   "PC.Pages.AppDevPro.previewGeneratingHint": "会話からプロジェクトファイルを生成しています",
+  "PC.Pages.AppDevPro.previewDevErrorIgnoreHint":
+    "開発中のプレビューでエラーが出るのは正常です。無視してください。",
   "PC.Pages.AppDevPro.previewPreparing": "プレビューを準備中…",
   "PC.Pages.AppDevPro.previewPreparingHint": "プロジェクトファイル生成後にプレビューを自動起動します",
   "PC.Pages.AppDevPro.previewNoProjectFiles": "プレビュー可能なプロジェクトがありません",

@@ -363,6 +363,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const returnToDevAppPreviewRef = useRef<() => void>(() => {});
   /** 本轮改了非文本文件时，等 readiness 合适后再重启开发环境编译 */
   const rebuildDevPreviewAfterWorkspaceChangeRef = useRef<() => void>(() => {});
+  /** 文本改动或没有文件改动时，刷新当前开发环境预览 iframe */
+  const refreshDevPreviewIframeRef = useRef<() => void>(() => {});
   /** 连续两次会话结束时，让上一轮等待停掉 */
   const previewRebuildTokenRef = useRef(0);
   /** 数据库工作区当前 Tab */
@@ -1784,6 +1786,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 聊天会话结束后统一刷新页面数据
    * - 刷新文件树
    * - 刷新 Git 源代码管理列表
+   * - 非文本文件有改动时重启开发环境预览
+   * - 只有文本改动或没有文件改动，且正在看开发环境预览时，重新加载 iframe
    */
   const handleConversationEnd = useCallback(() => {
     const refreshFileTreeAndSelectedFile =
@@ -1805,12 +1809,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       if (hasPendingIntervention) {
         return;
       }
+      // 刷新只看结束当下是否正在看开发环境预览，避免切过去之后误刷新
+      const showingDevAppPreview =
+        dbEnvRef.current === UserAppDbEnvEnum.Dev &&
+        workspaceViewRef.current === 'app-preview';
       if (latestRoundChangedWorkspaceFiles(endedMessages)) {
         returnToDevAppPreviewRef.current();
-        // 只改 md、txt、json 等文本时不打包；代码或资源有变化才重启编译
+        // 代码或资源有变化才重启编译；只改文本时不打包
         if (latestRoundNeedsPreviewRebuild(endedMessages)) {
           rebuildDevPreviewAfterWorkspaceChangeRef.current();
+        } else if (showingDevAppPreview) {
+          refreshDevPreviewIframeRef.current();
         }
+      } else if (showingDevAppPreview) {
+        // 本轮没有文件改动，开发环境预览仍在前台时重新加载页面
+        refreshDevPreviewIframeRef.current();
       }
     } catch (error) {
       console.error('[AppDevPro] 会话结束后回到开发环境预览失败', error);
@@ -3208,6 +3221,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     setPreviewRefreshKey((prev) => prev + 1);
   }, []);
+  refreshDevPreviewIframeRef.current = handleRefreshPreview;
 
   /** 切换构建包版本记录侧栏；与发布版本记录互斥 */
   const handleToggleBuildVersionRecords = useCallback(() => {
@@ -3804,6 +3818,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                     onNavigatePreview={handleNavigatePreview}
                     onRefreshPreview={handleRefreshPreview}
                   />
+                  {previewConversationActive ? (
+                    <span className={cx(styles['preview-session-error-hint'])}>
+                      {dict('PC.Pages.AppDevPro.previewDevErrorIgnoreHint')}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
             </div>
