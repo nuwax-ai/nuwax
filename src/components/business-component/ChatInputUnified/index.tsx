@@ -505,6 +505,12 @@ const ChatInputUnifiedImpl: React.FC<
     : guidQuestionDtos || [];
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
+  const stopAttemptRef = useRef(0);
+  const stopOwnerId = getCurrentConversationId?.() ?? conversationInfo?.id;
+  useEffect(() => {
+    stopAttemptRef.current += 1;
+    setIsStoppingConversation(false);
+  }, [stopOwnerId]);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
@@ -665,10 +671,11 @@ const ChatInputUnifiedImpl: React.FC<
   );
 
   useEffect(() => {
-    if (!isSessionActive) {
+    if (!isSessionActive && !loadingStopConversation) {
+      stopAttemptRef.current += 1;
       setIsStoppingConversation(false);
     }
-  }, [isSessionActive]);
+  }, [isSessionActive, loadingStopConversation]);
 
   // 本输入框所属会话 id（发送清草稿 / 队列编辑回填过滤 / 草稿缓存共用；
   // 须先于 confirmSendMessage 定义，ref 供其读取当前值）
@@ -687,6 +694,7 @@ const ChatInputUnifiedImpl: React.FC<
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const confirmSendMessage = (value: string) => {
+    if (isStoppingConversation || loadingStopConversation) return;
     if (!!value.trim() || !!files?.length) {
       onEnter(
         value,
@@ -957,17 +965,23 @@ const ChatInputUnifiedImpl: React.FC<
       return;
     }
     setIsStoppingConversation(true);
+    const attempt = ++stopAttemptRef.current;
 
     const requestId = getCurrentConversationRequestId?.() ?? '';
     const conversationId = getCurrentConversationId?.() ?? null;
 
-    if (onTempChatStop && requestId) {
-      onTempChatStop(requestId);
-    } else if (conversationId && runStopConversation) {
-      // 停止的是当前会话：暂停队列自动消费，避免停止后立即发送下一条排队消息。
-      // 仅真实会话停止才暂停；临时会话（onTempChatStop）停止与本会话队列无关。
-      onUserStopConversation?.();
-      runStopConversation(conversationId.toString());
+    try {
+      if (onTempChatStop && requestId) {
+        await onTempChatStop(requestId);
+      } else if (conversationId && runStopConversation) {
+        onUserStopConversation?.();
+        await runStopConversation(conversationId.toString());
+      } else {
+        setIsStoppingConversation(false);
+      }
+    } catch (error) {
+      if (stopAttemptRef.current === attempt) setIsStoppingConversation(false);
+      console.error('[chatInput] stop request failed', error);
     }
   }, [
     isStoppingConversation,

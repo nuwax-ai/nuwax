@@ -37,6 +37,7 @@
     "lint:arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
     "lint:arch:baseline": "depcruise src --config .dependency-cruiser.cjs --output-type baseline --output-to .dependency-cruiser-known-violations.json",
     "prepare": "husky",
+    "pull:micro-app-pins": "node scripts/pull-micro-app-pins.mjs",
     "release": "standard-version",
     "release:major": "standard-version --release-as major",
     "release:minor": "standard-version --release-as minor",

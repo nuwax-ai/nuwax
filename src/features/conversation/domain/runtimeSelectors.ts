@@ -1,4 +1,4 @@
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 
@@ -106,9 +106,23 @@ export function shouldShowTaskExecutingWait(
   taskStatus: TaskStatus | undefined,
   messageList: MessageInfo[] | undefined | null,
 ): boolean {
-  return (
-    isTaskExecuting(taskStatus) && !hasActiveStreamingInMessages(messageList)
-  );
+  if (
+    !isTaskExecuting(taskStatus) ||
+    hasActiveStreamingInMessages(messageList)
+  ) {
+    return false;
+  }
+  // FINAL_RESULT 已结束本轮；详情中的 EXECUTING 可能滞后，不能因此重新显示
+  // 等待横幅。只检查当前 user 之后的消息，避免上一轮终态影响手机的新一轮。
+  const messages = messageList ?? [];
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.role === AssistantRoleEnum.USER) break;
+    if (message.role === AssistantRoleEnum.ASSISTANT && message.finalResult) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function shouldShowSessionSuggest(

@@ -1,5 +1,5 @@
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function useMarkdownRender({
@@ -14,6 +14,8 @@ export default function useMarkdownRender({
   const markdownRef = useRef<MarkdownCMDRef>(null);
   const messageIdRef = useRef<string>(id ? String(id) : uuidv4());
   const currentIdRef = useRef<string>(messageIdRef.current);
+  // 消费方在 render 中用该标识作为 Markdown key，不能等 effect 才更新。
+  if (id) messageIdRef.current = String(id);
   const flushFrameRef = useRef<number | null>(null);
   const latestAnswerRef = useRef(answer);
   const latestThinkingRef = useRef(thinking);
@@ -39,6 +41,7 @@ export default function useMarkdownRender({
   }, []);
 
   const flushLatestMarkdown = useCallback(() => {
+    if (!markdownRef.current) return;
     const latestAnswer = latestAnswerRef.current;
     const latestThinking = latestThinkingRef.current;
     let hasResetAnswer = false;
@@ -98,34 +101,47 @@ export default function useMarkdownRender({
     });
   }, [flushLatestMarkdown]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    latestAnswerRef.current = answer;
+    latestThinkingRef.current = thinking;
     const nextId = id ? String(id) : currentIdRef.current;
-    if (nextId && nextId !== currentIdRef.current) {
+    const idChanged = !!nextId && nextId !== currentIdRef.current;
+    const contentReplaced =
+      !answer.startsWith(lastRawAnswer.current) ||
+      thinking.length < lastTextPos.current.thinking;
+    if (idChanged || contentReplaced) {
       clearPendingFlush();
       markdownRef.current?.clear();
       resetRenderState();
       currentIdRef.current = nextId;
       messageIdRef.current = nextId;
     }
-  }, [clearPendingFlush, id, resetRenderState]);
-
-  useEffect(() => {
-    latestAnswerRef.current = answer;
-    scheduleFlush();
-  }, [answer, scheduleFlush]);
-
-  useEffect(() => {
-    latestThinkingRef.current = thinking;
-    scheduleFlush();
-  }, [scheduleFlush, thinking]);
+    // 首次正文与非增量替换在浏览器绘制前写入；旧正文不能留到下一个 rAF。
+    // 已安排的流式追加仍按帧合并，避免每个 SSE 分片都触发一次 Markdown 解析。
+    const firstContent =
+      flushFrameRef.current === null &&
+      lastTextPos.current.answer === 0 &&
+      lastTextPos.current.thinking === 0;
+    if (markdownRef.current && (idChanged || contentReplaced || firstContent)) {
+      flushLatestMarkdown();
+    } else {
+      scheduleFlush();
+    }
+  }, [
+    answer,
+    thinking,
+    id,
+    clearPendingFlush,
+    resetRenderState,
+    flushLatestMarkdown,
+    scheduleFlush,
+  ]);
 
   useEffect(() => {
     return () => {
       clearPendingFlush();
-      resetRenderState();
-      messageIdRef.current = '';
     };
-  }, [clearPendingFlush, resetRenderState]);
+  }, [clearPendingFlush]);
 
   return {
     markdownRef,

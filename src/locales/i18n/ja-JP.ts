@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "カスタム周期",
   "PC.Pages.Login.hostSessionSyncFailed": "デスクトップのログイン状態を同期できませんでした。再試行するか、クライアントを更新してください。",
   "PC.Layouts.Setting.AccountBind.loadFailed": "連携アカウント情報を読み込めません。更新して再試行してください。",
   "PC.Routes.licenseConfig": "ライセンス",
@@ -7078,4 +7079,5 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "機密",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "機密データへのアクセスやユーザーに代わる操作が可能になります。必要な場合のみ申請してください",
   "PC.Components.OAuthScopeSetting.submitted": "保存しました。権限範囲の変更を審査に提出しました",
+  "PC.Components.CommercialLicense.authorizationRequired": "試用ライセンスまたは商用ライセンスについて、公式窓口にお問い合わせください。",
 };

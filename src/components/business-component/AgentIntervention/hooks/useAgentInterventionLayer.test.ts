@@ -51,6 +51,36 @@ describe('useAgentInterventionLayer', () => {
     );
   });
 
+  it('returns the send Promise and restores resolution when send entry rejects', async () => {
+    const rollback = vi.fn();
+    conversationInfoHandlers.respondMcpAsk.mockResolvedValue({
+      text: 'resume',
+      rollback,
+    });
+    const { result } = renderHook(() =>
+      useAgentInterventionLayer({
+        conversationId: 1,
+        messageList: [],
+        onSendMessage: vi.fn().mockRejectedValue(new Error('before-send')),
+      }),
+    );
+    await act(async () => {
+      await expect(
+        result.current.chatLayerProps.onRespondMcpAsk(
+          { input: { requestId: 'ask-1' }, responseStatus: 'pending' } as any,
+          {
+            action: 'submit',
+            interventionId: 'ask-1',
+            revision: 1,
+            source: 'mcp_ask',
+            protocol: 'mcp',
+          },
+        ),
+      ).rejects.toThrow('before-send');
+    });
+    expect(rollback).toHaveBeenCalledOnce();
+  });
+
   it('uses injected interventionHandlers for isolated session sources', async () => {
     const onSendMessage = vi.fn();
     const respondMcpAsk = vi

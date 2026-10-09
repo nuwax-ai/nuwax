@@ -8,6 +8,7 @@ export const EVENT_TYPE: Record<string, EventTypeEnum> = {
   UpdateConversationListTaskStatus:
     EventTypeEnum.UpdateConversationListTaskStatus, // 乐观更新左侧会话执行状态
   ConversationChanged: EventTypeEnum.ConversationChanged,
+  ConversationTaskStatusObserved: EventTypeEnum.ConversationTaskStatusObserved,
   ProjectChanged: EventTypeEnum.ProjectChanged,
   CloseMobileMenu: EventTypeEnum.CloseMobileMenu, // 移动端菜单关闭请求（会话行点击）
 };

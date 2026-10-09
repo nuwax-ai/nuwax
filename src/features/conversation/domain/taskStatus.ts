@@ -164,6 +164,7 @@ export function resolveTaskStatusFromMessageList(
   }
   for (let index = messageList.length - 1; index >= 0; index -= 1) {
     const message = messageList[index];
+    if (message.role === AssistantRoleEnum.USER) return undefined;
     if (message.role !== AssistantRoleEnum.ASSISTANT) {
       continue;
     }

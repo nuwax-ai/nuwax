@@ -2,6 +2,7 @@ import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { conversationErrorTerminalLogger } from '@/utils/logger';
+import { preserveResolvedMcpAskInteractions } from '@/utils/mcpAskResolution';
 import { isEqual } from 'lodash';
 
 /**
@@ -183,6 +184,41 @@ const getIdlessMessageKey = (message: MessageInfo): string => {
     : `idless:${getIdlessMessageSignature(message)}`;
 };
 
+/** 跨端重复指令不能仅凭文本猜测本地 user 属于哪一轮。 */
+const findIncomingUserIndex = (
+  clientUser: MessageInfo,
+  incoming: MessageInfo[],
+): number => {
+  const exactIndex = incoming.findIndex(
+    (message) =>
+      message.role === AssistantRoleEnum.USER &&
+      sameStableId(message.id, clientUser.id),
+  );
+  if (exactIndex >= 0) return exactIndex;
+  const renderKey = clientUser.clientRenderKey || String(clientUser.id);
+  const keyMatches = incoming.flatMap((message, index) =>
+    message.role === AssistantRoleEnum.USER &&
+    message.clientRenderKey === renderKey
+      ? [index]
+      : [],
+  );
+  if (keyMatches.length === 1) return keyMatches[0];
+  if (!isOptimisticMessageId(clientUser.id)) return -1;
+  const candidates = incoming.flatMap((message, index) =>
+    message.role === AssistantRoleEnum.USER &&
+    (message.text || '').trim() === (clientUser.text || '').trim()
+      ? [index]
+      : [],
+  );
+  const requestMatches = clientUser.requestId
+    ? candidates.filter(
+        (index) => incoming[index].requestId === clientUser.requestId,
+      )
+    : [];
+  const matches = requestMatches.length ? requestMatches : candidates;
+  return matches.length === 1 ? matches[0] : -1;
+};
+
 /**
  * 将最近一轮的客户端渲染标识迁移到对应的服务端消息，并返回
  * 「服务端消息下标 → 对应本地客户端消息」的映射。
@@ -206,28 +242,7 @@ const preserveClientRenderKeys = (
   const result = [...incoming];
   // 已落库 user 必须按 ID 定位。跨端可以连续发送相同文案，按文本倒序
   // 匹配会把旧轮 clientRenderKey/终态正文迁移到手机新轮，污染新回答。
-  let cursor = result.findIndex(
-    (message) =>
-      message.role === AssistantRoleEnum.USER &&
-      sameStableId(message.id, clientUser.id),
-  );
-  if (cursor < 0 && isOptimisticMessageId(clientUser.id)) {
-    // 尚未落库的本地 UUID user 才需要文本兜底；重复指令无法唯一定位时
-    // 保留服务端内容，不猜测归属，否则同样会污染跨端新轮。
-    const candidates = result.flatMap((message, index) =>
-      message.role === AssistantRoleEnum.USER &&
-      (message.text || '').trim() === (clientUser.text || '').trim()
-        ? [index]
-        : [],
-    );
-    const requestMatches = clientUser.requestId
-      ? candidates.filter(
-          (index) => result[index].requestId === clientUser.requestId,
-        )
-      : [];
-    const matches = requestMatches.length ? requestMatches : candidates;
-    if (matches.length === 1) cursor = matches[0];
-  }
+  let cursor = findIncomingUserIndex(clientUser, result);
   if (cursor < 0) {
     return { list: incoming, localByIncomingIndex };
   }
@@ -433,10 +448,9 @@ export function needsTerminalHistoryReload(
  *
  * 去重（避免重复/错序）：
  * - 尾巴里的 user 文本全部已在 incoming（后端落库了这轮 user）：
- *   - 若 incoming 末条已是落库 assistant（非 Loading）→ 整轮（user+assistant）
- *     都已落库，丢弃整段尾巴；
- *   - 否则 assistant 仍在途（流式中）→ 丢弃 userOpt，但**保留 assistant 占位**，
- *     它是 SSE 流式分片回填的目标（按 uuid 定位），丢了会导致后续 chunk 无法拼接。
+ *   - 按 user 标识或唯一文本定位各自轮次；该轮已含落库终态 assistant 时丢弃本地尾巴；
+ *   - 仍在途的 assistant 保留在自己的 user 后、下一条 user 前，保护 SSE 的 UUID
+ *     回填目标；不能追加到手机新轮末尾，否则上一轮正文会显示为新回答。
  * - user 尚未落库 → 保留整段尾巴。
  *
  * 前提：本函数假设「reload/切会话」即续同一调试会话（dev 页面 devConversationId
@@ -487,22 +501,71 @@ export function preserveOptimisticMessageTail(
       ),
     );
     if (allUserPersisted) {
-      // user 已落库：判断本轮 assistant 是否也落库（incoming 末条为落库 assistant）
-      const lastIncoming = incoming[incoming.length - 1];
-      const assistantPersisted =
-        !!lastIncoming &&
-        lastIncoming.role === AssistantRoleEnum.ASSISTANT &&
-        !isOptimisticMessageId(lastIncoming.id) &&
-        !isIncompleteStatus(lastIncoming.status);
-      if (assistantPersisted) {
-        // 整轮（user+assistant）都已落库 → 丢弃整段尾巴
-        return incoming;
-      }
-      // user 已落库但 assistant 仍在途 → 丢弃 userOpt，保留 assistant 占位（SSE 流式目标）
-      const assistantTail = tail.filter(
-        (m) => m.role === AssistantRoleEnum.ASSISTANT,
+      // 旧本地 user 已落库后，末条可能是手机的新 user / 新 loading assistant。
+      // 必须逐轮找回归属，不能把所有本地 assistant 追加到 incoming 最后。
+      const userPositions = tail.flatMap((message, index) =>
+        message.role === AssistantRoleEnum.USER ? [index] : [],
       );
-      return assistantTail.length ? [...incoming, ...assistantTail] : incoming;
+      const inserts = new Map<number, MessageInfo[]>();
+      const insertAt = (index: number, messages: MessageInfo[]) => {
+        if (messages.length) {
+          inserts.set(index, [...(inserts.get(index) || []), ...messages]);
+        }
+      };
+      userPositions.forEach((position, roundIndex) => {
+        const localRound = tail.slice(
+          position,
+          userPositions[roundIndex + 1] ?? tail.length,
+        );
+        const assistantTail = localRound.filter(
+          (message) => message.role === AssistantRoleEnum.ASSISTANT,
+        );
+        const anchorIndex = findIncomingUserIndex(localRound[0], incoming);
+        if (anchorIndex < 0) {
+          // 无法唯一定位的终态内容以快照为准。仍在途的消息保留自己的 user，
+          // 保护 SSE 的 UUID 写入目标，也避免借用手机的新 user 作为父轮。
+          if (
+            assistantTail.some((message) => isIncompleteStatus(message.status))
+          ) {
+            insertAt(incoming.length, localRound);
+          }
+          return;
+        }
+        const nextUserIndex = incoming.findIndex(
+          (message, index) =>
+            index > anchorIndex && message.role === AssistantRoleEnum.USER,
+        );
+        const roundEnd = nextUserIndex < 0 ? incoming.length : nextUserIndex;
+        const lastAssistant = incoming
+          .slice(anchorIndex + 1, roundEnd)
+          .reverse()
+          .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
+        if (
+          lastAssistant &&
+          !isOptimisticMessageId(lastAssistant.id) &&
+          !isIncompleteStatus(lastAssistant.status)
+        ) {
+          return;
+        }
+        const missing = assistantTail.filter(
+          (message) =>
+            !incoming.some((item) => sameStableId(item.id, message.id)),
+        );
+        insertAt(
+          roundEnd,
+          nextUserIndex >= 0
+            ? missing.map(completeAssistantPlaceholder)
+            : missing,
+        );
+      });
+      if (!inserts.size) return incoming;
+      return [
+        ...incoming.flatMap((message, index) => [
+          ...(inserts.get(index) || []),
+          message,
+        ]),
+        ...(inserts.get(incoming.length) || []),
+      ];
     }
     // user 尚未落库 → 保留整段尾巴
     return [...incoming, ...tail];
@@ -574,7 +637,10 @@ export function reconcileConversationSnapshotMessages(
   incoming: MessageInfo[] | undefined | null,
 ): MessageInfo[] {
   const currentList = current || [];
-  const incomingList = incoming || [];
+  const incomingList = preserveResolvedMcpAskInteractions(
+    currentList,
+    incoming || [],
+  );
   if (!incomingList.length) {
     return currentList;
   }

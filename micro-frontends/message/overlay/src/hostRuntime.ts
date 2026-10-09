@@ -4,6 +4,7 @@ export const MESSAGE_BASE = '/instant-message';
 export interface MessageHostProps {
   container?: HTMLElement;
   path?: string;
+  navigationRevision?: number;
   active?: boolean;
   onNavigate?: (path: string, replace: boolean) => void;
   onAuthExpired?: (target: string) => void;
@@ -11,10 +12,15 @@ export interface MessageHostProps {
 
 interface MessageHostSnapshot {
   path: string;
+  navigationRevision: number;
   active: boolean;
 }
 
-let snapshot: MessageHostSnapshot = { path: MESSAGE_BASE, active: true };
+let snapshot: MessageHostSnapshot = {
+  path: MESSAGE_BASE,
+  navigationRevision: 0,
+  active: true,
+};
 let root: HTMLElement | null = null;
 let embedded = false;
 let onAuthExpired: MessageHostProps['onAuthExpired'];
@@ -90,6 +96,7 @@ export function beginMessageRuntime(
   embedded = isEmbedded;
   onAuthExpired = props.onAuthExpired;
   snapshot = {
+    navigationRevision: props.navigationRevision ?? 0,
     path:
       normalizeMessagePath(props.path) ??
       normalizeMessagePath(
@@ -135,6 +142,7 @@ export function updateMessageRuntime(props: MessageHostProps): void {
   const active = props.active ?? snapshot.active;
   snapshot = {
     active,
+    navigationRevision: props.navigationRevision ?? snapshot.navigationRevision,
     // 隐藏时不吞主站/资料库路径，恢复继续保留消息自己的当前位置。
     path: active
       ? normalizeMessagePath(props.path) ?? snapshot.path
@@ -191,5 +199,5 @@ export function endMessageRuntime(): void {
   root = null;
   embedded = false;
   onAuthExpired = undefined;
-  snapshot = { path: MESSAGE_BASE, active: true };
+  snapshot = { path: MESSAGE_BASE, navigationRevision: 0, active: true };
 }

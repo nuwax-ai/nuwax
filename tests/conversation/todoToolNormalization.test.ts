@@ -245,6 +245,47 @@ const turnNodes = (messages: MessageInfo[]): ConversationProcessNode[] =>
   projectConversation(messages).turns[0]?.nodes ?? [];
 
 describe('投影层：TodoWrite 段归一与相邻去重', () => {
+  it.each(['TodoWrite', '工具调用', ''])(
+    'live 标签仍为 %s，结果已更新为 todo 名称时，Plan 与工具只展示一份清单',
+    (liveName) => {
+      const message = assistantMessage(
+        processTag({
+          executeId: 'todo-live',
+          name: liveName,
+          status: 'EXECUTING',
+        }) +
+          processTag({
+            executeId: 'plan-live',
+            name: '执行计划',
+            type: 'Plan',
+          }),
+      );
+      message.status = 'loading' as MessageInfo['status'];
+      message.processingList = [
+        {
+          executeId: 'todo-live',
+          type: 'ToolCall',
+          name: '6 todos',
+          status: 'FINISHED',
+          result: { executeId: 'todo-live', ...TODO_WIRE_RESULT },
+        },
+        {
+          executeId: 'plan-live',
+          type: 'Plan',
+          name: '执行计划',
+          status: 'FINISHED',
+          result: {
+            executeId: 'plan-live',
+            data: TODO_WIRE_RESULT.input.todos,
+          },
+        },
+      ] as MessageInfo['processingList'];
+      const nodes = turnNodes([message]);
+      expect(nodes.filter(isTodoTraceNode)).toHaveLength(1);
+      expect(nodes.map((node) => node.executeId)).toEqual(['plan-live']);
+    },
+  );
+
   it('TodoWrite 段投影为可接管的待办卡节点', () => {
     const nodes = turnNodes([
       assistantMessage(processTag({ executeId: 'ex-1', name: '6 todos' }), [

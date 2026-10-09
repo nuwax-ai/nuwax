@@ -396,47 +396,48 @@ describe('conversationRuntimeSession', () => {
     );
   });
 
-  it('stop：中断连接、消息终态 Stopped', () => {
+  it('stop：接口成功仍保留 live，接收尾部正文并以后台终态收尾', async () => {
     const stopRequest = vi.fn().mockResolvedValue(undefined);
-    const { session } = createSession({ stopRequest });
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ stopRequest, applyTaskStatus });
     const abort = vi.fn();
     mockOpenLive.mockReturnValue(abort);
     session.send({ conversationId: 1001, message: '你好' });
-
-    session.stop(1001);
-
-    expect(abort).toHaveBeenCalledTimes(1);
-    expect(session.store.getSnapshot()[1].status).toBe(
-      MessageStatusEnum.Stopped,
-    );
+    const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+    await session.stop(1001);
     expect(stopRequest).toHaveBeenCalledWith('1001');
+    expect(abort).not.toHaveBeenCalled();
+    expect(session.getState().isStopping).toBe(true);
+    callbacks.onMessage(messageEvent('停止前的尾部输出'));
+    expect(session.store.getSnapshot()[1].text).toContain('停止前的尾部输出');
+    callbacks.onMessage({
+      eventType: 'FINAL_RESULT',
+      data: { success: true, taskStatus: TaskStatus.COMPLETE },
+    } as never);
+    callbacks.onClose();
+    expect(session.getState().isStopping).toBe(false);
+    expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.COMPLETE);
+    expect(abort).not.toHaveBeenCalled();
   });
 
-  it('stop：发送后立即停止（无时间间隔）活跃态必须强制复位（禅道bug2528）', () => {
-    // 复现路径：发送后 3s 保活窗口内用户点停止——修复前 stop 走受窗口
-    // 约束的复位被拒绝，isConversationActive 永久卡 true，叠加输入框
-    // isStoppingConversation 只在会话不活跃时复位 → 停止/发送双双卡死
+  it('stop：同毫秒点击停止阻止重复请求和新发送，终态后可以再发', async () => {
     const stopRequest = vi.fn().mockResolvedValue(undefined);
     const { session } = createSession({ stopRequest });
     mockOpenLive.mockReturnValue(vi.fn());
-
     session.send({ conversationId: 1001, message: '你好' });
+    const pending = session.stop(1001);
+    expect(session.stop(1001)).toBe(pending);
+    session.send({ conversationId: 1001, message: '等待时不能发送' });
+    await pending;
+    expect(stopRequest).toHaveBeenCalledTimes(1);
+    expect(mockOpenLive).toHaveBeenCalledTimes(1);
     expect(session.getState().isConversationActive).toBe(true);
-
-    // 同步立即停止（Date.now 与 send 同毫秒，保活窗口内）
-    session.stop(1001);
-
-    expect(session.getState().isConversationActive).toBe(false);
-    // 活跃态复位后可立即发起新一轮发送（不被残留活跃态拦截）
+    session.finalizeConversationTerminal(1001, TaskStatus.CANCEL);
     session.send({ conversationId: 1001, message: '再次提问' });
-    expect(session.getState().isConversationActive).toBe(true);
-    const secondRoundUser = session.store
-      .getSnapshot()
-      .find((message) => message.text === '再次提问');
-    expect(secondRoundUser).toBeTruthy();
+    expect(mockOpenLive).toHaveBeenCalledTimes(2);
   });
 
-  it('stop：sub 恢复中也要断开连接，成功后写 CANCEL 释放合成活跃态', async () => {
+  it('stop：sub 恢复时不主动断流，不凭 HTTP 成功写 CANCEL', async () => {
     const abortSub = vi.fn();
     mockCreateSSE.mockReturnValue(abortSub);
     const applyTaskStatus = vi.fn();
@@ -445,36 +446,91 @@ describe('conversationRuntimeSession', () => {
       applyTaskStatus,
     });
     session.resumeConversationStream(1001, []);
-
-    session.stop(1001);
-    await Promise.resolve();
-
-    expect(abortSub).toHaveBeenCalledOnce();
+    await session.stop(1001);
+    expect(abortSub).not.toHaveBeenCalled();
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().isStopping).toBe(true);
+    const callbacks = mockCreateSSE.mock.calls[0][0];
+    callbacks.onMessage({
+      eventType: 'FINAL_RESULT',
+      data: { success: false, taskStatus: TaskStatus.CANCEL },
+    });
+    callbacks.onClose();
+    expect(session.getState().isStopping).toBe(false);
     expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.CANCEL);
-    expect(session.getState().isAwaitingChatTerminal).toBe(false);
-    expect(session.getState().isConversationActive).toBe(false);
   });
 
-  it('stop：旧停止请求成功迟到不能取消同会话新一轮', async () => {
-    let resolveStop!: () => void;
-    const applyTaskStatus = vi.fn();
+  it('stop：无 FINAL 自然关闭后查询终态解除等待，查询迟到不能影响新轮次', async () => {
     const { session } = createSession({
-      stopRequest: () =>
-        new Promise<void>((resolve) => {
-          resolveStop = resolve;
+      stopRequest: vi.fn().mockResolvedValue(undefined),
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    mockSyncTerminal.mockResolvedValueOnce(TaskStatus.CANCEL);
+    session.send({ conversationId: 1001, message: '提问' });
+    await session.stop(1001);
+    (mockOpenLive.mock.calls[0][1] as LiveCallbacks).onClose();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(session.getState().isStopping).toBe(false);
+    let resolve!: (status: TaskStatus) => void;
+    mockSyncTerminal.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
         }),
-      applyTaskStatus,
+    );
+    session.send({ conversationId: 1001, message: '下一轮' });
+    (mockOpenLive.mock.calls[1][1] as LiveCallbacks).onClose();
+    session.send({ conversationId: 1001, message: '最新轮' });
+    await session.stop(1001);
+    resolve(TaskStatus.CANCEL);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(session.getState().isStopping).toBe(true);
+  });
+
+  it('stop：失败保留连接并释放停止锁，允许重试', async () => {
+    const stopRequest = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(undefined);
+    const { session } = createSession({ stopRequest });
+    const abort = vi.fn();
+    mockOpenLive.mockReturnValue(abort);
+    session.send({ conversationId: 1001, message: '你好' });
+    await expect(session.stop(1001)).rejects.toThrow('network');
+    expect(session.getState().isStopping).toBe(false);
+    expect(session.getState().isConversationActive).toBe(true);
+    expect(abort).not.toHaveBeenCalled();
+    await session.stop(1001);
+    expect(stopRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('stop：旧停止请求在切会话后失败，不影响新会话停止状态', async () => {
+    let rejectStop!: (error: Error) => void;
+    const { session } = createSession({
+      stopRequest: vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((_, reject) => {
+              rejectStop = reject;
+            }),
+        )
+        .mockResolvedValue(undefined),
     });
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({ conversationId: 1001, message: '旧轮' });
-    session.stop(1001);
-    session.send({ conversationId: 1001, message: '新轮' });
-    resolveStop();
+    const oldStop = session.stop(1001);
+    const caught = oldStop.catch(() => undefined);
     await Promise.resolve();
-
-    expect(applyTaskStatus).not.toHaveBeenCalled();
-    expect(session.getState().isConversationActive).toBe(true);
-    expect(session.getState().isAwaitingChatTerminal).toBe(true);
+    session.resetForConversationSwitch();
+    session.send({ conversationId: 1002, message: '新轮' });
+    await session.stop(1002);
+    rejectStop(new Error('old'));
+    await caught;
+    expect(session.getState().isStopping).toBe(true);
+    expect(session.getState().currentConversationId).toBe(1002);
   });
 
   it('stop：任务终态后 setConversationActive 保活窗口机制随窗口一并移除——onClose 复位不再受 3s 约束', () => {
@@ -545,6 +601,7 @@ describe('conversationRuntimeSession', () => {
     expect(abortLive).toHaveBeenCalledTimes(1);
     expect(session.store.getSnapshot()).toEqual([]);
     expect(session.getState()).toEqual({
+      isStopping: false,
       isConversationActive: false,
       isAwaitingChatTerminal: false,
       currentRequestId: '',
@@ -649,6 +706,60 @@ describe('conversationRuntimeSession', () => {
 
     resumeCallbacks.onClose();
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
+  });
+
+  it('跨端新 user 后收到旧轮 FINAL_RESULT，不能复制旧回答或把新轮标为完成', () => {
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ applyTaskStatus });
+    mockCreateSSE.mockReturnValue(vi.fn());
+    const history = [
+      {
+        id: 'old-user',
+        role: AssistantRoleEnum.USER,
+        time: '2026-10-08T13:34:53Z',
+      },
+      {
+        id: 'old-answer',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '旧回答',
+        time: '2026-10-08T13:35:02Z',
+      },
+      {
+        id: 'mobile-user',
+        role: AssistantRoleEnum.USER,
+        text: '你来确认',
+        time: '2026-10-08T13:35:12Z',
+      },
+    ] as MessageInfo[];
+    session.resumeConversationStream(1695407, history);
+    const { onMessage } = mockCreateSSE.mock.calls[0][0];
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'old-run',
+      completed: true,
+      data: {
+        success: true,
+        outputText: '旧回答',
+        endTime: Date.parse('2026-10-08T13:35:02Z'),
+      },
+    });
+    expect(session.store.getSnapshot()[3].finalResult).toBeUndefined();
+    expect(session.store.getSnapshot()[3].text).toBe('');
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().currentRequestId).not.toBe('old-run');
+    onMessage({ ...messageEvent('本轮新回答'), requestId: 'new-run' });
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'new-run',
+      completed: true,
+      data: {
+        success: true,
+        outputText: '本轮新回答',
+        endTime: Date.parse('2026-10-08T13:38:57Z'),
+      },
+    });
+    expect(session.store.getSnapshot()[3].text).toBe('本轮新回答');
+    expect(applyTaskStatus).toHaveBeenCalledWith(1695407, TaskStatus.COMPLETE);
   });
 
   it('R3 resume：sub FINAL_RESULT 统一清算半途快照、恢复占位与执行中工具', () => {

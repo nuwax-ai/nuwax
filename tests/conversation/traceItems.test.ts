@@ -65,6 +65,7 @@ describe('composeConversationTraceItems', () => {
   });
 
   it.each([
+    'reasoning',
     'context',
     'plan',
     'subagent',
@@ -91,7 +92,7 @@ describe('composeConversationTraceItems', () => {
   });
 
   it.each([true, false])(
-    '思考不拆散同一过程段的工具组，展开顺序保留（running=%s）',
+    '思考切断工具组并独立显示，节点顺序保留（running=%s）',
     (running) => {
       const nodes = [
         node('leading-think', 'reasoning'),
@@ -104,20 +105,12 @@ describe('composeConversationTraceItems', () => {
         node('trailing-think', 'reasoning'),
       ];
       const items = composeConversationTraceItems(nodes, running);
-      expect(items.map((item) => item.kind)).toEqual(['tool-group']);
-      const group = items[0];
-      expect(group).toMatchObject({ id: 'tool-group:read-1', active: running });
-      if (group.kind !== 'tool-group') return;
-      expect(group.nodes.map((item) => item.id)).toEqual(
+      expect(items.map((item) => item.kind)).toEqual(
+        nodes.map(() => 'standalone'),
+      );
+      expect(items.map((item) => item.id)).toEqual(
         nodes.map((item) => item.id),
       );
-      expect(group.actionKinds).toEqual(['file-read', 'terminal', 'file-edit']);
-      expect(
-        composeConversationTraceItems(nodes.slice(0, -1), running)[0],
-      ).toMatchObject({
-        id: group.id,
-        active: running,
-      });
     },
   );
 

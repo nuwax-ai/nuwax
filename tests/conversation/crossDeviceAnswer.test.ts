@@ -2,6 +2,7 @@
 import { projectConversation } from '@/features/conversation/presentation-v2/projectConversation';
 import {
   appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
 } from '@/models/conversationInfoMessageList';
 import { AssistantRoleEnum, MessageModeEnum } from '@/types/enums/agent';
@@ -51,6 +52,139 @@ const mobileSnapshot = () => [
 ];
 
 describe('跨端快照回答归属', () => {
+  it('手机新轮仅落库 user 时，上一轮 UUID assistant 不能追加到手机轮下面', () => {
+    const local = localRound();
+    const incoming = [
+      ...pcSnapshot(),
+      message('u-mobile', AssistantRoleEnum.USER, '参考你的建议'),
+    ];
+    const merged = reconcileConversationSnapshotMessages(local, incoming);
+    expect(merged.map((item) => item.text)).toEqual([
+      '确认',
+      'PC 第一轮回答',
+      '参考你的建议',
+    ]);
+    expect(projectConversation(merged).turns[1].assistantMessages).toHaveLength(
+      0,
+    );
+  });
+
+  it('手机轮已有空白 loading assistant 时，PC 旧回答仍只属于旧轮', () => {
+    const incoming = [
+      ...pcSnapshot(),
+      message('u-mobile', AssistantRoleEnum.USER, '参考你的建议'),
+      message('a-mobile', AssistantRoleEnum.ASSISTANT, '', {
+        status: MessageStatusEnum.Loading,
+      }),
+    ];
+    const merged = reconcileConversationSnapshotMessages(
+      localRound(),
+      incoming,
+    );
+    expect(merged).toHaveLength(4);
+    expect(projectConversation(merged).turns[1].finalAnswer.text).toBe('');
+  });
+
+  it('重装历史时，本地旧回答尚未落库也必须留在手机新 user 之前', () => {
+    const local = localRound();
+    const incoming = [
+      pcSnapshot()[0],
+      message('u-mobile', AssistantRoleEnum.USER, '参考你的建议'),
+    ];
+    const merged = preserveOptimisticMessageTail(local, incoming);
+    expect(merged.map((item) => item.text)).toEqual([
+      '确认',
+      'PC 第一轮回答',
+      '参考你的建议',
+    ]);
+    expect(projectConversation(merged).turns[1].assistantMessages).toHaveLength(
+      0,
+    );
+  });
+
+  it('手机重复同一指令且尚无回答时，不把无法唯一定位的 PC 终态尾巴加到手机轮', () => {
+    const incoming = [
+      ...pcSnapshot(),
+      message('u-mobile', AssistantRoleEnum.USER, '确认'),
+    ];
+    const merged = reconcileConversationSnapshotMessages(
+      localRound(),
+      incoming,
+    );
+    expect(merged.map((item) => item.text)).toEqual([
+      '确认',
+      'PC 第一轮回答',
+      '确认',
+    ]);
+    expect(projectConversation(merged).turns[1].assistantMessages).toHaveLength(
+      0,
+    );
+  });
+
+  it('连续两轮本地 UUID 各自归位，不把较早轮的回答带进最后一轮', () => {
+    const secondUser = '7233af1e-2fa9-4328-9e7a-183829c2589a';
+    const secondAssistant = '73c0dc1a-0c45-4d6f-8a4d-b18463e3d3b6';
+    const local = [
+      ...localRound(),
+      message(secondUser, AssistantRoleEnum.USER, '第二轮'),
+      message(secondAssistant, AssistantRoleEnum.ASSISTANT, '第二轮已输出', {
+        status: MessageStatusEnum.Incomplete,
+      }),
+    ];
+    const incoming = [
+      ...pcSnapshot(),
+      message('u-second', AssistantRoleEnum.USER, '第二轮'),
+      message('u-mobile', AssistantRoleEnum.USER, '手机新轮'),
+    ];
+    const merged = preserveOptimisticMessageTail(local, incoming);
+    expect(merged.map((item) => item.text)).toEqual([
+      '确认',
+      'PC 第一轮回答',
+      '第二轮',
+      '第二轮已输出',
+      '手机新轮',
+    ]);
+    expect(projectConversation(merged).turns[2].assistantMessages).toHaveLength(
+      0,
+    );
+  });
+
+  it('本地 SSE assistant 的服务端 ID 已在同轮快照中时不重复保留', () => {
+    const local = [
+      message(localUserId, AssistantRoleEnum.USER, '确认'),
+      message('a-stream', AssistantRoleEnum.ASSISTANT, '流式内容', {
+        status: MessageStatusEnum.Incomplete,
+      }),
+    ];
+    const incoming = [
+      pcSnapshot()[0],
+      message('a-stream', AssistantRoleEnum.ASSISTANT, '最新流式内容', {
+        status: MessageStatusEnum.Incomplete,
+      }),
+    ];
+    expect(preserveOptimisticMessageTail(local, incoming)).toEqual(incoming);
+  });
+
+  it('快照与恢复流中同一工具只投影一次，复用位置并采用最新状态', () => {
+    const process = (status: string) =>
+      `<markdown-custom-process executeId="resume-tool" type="ToolCall" status="${status}" name="审计"></markdown-custom-process>`;
+    const presentation = projectConversation([
+      message('u-mobile', AssistantRoleEnum.USER, '继续'),
+      message('a-snapshot', AssistantRoleEnum.ASSISTANT, process('EXECUTING'), {
+        status: MessageStatusEnum.Incomplete,
+      }),
+      message('a-replay', AssistantRoleEnum.ASSISTANT, process('FINISHED')),
+    ]);
+    const turn = presentation.turns[0];
+    expect(
+      turn.nodes.filter((node) => node.executeId === 'resume-tool'),
+    ).toHaveLength(1);
+    expect(turn.nodes[0].status).toBe('finished');
+    expect(new Set(turn.nodes.map((node) => node.id)).size).toBe(
+      turn.nodes.length,
+    );
+  });
+
   it('PC UUID user 尚未映射时，同文案的两轮快照不猜测归属或覆盖手机回答', () => {
     const incoming = [...pcSnapshot(), ...mobileSnapshot()];
     const merged = reconcileConversationSnapshotMessages(

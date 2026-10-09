@@ -1,13 +1,11 @@
 import SelectList from '@/components/custom/SelectList';
+import { useTimedPeriodOptions } from '@/hooks/useTimedPeriodOptions';
 import { t } from '@/services/i18nRuntime';
 import { apiSystemTaskCronList } from '@/services/systemManage';
-import { TaskCronInfo, TaskCronItemDto } from '@/types/interfaces/agentTask';
-import { option } from '@/types/interfaces/common';
 import { DatePicker, Form, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
-import { useRequest } from 'umi';
+import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -37,138 +35,15 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
   value,
   onChange,
 }) => {
-  const [typeName, setTypeName] = useState<string>('');
-  const [typeCron, setTypeCron] = useState<string>('');
-  const [typeNameList, setTypeNameList] = useState<option[]>([]);
-  const [typeCronList, setTypeCronList] = useState<option[]>([]);
-  // 保存可选定时范围
-  const taskCronListRef = useRef<TaskCronInfo[]>([]);
-
-  /**
-   * 设置某个定时范围下的子项列表
-   *
-   * @param cronList 当前定时范围下的 cron 配置列表
-   * @param cron 可选，指定选中的 cron，不传则默认选中列表第一个
-   */
-  const handleSetTypeCron = (cronList: TaskCronItemDto[], cron?: string) => {
-    const list =
-      cronList?.map((item) => ({
-        label: item.desc,
-        value: item.cron,
-      })) || [];
-    setTypeCronList(list as option[]);
-    const nextCron = cron || list[0]?.value || '';
-    setTypeCron(nextCron);
-    if (nextCron) {
-      onChange?.(nextCron);
-    }
-  };
-
-  /**
-   * 处理接口返回的定时配置数据
-   *
-   * @param data 接口返回的完整定时配置列表
-   * @param targetCron 可选，指定需要回显的 cron（更新场景或表单初始值）
-   */
-  const handleTimedInfo = (data: TaskCronInfo[], targetCron?: string) => {
-    if (!data || data.length === 0) {
-      return;
-    }
-    const _typeNameList = [
-      ...data.map((item) => ({
-        label: item.typeName,
-        value: item.typeName,
-      })),
-      {
-        label: t('PC.Pages.SystemTaskTimedPeriodSelector.specificTime'),
-        value: 'SpecificTime',
-      },
-    ];
-    setTypeNameList(_typeNameList);
-
-    // 如果有需要回显的 cron，则先找到对应的定时范围
-    if (targetCron) {
-      if (targetCron === 'SpecificTime') {
-        setTypeName('SpecificTime');
-        setTypeCronList([]);
-        setTypeCron('SpecificTime');
-        return;
-      }
-      const currentItem = data.find((info) =>
-        info.items.some((subItem) => subItem.cron === targetCron),
-      );
-      if (currentItem) {
-        setTypeName(currentItem.typeName);
-        handleSetTypeCron(currentItem.items, targetCron);
-        return;
-      }
-    }
-
-    // 默认取第一个定时范围
-    const firstItem = data[0];
-    setTypeName(firstItem.typeName);
-    handleSetTypeCron(firstItem.items || []);
-  };
-
-  // 可选定时范围 - 获取接口数据
-  const { run: runCron } = useRequest(apiSystemTaskCronList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: TaskCronInfo[]) => {
-      if (result.length > 0) {
-        taskCronListRef.current = result;
-        handleTimedInfo(result, value);
-      }
-    },
-  });
-
-  // 初始化加载定时配置
-  useEffect(() => {
-    runCron();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 当外部表单值变更（例如 form.setFieldsValue）时，同步内部选中状态
-  useEffect(() => {
-    if (!value || taskCronListRef.current.length === 0) {
-      return;
-    }
-    // 如果当前内部 cron 已经等于外部值，则不必重复处理
-    if (value === typeCron) {
-      return;
-    }
-    if (value === 'SpecificTime') {
-      setTypeName('SpecificTime');
-      setTypeCronList([]);
-      setTypeCron('SpecificTime');
-      return;
-    }
-    handleTimedInfo(taskCronListRef.current, value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  // 选择定时范围 - 名称
-  const handleChangeTypeName = (value: React.Key) => {
-    const name = value as string;
-    setTypeName(name);
-    if (name === 'SpecificTime') {
-      setTypeCronList([]);
-      setTypeCron('SpecificTime');
-      onChange?.('SpecificTime');
-      return;
-    }
-    const currentItem = taskCronListRef.current?.find(
-      (item) => item.typeName === name,
-    );
-    handleSetTypeCron(currentItem?.items || []);
-  };
-
-  // 选择定时范围 - cron
-  const handleChangeTypeCron = (value: React.Key) => {
-    const cron = value as string;
-    setTypeCron(cron);
-    onChange?.(cron);
-  };
+  const {
+    typeName,
+    typeCron,
+    typeNameList,
+    typeCronList,
+    isCustomCron,
+    handleChangeTypeName,
+    handleChangeTypeCron,
+  } = useTimedPeriodOptions(apiSystemTaskCronList, value, onChange);
 
   return (
     <Space>
@@ -188,6 +63,7 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
           onChange={handleChangeTypeName}
         />
       </Form.Item>
+      {isCustomCron && <span title={typeCron}>{typeCron}</span>}
       {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
         <Form.Item
           noStyle

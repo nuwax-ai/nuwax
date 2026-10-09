@@ -4,7 +4,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 
-export type SnapshotTrigger = 'scheduled' | 'visibility';
+export type SnapshotTrigger = 'scheduled' | 'visibility' | 'status-observed';
 
 export interface SnapshotRequestToken {
   requestId: number;
@@ -67,28 +67,27 @@ const getResumeMessageList = (
 /**
  * 历史快照一致性 Controller。
  *
- * 它拥有请求代际与 visibility 单飞锁，并把所有快照归一为 accepted/rejected 事件。
+ * 它拥有请求代际与事件触发请求的单飞锁，并把所有快照归一为 accepted/rejected 事件。
  * USER 尾只拒绝覆盖本地消息；其 taskStatus 与 messageList 仍可用于启动 sub 恢复。
  */
 export function createSnapshotConsistencyController(): SnapshotConsistencyController {
   let generation = 0;
   let nextRequestId = 0;
-  let visibilityRequestId: number | undefined;
+  let eventRequestId: number | undefined;
 
   const release = (token: SnapshotRequestToken) => {
-    if (
-      token.trigger === 'visibility' &&
-      visibilityRequestId === token.requestId
-    ) {
-      visibilityRequestId = undefined;
+    if (token.trigger !== 'scheduled' && eventRequestId === token.requestId) {
+      eventRequestId = undefined;
     }
   };
 
   return {
     beginRequest(trigger, conversationId) {
-      if (trigger === 'visibility' && visibilityRequestId !== undefined) {
+      if (trigger !== 'scheduled' && eventRequestId !== undefined) {
         return undefined;
       }
+      // 侧栏发现新执行后，之前在途的终态轮询不能再结束刚恢复的 sub。
+      if (trigger === 'status-observed') generation += 1;
       nextRequestId += 1;
       const token: SnapshotRequestToken = {
         requestId: nextRequestId,
@@ -96,8 +95,8 @@ export function createSnapshotConsistencyController(): SnapshotConsistencyContro
         conversationId,
         trigger,
       };
-      if (trigger === 'visibility') {
-        visibilityRequestId = token.requestId;
+      if (trigger !== 'scheduled') {
+        eventRequestId = token.requestId;
       }
       return token;
     },

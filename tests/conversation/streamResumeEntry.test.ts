@@ -1,3 +1,4 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   useConversationStreamResume,
   type UseConversationStreamResumeOptions,
@@ -12,6 +13,7 @@ import {
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
+import eventBus from '@/utils/eventBus';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -24,7 +26,7 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
   fetchConversationTaskStatus: vi.fn(),
   emitConversationListTaskStatus: vi.fn(),
 }));
-vi.mock('@/utils/eventBus', () => ({ default: { emit: vi.fn() } }));
+
 vi.mock('@/utils/logger', () => {
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   return { conversationPollLogger: logger, conversationResumeLogger: logger };
@@ -88,6 +90,126 @@ describe('实际恢复 hook 的首次进入', () => {
     cleanup();
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  it('侧栏观察到执行中立即校验快照并续接，不等终态的 30 秒轮询', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    vi.mocked(fetchConversationSnapshot).mockResolvedValue(
+      snapshot(101, TaskStatus.EXECUTING),
+    );
+    await act(async () => {
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: '101',
+        taskStatus: TaskStatus.EXECUTING,
+      });
+    });
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+    expect(deps.resumeStream).toHaveBeenCalledWith(
+      101,
+      [user()],
+      expect.any(Function),
+      'unified-chat-session',
+    );
+  });
+
+  it('连续侧栏通知共用在途校验，其他会话不触发，详情终态不打开 sub', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    const pending = deferred<ConversationInfo>();
+    vi.mocked(fetchConversationSnapshot).mockReturnValue(pending.promise);
+    act(() => {
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: 'other',
+        taskStatus: TaskStatus.EXECUTING,
+      });
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+    act(() => {
+      for (let i = 0; i < 3; i++)
+        eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+          conversationId: '101',
+          taskStatus: TaskStatus.EXECUTING,
+        });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(2);
+    await act(async () => pending.resolve(snapshot(101)));
+    expect(deps.resumeStream).not.toHaveBeenCalled();
+  });
+
+  it('侧栏检查在途时本地开始发送，旧快照不能打开 sub', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    const { rerender } = renderHook(
+      ({ sending }) =>
+        useConversationStreamResume({ ...deps, isLocallyStreaming: sending }),
+      { initialProps: { sending: false } },
+    );
+    await flush();
+    const pending = deferred<ConversationInfo>();
+    vi.mocked(fetchConversationSnapshot).mockReturnValue(pending.promise);
+    act(() =>
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: 101,
+        taskStatus: TaskStatus.EXECUTING,
+      }),
+    );
+    rerender({ sending: true });
+    await act(async () => pending.resolve(snapshot(101, TaskStatus.EXECUTING)));
+    expect(deps.resumeStream).not.toHaveBeenCalled();
+  });
+
+  it('侧栏检查失败消费拒绝并释放单飞锁，下一次通知可恢复', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    vi.mocked(fetchConversationSnapshot).mockRejectedValueOnce(
+      new Error('offline'),
+    );
+    await act(async () =>
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: 101,
+        taskStatus: TaskStatus.EXECUTING,
+      }),
+    );
+    vi.mocked(fetchConversationSnapshot).mockResolvedValue(
+      snapshot(101, TaskStatus.EXECUTING),
+    );
+    await act(async () =>
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: 101,
+        taskStatus: TaskStatus.EXECUTING,
+      }),
+    );
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+  });
+
+  it('新轮 sub 秒关且服务器仍执行时，按执行态重试而非沿用上一轮终态 30 秒间隔', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    vi.mocked(fetchConversationSnapshot).mockResolvedValue(
+      snapshot(101, TaskStatus.EXECUTING),
+    );
+    vi.mocked(fetchConversationTaskStatus).mockResolvedValue(
+      TaskStatus.EXECUTING,
+    );
+    await act(async () =>
+      eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+        conversationId: 101,
+        taskStatus: TaskStatus.EXECUTING,
+      }),
+    );
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.mocked(deps.resumeStream).mock.calls[0][2]?.();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(deps.resumeStream).toHaveBeenCalledTimes(2);
   });
 
   it('进入执行中会话只加载一次新历史，恢复期间不并发请求轮询快照', async () => {

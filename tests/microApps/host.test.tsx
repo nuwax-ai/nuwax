@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   load: vi.fn(),
+  commercial: true,
   auth: vi.fn(async () => true),
   expire: vi.fn(async () => undefined),
   loggedIn: true,
@@ -127,6 +128,7 @@ function activateMessage() {
 }
 
 beforeEach(() => {
+  mocks.commercial = true;
   mocks.load.mockReset();
   mocks.auth.mockResolvedValue(true);
   mocks.history.push.mockClear();
@@ -369,6 +371,7 @@ describe('持久微应用宿主', () => {
       expect(handle.update).toHaveBeenCalledWith({
         path: '/repo/doc/a',
         active: true,
+        navigationRevision: 0,
       }),
     );
     expect(view.container.querySelector('[data-micro-app]')).toBe(container);
@@ -451,3 +454,33 @@ describe('持久微应用宿主', () => {
     expect(mocks.load).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: mocks.commercial,
+    workCommercialEdition: mocks.commercial,
+    pending: false,
+  }),
+}));
+
+it.each(['nuwax-im-web', 'nuwax-repo-web'])(
+  '未授权宿主不加载 %s；授权撤销释放常驻实例',
+  async (name) => {
+    mocks.commercial = false;
+    microAppHostStore.activate({
+      name,
+      path: name === 'nuwax-im-web' ? '/instant-message' : '/repo',
+    });
+    const view = render(<MicroAppHost />);
+    expect(mocks.auth).not.toHaveBeenCalled();
+    expect(mocks.load).not.toHaveBeenCalled();
+    mocks.commercial = true;
+    act(() => view.rerender(<MicroAppHost />));
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const handle = mocks.load.mock.results[0].value;
+    mocks.commercial = false;
+    act(() => view.rerender(<MicroAppHost />));
+    await waitFor(() => expect(handle.unmount).toHaveBeenCalledOnce());
+    expect(view.container.querySelector('[data-micro-app]')).toBeNull();
+  },
+);

@@ -534,6 +534,7 @@ CURRENT_STEP="微应用子模块升级"
 # 各子模块远端 main 领先 pin 时走 upgrade:micro-apps 正规通道（fetch→快进→重订 pin→staged），
 # 适配 patch 冲突时工具报错交人工（语义不可自动）。UPGRADE_MICRO_APPS=0 关闭。
 if [ "${UPGRADE_MICRO_APPS:-auto}" != "0" ]; then
+  verify_microapp_pins # gitlink/pin 撕裂先修齐（快速通道只过一半等场景），升级工具才能启动
   upgrades=""
   while IFS=$'\t' read -r app_id src_dir branch pin; do
     [ -n "${app_id:-}" ] || continue

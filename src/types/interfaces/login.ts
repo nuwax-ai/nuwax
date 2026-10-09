@@ -343,6 +343,11 @@ export interface TenantConfigInfo {
   /* */
   commercialEdition?: boolean;
 
+  /** aiOS 商业授权：控制 PC 开发、项目及知识库增强入口。 */
+  aiOSCommercialEdition?: boolean;
+  /** work 商业授权：控制伙伴和资料库的站内入口。 */
+  workCommercialEdition?: boolean;
+
   /** 模型 OpenAPI 调用基础地址（拼接模型标识 model 字段） */
   baseModelApiUrl?: string;
   agentDevAgentId?: number;
