@@ -121,7 +121,10 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
-import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
+import {
+  useUserAppEnvPod,
+  type EnsurePodOptions,
+} from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppReadinessWatch } from './hooks/useUserAppReadinessWatch';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -144,7 +147,10 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { isProjectNameDefined } from './utils/isProjectNameDefined';
-import { decideProdSwitchAppAction } from './utils/isUserAppContainerRunning';
+import {
+  decideDatabaseContainerAction,
+  decideProdSwitchAppAction,
+} from './utils/isUserAppContainerRunning';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 
@@ -715,10 +721,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * @returns 容器是否就绪
    */
   const ensureEnvPod = useCallback(
-    (targetEnv: UserAppDbEnvEnum, force = false): Promise<boolean> =>
+    (
+      targetEnv: UserAppDbEnvEnum,
+      force = false,
+      options?: EnsurePodOptions,
+    ): Promise<boolean> =>
       targetEnv === UserAppDbEnvEnum.Prod
-        ? prodPod.ensure(force)
-        : devPod.ensure(force),
+        ? prodPod.ensure(force, options)
+        : devPod.ensure(force, options),
     [devPod.ensure, prodPod.ensure],
   );
   const ensureEnvPodRef = useRef(ensureEnvPod);
@@ -2810,6 +2820,36 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void ensureEnvPodRef.current(dbEnv);
   }, [dbEnv, podStatus, prodPod.status, workspaceView]);
 
+  /**
+   * 数据库还没 ready 时，才看 dbx 回包里的容器状态。
+   * starting、restarting、stopping 或没有容器字段：继续轮询。
+   * 其它明确的非 running 状态：这个环境只 ensure 一次，后面的轮询不再打。
+   * 离开数据库页后清掉，下次进来可以再试一次。
+   */
+  const databaseEnsuredRef = useRef<Partial<Record<UserAppDbEnvEnum, boolean>>>(
+    {},
+  );
+  const handleDatabaseContainerStatus = useCallback(
+    (env: UserAppDbEnvEnum, containerStatus: string | null) => {
+      if (
+        decideDatabaseContainerAction(containerStatus) !== 'ensure' ||
+        databaseEnsuredRef.current[env]
+      ) {
+        return;
+      }
+      databaseEnsuredRef.current[env] = true;
+      void ensureEnvPodRef.current(env, true, { reensure: true });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (workspaceView === 'database') {
+      return;
+    }
+    databaseEnsuredRef.current = {};
+  }, [workspaceView]);
+
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
     const revealingRepoDoc = closeRepoDocPreviewOverlay();
@@ -3534,6 +3574,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         onRetryContainer={() => {
           void handleRetryContainer();
         }}
+        onContainerStatus={handleDatabaseContainerStatus}
       />
     ),
     [
@@ -3543,6 +3584,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       databaseIframeKeyByEnv,
       dbEnv,
       envPodConversationId,
+      handleDatabaseContainerStatus,
       handleRetryContainer,
       podStatus,
       prodPod.status,
