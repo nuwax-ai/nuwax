@@ -4,7 +4,9 @@
 
 资源入口为 `/micro-apps/message/index.html`，业务地址为 `/instant-message/*`，稳定菜单入口为 `/message-entry`。dev/build 均强制 `VITE_IM_AUTH_MODE=platform`，REST `/api/instant-message/*` 与 WS `/instant-message/ws` 使用同源 Cookie。
 
-`mount/update` 接收 `container/path/active/onNavigate/onAuthExpired`。main 当前选会话只通过 Zustand，不消费 URL 查询或定义会话路由；适配器保留宿主输入深链，不增加未经定义的会话 URL 协议。隐藏仅更新 active，保留消息状态和 WebSocket；未显示时不能自动标已读。
+适配入口 `mount/update` 接收 `container/path/active/navigationRevision/host/onNavigate/onAuthExpired`。主站经乾坤 `props.host` 传递 navigate 能力；本目录的 `overlay/src/main.tsx` 与 `hostRuntime.ts` 负责生命周期接线，将其暴露为 `window.NuwaxHost`，卸载时按对象身份清理。加载/挂载/更新失败后方法已禁用并返回 false，全局可能暂留至卸载。
+
+IM 原仓入口不改，业务只需可选调用 `window.NuwaxHost?.navigate(path, { replace })` 和本地类型声明，无需了解乾坤、跨工程 import 或安装 SDK，详见 [IM 同事接入文档](../../docs/im-host-navigation-integration.md)。旧 `onNavigate` 保留本应用范围限制。会话选择沿用 Zustand，宿主直达使用 main 已有的查询参数，不新增会话 pathname 协议。隐藏保留消息状态和 WebSocket；未显示时不能自动标已读。
 
 若受信 preload 提供 `NuwaClawBridge.im.setNotificationEnabled`，桌面通知交给商业壳：IM 不创建 Browser Notification、不请求浏览器权限，原桌面通知开关仍保存 `nuwax-im.notify` 并同步壳；浏览器测试通知项在此模式隐藏。普通 Web 和没有此能力的旧宿主保留原逻辑。主站 `initClientShell` 在 IM 未打开时也恢复保存的开关，等待 `auth.getContext` 完成当前文档握手后同步；等待期间只保留最新偏好，卸载会丢弃迟到动作。
 
