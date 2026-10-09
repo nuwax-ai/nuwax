@@ -26,6 +26,60 @@ export interface StaticFileInfo {
 export interface StaticFileListResponse {
   // 文件列表
   files: StaticFileInfo[];
+  // 本次实际执行的模式回显（file-server）：单层查询生效时为 false；
+  // 缺省/为 true 表示返回的是全量递归列表（网关未透传或旧后端）
+  recursive?: boolean;
+}
+
+/**
+ * 目录选择弹窗（wiki「选择目录/弹框选目录」）：GET /api/computer/static/fs/roots、
+ * GET /api/computer/static/fs/children，按绝对路径浏览本机目录，不锚定工作区、
+ * 不带会话上下文（file-server v1.4.3 fsBrowserUtils）；写操作 POST
+ * /api/computer/static/fs/mkdir、/api/computer/static/fs/rename。
+ * 仅用户个人沙箱可用，云端沙箱不支持选目录。
+ */
+export interface FsRootItem {
+  // 展示名（如盘符 / 根名）
+  name: string;
+  // 绝对路径
+  path: string;
+  isDir: boolean;
+}
+
+export interface FsRootsResponse {
+  roots: FsRootItem[];
+  /** 用户主目录快捷入口（绝对路径），由前端并入根列表展示 */
+  home?: string;
+}
+
+export interface FsEntryItem {
+  name: string;
+  // 子项绝对路径（file-server 直接回传，前端无需自行拼接）
+  path: string;
+  isDir: boolean;
+  isSymlink?: boolean;
+}
+
+export interface FsChildrenResponse {
+  path: string;
+  entries: FsEntryItem[];
+}
+
+export interface FsMkdirParams {
+  // 沙箱 id（仅用户个人沙箱支持选目录；契约 integer，service 内转数字）
+  sandboxId: string;
+  // 父目录绝对路径（分隔符统一 /，来自 fsChildren 返回的 path）
+  parentPath: string;
+  // 新目录名（支持中文等任意合法文件名，不含路径分隔符）
+  dirName: string;
+}
+
+export interface FsRenameParams {
+  sandboxId: string;
+  // 现目录绝对路径（分隔符统一 /，来自 fsChildren 返回的 path）
+  path: string;
+  // 新名字（仅名字、不含路径分隔符，不支持跨目录移动；支持中文）
+  newName: string;
 }
 
 // 静态文件修改参数

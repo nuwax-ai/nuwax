@@ -1,3 +1,5 @@
+import type { DisplayRecommendPrompt } from '@/types/interfaces/displayRecommend';
+
 /**
  * 推荐展示类型
  */
@@ -16,6 +18,8 @@ export enum DisplayRecTypeEnum {
 export enum DisplayRecommendTargetTypeEnum {
   Agent = 'Agent',
   PageApp = 'PageApp',
+  UserApp = 'UserApp',
+  ThirdApp = 'ThirdApp',
   Skill = 'Skill',
   Plugin = 'Plugin',
   Workflow = 'Workflow',
@@ -35,6 +39,10 @@ export enum DisplayRecommendFunctionTypeEnum {
   PluginDev = 'PluginDev',
   // 智能体
   Chat = 'Chat',
+  // 网站应用开发
+  UserAppDev = 'UserAppDev',
+  // 常规项目
+  NormalProjectDev = 'NormalProjectDev',
 }
 
 /**
@@ -49,6 +57,8 @@ export interface DisplayRecommendParams {
   label?: string;
   icon?: string;
   placeholder?: string;
+  category?: string;
+  prompts?: DisplayRecommendPrompt[];
   sort?: number;
 }
 
@@ -101,8 +111,11 @@ export interface DisplayRecommendListParams {
   /*推荐类型：Home、Official、ChatBoxNav */
   recType: DisplayRecTypeEnum;
 
-  /*目标类型：Agent、PageApp、Skill、Plugin、Workflow */
+  /*目标类型：Agent、PageApp、UserApp、ThirdApp、Skill、Plugin、Workflow */
   targetType?: DisplayRecommendTargetTypeEnum;
+
+  /*分类 */
+  category?: string;
 }
 
 /**
@@ -118,6 +131,8 @@ export interface DisplayRecommendInfo {
   label: string;
   icon: string;
   placeholder: string;
+  category?: string;
+  prompts?: DisplayRecommendPrompt[] | null;
   sort: number;
   modified: string;
   created: string;

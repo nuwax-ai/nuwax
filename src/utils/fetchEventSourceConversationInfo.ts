@@ -5,6 +5,7 @@ import {
   EventSourceMessage,
   fetchEventSource,
 } from '@microsoft/fetch-event-source';
+import { getBusinessRequestAuth } from './businessAuth';
 
 export interface SSEOptions<T = any> {
   url: string;
@@ -18,23 +19,16 @@ export interface SSEOptions<T = any> {
   abortController?: AbortController;
 }
 
-// 共享级别的定时器引用与所有者标记，防止上一请求残留的定时器影响新请求
-let sharedTimeoutCheckInterval: NodeJS.Timeout | null = null;
-let sharedTimeoutOwner: symbol | null = null;
-
-const clearSharedTimeout = (owner?: symbol) => {
-  if (sharedTimeoutCheckInterval && (!owner || owner === sharedTimeoutOwner)) {
-    clearInterval(sharedTimeoutCheckInterval);
-    sharedTimeoutCheckInterval = null;
-    sharedTimeoutOwner = null;
-  }
-};
+// 仅供显式全局清理使用；连接自身只清理闭包内的 interval，不能移除其他活跃流
+// 的静默检查，否则重叠的 live/sub 连接会永久失去超时 close 和上层恢复轮询。
+const timeoutChecks = new Set<NodeJS.Timeout>();
 
 /**
  * 对外暴露的共享定时器清理函数，便于在组件层主动清除残留定时器
  */
 export const clearSSESharedTimeout = () => {
-  clearSharedTimeout();
+  timeoutChecks.forEach((timer) => clearInterval(timer));
+  timeoutChecks.clear();
 };
 
 export function createSSEConnection<T = any>(
@@ -42,15 +36,22 @@ export function createSSEConnection<T = any>(
 ): () => void {
   const controller = options.abortController || new AbortController();
   let isAborted = false;
-  // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout）
+  // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout / error）
   let hasClosed = false;
+  // 防止 onError 被 onerror 与外层 catch 重复触发
+  let hasErrorNotified = false;
   // 记录最后一次收到消息的时间戳
   let lastMessageTimestamp: number | null = null;
   // 超时检查定时器
   let timeoutCheckInterval: NodeJS.Timeout | null = null;
 
-  // 为当前连接生成唯一标识，用于共享定时器管理
-  const timerOwner = Symbol('sse-timeout-owner');
+  const clearTimeoutCheck = () => {
+    if (timeoutCheckInterval) {
+      clearInterval(timeoutCheckInterval);
+      timeoutChecks.delete(timeoutCheckInterval);
+      timeoutCheckInterval = null;
+    }
+  };
 
   const safeOnClose = () => {
     if (hasClosed) {
@@ -60,14 +61,18 @@ export function createSSEConnection<T = any>(
     options.onClose?.();
   };
 
+  const safeOnError = (error: Error) => {
+    if (hasErrorNotified) {
+      return;
+    }
+    hasErrorNotified = true;
+    options.onError?.(error);
+  };
+
   // 清理定时器并标记中止
   const markAborted = () => {
     isAborted = true;
-    if (timeoutCheckInterval) {
-      clearInterval(timeoutCheckInterval);
-      timeoutCheckInterval = null;
-    }
-    clearSharedTimeout(timerOwner);
+    clearTimeoutCheck();
   };
 
   const abortFunction = () => {
@@ -87,25 +92,15 @@ export function createSSEConnection<T = any>(
     }
   };
 
-  // 在真正发起新的 SSE 连接前，先清理可能残留的共享定时器，避免上一次请求影响本次
-  clearSharedTimeout();
-
   // 超时检查函数：每5秒检查一次，超过60秒未收到消息则断开连接
   const startTimeoutCheck = () => {
-    // 清除之前的定时器（如果存在），并清理潜在的上一请求残留
-    if (timeoutCheckInterval) {
-      clearInterval(timeoutCheckInterval);
-    }
-    clearSharedTimeout();
+    // 同一连接重复打开时只替换自己的检查，不影响并发或尚在收尾的连接。
+    clearTimeoutCheck();
 
     timeoutCheckInterval = setInterval(() => {
       // 如果连接已中止，清除定时器
       if (isAborted) {
-        if (timeoutCheckInterval) {
-          clearInterval(timeoutCheckInterval);
-          timeoutCheckInterval = null;
-        }
-        clearSharedTimeout(timerOwner);
+        clearTimeoutCheck();
         return;
       }
 
@@ -117,11 +112,6 @@ export function createSSEConnection<T = any>(
       // 计算距离最后一次消息的时间间隔（毫秒）
       const timeSinceLastMessage = Date.now() - lastMessageTimestamp;
       const timeoutThreshold = 60 * 1000; // 60秒超时阈值
-      console.log(
-        `⏰ [SSE Utils] 未收到消息，距离上次消息时间: ${Math.round(
-          timeSinceLastMessage / 1000,
-        )}秒`,
-      );
 
       // 如果超过60秒未收到消息，主动断开连接
       if (timeSinceLastMessage >= timeoutThreshold) {
@@ -138,19 +128,20 @@ export function createSSEConnection<T = any>(
       }
     }, 5 * 1000); // 每5秒检查一次
 
-    // 记录共享定时器引用，避免旧连接遗留的定时器干扰新连接
-    sharedTimeoutCheckInterval = timeoutCheckInterval;
-    sharedTimeoutOwner = timerOwner;
+    timeoutChecks.add(timeoutCheckInterval);
   };
 
   // 异步执行连接逻辑，但同步返回 abortFunction
   (async () => {
     try {
+      const auth = getBusinessRequestAuth(options.url);
       await fetchEventSource(options.url, {
         method: options.method || 'GET',
+        credentials: auth.credentials,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
+          ...auth.headers,
         },
         body:
           typeof options.body === 'object'
@@ -225,7 +216,10 @@ export function createSSEConnection<T = any>(
           }
           console.error('❌ [SSE Utils] SSE connection error:', error);
           markAborted();
-          options.onError?.(error);
+          safeOnError(error);
+          // 错误路径也必须触发 onClose：与正常关闭对齐，
+          // 保证上层（如会话流式恢复 sub）能重置订阅标记、恢复轮询，不会永久卡在「已订阅」
+          safeOnClose();
           controller.abort();
           throw error; // 停止自动重试
         },
@@ -235,7 +229,9 @@ export function createSSEConnection<T = any>(
         error instanceof Error ? error : new Error(String(error));
       console.error('❌ [SSE Utils] SSE connection anomaly:', normalized);
       markAborted();
-      options.onError?.(normalized);
+      safeOnError(normalized);
+      // 与 onerror 同理：连接异常终止也属于关闭，必须触发 onClose
+      safeOnClose();
     }
   })();
 

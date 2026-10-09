@@ -1,4 +1,5 @@
 import { t } from '@/services/i18nRuntime';
+import { isDesktopHost } from '@/utils/hostBridge';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './NavigationStylePanel.less';
@@ -21,32 +22,52 @@ interface NavigationStylePanelProps {
   onNavigationStyleChange?: (styleId: string) => void;
   /** 当前导航风格（可选，如果不提供则使用内部状态） */
   currentNavigationStyle?: string;
+  /** 深浅色切换禁用（单栏 style3 锁定纯色浅色，2026-09-20 需求）：置灰不可点 */
+  themeToggleDisabled?: boolean;
 }
+
+/** 全量导航风格（词表 key 骨架；词条在组件体内取，跟随语言切换刷新） */
+const ALL_NAVIGATION_STYLE_KEYS = [
+  {
+    id: 'style1',
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style1Name',
+    descriptionKey:
+      'PC.Components.ThemeConfigNavigationStylePanel.style1Description',
+  },
+  {
+    id: 'style2',
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style2Name',
+    descriptionKey:
+      'PC.Components.ThemeConfigNavigationStylePanel.style2Description',
+  },
+  {
+    id: 'style3',
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style3Name',
+    descriptionKey:
+      'PC.Components.ThemeConfigNavigationStylePanel.style3Description',
+    isDefault: true,
+  },
+] as const;
 
 const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   isNavigationDarkMode,
   onNavigationThemeToggle,
   onNavigationStyleChange,
-  currentNavigationStyle = 'style1',
+  currentNavigationStyle = 'style3',
+  themeToggleDisabled = false,
 }) => {
-  // 导航栏风格配置
-  const navigationStyles: NavigationStyle[] = [
-    {
-      id: 'style1',
-      name: t('PC.Components.ThemeConfigNavigationStylePanel.style1Name'),
-      description: t(
-        'PC.Components.ThemeConfigNavigationStylePanel.style1Description',
-      ),
-      isDefault: true,
-    },
-    {
-      id: 'style2',
-      name: t('PC.Components.ThemeConfigNavigationStylePanel.style2Name'),
-      description: t(
-        'PC.Components.ThemeConfigNavigationStylePanel.style2Description',
-      ),
-    },
-  ];
+  // 商业桌面端（Nuwax 客户端 webview）锁定单栏布局：沉浸式折叠/壳同步机制只按单栏维护，
+  // 风格切换整节隐藏，仅保留导航深浅色切换；社区宿主（NuwaClaw）与浏览器同形态不锁定
+  const isNavStyleLocked = isDesktopHost();
+
+  // 导航栏风格配置（渲染期取词；全量三档，系统/用户两侧同源）
+  const navigationStyles: NavigationStyle[] = ALL_NAVIGATION_STYLE_KEYS.map(
+    ({ nameKey, descriptionKey, ...skeleton }) => ({
+      ...skeleton,
+      name: t(nameKey),
+      description: t(descriptionKey),
+    }),
+  );
 
   // 导航栏风格状态管理（使用传入的值或默认值）
   const [localNavigationStyle, setLocalNavigationStyle] = useState<string>(
@@ -65,6 +86,8 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
 
   // 处理深浅色风格切换（集成到导航深浅色管理中）
   const handleColorStyleToggle = () => {
+    // 单栏锁定纯色浅色（2026-09-20 需求）：置灰态兜底，点击不生效
+    if (themeToggleDisabled) return;
     // 同时管理导航深浅色和全局布局深浅色
     onNavigationThemeToggle();
     console.log('NavigationStylePanel - switch light/dark mode');
@@ -76,48 +99,77 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
         {t('PC.Components.ThemeConfigNavigationStylePanel.panelTitle')}
       </h3>
 
-      {/* 导航栏风格样式选择 */}
-      <div className={cx(styles.navigationStyleOptions)}>
-        <h4>
-          {t('PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle')}
-        </h4>
-        <div className={cx(styles.styleOptions)}>
-          {navigationStyles.map((style) => (
-            <div
-              key={style.id}
-              className={cx(styles.styleOption)}
-              onClick={() => handleNavigationStyleChange(style.id)}
-              title={style.description}
-            >
+      {/* 导航栏风格样式选择（桌面端锁定单栏，整节隐藏） */}
+      {!isNavStyleLocked && (
+        <div className={cx(styles.navigationStyleOptions)}>
+          <h4>
+            {t(
+              'PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle',
+            )}
+          </h4>
+          <div className={cx(styles.styleOptions)}>
+            {navigationStyles.map((style) => (
               <div
-                className={cx(styles.stylePreview, {
-                  [styles.active]: localNavigationStyle === style.id,
-                })}
+                key={style.id}
+                className={cx(styles.styleOption)}
+                onClick={() => handleNavigationStyleChange(style.id)}
+                title={style.description}
               >
                 <div
-                  className={cx(
-                    styles.navbarPreview,
-                    // 根据风格动态调整预览样式
-                    style.id === 'style1'
-                      ? styles.compactNavbar
-                      : styles.expandedNavbar,
-                  )}
+                  className={cx(styles.stylePreview, {
+                    [styles.active]: localNavigationStyle === style.id,
+                  })}
                 >
-                  <div className={cx(styles.navbarContent)}></div>
+                  <div
+                    className={cx(
+                      styles.navbarPreview,
+                      // 根据风格动态调整预览样式
+                      style.id === 'style1'
+                        ? styles.compactNavbar
+                        : style.id === 'style2'
+                        ? styles.expandedNavbar
+                        : styles.sidebarNavbar,
+                    )}
+                  >
+                    {style.id === 'style3' ? (
+                      // 单栏（风格3）：纯 CSS 缩略示意——左列会话侧栏
+                      <div className={cx(styles.navbarContent)}>
+                        <div className={cx(styles.sidebarMockCol)}>
+                          <div className={cx(styles.sidebarMockLogo)} />
+                          <div className={cx(styles.sidebarMockRow)} />
+                          <div className={cx(styles.sidebarMockRow)} />
+                          <div className={cx(styles.sidebarMockRow)} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={cx(styles.navbarContent)}></div>
+                    )}
+                  </div>
+                  <div className={cx(styles.styleLabel)}>{style.name}</div>
                 </div>
               </div>
-              <div className={cx(styles.styleLabel)}>{style.name}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 导航栏深浅色选择 */}
+      {/* 导航栏深浅色选择（单栏 style3 锁定纯色浅色，2026-09-20 需求：置灰不可点） */}
       <div className={cx(styles.navigationColorOptions)}>
         <h4>
           {t('PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle')}
         </h4>
-        <div className={cx(styles.colorOptions)}>
+        {themeToggleDisabled && (
+          <div className={cx(styles.themeLockedHint)}>
+            {t(
+              'PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint',
+            )}
+          </div>
+        )}
+        <div
+          className={cx(styles.colorOptions, {
+            [styles.disabled]: themeToggleDisabled,
+          })}
+        >
           {/* 浅色模式 */}
           <div className={cx(styles.colorOption)}>
             <div

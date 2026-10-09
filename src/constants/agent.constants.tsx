@@ -175,8 +175,8 @@ export const BIND_CARD_STYLE_LIST = [
   },
 ];
 
-// 生成多样性选项
-export const GENERATE_DIVERSITY_OPTIONS = [
+// 生成多样性选项（需在渲染时调用，避免模块加载时 dict 尚未就绪）
+export const getGenerateDiversityOptions = () => [
   {
     label: dict('PC.Constants.Agent.precisionMode'),
     value: UpdateModeComponentEnum.Precision,

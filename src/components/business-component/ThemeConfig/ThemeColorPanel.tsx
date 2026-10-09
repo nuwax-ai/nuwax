@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { THEME_COLOR_CONFIGS } from '@/constants/theme.constants';
+import { BRAND_PRIMARY } from '@/services/brandTheme';
 import { t } from '@/services/i18nRuntime';
 import { ColorPicker } from 'antd';
 import { Color } from 'antd/es/color-picker';
@@ -44,8 +45,11 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
     );
   }, [extraColors]);
 
-  // 使用统一的主题色配置
-  const presetColors = THEME_COLOR_CONFIGS;
+  // 统一主题色配置；首位追加「女娲蓝」选项（全端默认主题，选中 = 女娲主题，见 brandTheme）
+  const presetColors = [
+    { color: BRAND_PRIMARY, name: t('PC.Constants.Theme.colorNuwax') },
+    ...THEME_COLOR_CONFIGS,
+  ];
   // 合并预设颜色和额外颜色，去重并过滤掉已存在的颜色
   const allColors = [
     ...presetColors,

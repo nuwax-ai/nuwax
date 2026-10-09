@@ -1,0 +1,585 @@
+/**
+ * 会话 Mock：使用 Umi dev-server 回放真实 SSE 协议。
+ *
+ * 仅供 /mock-chat（及 /app/mock-chat）开发验收页与 /mock-gallery（及
+ * /app/mock-gallery）综合验收画廊使用；场景定义在 mock/conversationScenarios.ts，
+ * 页面通过 /api/mock/conversation/scenarios 拉取元数据，不在业务代码 src 内
+ * 依赖 mock 数据。
+ *
+ * 会话键控：全部回放状态按 conversationId 隔离（Map），供画廊页多会话并行。
+ * 单页 /mock-chat 不传 id，落默认键 999999，行为与历史版本逐字节一致（e2e
+ * 合同不变）。键来源：POST /scenario 与 POST chat 取 body.conversationId；
+ * GET /status 取 query.conversationId；sub/:id、stop/:id、/:id 取路径参数。
+ *
+ * 注意：Umi mock 层只 watch mock/ 目录。修改 mock/conversationScenarios.ts
+ * 后需重启 dev server，或 touch 本文件触发 mock 层重载，否则新场景会报
+ * MOCK_SCENARIO_NOT_FOUND（HTTP 400）。
+ */
+import {
+  getScenario,
+  MOCK_SCENARIOS,
+  type MockScenario,
+  type MockSseEvent,
+} from './conversationScenarios';
+import { S } from './utils';
+
+const MOCK_CONVERSATION_ID = 999999;
+
+/** 单个会话的回放状态（原模块级单例的逐字段收拢） */
+type MockConversationState = {
+  scenarioId: string;
+  taskStatus: string;
+  messages: Array<Record<string, unknown>>;
+  emittedEvents: MockSseEvent[];
+  pollCount: number;
+  speed: number;
+  /** 同一场景的 chat 连接轮次（POST /scenario 重置）。runtime 线审批/问答回执
+   * 带 resume-send——会再开 chat 连接；生产中服务端继续剩余输出，不会整轮重演。 */
+  chatConnectionRound: number;
+  /** 在飞的回放连接数（keep-open 挂起的不归还）——status 据此报告 replaySettled */
+  replayPendingCount: number;
+  /** 仅开发验收：按会话记录实际 HTTP SSE，支持断流故障注入。 */
+  activeStreams: Set<any>;
+  /** 仅 responseDrivenAsk 场景使用。每次 chat 回应关联当前唯一待答题。 */
+  askIndex: number;
+  askStarted: boolean;
+  askResponses: Array<{ requestId: string; action: string; text: string }>;
+};
+
+const createState = (speed = 1): MockConversationState => ({
+  scenarioId: 'NORMAL_SINGLE',
+  taskStatus: 'CREATE',
+  messages: [],
+  emittedEvents: [],
+  pollCount: 0,
+  speed,
+  chatConnectionRound: 0,
+  replayPendingCount: 0,
+  activeStreams: new Set(),
+  askIndex: 0,
+  askStarted: false,
+  askResponses: [],
+});
+
+/** conversationId → 回放状态（惰性初始化）；无 id 的调用统一落默认键 */
+const conversationStates = new Map<number, MockConversationState>();
+
+const resolveKey = (raw: unknown): number =>
+  Number(raw) || MOCK_CONVERSATION_ID;
+
+const getState = (id: number): MockConversationState => {
+  let state = conversationStates.get(id);
+  if (!state) {
+    state = createState();
+    conversationStates.set(id, state);
+  }
+  return state;
+};
+
+const stateScenario = (state: MockConversationState): MockScenario =>
+  getScenario(state.scenarioId) || getScenario('NORMAL_SINGLE')!;
+
+const terminalStatusFrom = (event: MockSseEvent) => {
+  if (event.eventType === 'ERROR') return 'FAILED';
+  if (event.eventType !== 'FINAL_RESULT') return null;
+  if (event.data?.stop_reason === 'cancelled') return 'CANCEL';
+  return event.data?.success === false ? 'FAILED' : 'COMPLETE';
+};
+
+const writeEvent = (
+  state: MockConversationState,
+  res: any,
+  event: MockSseEvent,
+) => {
+  const payload = { ...event };
+  delete payload.delayMs;
+  state.emittedEvents.push(payload);
+  const terminalStatus = terminalStatusFrom(event);
+  if (terminalStatus) state.taskStatus = terminalStatus;
+  res.write(`data:${JSON.stringify(payload)}\n\n`);
+};
+
+const openSse = (state: MockConversationState, res: any) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+  state.activeStreams.add(res);
+  res.on('close', () => state.activeStreams.delete(res));
+};
+
+/**
+ * 干预卡事件的稳定标识（权限审批 / ask-question / OpenUI）。
+ * 生产语义：审批/问答回执后 agent 继续剩余输出，不会对同一 toolCallId 再次
+ * 发起审批。runtime 线审批后 resume-send 会再开 chat 连接，若重放全量脚本
+ * 会让干预卡无限重现——跨连接按标识去重（POST /scenario 重置 emittedEvents
+ * 时天然清空，新场景从头开始）。
+ * 注意：REQUEST_PERMISSION 事件 status 为 FINISHED（事件即回执形态），标识
+ * 在 data.executeId / result.input.toolCallId；ask/openui 卡为 EXECUTING+name。
+ */
+const interventionEventId = (event: MockSseEvent): string | null => {
+  if (event.eventType !== 'PROCESSING' || !event.data) return null;
+  const data = event.data;
+  if (data.subEventType === 'REQUEST_PERMISSION') {
+    const result = data.result as
+      | { input?: { toolCallId?: unknown } }
+      | undefined;
+    const id = data.executeId ?? result?.input?.toolCallId;
+    return id !== null && id !== undefined && String(id) ? String(id) : null;
+  }
+  const name = String(data.name || '');
+  if (
+    data.status === 'EXECUTING' &&
+    (name.includes('ask_question') || name.includes('render_openui'))
+  ) {
+    return data.toolCallId !== null &&
+      data.toolCallId !== undefined &&
+      String(data.toolCallId)
+      ? String(data.toolCallId)
+      : null;
+  }
+  return null;
+};
+
+const replay = (
+  state: MockConversationState,
+  scenario: MockScenario,
+  res: any,
+  options: { sub?: boolean } = {},
+) => {
+  // 续连（runtime 审批回执 resume-send 等）：第 2 轮起只回放终态事件，
+  // 模拟「服务端无剩余输出、直接终态」，阻断无状态的整轮重演。
+  // keep-open 场景的续连不打断悬挂任务——直接挂起（对齐「任务仍在执行」）
+  const isContinuation = !options.sub && state.chatConnectionRound > 1;
+  if (isContinuation && scenario.transport === 'keep-open') {
+    state.replayPendingCount += 1;
+    res.on('close', () => {
+      state.replayPendingCount = Math.max(0, state.replayPendingCount - 1);
+    });
+    return;
+  }
+  let index = 0;
+  let cancelled = false;
+  state.replayPendingCount += 1;
+  res.on('close', () => {
+    if (!res.writableEnded) cancelled = true;
+    state.replayPendingCount = Math.max(0, state.replayPendingCount - 1);
+  });
+
+  const next = () => {
+    if (cancelled || res.writableEnded || res.destroyed) return;
+    if (index >= scenario.events.length) {
+      if (scenario.transport === 'keep-open') return;
+      if (
+        scenario.transport === 'network-error' ||
+        (options.sub && scenario.id === 'SUB_NETWORK_ERROR')
+      ) {
+        // 连接死亡时后端视角同步终态化：否则详情轮询恒报 EXECUTING，
+        // runtime 轨 isConversationActive 的 taskExecuting 合成分支永不释放
+        state.taskStatus = 'FAILED';
+        res.socket?.destroy(new Error('Mock SSE network failure'));
+        return;
+      }
+      // 正常收尾但无 FINAL_RESULT 事件的场景（如 QUESTION_TYPE）：真实后端
+      // 仍会将任务终态化。pollTerminalAfter 场景除外——保留 EXECUTING 由
+      // 详情轮询按次数切换，验证 poll-snapshot 收敛路径
+      if (!scenario.pollTerminalAfter && state.taskStatus === 'EXECUTING') {
+        state.taskStatus = 'COMPLETE';
+      }
+      res.end();
+      return;
+    }
+
+    const event = scenario.events[index++];
+    if (isContinuation && event.eventType !== 'FINAL_RESULT') {
+      next();
+      return;
+    }
+    const baseDelay = event.delayMs ?? (options.sub ? 50 : 100);
+    setTimeout(() => {
+      if (cancelled || res.writableEnded || res.destroyed) return;
+      // 干预卡事件已发出过（跨连接去重）：跳过继续回放剩余输出
+      const eventId = interventionEventId(event);
+      if (
+        eventId &&
+        state.emittedEvents.some(
+          (prev) => interventionEventId(prev) === eventId,
+        )
+      ) {
+        next();
+        return;
+      }
+      writeEvent(state, res, event);
+      next();
+    }, Math.max(0, Math.round(baseDelay * state.speed)));
+  };
+
+  next();
+};
+
+/** Ask 回应在生产中是普通 chat 文本，没有额外的 notify-resolved/requestId 字段。
+ * 专项钉中文，按当前唯一待答题关联；不臆造结构化回应端点。 */
+const currentAsk = (state: MockConversationState) =>
+  stateScenario(state).responseDrivenAsk?.[state.askIndex];
+const askInput = (event?: MockSseEvent) =>
+  (event?.data?.result as { data?: Record<string, any> } | undefined)?.data;
+
+const persistQuestion = (state: MockConversationState, event: MockSseEvent) => {
+  const input = askInput(event)!;
+  state.messages.push({
+    id: event.requestId,
+    role: 'ASSISTANT',
+    messageType: 'ASSISTANT',
+    index: state.messages.length,
+    type: 'CHAT',
+    status: 'complete',
+    text: '',
+    time: Date.now(),
+    // 刷新使用生产历史 hydrate 路径，而非直接预制 mcpAskInteractions。
+    componentExecutedList: [
+      {
+        executeId: input.requestId,
+        status: 'FINISHED',
+        result: { data: input, status: 'FINISHED' },
+      },
+    ],
+  });
+};
+
+const finishAsk = (state: MockConversationState, res: any) => {
+  const requestId = `mock-chatbot-result-${state.askResponses.length}`;
+  const text = '问答已收到回应，同一会话继续完成。';
+  state.messages.push({
+    id: requestId,
+    role: 'ASSISTANT',
+    messageType: 'ASSISTANT',
+    index: state.messages.length,
+    type: 'CHAT',
+    status: 'complete',
+    text,
+    time: Date.now(),
+  });
+  writeEvent(state, res, {
+    eventType: 'MESSAGE',
+    requestId,
+    data: {
+      role: 'ASSISTANT',
+      type: 'CHAT',
+      text,
+      finished: true,
+    },
+  });
+  writeEvent(state, res, {
+    eventType: 'FINAL_RESULT',
+    requestId,
+    data: { success: true },
+  });
+  [...state.activeStreams].forEach((stream) => stream.end());
+};
+
+const replayAsk = (state: MockConversationState, res: any) => {
+  const event = currentAsk(state);
+  if (!event || ['CANCEL', 'COMPLETE'].includes(state.taskStatus)) {
+    // 已答刷新只恢复终态，不重播历史 Ask 或重复追加结果快照。
+    const final = [...state.emittedEvents]
+      .reverse()
+      .find((e) => e.eventType === 'FINAL_RESULT');
+    if (final) res.write(`data:${JSON.stringify(final)}\n\n`);
+    res.end();
+    return;
+  }
+  writeEvent(state, res, event);
+  state.replayPendingCount += 1;
+  res.on('close', () => {
+    state.replayPendingCount = Math.max(0, state.replayPendingCount - 1);
+  });
+};
+
+const handleAskChat = (state: MockConversationState, req: any, res: any) => {
+  const text = String(req.body?.message || '');
+  if (!state.askStarted) {
+    state.askStarted = true;
+    state.taskStatus = 'EXECUTING';
+    state.messages.push({
+      id: 'mock-chatbot-start',
+      role: 'USER',
+      messageType: 'USER',
+      index: state.messages.length,
+      type: 'CHAT',
+      status: 'complete',
+      text,
+      time: Date.now(),
+    });
+    persistQuestion(state, currentAsk(state)!);
+    openSse(state, res);
+    replayAsk(state, res);
+    return;
+  }
+  const event = currentAsk(state);
+  if (!event || ['CANCEL', 'COMPLETE'].includes(state.taskStatus)) {
+    openSse(state, res);
+    replayAsk(state, res);
+    return;
+  }
+  const input = askInput(event)!;
+  const title = input.title;
+  const action = text.startsWith(`我已填写「${title}」`)
+    ? 'submit'
+    : text.startsWith(`我取消了「${title}」`)
+    ? 'cancel'
+    : text.startsWith(`我跳过了「${title}」`)
+    ? 'skip'
+    : null;
+  if (!action || (action === 'skip' && input.ui.allowSkip !== true)) {
+    res.status(400).json({
+      code: 'MOCK_ASK_RESPONSE_INVALID',
+      message: '当前题需要有效回应',
+    });
+    return;
+  }
+  state.askResponses.push({ requestId: input.requestId, action, text });
+  state.messages.push({
+    id: `mock-chatbot-reply-${state.askResponses.length}`,
+    index: state.messages.length,
+    role: 'USER',
+    messageType: 'USER',
+    type: 'CHAT',
+    status: 'complete',
+    text,
+    time: Date.now(),
+  });
+  state.askIndex += 1;
+  openSse(state, res);
+  // 同一会话的旧流不再承载后续题，刷新/回应的新流接管。
+  [...state.activeStreams]
+    .filter((stream) => stream !== res)
+    .forEach((stream) => stream.end());
+  // 取消的是当前问题，仍是普通 chat 回应；不模拟整任务 stop/CANCEL。
+  if (!currentAsk(state)) {
+    finishAsk(state, res);
+  } else {
+    persistQuestion(state, currentAsk(state)!);
+    replayAsk(state, res);
+  }
+};
+
+export default {
+  'POST /api/mock/conversation/scenario': (req: any, res: any) => {
+    const requested = String(req.body?.scenario || 'NORMAL_SINGLE');
+    const scenario = getScenario(requested);
+    if (!scenario) {
+      res
+        .status(400)
+        .json({ code: 'MOCK_SCENARIO_NOT_FOUND', message: requested });
+      return;
+    }
+    const key = resolveKey(req.body?.conversationId);
+    const speed = Number(req.body?.speed) || 1;
+    // prepare 即重置该会话的全部回放状态（新场景从头开始）
+    const state = createState(speed);
+    state.scenarioId = scenario.id;
+    // sub-only 传输的场景初始即为 EXECUTING：详情接口直接报告执行中，
+    // 页面刷新/重进后据此触发 sub 流续接。
+    state.taskStatus =
+      scenario.transport === 'sub-only' ? 'EXECUTING' : 'CREATE';
+    state.messages = [...(scenario.initialMessages || [])];
+    conversationStates.set(key, state);
+    res.json(S({ scenario: state.scenarioId, speed }));
+  },
+
+  'GET /api/mock/conversation/scenarios': (_req: any, res: any) => {
+    // 页面只消费元数据（不含 events/initialMessages 全量），保持数据源单点在 mock/
+    res.json(
+      S(
+        MOCK_SCENARIOS.map((scenario) => ({
+          id: scenario.id,
+          label: scenario.label,
+          description: scenario.description,
+          verifies: scenario.verifies,
+          transport: scenario.transport,
+          entry: scenario.entry,
+          agentType: scenario.agentType,
+          responseDriven: Boolean(scenario.responseDrivenAsk),
+          hasFinalResult:
+            Boolean(scenario.responseDrivenAsk) ||
+            scenario.events.some((event) => event.eventType === 'FINAL_RESULT'),
+          // 真实时长场景（60~154s）：E2E 仅在 E2E_REAL_TIMING=1 时纳入矩阵
+          realTiming: Boolean(scenario.realTiming),
+        })),
+      ),
+    );
+  },
+
+  'GET /api/mock/conversation/status': (req: any, res: any) => {
+    const state = getState(resolveKey(req?.query?.conversationId));
+    const scenario = stateScenario(state);
+    res.json(
+      S({
+        scenario: state.scenarioId,
+        taskStatus: state.taskStatus,
+        pollCount: state.pollCount,
+        emittedEvents: state.emittedEvents,
+        // 事件脚本总数：E2E 据此判定「回放完毕」，防止终态事件后仍有
+        // 未到达事件（如 LATE_CHUNK_SLOW 的迟到分片还在心跳路上）时提前收尾
+        scriptLength: scenario.events.length,
+        // 全部回放连接已落定（无在飞/悬挂）：终态场景的回放完毕信号——
+        // 续连轮只发 FINAL_RESULT 时 emittedCount 永远到不了 scriptLength，
+        // 以此为准而非计数比较
+        replaySettled: state.replayPendingCount === 0,
+        activeStreamCount: state.activeStreams.size,
+        ...(scenario.responseDrivenAsk
+          ? {
+              askState: {
+                waiting:
+                  state.askStarted &&
+                  state.taskStatus === 'EXECUTING' &&
+                  Boolean(currentAsk(state)),
+                currentRequestId:
+                  state.askStarted && state.taskStatus === 'EXECUTING'
+                    ? askInput(currentAsk(state))?.requestId ?? null
+                    : null,
+                answeredRequestIds: state.askResponses.map(
+                  (reply) => reply.requestId,
+                ),
+                responses: state.askResponses,
+              },
+            }
+          : {}),
+      }),
+    );
+  },
+
+  // 开发验收故障注入：不发送 ERROR/FINAL，直接关闭实际 HTTP SSE。
+  // 保持 EXECUTING 可验多次断流后恢复；明确终态可验 onClose 的详情兜底。
+  'POST /api/mock/conversation/disconnect/:id': (req: any, res: any) => {
+    const mode = req.body?.mode || 'error';
+    const taskStatus = req.body?.taskStatus;
+    if (
+      !['error', 'close'].includes(mode) ||
+      (taskStatus !== undefined &&
+        !['EXECUTING', 'COMPLETE', 'FAILED', 'CANCEL'].includes(taskStatus))
+    ) {
+      res.status(400).json({ code: 'MOCK_DISCONNECT_INVALID' });
+      return;
+    }
+    const state = getState(resolveKey(req.params?.id));
+    if (taskStatus !== undefined) state.taskStatus = taskStatus;
+    const streams = [...state.activeStreams];
+    streams.forEach((stream) => {
+      if (mode === 'close') stream.end();
+      else stream.destroy();
+    });
+    res.json(S({ disconnected: streams.length, taskStatus: state.taskStatus }));
+  },
+
+  'POST /api/agent/conversation/chat': (req: any, res: any) => {
+    const state = getState(resolveKey(req.body?.conversationId));
+    const scenario = stateScenario(state);
+    if (scenario.responseDrivenAsk) {
+      handleAskChat(state, req, res);
+      return;
+    }
+    openSse(state, res);
+    state.chatConnectionRound += 1;
+    state.taskStatus = 'EXECUTING';
+    state.messages.push({
+      id: `mock-user-${Date.now()}`,
+      role: 'USER',
+      messageType: 'USER',
+      type: 'CHAT',
+      status: 'complete',
+      text: req.body?.message || '执行当前 Mock 场景',
+      time: Date.now(),
+    });
+
+    // chat 主连接静默结束，页面随后显式触发生产 sub 恢复链。
+    if (scenario.transport === 'sub-only') {
+      res.end();
+      return;
+    }
+    replay(state, scenario, res);
+  },
+
+  'GET /api/agent/conversation/chat/sub/:id': (req: any, res: any) => {
+    const state = getState(resolveKey(req.params?.id));
+    const scenario = stateScenario(state);
+    openSse(state, res);
+    if (scenario.responseDrivenAsk) {
+      replayAsk(state, res);
+      return;
+    }
+    replay(state, scenario, res, { sub: true });
+  },
+
+  'POST /api/agent/conversation/chat/stop/:id': (req: any, res: any) => {
+    getState(resolveKey(req.params?.id)).taskStatus = 'CANCEL';
+    res.json(S(null));
+  },
+
+  'POST /api/agent/conversation/chat/permission-request/response': (
+    _req: any,
+    res: any,
+  ) => res.json(S(null)),
+
+  'POST /api/computer/notify-resolved': (_req: any, res: any) =>
+    res.json(S(null)),
+
+  'POST /api/agent/conversation/update': (_req: any, res: any) =>
+    res.json(S({ id: MOCK_CONVERSATION_ID })),
+
+  'POST /api/agent/conversation/chat/suggest': (_req: any, res: any) =>
+    res.json(S([])),
+
+  // 上传/STT（M3）：multipart 正文不解析——mock 页只需接口形状与同源可达，
+  // 固定返回即可覆盖「附件上传回填 url/name」与「语音转写回填文本」链路
+  'POST /api/file/upload': (req: any, res: any) =>
+    res.json(
+      S({
+        url: 'https://mock.localhost/files/mock-upload.bin',
+        key: 'mock-upload-key',
+        fileName: 'mock-upload.bin',
+        mimeType: req.headers?.['content-type'] || 'application/octet-stream',
+      }),
+    ),
+
+  'POST /api/audio/stt': (_req: any, res: any) =>
+    res.json(S({ text: '这是语音转写 Mock 文本' })),
+
+  'POST /api/agent/conversation/message/list': (_req: any, res: any) =>
+    res.json(S([])),
+
+  // 参数路由必须放在 /chat 等固定路由之后，避免把 chat 误识别为会话 ID。
+  'POST /api/agent/conversation/:id': (req: any, res: any) => {
+    const state = getState(resolveKey(req.params?.id));
+    const scenario = stateScenario(state);
+    state.pollCount += 1;
+    if (
+      scenario.pollTerminalAfter &&
+      state.pollCount >= scenario.pollTerminalAfter
+    ) {
+      state.taskStatus = 'COMPLETE';
+    }
+    res.json(
+      S({
+        id: Number(req.params?.id) || MOCK_CONVERSATION_ID,
+        agentId: 44,
+        topic: `Mock · ${scenario.label}`,
+        taskStatus: state.taskStatus,
+        messageList: state.messages,
+        agent: {
+          id: 44,
+          name: '会话验收 Mock Agent',
+          icon: '',
+          type: scenario.agentType ?? 'TaskAgent',
+          openSuggest: 'Close',
+          manualComponents: [],
+          variables: [],
+          hasPermission: true,
+          allowPrivateSandbox: true,
+        },
+      }),
+    );
+  },
+};

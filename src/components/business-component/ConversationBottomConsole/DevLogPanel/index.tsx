@@ -2,14 +2,14 @@
  * 开发日志面板（仅内容区，供底部合集控制台嵌入使用）
  */
 
+import { t } from '@/services/i18nRuntime';
+import type { DevLogEntry } from '@/types/interfaces/appDev';
+import { LogLevel } from '@/types/interfaces/appDev';
 import {
   formatTimestampDisplay,
   groupLogsByTimestamp,
   type LogGroup,
-} from '@/pages/AppDev/utils/devLogParser';
-import { t } from '@/services/i18nRuntime';
-import type { DevLogEntry } from '@/types/interfaces/appDev';
-import { LogLevel } from '@/types/interfaces/appDev';
+} from '@/utils/devLogParser';
 import { BugOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';

@@ -16,6 +16,9 @@ import type { QueuedMessage } from './types';
 
 const cx = classNames.bind(styles);
 
+/** 操作按钮 Tooltip 延迟（秒），避免鼠标滑过按钮区时频繁弹出 */
+const ACTION_TOOLTIP_MOUSE_ENTER_DELAY = 0.5;
+
 export interface QueuedMessageItemProps {
   message: QueuedMessage;
   onSendNow: (message: QueuedMessage) => void;
@@ -76,7 +79,10 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
           )}
         </div>
         <div className={cx(styles.actions)}>
-          <Tooltip title={t('PC.Components.MessageQueue.sendNowTooltip')}>
+          <Tooltip
+            title={t('PC.Components.MessageQueue.sendNowTooltip')}
+            mouseEnterDelay={ACTION_TOOLTIP_MOUSE_ENTER_DELAY}
+          >
             <span
               className={cx(
                 styles['action-btn'],
@@ -92,7 +98,10 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
               {message.sending ? <LoadingOutlined /> : <SendOutlined />}
             </span>
           </Tooltip>
-          <Tooltip title={t('PC.Components.MessageQueue.editMessageTooltip')}>
+          <Tooltip
+            title={t('PC.Components.MessageQueue.editMessageTooltip')}
+            mouseEnterDelay={ACTION_TOOLTIP_MOUSE_ENTER_DELAY}
+          >
             <span
               className={cx(styles['action-btn'], styles['icon-btn'])}
               onClick={() => onEdit(message)}
@@ -102,6 +111,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
           </Tooltip>
           <Tooltip
             title={t('PC.Components.HistoryConversationList.deleteTooltip')}
+            mouseEnterDelay={ACTION_TOOLTIP_MOUSE_ENTER_DELAY}
           >
             <span
               className={cx(

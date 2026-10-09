@@ -27,6 +27,13 @@
   width: 0 !important;
 }
 
+// 全屏工作台页内容区（SidebarShell variant="fullscreen"）：
+// 满铺无装饰，仅保留盖住 .container 背景图层（::before，z-index:0）所需的定位层级
+.fullscreen-page-container {
+  position: relative;
+  z-index: 1;
+}
+
 .page-container {
   background: @pageContainerBg;
   border-left: 0 solid @pageContainerBorderColor;
@@ -36,11 +43,23 @@
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
   z-index: 1;
   // 确保内容区域有半透明背景，提高可读性
-  transition: all 0.3s ease;
+  // 过渡只点名收展/主题实际会变的属性（margin 避让、左描边宽、圆角、背景、阴影），
+  // 不用 all 兜底：侧栏收起/展开动画期间避免无关属性被卷入逐帧重排
+  transition: margin-left 0.3s ease, margin-top 0.3s ease,
+    border-left-width 0.3s ease, border-radius 0.3s ease,
+    background-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
 
-  // 风格2的适配
-  &.xagi-nav-style2 {
+  // 侧栏整条收起后（壳顶栏折叠/展开按钮）：左侧补出与右/下一致的边距，
+  // 保证内容卡片四周留白对称（展开态左侧贴侧栏列，margin-left 恒为 0）
+  &.xagi-layout-collapsed {
+    margin-left: @marginXs;
+  }
+
+  // 风格2的适配（2026-09-12 需求：单栏 style3 的 page-container 同样参考风格 2——
+  // 贴边满铺、无圆角无阴影，展开态左侧描边作二级列与内容区分隔）
+  &.xagi-nav-style2,
+  &.xagi-nav-style3 {
     margin: 0;
     border-radius: 0;
     box-shadow: none;
@@ -54,5 +73,31 @@
       border-left-width: @lineWidth;
       border-radius: 0;
     }
+  }
+
+  // 单栏风格（style3）：侧边面板（一级+二级菜单）固定，滚动区域统一收敛到
+  // page-container。本身 100% 高、内部自滚的页面不受影响；内容溢出的页面
+  // 兜底在 page-container 内滚动，不再被裁剪（覆盖 overflow-hide 工具类）。
+  &.xagi-nav-style3 {
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+}
+
+// Windows/Linux 透明沉浸标题栏下，展开态侧栏与内容区共用一张视觉卡片：
+// 无二级列时圆角在 page-container；有二级列时圆角迁到二级列左上，内容区接缝方角。
+:global(html.immersive-shell-frameless) {
+  .container
+    > :global(#mobile-menu-container)
+    + .page-container.xagi-layout-expanded.xagi-nav-style3 {
+    border-top-left-radius: 12px;
+  }
+
+  .container
+    > :global(#mobile-menu-container):has(
+      [data-shell-second-menu-visible='true']
+    )
+    + .page-container.xagi-layout-expanded.xagi-nav-style3 {
+    border-top-left-radius: 0;
   }
 }

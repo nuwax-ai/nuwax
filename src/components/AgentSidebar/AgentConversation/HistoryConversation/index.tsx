@@ -1,6 +1,7 @@
 import InfiniteList from '@/layouts/InfiniteList';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import { jumpTo } from '@/utils/router';
 import { Modal } from 'antd';
 import React from 'react';
 import { history, useModel, useParams } from 'umi';
@@ -33,7 +34,7 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
       if (id === currentId) {
         onCancel?.();
         // 删除自己跳转至新会话
-        history.push('/agent/' + agentId);
+        jumpTo('/agent/' + agentId);
       }
     } catch (e) {}
   };

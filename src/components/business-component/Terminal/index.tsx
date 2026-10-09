@@ -1109,7 +1109,13 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         ref={wrapperRef}
         className={classNames(
           styles.terminalWrapper,
-          { [styles.lightTheme]: isLight, [styles.embedded]: embedded },
+          {
+            [styles.lightTheme]: isLight,
+            [styles.embedded]: embedded,
+            // requestFullscreen 会把该节点铺到 webview 视口；客户端沉浸壳通过
+            // 稳定类将其从顶栏下方开始并收缩高度，浏览器端不命中该规则。
+            'immersive-shell-fullscreen': isFullscreen,
+          },
           className,
         )}
         style={style}

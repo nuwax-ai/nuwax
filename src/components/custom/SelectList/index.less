@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token.less';
 
 // 仅选择器（rootClassName 挂在这层）：默认宽度；外部传入的 className 也合并在此，只影响触发区域
 .container {
@@ -69,5 +70,17 @@
     // 避免 flex 默认 min-width:auto 卡住子项宽度测量
     min-width: 0;
     width: max-content;
+  }
+
+  :global(.ant-select-item-group) {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+    padding: 6px 12px 2px;
+    line-height: @lineHeightSm;
+  }
+
+  :global(.ant-select-item-option-grouped) {
+    padding-left: 12px;
   }
 }

@@ -1,10 +1,10 @@
 import { t } from '@/services/i18nRuntime';
+import type { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
+import { type ResourceTreeNode } from '@/types/menuPermission/permission-resources';
 import { DownOutlined } from '@ant-design/icons';
 import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { MenuNodeInfo } from '../../../types/menu-manage';
-import { type ResourceTreeNode } from '../../../types/permission-resources';
 import styles from './index.less';
 
 interface MenuPermissionTreeProps {

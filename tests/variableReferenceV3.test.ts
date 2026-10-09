@@ -4,12 +4,16 @@ import type {
   WorkflowDataV3,
 } from '@/pages/Antv-X6/v3/types';
 import { calculateNodePreviousArgs } from '@/pages/Antv-X6/v3/utils/variableReferenceV3';
-import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  DataTypeEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { describe, expect, test } from 'vitest';
 
 const arg = (
   name: string,
-  dataType: DataTypeEnum | string,
+  dataType: DataTypeEnum,
   extra?: Partial<InputAndOutConfig>,
 ): InputAndOutConfig => ({
   name,
@@ -29,9 +33,20 @@ const buildWorkflow = (nodes: ChildNode[]): WorkflowDataV3 => ({
   edges: [],
 });
 
+const createNode = (
+  data: Pick<ChildNode, 'id' | 'name' | 'type' | 'nodeConfig'> &
+    Partial<ChildNode>,
+): ChildNode => ({
+  description: '',
+  workflowId: 1,
+  shape: NodeShapeEnum.General,
+  icon: '',
+  ...data,
+});
+
 describe('variableReferenceV3 loop index scope', () => {
   test('loop outer downstream node should not receive INDEX or *_item', () => {
-    const start = {
+    const start = createNode({
       id: 1,
       name: 'Start',
       type: NodeTypeEnum.Start,
@@ -40,9 +55,9 @@ describe('variableReferenceV3 loop index scope', () => {
       nodeConfig: {
         outputArgs: [arg('safeFromStart', DataTypeEnum.String)],
       },
-    } as ChildNode;
+    });
 
-    const loop = {
+    const loop = createNode({
       id: 2,
       name: 'Loop',
       type: NodeTypeEnum.Loop,
@@ -56,15 +71,15 @@ describe('variableReferenceV3 loop index scope', () => {
           arg('safeLoopOutput', DataTypeEnum.String),
         ],
       },
-    } as ChildNode;
+    });
 
-    const outerNode = {
+    const outerNode = createNode({
       id: 3,
       name: 'OuterCode',
       type: NodeTypeEnum.Code,
       icon: '',
       nodeConfig: {},
-    } as ChildNode;
+    });
 
     const result = calculateNodePreviousArgs(
       3,
@@ -85,7 +100,7 @@ describe('variableReferenceV3 loop index scope', () => {
   });
 
   test('loop inner node should still receive INDEX from loopNodeId branch', () => {
-    const start = {
+    const start = createNode({
       id: 1,
       name: 'Start',
       type: NodeTypeEnum.Start,
@@ -98,9 +113,9 @@ describe('variableReferenceV3 loop index scope', () => {
           }),
         ],
       },
-    } as ChildNode;
+    });
 
-    const loop = {
+    const loop = createNode({
       id: 2,
       name: 'Loop',
       type: NodeTypeEnum.Loop,
@@ -115,16 +130,16 @@ describe('variableReferenceV3 loop index scope', () => {
         ],
         outputArgs: [arg('loopResult', DataTypeEnum.String)],
       },
-    } as ChildNode;
+    });
 
-    const innerNode = {
+    const innerNode = createNode({
       id: 3,
       name: 'InnerCode',
       type: NodeTypeEnum.Code,
       icon: '',
       loopNodeId: 2,
       nodeConfig: {},
-    } as ChildNode;
+    });
 
     const result = calculateNodePreviousArgs(
       3,

@@ -57,7 +57,13 @@ const ResetPassword: React.FC = () => {
       type: SendCodeEnum.RESET_PASSWORD,
       [authType ? 'phone' : 'email']: phone,
     };
-    runSendCode(_params);
+    try {
+      await runSendCode(_params);
+    } catch {
+      // 发送失败可立即重发（提示由请求层给出）
+      setCountDown(0);
+      onClearTimer();
+    }
   };
 
   return (

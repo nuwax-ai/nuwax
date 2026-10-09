@@ -1,25 +1,39 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
+@import '@/styles/sidebar-row-icon.less';
 
 @statusTagFontSize: 11px; // 运行中标签专用字号
 @statusTagPadding: 0 6px; // 运行中标签内边距
 @statusTagLineHeight: 16px; // 运行中标签行高
 @avatarTextWeight: 600;
 @itemContentGap: 2px;
+@dropdownMinWidth: 200px;
+@dropdownMaxWidth: 320px;
+@dropdownNameMaxWidth: 280px;
 
 .conversation-item {
   display: flex;
   align-items: center;
-  gap: @paddingSm;
-  padding: @paddingXs @paddingXs;
-  border-radius: @borderRadius;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
+  //（子行 .child-actions 内缩 11px；2026-09-12 需求）
+  // 行尾操作槽保持 24px，收紧纵向内边距后经典行高为 38px。
+  padding: 7px 11px 7px 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: @navSecondMenuAdaptiveTextSecondary;
 
+  // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）
+  .nav-row-hover();
+
   // 头像部分
   .avatar-container {
-    width: @controlHeight;
-    height: @controlHeight;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -53,12 +67,16 @@
     .conversation-topic-row {
       display: flex;
       align-items: center;
-      gap: @paddingXs;
+      gap: @sidebarRowIconGap;
       width: 100%;
 
       .conversation-topic {
         flex: 1;
         min-width: 0;
+        // 原生省略号（替代 Typography.Text ellipsis，避免逐渲染 em 测量重排）
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font-size: @fontSize;
         line-height: @lineHeight;
         color: @navSecondMenuAdaptiveText;
@@ -73,20 +91,106 @@
         line-height: @statusTagLineHeight;
         flex-shrink: 0;
       }
-    }
 
-    .conversation-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: @paddingXs;
+      // 本地标记图标（收藏）
+      .star-icon {
+        font-size: 11px;
+        flex-shrink: 0;
+        color: @colorWarning;
+      }
 
-      .conversation-agent-name {
-        flex: 1;
-        min-width: 0;
-        font-size: @fontSizeSm;
-        line-height: @lineHeightSm;
+      // 状态、时间/更多共用行尾区域；标题只占剩余宽度，不会压到按钮下方。
+      .conversation-trailing {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: @sidebarRowIconGap;
+        flex-shrink: 0;
+        min-width: calc(2 * @sidebarRowIconSlotSize + @sidebarRowIconGap);
+      }
+
+      .status-slot {
+        .sidebar-row-leading-slot();
+      }
+
+      .status-mark,
+      .pin-toggle {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.16s ease;
+      }
+
+      .status-mark {
+        pointer-events: none;
+      }
+
+      .pinned-state-icon {
+        font-size: @sidebarRowIconSize;
         color: @navSecondMenuAdaptiveTextSecondary;
+      }
+
+      .pin-toggle {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: @sidebarRowIconSize;
+        color: @navSecondMenuAdaptiveTextSecondary;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      // 已置顶的 hover 操作使用「斜杠图钉」表达取消置顶；静止态的实心图钉
+      // 由 status-mark 单独承载，状态与操作不再共用同一图形。
+      .unpin-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .unpin-slash {
+        position: absolute;
+        width: 15px;
+        height: 1.5px;
+        border-radius: 1px;
+        background: currentcolor;
+        transform: rotate(45deg);
+        box-shadow: 0 0 0 1px @navSecondMenuBg;
+      }
+
+      // 时间与更多交替占据行尾，状态槽随行尾一起排列。
+      :global(.more-btn) {
+        .sidebar-row-action-slot();
+
+        display: none;
+        flex-shrink: 0;
+      }
+
+      // 仅菜单触发后显示二次确认，确认按钮临时替换状态槽。
+      .archive-action {
+        display: flex;
+        align-items: center;
+      }
+
+      .archive-confirm {
+        height: 22px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 4px;
+        background: @colorError;
+        color: @colorWhite;
+        font-size: 12px;
+        line-height: 22px;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
       }
 
       .conversation-date {
@@ -96,23 +200,33 @@
         flex-shrink: 0;
       }
     }
+
+    // 无描述信息时，单行内容垂直居中并与头像等高
+    &.conversation-item-content-compact {
+      min-height: @controlHeight;
+      justify-content: center;
+    }
   }
 
   &:hover {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
+    .conversation-item-content .conversation-topic-row .status-mark {
+      opacity: 0;
+    }
+
+    .conversation-item-content .conversation-topic-row .pin-toggle {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .conversation-topic-row :global(.more-btn) {
+      display: inline-flex;
+    }
 
     .conversation-item-content {
       .conversation-topic-row {
         .conversation-topic {
           color: @colorText;
         }
-      }
-
-      .conversation-meta {
-        .conversation-agent-name {
-          color: @colorTextSecondary;
-        }
 
         .conversation-date {
           color: @colorTextTertiary;
@@ -121,20 +235,48 @@
     }
   }
 
+  &:hover .conversation-date,
+  &:focus-visible .conversation-date,
+  &:has(:focus-visible) .conversation-date,
+  &.archive-arming .conversation-date,
+  &.archive-arming .status-slot {
+    display: none;
+  }
+
+  &.archive-arming .conversation-topic-row :global(.more-btn) {
+    display: inline-flex;
+  }
+
+  // 触屏没有悬停，直接展示置顶与更多入口。
+  @media (hover: none) {
+    .conversation-topic-row {
+      .conversation-date {
+        display: none;
+      }
+
+      .status-mark {
+        opacity: 0;
+      }
+
+      .pin-toggle {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      :global(.more-btn) {
+        display: inline-flex;
+      }
+    }
+  }
+
   &.active {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
+    // 选中白卡（单栏统一交互态）；主题色只落标题，日期保持次级色
+    .nav-row-selected();
 
     .conversation-item-content {
       .conversation-topic-row {
         .conversation-topic {
           color: @colorPrimaryText;
-        }
-      }
-
-      .conversation-meta {
-        .conversation-agent-name {
-          color: @colorTextSecondary;
         }
 
         .conversation-date {
@@ -142,5 +284,102 @@
         }
       }
     }
+  }
+}
+
+.executing-conversation-dropdown {
+  min-width: @dropdownMinWidth;
+  max-width: @dropdownMaxWidth;
+
+  .executing-conversation-name {
+    display: block;
+    max-width: @dropdownNameMaxWidth;
+  }
+}
+
+.conversation-item:focus-visible {
+  outline: @lineWidthBold solid @colorPrimary;
+  outline-offset: -2px;
+}
+// 只认键盘焦点:行是 tabIndex=0 的 div,鼠标点击后 :focus-within 残留,
+// 会让「⋯」按钮/日期隐藏态永久停留在被点击的行上
+.conversation-item:focus-visible .conversation-topic-row :global(.more-btn),
+.conversation-item:has(:focus-visible)
+  .conversation-topic-row
+  :global(.more-btn) {
+  display: inline-flex;
+}
+
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .status-mark,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .status-mark {
+  opacity: 0;
+}
+
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.conversation-item.compact {
+  position: relative;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 4px @sidebarRowCompactTrailingPadding 4px 8px;
+  transition: background 0.18s ease;
+
+  .conversation-item-content .conversation-topic-row {
+    gap: @sidebarRowIconGap;
+
+    .conversation-topic {
+      font-size: @fontSize;
+      font-weight: 400;
+      line-height: 20px;
+      color: @navSecondMenuAdaptiveTextSecondary;
+    }
+
+    :global(.more-btn) {
+      // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
+      // hover 浅品牌色底。此处用 :global 字面量声明——组件自带 index.less 的
+      // styles 映射在当前 dev 运行时为空（MFSU 缓存分裂），字面量规则才可靠生效
+      width: @controlHeightSm;
+      height: @controlHeightSm;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
+
+      &:hover {
+        background: @colorPrimaryBg;
+        color: rgba(0, 0, 0, 88%);
+      }
+    }
+  }
+
+  // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）。
+  // 选中白卡与 hover 灰底必须同占位（2026-09-19：原负 margin 0 -5px 外扩使
+  // 选中卡比 hover 高亮左右各宽 5px 不对齐，已删）；三级阴影由列表容器 15px
+  // 侧 padding 承接，不会被 wrapper overflow 裁切
+  &.active {
+    .nav-row-selected();
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conversation-item,
+  .conversation-item .status-mark,
+  .conversation-item .pin-toggle {
+    transition: none;
   }
 }

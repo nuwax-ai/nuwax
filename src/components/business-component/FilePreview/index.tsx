@@ -24,6 +24,10 @@ import React, {
   useState,
 } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import styles from './index.less';
 
 // @ts-ignore
@@ -35,16 +39,172 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import '@/components/MarkdownRenderer/ds-markdown.css';
+import {
+  extractTableToMarkdown,
+  unwrapLatexInlineCode,
+} from '@/components/MarkdownRenderer/utils';
 import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
+import { preparePptxForPreview } from '@/utils/pptxPackage';
+import { validateAndOrderPptxSlides } from '@/utils/pptxSlideValidation';
+import { CodeBlockActions, CodeBlockWrap, HighlightCode } from 'ds-markdown';
+import 'ds-markdown/katex.css';
 import { init as pptxInit } from 'pptx-preview';
+
+/** 文件预览 Markdown：GFM + KaTeX（静态全文，不走流式打字机） */
+const FILE_PREVIEW_REMARK_PLUGINS = [remarkGfm, remarkMath];
+// rehype-raw：渲染 md 内嵌行内 HTML（如 <sub>/<sup>），对齐会话区/静态页行为
+// （react-markdown 默认丢弃 raw HTML，文档里的 H<sub>2</sub>O 会原样露出标签）
+const FILE_PREVIEW_REHYPE_PLUGINS: Parameters<
+  typeof ReactMarkdown
+>[0]['rehypePlugins'] = [
+  rehypeRaw,
+  [rehypeKatex, { throwOnError: false, strict: 'ignore' }],
+];
+
+/** 递归提取 ReactMarkdown pre>code 子树里的纯文本（code 的 children 可能是字符串数组） */
+const extractMarkdownCodeText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractMarkdownCodeText).join('');
+  if (React.isValidElement(node)) {
+    return extractMarkdownCodeText(
+      (node.props as { children?: React.ReactNode }).children,
+    );
+  }
+  return '';
+};
+
+/**
+ * 会话区同款代码块：带语言标注的围栏代码渲染为 md-code-block（语言标签 + 复制/下载 + Prism 高亮），
+ * 无语言围栏保持原 GitHub 风格 pre；行内 code 不经过 pre 覆写不受影响
+ */
+const FilePreviewMarkdownPre: React.FC<{ children?: React.ReactNode }> = ({
+  children,
+}) => {
+  const codeEl = Array.isArray(children)
+    ? children.find(React.isValidElement)
+    : children;
+  const className =
+    (React.isValidElement(codeEl) &&
+      (codeEl.props as { className?: string }).className) ||
+    '';
+  const match = /language-(\S+)/.exec(className);
+  const codeContent = React.isValidElement(codeEl)
+    ? extractMarkdownCodeText(
+        (codeEl.props as { children?: React.ReactNode }).children,
+      ).replace(/\n$/, '')
+    : '';
+
+  if (!match || !codeContent) {
+    return <pre>{children}</pre>;
+  }
+
+  const language = match[1];
+  return (
+    <CodeBlockWrap
+      title={
+        <>
+          <div className="md-code-block-language">{language}</div>
+          <CodeBlockActions language={language} codeContent={codeContent} />
+        </>
+      }
+    >
+      <HighlightCode code={codeContent} language={language} />
+    </CodeBlockWrap>
+  );
+};
+
+/**
+ * 会话区同款表格卡：表格外套 md-code-block 外壳，支持一键复制/下载为 Markdown 文本
+ * （结构与 genCustomPlugin 的 table 覆写一致，内容经 extractTableToMarkdown 反向提取）
+ */
+const FilePreviewMarkdownTable: React.FC<{
+  children?: React.ReactNode;
+}> = ({ children }) => {
+  const tableMarkdown = extractTableToMarkdown(children);
+  return (
+    <div className="md-code-block md-code-block-light">
+      <div className="md-code-block-banner-wrap">
+        <div className="md-code-block-banner md-code-block-banner-lite">
+          <div className="md-code-block-language">
+            {t('PC.Components.MarkdownRenderer.tableCodeBlock')}
+          </div>
+          <CodeBlockActions language="markdown" codeContent={tableMarkdown} />
+        </div>
+      </div>
+      <div className="md-code-block-content md-table-content">
+        <table>{children}</table>
+      </div>
+    </div>
+  );
+};
+
+/** 模块级常量保持引用稳定，避免 components 内联对象触发 ReactMarkdown 全量重渲染 */
+const FILE_PREVIEW_MARKDOWN_COMPONENTS = {
+  pre: FilePreviewMarkdownPre,
+  table: FilePreviewMarkdownTable,
+};
 
 /** HTML 预览 iframe 沙盒：不含 allow-top-navigation，避免锚点误导航到主应用 */
 const HTML_PREVIEW_SANDBOX = SANDBOX.replace(
   'allow-top-navigation ',
   '',
 ).trim();
+
+/** 从 href 解析锚点 id；非本页 hash 链接返回 null */
+const resolveHashFromHref = (href: string): string | null => {
+  const trimmedHref = href.trim();
+  if (trimmedHref.startsWith('#')) {
+    return trimmedHref.slice(1);
+  }
+  try {
+    const url = new URL(trimmedHref, window.location.href);
+    if (
+      url.origin === window.location.origin &&
+      url.pathname === window.location.pathname &&
+      url.hash.length > 0
+    ) {
+      return url.hash.slice(1);
+    }
+  } catch {
+    // ignore invalid URL
+  }
+  return null;
+};
+
+/** 在指定容器内滚动到 hash 对应元素 */
+const scrollContainerToHash = (
+  scrollContainer: HTMLElement,
+  scope: ParentNode,
+  hash: string,
+) => {
+  if (!hash) {
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  let decodedHash = hash;
+  try {
+    decodedHash = decodeURIComponent(hash);
+  } catch {
+    decodedHash = hash;
+  }
+
+  const escapedId =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(decodedHash)
+      : decodedHash.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+
+  const targetEl =
+    scope.querySelector(`#${escapedId}`) ||
+    scope.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
+
+  targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 
 /**
  * 在 iframe 内拦截 hash 锚点点击，避免 srcDoc / base 标签导致加载主应用页面
@@ -66,40 +226,66 @@ const setupHtmlIframeAnchorHandling = (iframe: HTMLIFrameElement) => {
       return;
     }
 
-    const trimmedHref = hrefAttr.trim();
-    if (!trimmedHref.startsWith('#')) {
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
 
-    const hash = trimmedHref.slice(1);
-    if (!hash) {
-      doc.defaultView?.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+    scrollContainerToHash(doc.documentElement, doc, hash);
 
-    let decodedHash = hash;
-    try {
-      decodedHash = decodeURIComponent(hash);
-    } catch {
-      decodedHash = hash;
-    }
-
-    const targetEl =
-      doc.getElementById(decodedHash) ||
-      doc.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
-
-    targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    if (doc.defaultView) {
+    if (doc.defaultView && hash) {
       doc.defaultView.location.hash = hash;
     }
   };
 
   doc.addEventListener('click', handleClick, true);
   return () => doc.removeEventListener('click', handleClick, true);
+};
+
+/**
+ * 拦截 Markdown 预览区 hash 锚点点击，在预览容器内定位，避免改变主应用 URL 或新开页签
+ */
+const setupMarkdownAnchorHandling = (
+  scrollContainer: HTMLElement,
+  contentRoot?: HTMLElement | null,
+) => {
+  const scope = contentRoot ?? scrollContainer;
+
+  const handleAnchorNavigation = (event: MouseEvent) => {
+    const anchor = (event.target as Element | null)?.closest('a');
+    if (!anchor) {
+      return;
+    }
+
+    const hrefAttr = anchor.getAttribute('href');
+    if (!hrefAttr) {
+      return;
+    }
+
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    scrollContainerToHash(scrollContainer, scope, hash);
+  };
+
+  scrollContainer.addEventListener('click', handleAnchorNavigation, true);
+  scrollContainer.addEventListener('auxclick', handleAnchorNavigation, true);
+  return () => {
+    scrollContainer.removeEventListener('click', handleAnchorNavigation, true);
+    scrollContainer.removeEventListener(
+      'auxclick',
+      handleAnchorNavigation,
+      true,
+    );
+  };
 };
 
 // File type categories
@@ -129,6 +315,8 @@ export interface FilePreviewProps {
   src?: string | ArrayBuffer | Blob | File;
   /** File content string (alternative to src) */
   content?: string;
+  /** 重新读取正文的信号，不改变预览实例身份。 */
+  refreshKey?: number | string;
   /** For multiple images: array of image sources */
   srcList?: Array<string | File>;
   /** File type (auto-detected if not provided) */
@@ -362,6 +550,75 @@ const getLocalizedErrorMessage = (
   }
 };
 
+function getPptxErrorMessage(error: unknown): string {
+  const detail = error as { code?: string; message?: string } | undefined;
+  switch (detail?.code) {
+    case 'http':
+      return t('PC.Components.FilePreview.errorFileLoad');
+    case 'invalid':
+      return t('PC.Components.FilePreview.errorInvalid');
+    case 'legacy':
+      return t('PC.Components.FilePreview.errorLegacyPpt');
+    case 'tooLarge':
+      return t('PC.Components.FilePreview.errorPreviewTooLarge');
+    case 'damaged':
+      return t('PC.Components.FilePreview.errorPptxDamaged');
+    case 'incomplete':
+      return t('PC.Components.FilePreview.errorPptxIncomplete');
+    default:
+      return getLocalizedErrorMessage(detail?.message, 'pptx');
+  }
+}
+
+/**
+ * 从 Markdown 文件地址中取出所在目录。
+ * 地址对不上静态根路径，或文件就在工作区根上时返回空，相对图片仍按旧逻辑接到根路径。
+ */
+function markdownDirectoryFromSource(
+  fileSrc: string | ArrayBuffer | Blob | File | undefined,
+  staticFileBasePath?: string,
+): string {
+  if (!staticFileBasePath || typeof fileSrc !== 'string') {
+    return '';
+  }
+  const cleanSrc = fileSrc.split(/[?#]/)[0];
+  const normalizedBase = staticFileBasePath.replace(/\/+$/, '');
+  const marker = `${normalizedBase}/`;
+  const baseIndex = cleanSrc.indexOf(marker);
+  if (baseIndex < 0) {
+    return '';
+  }
+  const relativePath = cleanSrc.slice(baseIndex + marker.length);
+  const slashIndex = relativePath.lastIndexOf('/');
+  if (slashIndex <= 0) {
+    return '';
+  }
+  return relativePath.slice(0, slashIndex);
+}
+
+/** 把图片相对路径折算到 Markdown 所在目录，`..` 停在工作区根，查询参数原样保留。 */
+function resolvePathAgainstDirectory(
+  directory: string,
+  relativePath: string,
+): string {
+  const suffixIndex = relativePath.search(/[?#]/);
+  const pathPart =
+    suffixIndex >= 0 ? relativePath.slice(0, suffixIndex) : relativePath;
+  const suffix = suffixIndex >= 0 ? relativePath.slice(suffixIndex) : '';
+  const parts = directory.split('/').filter(Boolean);
+  pathPart.split('/').forEach((segment) => {
+    if (!segment || segment === '.') {
+      return;
+    }
+    if (segment === '..') {
+      parts.pop();
+      return;
+    }
+    parts.push(segment);
+  });
+  return `${parts.join('/')}${suffix}`;
+}
+
 const FilePreview: React.FC<FilePreviewProps> = ({
   src,
   staticFileBasePath,
@@ -377,12 +634,32 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   className,
   style,
   content: propsContent,
+  refreshKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
+  const markdownScrollRef = useRef<HTMLDivElement>(null);
+  const markdownAnchorCleanupRef = useRef<(() => void) | null>(null);
   const previewerRef = useRef<any>(null);
+  const textRequestIdRef = useRef(0);
+  const textAbortControllerRef = useRef<AbortController | null>(null);
+  const loadedTextSourceRef = useRef<{
+    src: FilePreviewProps['src'];
+    type: FileType;
+  } | null>(null);
+  const pptxAbortControllerRef = useRef<AbortController | null>(null);
+  const downloadAbortControllerRef = useRef<AbortController | null>(null);
+  const preparedPptxRef = useRef<{
+    src: FilePreviewProps['src'];
+    result: Awaited<ReturnType<typeof preparePptxForPreview>>;
+  } | null>(null);
+  const originalPptxRef = useRef<{
+    src: FilePreviewProps['src'];
+    buffer: ArrayBuffer;
+  } | null>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [downloading, setDownloading] = useState(false);
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
@@ -397,7 +674,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const resolvedType = fileType || detectedType;
 
-  // 关键修复：当从 HTML 切换到 Markdown 时，延迟渲染 PureMarkdownRenderer
+  // 性能修复：当从 HTML 切换到 Markdown 时延迟渲染，确保布局稳定
   // 使用 useEffect 延迟渲染，确保 HTML 容器已完全移除且布局稳定
   useEffect(() => {
     if (resolvedType === 'markdown' && textContent) {
@@ -450,8 +727,36 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return () => {
       htmlIframeCleanupRef.current?.();
       htmlIframeCleanupRef.current = null;
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMarkdownVisible || !markdownScrollRef.current) {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+      return;
+    }
+
+    const contentRoot =
+      (markdownScrollRef.current.querySelector(
+        '#file-preview-md',
+      ) as HTMLElement | null) ??
+      (markdownScrollRef.current.querySelector(
+        '.ds-markdown',
+      ) as HTMLElement | null);
+
+    markdownAnchorCleanupRef.current = setupMarkdownAnchorHandling(
+      markdownScrollRef.current,
+      contentRoot,
+    );
+
+    return () => {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+    };
+  }, [isMarkdownVisible, textContent]);
 
   const imageSources = useMemo(() => {
     if (srcList && srcList.length > 0) {
@@ -466,20 +771,78 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return [];
   }, [srcList, src, resolvedType]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!src) return;
-    const url = getSourceUrl(src);
+    // 兼容处理只供预览，下载保持用户原件；已授权加载的 URL 也可直接下载原始 bytes。
+    let downloadSource =
+      resolvedType === 'pptx' && originalPptxRef.current?.src === src
+        ? originalPptxRef.current.buffer
+        : src;
+    if (resolvedType === 'pptx' && typeof downloadSource === 'string') {
+      downloadAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      downloadAbortControllerRef.current = controller;
+      setDownloading(true);
+      try {
+        const { loadFilePreviewBuffer } = await import(
+          '@/services/filePreview'
+        );
+        // 用户主动下载原件不受预览预算限制；受保护 URL 仍经过业务鉴权。
+        downloadSource = await loadFilePreviewBuffer(downloadSource, {
+          signal: controller.signal,
+          maxBytes: Number.MAX_SAFE_INTEGER,
+        });
+        if (controller.signal.aborted) return;
+        originalPptxRef.current = { src, buffer: downloadSource };
+      } catch (error: any) {
+        if (!controller.signal.aborted) {
+          setErrorMessage(getPptxErrorMessage(error));
+          onError?.(error);
+        }
+        return;
+      } finally {
+        if (downloadAbortControllerRef.current === controller) {
+          downloadAbortControllerRef.current = null;
+          setDownloading(false);
+        }
+      }
+    }
+    const url = getSourceUrl(downloadSource);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    if (typeof src !== 'string') URL.revokeObjectURL(url);
-  }, [src, fileName]);
+    if (typeof downloadSource !== 'string') URL.revokeObjectURL(url);
+  }, [src, fileName, resolvedType, onError]);
 
-  const initPreview = async () => {
-    if (!containerRef.current || (!src && !srcList?.length && !propsContent))
+  const initPreview = async (
+    options: { reusePptx?: boolean; refreshPptx?: boolean } = {},
+  ) => {
+    const pptxScroll = options.reusePptx
+      ? {
+          outer: containerRef.current?.scrollTop ?? 0,
+          inner: previewerRef.current?.wrapper?.scrollTop ?? 0,
+        }
+      : null;
+    const requestId = ++textRequestIdRef.current;
+    textAbortControllerRef.current?.abort();
+    textAbortControllerRef.current = null;
+    pptxAbortControllerRef.current?.abort();
+    pptxAbortControllerRef.current = null;
+    if (!options.reusePptx) {
+      downloadAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current = null;
+      setDownloading(false);
+      preparedPptxRef.current = null;
+      originalPptxRef.current = null;
+    }
+    const isCurrentRequest = () => requestId === textRequestIdRef.current;
+    if (
+      !containerRef.current ||
+      (!src && !srcList?.length && propsContent === undefined)
+    )
       return;
 
     // Handle srcList for image gallery
@@ -490,7 +853,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       return;
     }
 
-    if (!src) return;
+    if (!src && propsContent === undefined) return;
 
     // Detect file type
     let type: FileType = fileType || 'unsupported';
@@ -516,6 +879,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     }
 
+    if (!isCurrentRequest()) return;
     setDetectedType(type);
 
     if (type === 'unsupported') {
@@ -532,27 +896,46 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
-      if (propsContent) {
+      if (propsContent !== undefined) {
+        loadedTextSourceRef.current = { src, type };
         setTextContent(propsContent);
         setStatus('success');
         onRendered?.();
         return;
       }
-      setStatus('loading');
+      // 同一 Markdown 后台刷新时保留已展示的 DOM，正文相同则不会重新解析。
+      const preserveMarkdown =
+        type === 'markdown' &&
+        status === 'success' &&
+        loadedTextSourceRef.current?.src === src &&
+        loadedTextSourceRef.current?.type === type;
+      if (!preserveMarkdown) setStatus('loading');
+      const controller = new AbortController();
+      textAbortControllerRef.current = controller;
       try {
         let content: string;
         if (typeof src === 'string') {
-          const response = await fetch(src);
+          const response = await fetch(src, {
+            signal: controller.signal,
+            ...(refreshKey !== undefined ? { cache: 'no-cache' as const } : {}),
+          });
+          // 非 2xx（文件不存在/网关拒绝）时响应体是错误报文，走失败态而非当文档渲染
+          if (!response.ok) {
+            throw new Error(`Load file failed: ${response.status}`);
+          }
           content = await response.text();
         } else if (src instanceof File || src instanceof Blob) {
           content = await src.text();
         } else {
           content = new TextDecoder().decode(src);
         }
+        if (!isCurrentRequest()) return;
+        loadedTextSourceRef.current = { src, type };
         setTextContent(content);
         setStatus('success');
         onRendered?.();
       } catch (error: any) {
+        if (!isCurrentRequest() || controller.signal.aborted) return;
         setStatus('error');
         setErrorMessage(t('PC.Components.FilePreview.errorLoadFileContent'));
         onError?.(error);
@@ -611,11 +994,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     containerRef.current.innerHTML = '';
 
+    let previewer: any;
+    let pptxHost: HTMLDivElement | undefined;
     try {
-      let previewer: any;
       let previewSrc: any = src;
 
-      if (src instanceof File) {
+      if (src instanceof File && type !== 'pptx') {
         previewSrc = await src.arrayBuffer();
       }
 
@@ -633,11 +1017,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           previewer = jsPreviewPdf.init(containerRef.current, {
             width: containerRef.current.clientWidth || undefined,
             onError: (e: any) => {
+              if (!isCurrentRequest()) return;
               setStatus('error');
               setErrorMessage(getLocalizedErrorMessage(e?.message, 'pdf'));
               onError?.(e);
             },
             onRendered: () => {
+              if (!isCurrentRequest()) return;
               setStatus('success');
               onRendered?.();
             },
@@ -645,6 +1031,30 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           await previewer.preview(previewSrc);
           break;
         case 'pptx': {
+          if (!src) return;
+          const controller = new AbortController();
+          pptxAbortControllerRef.current = controller;
+          let prepared =
+            options.reusePptx && preparedPptxRef.current?.src === src
+              ? preparedPptxRef.current.result
+              : null;
+          if (!prepared) {
+            const { loadFilePreviewBuffer } = await import(
+              '@/services/filePreview'
+            );
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            const buffer = await loadFilePreviewBuffer(src, {
+              signal: controller.signal,
+              refresh: options.refreshPptx || refreshKey !== undefined,
+            });
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            originalPptxRef.current = { src, buffer };
+            prepared = await preparePptxForPreview(buffer, {
+              signal: controller.signal,
+            });
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            preparedPptxRef.current = { src, result: prepared };
+          }
           // 由于初始化时容器 display: none，clientHeight 可能为 0
           // 尝试从父容器获取尺寸，或使用传入的 height/width 属性
           const parentEl = containerRef.current.parentElement;
@@ -657,41 +1067,77 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             parentEl?.clientHeight ||
             (typeof height === 'number' ? height : 600);
 
-          previewer = pptxInit(containerRef.current, {
+          // 旧库不支持中止解析。每次使用独立 host，过期任务只能写自己的离屏 DOM。
+          pptxHost = document.createElement('div');
+          previewer = pptxInit(pptxHost, {
             width: containerWidth,
             height: containerHeight,
           });
-          if (typeof previewSrc === 'string') {
-            const response = await fetch(previewSrc);
-            previewSrc = await response.arrayBuffer();
+          previewerRef.current = previewer;
+          // load 只解析；确认请求仍有效后才创建页面和图表等渲染资源。
+          await previewer.load(prepared.buffer);
+          if (!isCurrentRequest() || controller.signal.aborted) {
+            pptxHost.replaceChildren();
+            return;
           }
-          await previewer.preview(previewSrc);
+          for (
+            let index = 0;
+            index < previewer.pptx.slides.length;
+            index += 1
+          ) {
+            previewer.htmlRender.renderSlide(index);
+          }
+          validateAndOrderPptxSlides(previewer, pptxHost, prepared.slidePaths);
+          containerRef.current.replaceChildren(pptxHost);
+          if (pptxScroll) {
+            containerRef.current.scrollTop = pptxScroll.outer;
+            if (previewer.wrapper) {
+              previewer.wrapper.scrollTop = pptxScroll.inner;
+            }
+          }
           break;
         }
       }
 
+      if (!isCurrentRequest()) return;
       previewerRef.current = previewer;
       if (type !== 'pdf') {
         setStatus('success');
         onRendered?.();
       }
     } catch (error: any) {
+      if (!isCurrentRequest() || error?.name === 'AbortError') return;
+      if (type === 'pptx') {
+        previewer?.destroy?.();
+        if (previewerRef.current === previewer) previewerRef.current = null;
+        pptxHost?.replaceChildren();
+      }
       console.error('File preview error:', error);
       setStatus('error');
       // 使用用户友好的中文错误信息
-      const friendlyMessage = getLocalizedErrorMessage(error?.message, type);
+      const friendlyMessage =
+        type === 'pptx'
+          ? getPptxErrorMessage(error)
+          : getLocalizedErrorMessage(error?.message, type);
       setErrorMessage(friendlyMessage);
       onError?.(error);
     }
   };
 
   useEffect(() => {
-    if (src || srcList?.length || propsContent) {
+    if (src || srcList?.length || propsContent !== undefined) {
       initPreview();
     } else {
       setStatus('idle');
     }
     return () => {
+      textRequestIdRef.current += 1;
+      textAbortControllerRef.current?.abort();
+      pptxAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current = null;
+      preparedPptxRef.current = null;
+      originalPptxRef.current = null;
       if (previewerRef.current) {
         try {
           previewerRef.current.destroy?.();
@@ -702,7 +1148,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, srcList, fileType, propsContent]);
+  }, [src, srcList, fileType, propsContent, refreshKey]);
 
   // ResizeObserver 监听容器尺寸变化
   const lastSizeRef = useRef<{ width: number; height: number } | null>(null);
@@ -716,6 +1162,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       if (!entry) return;
 
       const { width, height } = entry.contentRect;
+      // KeepAlive / 收起面板可能报告零尺寸，不触发隐藏文稿的重渲染。
+      if (width <= 0 || height <= 0) return;
 
       // 检查尺寸是否有显著变化（阈值 10px），避免重复初始化
       const lastSize = lastSizeRef.current;
@@ -737,7 +1185,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           ['pptx', 'xlsx', 'pdf', 'docx'].includes(resolvedType)
         ) {
           lastSizeRef.current = { width, height };
-          initPreview();
+          initPreview({ reusePptx: resolvedType === 'pptx' });
         }
       }, 500);
     });
@@ -761,7 +1209,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [status, resolvedType]);
 
   const handleRetry = () => {
-    initPreview();
+    initPreview({ refreshPptx: true });
   };
 
   const handlePrevImage = () => {
@@ -789,49 +1237,78 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   // 统一的图片路径处理函数
   const normalizeImageSrc = useCallback(
-    (src: string) => {
-      if (!src || !staticFileBasePath) return src;
+    (imageSrc: string) => {
+      if (!imageSrc || !staticFileBasePath) return imageSrc;
 
       // 外部链接直接返回
-      if (src.startsWith('http') || src.startsWith('data:')) {
-        return src;
+      if (imageSrc.startsWith('http') || imageSrc.startsWith('data:')) {
+        return imageSrc;
       }
 
       // 以 / 开头的绝对路径
-      if (src.startsWith('/')) {
+      if (imageSrc.startsWith('/')) {
         // 已经是完整的静态资源路径，直接返回
-        if (src.startsWith('/api/computer/static/')) {
-          return src;
+        if (imageSrc.startsWith('/api/computer/static/')) {
+          return imageSrc;
         }
 
         // 其他绝对路径，如果有 staticFileBasePath，则在前面拼上
-        return `${staticFileBasePath}${src}`;
+        return `${staticFileBasePath}${imageSrc}`;
       }
 
-      // 处理相对路径 ./ ../
-      const normalized = src
-        .replace(/^\.\//, '') // ./ -> 空
-        .replace(/^\.\.\//, '') // ../ -> 空
-        .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
+      const markdownDirectory = markdownDirectoryFromSource(
+        src,
+        staticFileBasePath,
+      );
+      // 文件在工作区根上，或地址里看不出目录时，保持原来接到根路径的写法
+      if (!markdownDirectory) {
+        const normalized = imageSrc
+          .replace(/^\.\//, '') // ./ -> 空
+          .replace(/^\.\.\//, '') // ../ -> 空
+          .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
 
-      return `${staticFileBasePath}/${normalized}`;
+        return `${staticFileBasePath}/${normalized}`;
+      }
+
+      // 子目录里的 Markdown：images/a.png、./a.png、../a.png 相对当前文件所在目录
+      return `${staticFileBasePath}/${resolvePathAgainstDirectory(
+        markdownDirectory,
+        imageSrc,
+      )}`;
     },
-    [staticFileBasePath],
+    [src, staticFileBasePath],
   );
 
-  // 对 Markdown 文本中的图片链接进行统一路径处理
+  // 对 Markdown 文本中的图片链接进行统一路径处理，并拆开反引号包裹的 $...$ / LaTeX
   const processedMarkdown = useMemo(() => {
     if (!textContent) return textContent;
 
     // 仅处理标准图片语法 ![alt](url)
-    return textContent.replace(
+    const withImages = textContent.replace(
       /(!\[[^\]]*\]\()([^)\s]+)(\))/g,
       (match, prefix, url, suffix) => {
         const normalizedUrl = normalizeImageSrc(url);
         return `${prefix}${normalizedUrl}${suffix}`;
       },
     );
+    return unwrapLatexInlineCode(withImages);
   }, [textContent, normalizeImageSrc]);
+
+  const markdownTableLabel = t('PC.Components.MarkdownRenderer.tableCodeBlock');
+  // 缓存元素而非 render 函数，避免父级/可见性更新重新解析整篇文档。
+  // 表格组件读取运行时词典，译文变化也必须使缓存失效。
+  const markdownContent = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={FILE_PREVIEW_REMARK_PLUGINS}
+        rehypePlugins={FILE_PREVIEW_REHYPE_PLUGINS}
+        components={FILE_PREVIEW_MARKDOWN_COMPONENTS}
+      >
+        {processedMarkdown}
+      </ReactMarkdown>
+    ),
+    [processedMarkdown, markdownTableLabel],
+  );
 
   const renderPreviewContent = () => {
     if (!resolvedType) return null;
@@ -907,7 +1384,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           <div
             className={`${styles.markdownPreview} ${styles['p-16']}`}
             style={{
-              // 关键修复：确保容器尺寸稳定，避免 PureMarkdownRenderer 初始化时导致布局重排
               width: '100%',
               height: '100%',
               minHeight: 0,
@@ -917,23 +1393,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               position: 'relative',
             }}
           >
-            {/* 关键修复：延迟渲染 PureMarkdownRenderer，避免从 HTML 切换到 MD 时的闪动 */}
-            {/* 在延迟期间使用 ReactMarkdown 作为占位符，避免空白 */}
-            {!shouldRenderMarkdown && textContent && (
-              <div
-                style={{
-                  padding: '24px',
-                  opacity: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              >
-                <ReactMarkdown>{processedMarkdown}</ReactMarkdown>
-              </div>
-            )}
-            {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
             {shouldRenderMarkdown && textContent && (
               <div
+                ref={markdownScrollRef}
+                className="ds-markdown"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -942,16 +1405,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   bottom: 0,
                   padding: '24px',
                   overflow: 'auto',
-                  // 通过 state 控制显隐，而不是 callback ref 返回 cleanup（避免 React ref 警告）
                   opacity: isMarkdownVisible ? 1 : 0,
                   visibility: isMarkdownVisible ? 'visible' : 'hidden',
                   pointerEvents: isMarkdownVisible ? 'auto' : 'none',
                   transition: 'opacity 0.3s ease-in-out',
                 }}
               >
-                <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
-                  {processedMarkdown}
-                </PureMarkdownRenderer>
+                {markdownContent}
               </div>
             )}
           </div>
@@ -1002,6 +1462,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               <Button
                 className={styles.toolbarBtn}
                 icon={<CloudDownloadOutlined />}
+                loading={downloading}
                 onClick={handleDownload}
                 type="text"
               />
@@ -1039,14 +1500,26 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             type="error"
             showIcon
             action={
-              <Button
-                size="small"
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRetry}
-              >
-                {t('PC.Components.FilePreview.retry')}
-              </Button>
+              <div>
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={handleRetry}
+                >
+                  {t('PC.Components.FilePreview.retry')}
+                </Button>
+                {src && (showDownload || resolvedType === 'pptx') && (
+                  <Button
+                    size="small"
+                    icon={<CloudDownloadOutlined />}
+                    loading={downloading}
+                    onClick={handleDownload}
+                  >
+                    {t('PC.Components.FilePreview.downloadFile')}
+                  </Button>
+                )}
+              </div>
             }
           />
         </div>

@@ -5,6 +5,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { hostBridge } from '@/utils/hostBridge';
+import { normalizeHostMicroAppMenus } from '@/utils/microAppRoutes';
 import { request } from 'umi';
 
 /**
@@ -24,6 +26,10 @@ const MENU_ICON_MAP: Record<string, string> = {
   eco_market: 'icons-nav-ecosystem',
   // 系统管理
   system_manage: 'icons-nav-settings',
+  // 专家·技能·连接器（三合一资源聚合页）
+  zhuanjia_jineng_lianjieqi: 'icons-nav-expert-skill-connector',
+  // 女娲应用
+  nvwayingyong: 'icons-nav-nvwayingyong',
 
   // 用户操作区域
   documents: 'icons-nav-doc',
@@ -39,6 +45,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   published_manage: 'icons-nav-publish_manage',
   // 公共模型管理
   model_manage: 'icons-nav-model',
+  // 官方连接器
+  guanfanglianjieqi: 'icons-nav-connector',
   // 系统配置
   system_config: 'icons-nav-settings',
   // 多语言管理
@@ -67,6 +75,7 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 二级菜单 - 工作空间
   // 新建项目
   create_project: 'icons-common-plus',
+  xiangmu_yingyong: 'icons-nav-cube',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"
@@ -77,6 +86,9 @@ const MENU_ICON_MAP: Record<string, string> = {
   skill_dev: 'icons-nav-skill',
   // MCP管理
   mcp_dev: 'icons-nav-mcp',
+  // 连接器（空间侧，与管理侧共用图标；后端实际下发 code 为 connector，lianjieqi 保留兼容）
+  connector: 'icons-nav-connector',
+  lianjieqi: 'icons-nav-connector',
   // 任务中心
   space_task_dev: 'icons-nav-task-time',
   // 日志查询
@@ -170,7 +182,15 @@ export async function apiQueryMenus(): Promise<RequestResponse<MenuItemDto[]>> {
 
   // 转换数据结构以适配前端模型
   if (res?.code === SUCCESS_CODE && Array.isArray(res?.data)) {
-    const mappedMenus = mapSysMenuToMenuItem(res.data);
+    const product = hostBridge.host.getProduct();
+    const context =
+      product === 'nuwax' || product === 'nuwawork'
+        ? await hostBridge.auth.getContext()
+        : null;
+    const mappedMenus = normalizeHostMicroAppMenus(
+      mapSysMenuToMenuItem(res.data),
+      context,
+    );
     // 替换默认图标映射
     return {
       ...res,

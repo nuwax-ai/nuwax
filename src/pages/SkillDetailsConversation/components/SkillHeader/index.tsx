@@ -1,15 +1,12 @@
 import agentImage from '@/assets/images/agent_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CreateSkill from '@/pages/SpaceSkillManage/CreateSkill';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { SkillInfo } from '@/types/interfaces/library';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
-import {
-  CheckCircleFilled,
-  FormOutlined,
-  LeftOutlined,
-} from '@ant-design/icons';
+import { CheckCircleFilled, FormOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -61,7 +58,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
     <div className={cx(styles['skill-header-container'])}>
       <Button
         type="text"
-        icon={<LeftOutlined />}
+        icon={<SvgIcon name="icons-nav-backward" />}
         onClick={() => {
           history.push(`/space/${spaceId}/skill-manage`);
         }}

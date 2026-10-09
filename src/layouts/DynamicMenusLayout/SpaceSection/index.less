@@ -1,13 +1,38 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/scrollbar';
 
 .container {
-  .collection-title {
-    margin-top: @margin;
-    padding: @paddingXs;
-    line-height: @fontHeightSm;
-    font-size: @fontSize;
-    font-weight: @fontWeightStrong;
-    color: @navSecondMenuTextSecondary;
+  // 二级菜单列滚动条走统一方案：默认透明、hover 容器才显示滑块
+  .scrollbar-auto-hide();
+
+  // 单栏（style3）二级列：滚动容器右缘外扩进 .second-column 的右 padding 带
+  // （-10px 出 + 10px padding 回补，内容宽不变），滚动条贴列右缘、与行内容
+  // 脱开不再叠压（2026-09-12 走查需求）。scope 到 style3 body 标记，classic
+  // 布局/HoverMenu/SpaceSquare 等其他消费方不受影响
+  :global(.xagi-nav-style3) & {
+    margin-right: -10px;
+    padding-right: 10px;
+  }
+
+  // 头部（空间选择器）包裹层间距：经典布局/HoverMenu 维持原 0 12px 12px 不动；
+  // 单栏（style3）与通用二级菜单标题共用变量：工作空间/广场/系统管理/更多
+  // 四类入口在 page-container 标题顶边使用同一口径。
+  // 勿改用负 margin 上提：.second-column 为 overflow:hidden，顶出盒顶即被裁
+  .header-box {
+    padding: 0 12px 12px;
+
+    :global(.xagi-nav-style3) & {
+      display: flex;
+      align-items: center;
+      box-sizing: content-box;
+      min-height: 32px;
+      padding: var(--xagi-nav-second-title-padding-top, 0) 10px
+        var(--xagi-nav-second-title-padding-bottom, 16px);
+
+      > * {
+        width: 100%;
+      }
+    }
   }
 }

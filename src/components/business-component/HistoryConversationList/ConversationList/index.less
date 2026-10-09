@@ -1,7 +1,56 @@
-.container {
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/scrollbar.less';
+
+.view {
   height: 100%;
-  overflow: hidden; /* 默认隐藏，配合全局 .scroll-container 在 hover 时显示 */
-  transition: overflow 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+// 视图分类 tab（全部 / 已收藏 / 已归档）：圆角胶囊 pill，
+// 样式对齐女娲应用页（NuwaApps）二级筛选 category-tab
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 12px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  color: @GRAY05;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: @BLANK04;
+    background-color: @WHITE04;
+  }
+}
+
+.tab-active {
+  color: @BLANK04;
+  background-color: @WHITE08;
+  font-weight: 500;
+}
+
+.container {
+  flex: 1;
+  min-height: 0;
+  // 滚动容器常驻（不再 hover 翻转 overflow）：横/竖滚动条突现挤压布局的抖动源
+  // 即旧方案（全局 .scroll-container 的 hidden→hover:auto），改为始终预留轨道；
+  // 滑块仅滚动时显示（data-is-scrolling 由 useScrollbarScrollShow 维护），停止约 1s 后淡出
+  overflow-x: hidden;
+  overflow-y: auto;
+  .scrollbar-scroll-show();
 
   .list-content {
     display: flex;

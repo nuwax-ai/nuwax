@@ -11,11 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('消息队列功能', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
-  let runStopConversation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sendMessage = vi.fn();
-    runStopConversation = vi.fn();
     vi.useFakeTimers();
   });
 
@@ -41,7 +39,6 @@ describe('消息队列功能', () => {
           messageList,
           conversationId: 'conv-1',
           sendMessage,
-          runStopConversation,
           hasPendingIntervention,
           minConsumeInterval,
         }),
@@ -83,6 +80,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -97,6 +96,8 @@ describe('消息队列功能', () => {
         [1],
         2,
         'ask',
+        undefined,
+        undefined,
       );
     });
 
@@ -127,6 +128,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -153,6 +156,8 @@ describe('消息队列功能', () => {
         [7],
         3,
         'ask',
+        undefined,
+        undefined,
       );
     });
 
@@ -183,6 +188,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -210,7 +217,7 @@ describe('消息队列功能', () => {
       expect(sendMessage).not.toHaveBeenCalled();
     });
 
-    it('最近一条消息出错时暂停自动消费，等待用户处理', () => {
+    it('最近一条消息出错时仍继续消费，Error 不作为永久阻断', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
@@ -224,7 +231,16 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('流式结束但后台任务仍执行时不自动消费', () => {
@@ -304,6 +320,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -356,6 +374,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -424,13 +444,15 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
 
   // ============ 功能5：队列操作 ============
   describe('队列操作：立即发送 / 编辑 / 删除 / 清空', () => {
-    it('立即发送：标记目标消息 sending，停止当前会话，并在空闲后优先消费该项', () => {
+    it('立即发送：标记目标消息 sending，不停止会话，空闲后优先消费该项', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
@@ -440,7 +462,8 @@ describe('消息队列功能', () => {
       act(() => {
         result.current.sendNow(m2);
       });
-      expect(runStopConversation).toHaveBeenCalledWith('conv-1');
+      // 与自动消费对齐：不再先 stop，忙碌时仅 markSending
+      expect(sendMessage).not.toHaveBeenCalled();
       expect(result.current.queue.map((item) => item.text)).toEqual([
         'm1',
         'm2',
@@ -461,6 +484,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm2',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,

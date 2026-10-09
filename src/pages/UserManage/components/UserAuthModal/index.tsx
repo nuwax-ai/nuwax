@@ -1,13 +1,13 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
+import { dict } from '@/services/i18nRuntime';
+import { apiGetRoleList } from '@/services/menuPermission/roleManage';
 import {
   apiGetUserGroupList,
   apiGetUserGroupListByUserId,
-} from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
-import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
-import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
-import { dict } from '@/services/i18nRuntime';
+} from '@/services/menuPermission/userGroupManage';
 import { UserRoleEnum } from '@/types/enums/systemManage';
+import { RoleInfo } from '@/types/menuPermission/role-manage';
+import { UserGroupInfo } from '@/types/menuPermission/user-group-manage';
 import { Button, Checkbox, Empty, Form, Space, Tabs, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';

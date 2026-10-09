@@ -32,10 +32,33 @@ export default defineConfig({
   layout: false,
   access: {},
   model: {},
-  initialState: {},
+  initialState: {
+    loading: '@/components/business-component/AppStartup/Loading',
+  },
   request: {},
+  define: { 'process.env.RELEASE0930_LICENSE_MOCK': '0' },
+  // 实例由 SidebarShell 的持久宿主管理；资源目录与 /repo 业务路由分开。
+  qiankun: {
+    master: {
+      apps: [
+        {
+          name: 'nuwax-repo-web',
+          entry: '/micro-apps/repo/index.html',
+        },
+        {
+          name: 'nuwax-im-web',
+          entry: '/micro-apps/message/index.html',
+        },
+      ],
+      prefetch: false,
+    },
+  },
+  // qiankun master 默认改为 root-master，主站布局继续使用既有根节点。
+  mountElementId: 'root',
   routes,
   npmClient: 'pnpm',
+  // 阻止浏览器自动请求 /favicon.ico，站点图标只使用租户配置。
+  favicons: ['data:,'],
   // 排除不兼容模块联邦的包
   // mfsu: {
   //   exclude: ['jspdf', 'html2canvas'],
@@ -44,6 +67,28 @@ export default defineConfig({
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {
+      // 在外部脚本和应用加载前恢复配置图标，避免刷新时先显示默认图标。
+      content: `
+        (function () {
+          try {
+            var config = JSON.parse(localStorage.getItem('TENANT_CONFIG_INFO') || 'null');
+            var link = document.querySelector('link[rel~="icon"]');
+            if (link && config && config.faviconUrl) {
+              link.href = config.faviconUrl;
+            }
+          } catch (error) {
+            // 缓存不可用时保持无图标，等待租户配置接口。
+          }
+        })();
+      `,
+      type: 'text/javascript',
+    },
+    {
+      // 注意：阿里云官方不提供带版本号的 SDK 地址，此 URL 为无版本滚动更新，
+      // SDK 行为可能随阿里云发布随时变化（2026-08 曾因此发生登录验证码无法唤起故障，
+      // 详见 docs/captcha-login-no-popup-report.md）。
+      // 约束：唤起验证码必须用官方姿势——触发 button 参数指向元素的 click 事件，
+      // 不得依赖实例方法 show()（非官方承诺，会静默失效）。
       src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
       type: 'text/javascript',
     },
@@ -202,6 +247,7 @@ export default defineConfig({
   ],
   // 添加在顶层配置中
   jsMinifier: 'esbuild',
+  esbuildMinifyIIFE: true,
   jsMinifierOptions: {
     minify: true,
     target: ['es2020'],
@@ -322,19 +368,27 @@ export default defineConfig({
       }
     }
 
-    config.optimization.splitChunks({
-      ...(config.optimization.get('splitChunks') || {}),
-      cacheGroups: {
-        ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
-        xtermVendor: {
-          test: /[\\/]node_modules[\\/]@xterm[\\/]/,
-          name: 'xterm-vendor',
-          chunks: 'all',
-          priority: 100,
-          enforce: true,
+    // Umi 开发页只加载 umi.js；拆出初始依赖会让入口缺少 runtime/vendor 而白屏。
+    // 生产 HTML 会自动注入完整产物，独立分包与缓存优化仅在构建时启用。
+    if (process.env.NODE_ENV === 'production') {
+      config.optimization.splitChunks({
+        ...(config.optimization.get('splitChunks') || {}),
+        cacheGroups: {
+          ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
+          xtermVendor: {
+            test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+            name: 'xterm-vendor',
+            chunks: 'all',
+            priority: 100,
+            enforce: true,
+          },
         },
-      },
-    });
+      });
+
+      // runtime（含全量 chunk 文件名映射）抽成独立单文件：任一异步 chunk 哈希
+      // 变化不再连带入口 chunk 哈希变化，增量发版时未改动页面的缓存仍可命中。
+      config.optimization.runtimeChunk('single');
+    }
 
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {

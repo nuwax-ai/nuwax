@@ -536,10 +536,25 @@
   rgba(0, 0, 0, 0.45)
 );
 
-// 导航交互状态颜色（使用主题色）
-@navItemHoverBg: #ffffff;
-@navItemActiveBg: #ffffff;
-@navItemSelectedBg: #ffffff;
+// 导航交互状态颜色（使用主题色；可被布局主题覆盖，默认纯白保持原行为）
+@navItemHoverBg: var(--xagi-nav-item-hover-bg, #ffffff);
+@navItemActiveBg: var(--xagi-nav-item-active-bg, #ffffff);
+@navItemSelectedBg: var(--xagi-nav-item-selected-bg, #ffffff);
+
+// 二级菜单项 hover/选中背景（默认回落容器底色，保持原行为）
+@navSecondItemActiveBg: var(
+  --xagi-nav-second-item-active-bg,
+  var(--xagi-color-bg-container)
+);
+
+// 单栏列表行/导航项统一交互态（2026-09-11 高亮统一）：
+// hover=灰底轻提示（无阴影）；选中=容器白卡+阴影（重确认，文字主题色由组件落主文字）。
+// 不复用上方 @navItem*Bg——其 #ffffff fallback 被 style1/2 TabItem 消费，改 fallback 会波及经典布局
+@navRowHoverBg: var(--xagi-nav-row-hover-bg, var(--xagi-color-fill-secondary));
+@navRowSelectedBg: var(
+  --xagi-nav-row-selected-bg,
+  var(--xagi-color-bg-container)
+);
 
 // 导航边框和分割线（使用独立的布局风格变量）
 @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));

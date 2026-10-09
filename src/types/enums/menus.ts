@@ -52,4 +52,6 @@ export enum SettingActionEnum {
   Developer_Profile,
   // 系统版本
   System_Version,
+  // 账号绑定（三方登录身份）
+  Account_Bind,
 }

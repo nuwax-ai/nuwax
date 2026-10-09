@@ -49,9 +49,12 @@ export interface FetchGeneratedMetadataOptions {
 }
 
 /**
- * 调用 generate-info 获取元数据
+ * 调用 generate-info 获取元数据。
+ * 接口成功且返回了名称时才给出结果；图标为空也返回，由调用方决定是否写入图标。
+ *
  * @param prompt 生成提示词
  * @param options.timeoutMs 超时毫秒数，超时后返回 null
+ * @returns 含名称的生成结果；失败、超时或没有名称时返回 null
  */
 export async function fetchGeneratedMetadata(
   prompt: string,
@@ -86,7 +89,9 @@ export async function fetchGeneratedMetadata(
     res = await requestPromise;
   }
 
-  if (res?.code === SUCCESS_CODE && res?.data?.iconUrl) {
+  // 名称是写回项目的条件。图标可空，空图标不阻断后续更新接口。
+  const name = res?.data?.name?.trim();
+  if (res?.code === SUCCESS_CODE && name) {
     return res.data;
   }
   return null;

@@ -1,0 +1,17 @@
+/* PostCSS 为 main 和依赖 CSS 收拢作用域；这里建立固定弹层和层叠的应用边界。 */
+[data-repo-app-scope][data-repo-embedded='true'] {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translateZ(0);
+  container-type: size;
+}
+
+[data-repo-app-scope][data-repo-embedded='true'] > .portal,
+[data-repo-app-scope][data-repo-embedded='true'] > .doc-page {
+  height: 100%;
+  min-height: 0;
+}

@@ -19,11 +19,9 @@ import { useChatMessageQueue } from '@/components/business-component/MessageQueu
 
 describe('消息队列与 Intervention 协调', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
-  let runStopConversation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sendMessage = vi.fn();
-    runStopConversation = vi.fn();
     vi.useFakeTimers();
     localStorage.clear();
   });
@@ -45,7 +43,6 @@ describe('消息队列与 Intervention 协调', () => {
           messageList,
           conversationId: 'conv-1',
           sendMessage,
-          runStopConversation,
           hasPendingIntervention,
           minConsumeInterval,
         }),
@@ -88,6 +85,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -193,6 +192,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -258,6 +259,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -301,6 +304,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
 
       // 第二个 Intervention
@@ -336,6 +341,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -363,6 +370,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -415,13 +424,15 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
 
-  // ============ 场景4：错误状态与 Intervention 交互 ============
+  // ============ 场景4：Error 不永久阻断，Intervention 仍独立阻塞 ============
   describe('错误状态与 Intervention 交互', () => {
-    it('最后一条消息出错时，即使 Intervention 解除也不消费', () => {
+    it('最后一条消息出错时，Intervention 解除后继续消费', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -448,7 +459,16 @@ describe('消息队列与 Intervention 协调', () => {
       act(() => {
         vi.advanceTimersByTime(1000);
       });
-      expect(sendMessage).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('错误消息修复后，Intervention 解除可恢复消费', () => {
@@ -482,6 +502,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -524,7 +546,7 @@ describe('消息队列与 Intervention 协调', () => {
 
   // ============ 场景6：立即发送与 Intervention 协调 ============
   describe('立即发送与 Intervention 协调', () => {
-    it('Intervention pending 时点击立即发送，停止当前会话并在解除后优先消费该项', () => {
+    it('Intervention pending 时点击立即发送，不停止会话，解除后优先消费该项', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -541,13 +563,13 @@ describe('消息队列与 Intervention 协调', () => {
         messageList: [],
       });
 
-      // 立即发送 m2
+      // 立即发送 m2：仅 markSending，不 stop；intervention 期间不会真正发出
       const m2 = result.current.queue[1];
       act(() => {
         result.current.sendNow(m2);
       });
 
-      expect(runStopConversation).toHaveBeenCalledWith('conv-1');
+      expect(sendMessage).not.toHaveBeenCalled();
       expect(result.current.queue.map((item) => item.text)).toEqual([
         'm1',
         'm2',
@@ -567,6 +589,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm2',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,

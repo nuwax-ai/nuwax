@@ -1,9 +1,10 @@
-/** localStorage 中访问令牌的 key，与 constants/home.constants 保持一致 */
-const ACCESS_TOKEN_KEY = 'ACCESS_TOKEN';
+import { getBusinessFileRequestAuth } from './businessAuth';
+import { openKnownBusinessRouteWindow } from './hostBridge/openBusinessRouteWindow';
+
 const AUTH_PROTECTED_FILE_PATH_RE = /\/api\/f\//i;
 
 /**
- * 判断 URL 是否为需 Bearer 鉴权才能加载的文件地址。
+ * 判断 URL 是否为需要业务登录 cookie 才能加载的文件地址。
  */
 export function isAuthProtectedFileUrl(url: string | undefined): boolean {
   if (!url?.trim()) {
@@ -42,11 +43,12 @@ export async function fetchAuthProtectedFileBlobUrl(
   url: string,
 ): Promise<string> {
   const fetchUrl = resolveAuthProtectedFileFetchUrl(url);
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY) ?? '';
+  const auth = getBusinessFileRequestAuth(fetchUrl);
   const response = await fetch(fetchUrl, {
     method: 'GET',
     cache: 'no-store',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: auth.credentials,
+    headers: auth.headers,
   });
 
   if (!response.ok) {
@@ -58,7 +60,7 @@ export async function fetchAuthProtectedFileBlobUrl(
 }
 
 /**
- * 打开或下载远程文件：受保护地址带 Bearer 拉取后触发下载，公开地址新窗口打开。
+ * 打开或下载远程文件：受保护地址带业务 cookie 拉取后触发下载，公开地址新窗口打开。
  */
 export async function openRemoteFileUrl(
   url: string,
@@ -82,5 +84,5 @@ export async function openRemoteFileUrl(
     return;
   }
 
-  window.open(url, '_blank', 'noopener,noreferrer');
+  await openKnownBusinessRouteWindow(url);
 }

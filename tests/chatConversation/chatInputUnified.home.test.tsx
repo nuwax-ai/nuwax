@@ -1,0 +1,960 @@
+/**
+ * ChatInputUnified 首页场景测试：
+ * 统一输入框在 /home（无会话）场景下的能力开关与行为——
+ * 工作目录栏渲染条件、cloudOnly 透传、切云清目录、空间选择器、推荐标签 pill（行首内联）、
+ * ref 清空/聚焦、'home' 草稿作用域、召唤专家 chip。
+ * 桩法对齐 mentionCommands.test.tsx：services/umi 一律 mock，子组件以捕获 props 的桩替代。
+ */
+import ChatInputUnified, {
+  type ChatInputUnifiedRef,
+} from '@/components/business-component/ChatInputUnified';
+import {
+  loadDraft,
+  saveDraft,
+} from '@/components/business-component/ChatInputUnified/draftStorage';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { createRef, useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/components/ChatInputHome/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+
+vi.mock('@/components/RecommendList/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+
+vi.mock('umi', () => ({
+  useModel: () => ({ tenantConfigInfo: { enableSubscription: 0 } }),
+  useLocation: () => ({ pathname: '/home', search: '' }),
+}));
+
+vi.mock('@/services/i18nRuntime', () => ({
+  t: (key: string) => key,
+  dict: (key: string) => key,
+}));
+
+vi.mock('@/services/agentDev', () => ({
+  apiPublishedAgentInfo: vi.fn(async () => ({ data: undefined })),
+}));
+
+vi.mock('@/hooks/useSubscription', () => ({
+  default: () => ({
+    createSubscriptionOrder: vi.fn(),
+    querySkillSubscriptionPlans: vi.fn(),
+    loadingTargetPricing: false,
+    targetSubscriptionPlans: [],
+    mySubscriptionInfo: null,
+    loadingMySubscription: false,
+  }),
+}));
+
+// 编辑器桩：受控渲染 value，暴露 focus/clear 间谍，lastProps 供直接驱动 onPressEnter
+const editor = vi.hoisted(() => ({
+  focus: vi.fn(),
+  clear: vi.fn(),
+  openCapabilityWithType: vi.fn(),
+  lastProps: {} as Record<string, any>,
+}));
+vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
+  const React = await import('react');
+  return {
+    // 与真实实现同款缺省值（不含专家），供 ChatInputUnified 计算开放范围
+    DEFAULT_CAPABILITY_RESOURCE_TYPES: ['skill', 'connector', 'knowledge'],
+    default: React.forwardRef((props: any, ref: any) => {
+      editor.lastProps = props;
+      React.useImperativeHandle(ref, () => ({
+        focus: editor.focus,
+        clear: editor.clear,
+        openCapabilityWithType: editor.openCapabilityWithType,
+        // 真实契约：整体设置文本并经 onChange 回传（草稿恢复/切换会话走此通道）
+        setEditorText: (text: string) => props.onChange?.(text),
+      }));
+      return React.createElement(
+        'div',
+        { 'data-testid': 'mention-editor' },
+        String(props.value ?? ''),
+      );
+    }),
+  };
+});
+
+// 连接器提供方分页接口桩：已连接连接器头像组数据源
+// （connected=true 服务端过滤，缺省空数据，按用例覆写）
+const connectorPage = vi.hoisted(() => vi.fn());
+const computerApi = vi.hoisted(() => ({
+  list: vi.fn(),
+  save: vi.fn(),
+}));
+vi.mock('@/services/systemManage', () => ({
+  apiConnectorProviderPageList: connectorPage,
+  apiGetUserSelectableSandboxList: computerApi.list,
+  apiSaveSelectedSandbox: computerApi.save,
+}));
+vi.mock('@/components/base', () => ({ SvgIcon: () => null }));
+vi.mock('@/components/ChatInputHome/ComputerTypeSelector/index.less', () => ({
+  default: {},
+}));
+
+// 会话框配置接口桩：未配置（data null）+ 写入成功，按用例覆写
+const userConfig = vi.hoisted(() => ({
+  get: vi.fn().mockResolvedValue({ data: null }),
+  set: vi.fn().mockResolvedValue({ code: '0000' }),
+}));
+vi.mock('@/services/userConfig', () => ({
+  apiUserConfigGet: (key: string) => userConfig.get(key),
+  apiUserConfigSet: (data: any) => userConfig.set(data),
+  chatboxConfigKey: (agentId: number | string) => `chatbox.config.${agentId}`,
+}));
+
+// 电脑选择器桩：捕获 props（value/cloudOnly/onChange），提供切云/切个人两个触发按钮
+const computer = vi.hoisted(() => ({
+  props: {} as Record<string, any>,
+  useRealSelector: false,
+}));
+vi.mock('@/components/ChatInputHome/ComputerTypeSelector', async () => {
+  const React = await import('react');
+  const { default: RealComputerTypeSelector } = await vi.importActual<
+    typeof import('@/components/ChatInputHome/ComputerTypeSelector')
+  >('@/components/ChatInputHome/ComputerTypeSelector');
+  return {
+    default: (props: any) => {
+      computer.props = props;
+      if (computer.useRealSelector) {
+        return React.createElement(RealComputerTypeSelector, props);
+      }
+      return React.createElement(
+        'div',
+        { 'data-testid': 'computer-selector' },
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            'data-testid': 'computer-to-cloud',
+            onClick: () => props.onChange?.('-1'),
+          },
+          'to-cloud',
+        ),
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            'data-testid': 'computer-to-personal',
+            onClick: () => props.onChange?.('555'),
+          },
+          'to-personal',
+        ),
+      );
+    },
+  };
+});
+
+// 工作目录弹窗桩：捕获 props 供断言 sandboxId 与直接驱动 onConfirm
+const dirPicker = vi.hoisted(() => ({ props: {} as Record<string, any> }));
+vi.mock('@/components/ChatInputHome/WorkspaceDirPickerModal', async () => {
+  const React = await import('react');
+  return {
+    default: (props: any) => {
+      dirPicker.props = props;
+      return props.open
+        ? React.createElement('div', { 'data-testid': 'dir-picker' })
+        : null;
+    },
+  };
+});
+
+// 空间选择器桩
+const spaceSelector = vi.hoisted(() => ({ props: {} as Record<string, any> }));
+vi.mock('@/components/ChatInputHome/SpaceSelector', async () => {
+  const React = await import('react');
+  return {
+    default: (props: any) => {
+      spaceSelector.props = props;
+      return React.createElement('div', { 'data-testid': 'space-selector' });
+    },
+  };
+});
+
+vi.mock('@/components/ChatInputHome/ModelSelector', () => ({
+  default: () => null,
+}));
+vi.mock('@/components/ChatInputHome/ManualComponentItem', async () => {
+  const React = await import('react');
+  // 渲染标记元素（工具栏槽位桩，供定位断言用）
+  return {
+    default: () =>
+      React.createElement('div', { 'data-testid': 'manual-component' }),
+  };
+});
+const uploadList = vi.hoisted(() => ({ files: [] as any[] }));
+vi.mock('@/components/ChatUploadFile', async () => {
+  const React = await import('react');
+  return {
+    default: ({ files, onDel }: any) => {
+      uploadList.files = files;
+      return React.createElement(
+        'div',
+        {},
+        files.map((file: any) =>
+          React.createElement(
+            'button',
+            { key: file.uid, type: 'button', onClick: () => onDel(file.uid) },
+            file.name,
+          ),
+        ),
+      );
+    },
+  };
+});
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: () => null,
+}));
+vi.mock('@/components/PermissionMask', () => ({ default: () => null }));
+vi.mock('@/components/business-component/PaymentSubscriptionModal', () => ({
+  default: () => null,
+}));
+// 语音底座桩：Provider 消费 render-prop（isVoiceActive=false），子槽原样透传
+vi.mock('@/components/business-component/VoiceInput', async () => {
+  const React = await import('react');
+  const wrap = (testid: string) => (props: any) =>
+    React.createElement(
+      'div',
+      { 'data-testid': testid },
+      props.children ?? null,
+    );
+  return {
+    ChatInputVoiceFooter: {
+      Provider: ({ children }: any) =>
+        typeof children === 'function' ? children(false) : children,
+      HideWhenActive: wrap('voice-hide'),
+      Expand: wrap('voice-expand'),
+      Right: ({ children, defaultActions }: any) =>
+        React.createElement(
+          'div',
+          { 'data-testid': 'voice-right' },
+          defaultActions ?? null,
+          children ?? null,
+        ),
+    },
+    mergeVoiceTranscript: (prev: string, next: string) => prev + next,
+  };
+});
+
+const HOME_DRAFT_KEY = 'chat_draft:home';
+
+function renderHomeInput(props: Record<string, any> = {}) {
+  return render(
+    <ChatInputUnified
+      onEnter={vi.fn()}
+      draftKey="home"
+      isTaskAgentActive
+      selectedComputerId="555"
+      onComputerSelect={vi.fn()}
+      onWorkspaceDirChange={vi.fn()}
+      {...props}
+    />,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  computer.useRealSelector = false;
+  computerApi.list.mockResolvedValue({
+    code: '0000',
+    data: {
+      sandboxes: [
+        { sandboxId: '-1', name: '云端电脑' },
+        { sandboxId: '555', name: '我的电脑' },
+        { sandboxId: '777', name: '其他电脑' },
+      ],
+      agentSelected: { 7: '-1' },
+    },
+  });
+  computerApi.save.mockResolvedValue({ code: '0000' });
+  vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+    data: undefined,
+  } as any);
+  localStorage.clear();
+  uploadList.files = [];
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe('工作目录栏（首页我的电脑场景）', () => {
+  it('个人电脑 + 提供目录回调时渲染，弹窗收到所选电脑 id', () => {
+    renderHomeInput();
+    expect(
+      screen.getByText('PC.Components.WorkspaceDir.defaultDir'),
+    ).toBeInTheDocument();
+    expect(dirPicker.props.sandboxId).toBe('555');
+  });
+
+  it('云电脑（-1）/ 禁用个人电脑 / 不传回调时均不渲染', () => {
+    const { unmount } = renderHomeInput({ selectedComputerId: '-1' });
+    expect(
+      screen.queryByText('PC.Components.WorkspaceDir.defaultDir'),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    renderHomeInput({ disablePersonalComputer: true });
+    expect(
+      screen.queryByText('PC.Components.WorkspaceDir.defaultDir'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('disablePersonalComputer 透传电脑选择器 cloudOnly', () => {
+    renderHomeInput({ disablePersonalComputer: true });
+    expect(computer.props.cloudOnly).toBe(true);
+  });
+
+  it('切回云电脑时一并清空工作目录', () => {
+    const onComputerSelect = vi.fn();
+    const onWorkspaceDirChange = vi.fn();
+    renderHomeInput({
+      workspacePath: '/Users/demo/project',
+      onComputerSelect,
+      onWorkspaceDirChange,
+    });
+    fireEvent.click(screen.getByTestId('computer-to-cloud'));
+    expect(onComputerSelect).toHaveBeenCalledWith('-1');
+    expect(onWorkspaceDirChange).toHaveBeenCalledWith('');
+  });
+
+  it('目录弹窗确认后回调所选目录', () => {
+    const onWorkspaceDirChange = vi.fn();
+    renderHomeInput({ onWorkspaceDirChange });
+    dirPicker.props.onConfirm('/Users/demo/work');
+    expect(onWorkspaceDirChange).toHaveBeenCalledWith('/Users/demo/work');
+  });
+});
+
+// 保留首页受控选择与切换电脑清目录的行为，电脑菜单使用真实组件。
+function ControlledHomeComputer({
+  initialComputerId = '555',
+  initialWorkspacePath = '/work/project',
+  agentSandboxId = '555',
+  projectTask = false,
+  onComputerSelect,
+  onWorkspaceDirChange,
+}: {
+  initialComputerId?: string;
+  initialWorkspacePath?: string;
+  agentSandboxId?: string | number;
+  projectTask?: boolean;
+  onComputerSelect: (id: string) => void;
+  onWorkspaceDirChange: (dir: string) => void;
+}) {
+  const [selectedComputerId, setSelectedComputerId] =
+    useState(initialComputerId);
+  const [workspacePath, setWorkspacePath] = useState(initialWorkspacePath);
+  return (
+    <ChatInputUnified
+      onEnter={vi.fn()}
+      atHomePanel
+      isTaskAgentActive
+      agentId={7}
+      agentSandboxId={projectTask ? undefined : agentSandboxId}
+      autoSelectComputer={projectTask ? false : undefined}
+      pinnedProject={
+        projectTask
+          ? {
+              name: '常规项目',
+              projectType: AgentComponentTypeEnum.NormalProject,
+            }
+          : undefined
+      }
+      pinnedProjectSandboxSelectable={projectTask}
+      onClearPinnedProject={projectTask ? vi.fn() : undefined}
+      strictAgentMemory
+      selectedComputerId={selectedComputerId}
+      workspacePath={workspacePath}
+      onComputerSelect={(id) => {
+        onComputerSelect(id);
+        setSelectedComputerId(id);
+        if (id !== selectedComputerId) setWorkspacePath('');
+      }}
+      onWorkspaceDirChange={(dir) => {
+        onWorkspaceDirChange(dir);
+        setWorkspacePath(dir);
+      }}
+    />
+  );
+}
+
+describe('首页私人智能体绑定电脑', () => {
+  it('项目任务保留项目配置，不恢复智能体记忆，仍可修改电脑和目录', async () => {
+    computer.useRealSelector = true;
+    const onComputerSelect = vi.fn();
+    const onWorkspaceDirChange = vi.fn();
+    render(
+      <ControlledHomeComputer
+        projectTask
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={onWorkspaceDirChange}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('我的电脑'));
+    expect(screen.getByText('/work/project')).toBeInTheDocument();
+    expect(onComputerSelect).not.toHaveBeenCalled();
+    const other = await screen.findByRole('menuitem', { name: '其他电脑' });
+    expect(other).not.toHaveAttribute('aria-disabled', 'true');
+    await act(async () => fireEvent.click(other));
+    expect(onComputerSelect).toHaveBeenLastCalledWith('777');
+    expect(screen.queryByText('/work/project')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('PC.Components.WorkspaceDir.defaultDir'));
+    fireEvent.click(
+      await screen.findByText('PC.Components.WorkspaceDir.openComputerFolder'),
+    );
+    expect(dirPicker.props.sandboxId).toBe('777');
+    act(() => dirPicker.props.onConfirm('/other/project'));
+    expect(screen.getByText('/other/project')).toBeInTheDocument();
+    expect(onWorkspaceDirChange).toHaveBeenLastCalledWith('/other/project');
+  });
+
+  it('点击云端或其他电脑不改绑定与目录，仍能打开并选择工作目录', async () => {
+    computer.useRealSelector = true;
+    const onComputerSelect = vi.fn();
+    const onWorkspaceDirChange = vi.fn();
+    render(
+      <ControlledHomeComputer
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={onWorkspaceDirChange}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('我的电脑'));
+    const cloud = await screen.findByRole('menuitem', { name: '云端电脑' });
+    const other = screen.getByRole('menuitem', { name: '其他电脑' });
+    expect(cloud).toHaveAttribute('aria-disabled', 'true');
+    expect(other).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(cloud);
+    fireEvent.click(other);
+    fireEvent.click(screen.getByRole('menuitem', { name: /我的电脑/ }));
+
+    expect(screen.getByText('/work/project')).toBeInTheDocument();
+    expect(onComputerSelect).not.toHaveBeenCalled();
+    expect(onWorkspaceDirChange).not.toHaveBeenCalled();
+    expect(computerApi.save).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('/work/project'));
+    fireEvent.click(
+      await screen.findByText('PC.Components.WorkspaceDir.openComputerFolder'),
+    );
+    expect(screen.getByTestId('dir-picker')).toBeInTheDocument();
+    expect(dirPicker.props.sandboxId).toBe('555');
+    act(() => dirPicker.props.onConfirm('/work/another'));
+    expect(screen.getByText('/work/another')).toBeInTheDocument();
+    expect(onWorkspaceDirChange).toHaveBeenLastCalledWith('/work/another');
+  });
+
+  it('从首页云端默认进入私人智能体时同步绑定电脑，不采用后台云端记忆', async () => {
+    computer.useRealSelector = true;
+    const onComputerSelect = vi.fn();
+    render(
+      <ControlledHomeComputer
+        initialComputerId="-1"
+        initialWorkspacePath=""
+        agentSandboxId={555}
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={vi.fn()}
+      />,
+    );
+
+    await screen.findByText('我的电脑');
+    expect(onComputerSelect).toHaveBeenCalledTimes(1);
+    expect(onComputerSelect).toHaveBeenCalledWith('555');
+    expect(
+      screen.getByText('PC.Components.WorkspaceDir.defaultDir'),
+    ).toBeInTheDocument();
+    expect(dirPicker.props.sandboxId).toBe('555');
+    expect(computerApi.save).not.toHaveBeenCalled();
+  });
+
+  it('云端哨兵不视为私人绑定，用户仍可切换电脑并在切云时清目录', async () => {
+    computer.useRealSelector = true;
+    computerApi.list.mockResolvedValue({
+      code: '0000',
+      data: {
+        sandboxes: [
+          { sandboxId: '-1', name: '云端电脑' },
+          { sandboxId: '555', name: '我的电脑' },
+        ],
+        agentSelected: { 7: '555' },
+      },
+    });
+    const onComputerSelect = vi.fn();
+    render(
+      <ControlledHomeComputer
+        agentSandboxId="-1"
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('我的电脑'));
+    const cloud = await screen.findByRole('menuitem', { name: '云端电脑' });
+    expect(cloud).not.toHaveAttribute('aria-disabled', 'true');
+    await act(async () => fireEvent.click(cloud));
+    expect(onComputerSelect).toHaveBeenCalledTimes(1);
+    expect(onComputerSelect).toHaveBeenCalledWith('-1');
+    expect(screen.queryByText('/work/project')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('PC.Components.WorkspaceDir.defaultDir'),
+    ).not.toBeInTheDocument();
+    expect(computerApi.save).toHaveBeenCalledTimes(1);
+    expect(computerApi.save).toHaveBeenCalledWith(7, '-1');
+  });
+});
+
+describe('首页工具栏能力', () => {
+  it('空间选择器按开关渲染并接收受控 props', () => {
+    const onSpaceSelect = vi.fn();
+    const { rerender } = renderHomeInput({ showSpaceSelector: false });
+    expect(screen.queryByTestId('space-selector')).not.toBeInTheDocument();
+
+    rerender(
+      <ChatInputUnified
+        onEnter={vi.fn()}
+        draftKey="home"
+        isTaskAgentActive
+        selectedComputerId="555"
+        showSpaceSelector
+        selectedSpaceId={9}
+        onSpaceSelect={onSpaceSelect}
+      />,
+    );
+    expect(screen.getByTestId('space-selector')).toBeInTheDocument();
+    expect(spaceSelector.props.selectedSpaceId).toBe(9);
+    expect(spaceSelector.props.onSpaceSelect).toBe(onSpaceSelect);
+  });
+
+  it('推荐标签 pill 行首内联展示与取消（输入框最前面，文本缩进其后）', () => {
+    const onClearSelectedTag = vi.fn();
+    const { container } = renderHomeInput({
+      selectedTag: { label: 'AI 教育专家' },
+      onClearSelectedTag,
+    });
+    expect(screen.getByText('AI 教育专家')).toBeInTheDocument();
+    // 位置：输入框最前面——pill 在编辑器之前（行首内联）
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // 文本缩进到 pill 之后（jsdom 无布局：0 实测宽 + 8 间距兜底）
+    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(onClearSelectedTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('项目智能体未提供关闭回调时只显示标签，不显示关闭按钮', () => {
+    const { container } = renderHomeInput({
+      selectedTag: { label: '项目智能体' },
+      atHomePanel: true,
+      showExpertCapability: false,
+    });
+    expect(screen.getByText('项目智能体')).toBeInTheDocument();
+    expect(container.querySelector('.expert-pill-remove')).toBeNull();
+    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
+  });
+
+  it('已连接连接器头像组：最多 3 个 + 尾部 +N，点击唤起弹窗连接器页签', async () => {
+    connectorPage.mockResolvedValue({
+      code: '0000',
+      data: {
+        records: [
+          { id: 1, service: 'github', displayName: 'GitHub' },
+          { id: 2, service: 'slack', displayName: 'Slack' },
+          { id: 3, service: 'notion', displayName: 'Notion' },
+          { id: 4, service: 'figma', displayName: 'Figma' },
+          { id: 5, service: 'jira', displayName: 'Jira' },
+        ],
+        pageNum: 1,
+      },
+    });
+    renderHomeInput();
+    // 服务端 connected=true 过滤返回 5 个 → 3 个头像 + 「+2」尾巴
+    await waitFor(() => expect(screen.getByText('+2')).toBeInTheDocument());
+    expect(document.querySelectorAll('.ant-avatar').length).toBe(4);
+    // 拉取参数：已连接过滤 + 一次取全量（不带 scope）
+    expect(connectorPage).toHaveBeenCalledWith({
+      connected: 'true',
+      pageNum: 1,
+      pageSize: 9999,
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Components.ChatInputHome.connectedConnectors',
+      }),
+    );
+    // 头像组入口专用：连接器维度 + 初始进入「已连接」聚合页签
+    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector', {
+      connectedView: true,
+    });
+  });
+
+  it('无已连接连接器时不渲染头像组', async () => {
+    connectorPage.mockResolvedValue({
+      code: '0000',
+      data: { records: [], pageNum: 1 },
+    });
+    renderHomeInput();
+    await waitFor(() => expect(connectorPage).toHaveBeenCalled());
+    expect(document.querySelector('.connector-group')).toBeNull();
+  });
+
+  it('召唤专家 chip 行首内联展示名称并可取消', () => {
+    const onClearSummonedExpert = vi.fn();
+    const { container } = renderHomeInput({
+      summonedExpert: { agentId: 8, name: '张三教授' },
+      onClearSummonedExpert,
+    });
+    expect(screen.getByText('张三教授')).toBeInTheDocument();
+    // 位置：输入框最前面——chip 在编辑器之前（行首内联）
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(onClearSummonedExpert).toHaveBeenCalledTimes(1);
+  });
+
+  it('ref 暴露 focus/clear 并转发到编辑器', () => {
+    const ref = createRef<ChatInputUnifiedRef>();
+    render(<ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />);
+    ref.current?.clear();
+    ref.current?.focus();
+    expect(editor.clear).toHaveBeenCalled();
+    expect(editor.focus).toHaveBeenCalled();
+  });
+
+  it('提示问题替换草稿并清除技能资料，不自动发送；禁用期间不可修改', () => {
+    const ref = createRef<ChatInputUnifiedRef>();
+    const onEnter = vi.fn();
+    const { rerender } = render(
+      <ChatInputUnified ref={ref} onEnter={onEnter} />,
+    );
+    act(() => {
+      editor.lastProps.onChange('旧草稿');
+      editor.lastProps.onSkillIdsChange([42]);
+      editor.lastProps.onDocsChange([{ uid: 'doc-1', name: '资料' }]);
+    });
+    act(() => ref.current?.setText('如何开始？'));
+    expect(editor.lastProps.value).toBe('如何开始？');
+    expect(editor.focus).toHaveBeenCalled();
+    expect(onEnter).not.toHaveBeenCalled();
+    rerender(<ChatInputUnified ref={ref} onEnter={onEnter} wholeDisabled />);
+    act(() => ref.current?.setText('不可插入'));
+    expect(editor.lastProps.value).toBe('如何开始？');
+    rerender(<ChatInputUnified ref={ref} onEnter={onEnter} />);
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).toHaveBeenCalledTimes(1);
+    expect(onEnter.mock.calls[0][0]).toBe('如何开始？');
+    expect(onEnter.mock.calls[0][2]).toEqual([]);
+    expect(onEnter.mock.calls[0][5]).toEqual([]);
+  });
+});
+
+describe('能力弹窗开放范围（专家仅首页开放）', () => {
+  it('会话输入框关闭提示后，当前智能体和消息级 @ 专家都不显示提示', () => {
+    renderHomeInput({
+      showGuidQuestions: false,
+      guidQuestionDtos: [{ type: 'Question', info: '默认问题' }],
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    act(() => {
+      editor.lastProps.onExpertSelect({ targetId: 66, name: '智慧校园助手' });
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    expect(vi.mocked(apiPublishedAgentInfo)).not.toHaveBeenCalled();
+  });
+
+  it('会话内 @ 专家覆盖当前智能体问题，点击回填，移除后恢复', async () => {
+    vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+      data: {
+        agentId: 66,
+        guidQuestionDtos: [
+          {
+            type: 'Question',
+            info: '如何开始？',
+            icon: '/configured-icon.png',
+          },
+        ],
+      },
+    } as any);
+    renderHomeInput({
+      guidQuestionDtos: [{ type: 'Question', info: '默认问题' }],
+    });
+    expect(screen.getByText('默认问题')).toBeInTheDocument();
+    act(() => {
+      editor.lastProps.onExpertSelect({ targetId: 66, name: '智慧校园助手' });
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    fireEvent.click(await screen.findByText('如何开始？'));
+    expect(document.querySelector('.expert-guid-questions img')).toBeNull();
+    expect(document.querySelector('.expert-guid-arrow')).not.toBeNull();
+    expect(editor.lastProps.value).toBe('如何开始？');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(screen.getByText('默认问题')).toBeInTheDocument();
+  });
+
+  it('默认不含专家类型，showExpertCapability 开放', () => {
+    const { unmount } = renderHomeInput();
+    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
+    unmount();
+
+    renderHomeInput({ showExpertCapability: true });
+    expect(editor.lastProps.capabilityResourceTypes).toContain('expert');
+  });
+
+  it('onExpertAgentSelect 提供时专家选中路由到外部回调（首页切换会话智能体）', () => {
+    const { unmount } = renderHomeInput();
+    // 未提供时走内部 expertComponents 通道（函数存在但非外部回调）
+    const internalSelect = editor.lastProps.onExpertSelect;
+    expect(typeof internalSelect).toBe('function');
+    unmount();
+
+    const external = vi.fn();
+    renderHomeInput({ onExpertAgentSelect: external });
+    expect(editor.lastProps.onExpertSelect).toBe(external);
+  });
+
+  it('内部专家选中渲染 pill 在输入框最前面（编辑器之前）且可取消', async () => {
+    const { container } = renderHomeInput();
+    await act(async () => {
+      editor.lastProps.onExpertSelect({
+        targetId: 66,
+        name: '智慧校园助手',
+        icon: 'x',
+        description: 'd',
+      });
+    });
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(pill?.textContent).toContain('智慧校园助手');
+    // 位置防回退：pill 内联在输入框最前面（编辑器之前），文本缩进其后
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
+    // 取消：清空内部 expertComponents，行首占位同步复位
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(container.querySelector('.expert-pill')).toBeNull();
+    expect(editor.lastProps.inlinePrefixWidth).toBe(0);
+  });
+});
+
+describe('首页草稿（draftKey=home）', () => {
+  const attachment = {
+    uid: 'home-pdf',
+    name: '报告.pdf',
+    type: 'application/pdf',
+    size: 2048,
+    url: 'https://cdn.example.com/report.pdf',
+    key: 'tmp/report.pdf',
+  };
+
+  it('上传完成后立即离开再返回，纯附件草稿仍显示且只上传一次', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        code: '0000',
+        data: {
+          ...attachment,
+          fileName: attachment.name,
+          mimeType: attachment.type,
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { unmount } = renderHomeInput();
+    fireEvent.change(document.querySelector('input[type=file]')!, {
+      target: {
+        files: [new File(['pdf'], attachment.name, { type: attachment.type })],
+      },
+    });
+    await waitFor(() => expect(uploadList.files[0]?.status).toBe('done'));
+    unmount();
+
+    renderHomeInput();
+    expect(screen.getByText(attachment.name)).toBeInTheDocument();
+    expect(uploadList.files[0]).toMatchObject({
+      key: attachment.key,
+      url: attachment.url,
+      status: 'done',
+      percent: 100,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([true, false])(
+    '恢复的附件可发送，isClearInput=%s 时发送和卸载均不复活草稿',
+    (isClearInput) => {
+      vi.useFakeTimers();
+      saveDraft('home', { version: 1, text: '总结附件', files: [attachment] });
+      const onEnter = vi.fn();
+      const { unmount } = renderHomeInput({ onEnter, isClearInput });
+      act(() => editor.lastProps.onPressEnter());
+      expect(onEnter.mock.calls[0][1]).toEqual([
+        { ...attachment, status: 'done', percent: 100 },
+      ]);
+      act(() => vi.advanceTimersByTime(1100));
+      unmount();
+      expect(loadDraft('home')).toBeNull();
+      renderHomeInput();
+      expect(screen.queryByText(attachment.name)).toBeNull();
+    },
+  );
+
+  it('删除最后一个附件后立即离开，返回不恢复被删除的附件', () => {
+    saveDraft('home', { version: 1, text: '', files: [attachment] });
+    const { unmount } = renderHomeInput();
+    fireEvent.click(screen.getByText(attachment.name));
+    unmount();
+    renderHomeInput();
+    expect(screen.queryByText(attachment.name)).toBeNull();
+    expect(loadDraft('home')).toBeNull();
+  });
+
+  it('同实例切换作用域时附件随各自草稿恢复，不携带到空会话', () => {
+    const otherAttachment = {
+      ...attachment,
+      uid: 'chat-pdf',
+      name: '会话报告.pdf',
+    };
+    saveDraft('home', { version: 1, text: '', files: [attachment] });
+    saveDraft('chat:101', { version: 1, text: '', files: [otherAttachment] });
+    const onEnter = vi.fn();
+    const { rerender } = renderHomeInput({ onEnter });
+    expect(uploadList.files[0]?.name).toBe(attachment.name);
+    rerender(<ChatInputUnified onEnter={onEnter} draftKey="chat:101" />);
+    expect(uploadList.files[0]?.name).toBe(otherAttachment.name);
+    expect(loadDraft('home')?.files).toEqual([attachment]);
+    rerender(<ChatInputUnified onEnter={onEnter} draftKey="chat:202" />);
+    expect(screen.queryByText(otherAttachment.name)).toBeNull();
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(loadDraft('chat:101')?.files).toEqual([otherAttachment]);
+  });
+
+  it('挂载恢复 home 草稿到编辑器', () => {
+    saveDraft('home', { version: 1, text: '上次未发送的输入' });
+    renderHomeInput();
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '上次未发送的输入',
+    );
+  });
+
+  it('发送后清除 home 草稿（isClearInput=false 亦然）', async () => {
+    const onEnter = vi.fn();
+    saveDraft('home', { version: 1, text: '待发送内容' });
+    renderHomeInput({ onEnter, isClearInput: false });
+    // 编辑器桩的 onPressEnter 直接触发组件发送链路
+    fireEvent.click(screen.getByTestId('mention-editor'));
+    editor.lastProps.onPressEnter();
+    await waitFor(() => expect(onEnter).toHaveBeenCalled());
+    expect(onEnter.mock.calls[0][0]).toBe('待发送内容');
+    // 已发送内容不再是草稿
+    expect(loadDraft('home')).toBeNull();
+    expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
+  });
+
+  it('发送后取消挂起的节流落盘，不把已发送内容重新写回草稿', () => {
+    vi.useFakeTimers();
+    const onEnter = vi.fn();
+    renderHomeInput({ onEnter, isClearInput: false });
+
+    act(() => {
+      editor.lastProps.onChange('刚输入且立即发送');
+    });
+    act(() => {
+      editor.lastProps.onPressEnter();
+    });
+
+    expect(onEnter.mock.calls[0][0]).toBe('刚输入且立即发送');
+    expect(loadDraft('home')).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1100);
+    });
+    expect(loadDraft('home')).toBeNull();
+    expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
+  });
+});
+
+describe('切换会话（同实例换草稿作用域）', () => {
+  const baseProps = {
+    onEnter: vi.fn(),
+    isTaskAgentActive: true,
+    selectedComputerId: '555',
+    onComputerSelect: vi.fn(),
+    onWorkspaceDirChange: vi.fn(),
+  };
+
+  it('切到新作用域时新草稿无条件接管，旧会话内容不落入新桶', async () => {
+    saveDraft('chat:101', { version: 1, text: '会话A草稿' });
+    saveDraft('chat:202', { version: 1, text: '会话B草稿' });
+    const { rerender } = render(
+      <ChatInputUnified {...baseProps} draftKey="chat:101" />,
+    );
+    // 首挂恢复 A 草稿
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话A草稿',
+    );
+    // 用户在 A 追加输入后切到会话 B（同实例换作用域）
+    act(() => {
+      editor.lastProps.onChange('会话A草稿+追加');
+    });
+    await act(async () => {
+      rerender(<ChatInputUnified {...baseProps} draftKey="chat:202" />);
+    });
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话B草稿',
+    );
+    // 节流落盘后：B 桶= B 草稿（未被 A 的内容污染），A 桶= A 的最新输入
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1100);
+      });
+    });
+    expect(loadDraft('chat:202')?.text).toBe('会话B草稿');
+    expect(loadDraft('chat:101')?.text).toBe('会话A草稿+追加');
+  });
+
+  it('新作用域无草稿时切换即清空输入（不留旧会话内容）', async () => {
+    saveDraft('chat:101', { version: 1, text: '会话A草稿' });
+    const { rerender } = render(
+      <ChatInputUnified {...baseProps} draftKey="chat:101" />,
+    );
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话A草稿',
+    );
+    await act(async () => {
+      rerender(<ChatInputUnified {...baseProps} draftKey="chat:202" />);
+    });
+    expect(screen.getByTestId('mention-editor').textContent).toBe('');
+  });
+});

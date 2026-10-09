@@ -74,14 +74,18 @@ export const transformFlatListToTree = (
   filteredFiles.forEach((file) => {
     const pathParts = file.name.split('/').filter(Boolean);
     const fileName = pathParts[pathParts.length - 1];
-    // 如果文件是目录，则认为是文件（后端给了isDir字段，表示是否为目录），兼容之前逻辑
-    const isFile = !file.isDir || fileName.includes('.');
+    // 后端已经提供明确的 isDir；目录名可以合法包含点号（如 foo.bar）。
+    const isFile = file.isDir !== true;
 
+    const isExternalDataSource = Boolean(
+      file.dataSourceId && file.relativePath,
+    );
+    const nodePath = isExternalDataSource ? file.relativePath : file.name;
     const node: FileNode = {
-      id: file.name,
+      id: isExternalDataSource ? file.fileId : file.name,
       name: fileName,
       type: isFile ? 'file' : 'folder',
-      path: file.name,
+      path: isExternalDataSource ? file.relativePath : file.name,
       children: [],
       binary: file.binary || false,
       size:
@@ -89,15 +93,19 @@ export const transformFlatListToTree = (
           ? FILE_CONSTANTS.FALLBACK_SIZE
           : file.contents?.length || FILE_CONSTANTS.FALLBACK_SIZE,
       status: file.status || null,
-      fullPath: file.name,
-      parentPath: pathParts.slice(0, -1).join('/') || null,
+      fullPath: isExternalDataSource ? file.relativePath : file.name,
+      parentPath: isExternalDataSource
+        ? file.relativePath.split('/').slice(0, -1).join('/') || null
+        : pathParts.slice(0, -1).join('/') || null,
       content: file.contents || '',
       lastModified: Date.now(),
       fileProxyUrl: file?.fileProxyUrl || '',
       isLink: file?.isLink || false,
+      dataSourceId: file?.dataSourceId,
+      relativePath: file?.relativePath,
     };
 
-    map.set(file.name, node);
+    map.set(nodePath, node);
 
     // 如果文件在子目录中，确保创建所有必要的父文件夹节点
     if (pathParts.length > 1) {
@@ -106,14 +114,19 @@ export const transformFlatListToTree = (
         const parentName = pathParts[i];
 
         if (!map.has(parentPath)) {
+          const externalIdPrefix = isExternalDataSource
+            ? String(file.fileId).slice(0, -String(file.relativePath).length)
+            : '';
           const parentNode: FileNode = {
-            id: parentPath,
+            id: `${externalIdPrefix}${parentPath}`,
             name: parentName,
             type: 'folder',
             path: parentPath,
             children: [],
             parentPath: i > 0 ? pathParts.slice(0, i).join('/') : null,
             lastModified: Date.now(),
+            dataSourceId: file?.dataSourceId,
+            relativePath: isExternalDataSource ? parentPath : undefined,
           };
           map.set(parentPath, parentNode);
         }
@@ -137,21 +150,36 @@ export const transformFlatListToTree = (
     }
   });
 
-  // 排序：文件夹在前，文件在后，同类型按名称排序
-  const sortNodes = (nodes: FileNode[]): FileNode[] => {
-    return nodes.sort((a, b) => {
-      if (a.type !== b.type) {
-        return a.type === 'folder' ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-  };
-
-  return sortNodes(root).map((node) => ({
-    ...node,
-    children: node.children ? sortNodes(node.children) : undefined,
-  }));
+  return sortFileTreeNodes(root);
 };
+
+/**
+ * 文件树节点排序：目录在前、文件在后；同组按名称升序且忽略大小写。
+ * 固定用 en、关闭数字排序，避免 13xxx / 6xxx 在不同环境下顺序跳变。
+ */
+export const compareFileTreeNodes = (
+  a: Pick<FileNode, 'name' | 'type'>,
+  b: Pick<FileNode, 'name' | 'type'>,
+): number => {
+  const aIsFolder = a.type === 'folder' ? 0 : 1;
+  const bIsFolder = b.type === 'folder' ? 0 : 1;
+  if (aIsFolder !== bIsFolder) {
+    return aIsFolder - bIsFolder;
+  }
+  return a.name.localeCompare(b.name, 'en', {
+    sensitivity: 'base',
+    numeric: false,
+  });
+};
+
+/** 递归排序整棵文件树，展开/关闭/新增后都应走同一套规则 */
+export const sortFileTreeNodes = (nodes: FileNode[]): FileNode[] =>
+  [...nodes].sort(compareFileTreeNodes).map((node) => ({
+    ...node,
+    children: node.children?.length
+      ? sortFileTreeNodes(node.children)
+      : node.children,
+  }));
 
 /**
  * 将树形结构转换为扁平列表格式（用于保存）
@@ -295,6 +323,32 @@ export const buildUploadFilePaths = (
         : file.name;
     return relativePath ? `${relativePath}${entryPath}` : entryPath;
   });
+};
+
+/**
+ * 把文件树索引成 id -> 节点。
+ * 一次遍历后可以 O(1) 查找，避免 git status 对每个路径都从根重新递归。
+ * @param treeData 文件树
+ * @returns 以节点 id 为键的映射，重复 id 保留先出现的节点
+ */
+export const indexFileNodesById = (
+  treeData: FileNode[],
+): Map<string, FileNode> => {
+  const index = new Map<string, FileNode>();
+
+  const walk = (nodes: FileNode[]) => {
+    for (const node of nodes) {
+      if (node.id && !index.has(node.id)) {
+        index.set(node.id, node);
+      }
+      if (node.children?.length) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(treeData);
+  return index;
 };
 
 /**

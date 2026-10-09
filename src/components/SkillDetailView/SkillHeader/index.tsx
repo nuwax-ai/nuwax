@@ -1,7 +1,8 @@
 import agentImage from '@/assets/images/agent_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import { t } from '@/services/i18nRuntime';
 import type { SkillDetailInfo } from '@/types/interfaces/skill';
-import { CheckCircleFilled, LeftOutlined } from '@ant-design/icons';
+import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -51,7 +52,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({ skillInfo, mode }) => {
     <header className={cx('flex', 'items-center', styles['header'])}>
       <Button
         type="text"
-        icon={<LeftOutlined />}
+        icon={<SvgIcon name="icons-nav-backward" />}
         onClick={() => {
           if (window.history.length > 1) {
             history.back();

@@ -1,5 +1,22 @@
 import { dict } from '@/services/i18nRuntime';
+import { hostBridge } from '@/utils/hostBridge';
 import { message } from 'antd';
+
+async function shareableUrl(text: string): Promise<string> {
+  try {
+    const url = new URL(text);
+    if (!['127.0.0.1', 'localhost'].includes(url.hostname)) return text;
+    const context = await hostBridge.auth.getContext();
+    if (context?.gatewayOrigin && url.origin === context.gatewayOrigin)
+      return new URL(
+        url.pathname + url.search + url.hash,
+        context.businessOrigin,
+      ).toString();
+  } catch {
+    /* plain text */
+  }
+  return text;
+}
 
 type CopyCallback = (text: string, result?: boolean) => void;
 
@@ -86,23 +103,25 @@ export const copyTextToClipboard = async (
     return;
   }
 
+  const copiedText = await shareableUrl(text);
+
   // 使用现代剪贴板API或降级到传统方法
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(copiedText);
       if (showSuccessMsg) {
         message.success(getMessages().COPY_SUCCESS);
       }
       if (callback) {
-        callback(text, true);
+        callback(copiedText, true);
       }
     } catch (err) {
       console.error(getMessages().COPY_FAILED, err);
       message.error(getMessages().COPY_FAILED);
-      fallbackCopyTextToClipboard(text, callback);
+      fallbackCopyTextToClipboard(copiedText, callback);
     }
   } else {
-    fallbackCopyTextToClipboard(text, callback);
+    fallbackCopyTextToClipboard(copiedText, callback);
   }
 };
 

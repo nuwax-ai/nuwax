@@ -33,6 +33,8 @@ export interface VncPreviewProps {
    * e.g., "http://rcoder-service.example.com"
    */
   serviceUrl?: string;
+  /** 可选业务文档代理 URL；cId 仍为真实会话 ID，用于状态检查。 */
+  sourceUrl?: string;
   /**
    * Container ID or Session ID
    */
@@ -64,6 +66,18 @@ export interface VncPreviewProps {
    * 用于在用户长时间无操作时自动断开连接
    */
   idleDetection?: IdleDetectionConfig;
+  /**
+   * 重连前回调（由父级注入）
+   * 应在真正建立 VNC 连接前，确保容器已启动、保活轮询已恢复。
+   * 典型实现：调用 openDesktopView（内部会 apiEnsurePod + runKeepalivePodPolling）。
+   * 未传入时，重试按钮仅执行本地 connect（兼容旧用法）。
+   */
+  onReconnect?: () => Promise<void> | void;
+  /**
+   * 网站应用环境，仅 AppDevPro 传入。
+   * 未传时 vnc-status 老接口不带 appStage。
+   */
+  appStage?: 'dev' | 'prod';
 }
 
 export type ConnectionStatus =
@@ -80,6 +94,11 @@ export interface VncPreviewRef {
    * 连接到智能体电脑
    */
   connect: () => void;
+  /**
+   * 完整重连：先触发 onReconnect（恢复容器与保活），再 connect
+   * 无 onReconnect 时等同于 connect
+   */
+  reconnect: () => Promise<void>;
   /**
    * 断开 VNC 连接
    */

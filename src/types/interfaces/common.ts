@@ -1,6 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
-import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -33,6 +32,7 @@ import type {
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
+import type { ResourcePricingType } from '@/types/interfaces/resource';
 import type { FormInstance, GetProp, UploadFile, UploadProps } from 'antd';
 import React from 'react';
 
@@ -111,7 +111,7 @@ export interface SelectListType {
   placeholder?: string;
   disabled?: boolean;
   allowClear?: boolean;
-  options: option[];
+  options: any[];
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
   style?: React.CSSProperties;
@@ -493,6 +493,8 @@ export interface PageParams {
 // 查询特定数量输入参数
 export interface ListParams {
   size: number;
+  pageIndex?: number;
+  keyword?: string;
 }
 
 // 插件发布弹窗组件
@@ -552,13 +554,22 @@ export interface ChatInputProps extends ManualComponentItemProps {
   // 临时会话停止方法
   onTempChatStop?: (requestId: string) => void;
   loadingStopTempConversation?: boolean;
-  // 通用型智能体切换相关
-  showTaskAgentToggle?: boolean;
+  // 任务智能体状态（由当前会话对象决定）
   isTaskAgentActive?: boolean;
-  onToggleTaskAgent?: () => void;
   // 电脑类型选择相关
   selectedComputerId?: string;
   onComputerSelect?: (id: string) => void;
+  /**
+   * 发起会话时选择的工作目录（仅个人电脑时生效，wiki #17）。
+   * 选中个人电脑后展示「工作目录」入口，目录随会话创建记录在会话上。
+   */
+  workspacePath?: string;
+  onWorkspaceDirChange?: (dir: string) => void;
+  /**
+   * 仅云端模式（workspacePath 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
+   * 选项（如网站应用当前版本仅支持云端沙箱），工作目录栏一并隐藏。
+   */
+  disablePersonalComputer?: boolean;
   // 智能体ID，用于保存用户对电脑类型的选择
   agentId?: number;
   /** 智能体绑定的云电脑ID */
@@ -609,6 +620,21 @@ export interface ChatInputProps extends ManualComponentItemProps {
     label: string;
   };
   onClearSelectedTag?: () => void;
+  /**
+   * 首页项目上框（项目列表「+ 新建会话」透传）：输入卡底部灰底栏展示绑定项目
+   * （类型徽标 + 名称，可删除）。存在期间工作区/沙箱由项目隐含，
+   * 隐藏工作目录栏与电脑选择器。
+   */
+  pinnedProject?: {
+    /** 项目名称 */
+    name: string;
+    /** 项目类型（UserApp=全栈 / NormalProject=常规，类型徽标文案用） */
+    projectType: AgentComponentTypeEnum;
+    /** 项目图标 URL（可为受保护地址，展示走 useAuthProtectedImageSrc） */
+    icon?: string;
+  };
+  /** 移除项目上框（恢复首页默认形态） */
+  onClearPinnedProject?: () => void;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
   /**
@@ -645,7 +671,10 @@ export interface ChatBottomDebugProps {
 }
 
 // 运行状态组件：进行中、运行完毕
-export type RunOverProps = ChatBottomMoreProps;
+export interface RunOverProps extends ChatBottomMoreProps {
+  /** 终态没有执行步骤时是否仍展示状态文案 */
+  showTerminalStatus?: boolean;
+}
 
 // 'Tooltip省略号'组件
 export interface EllipsisTooltipProps {

@@ -1,0 +1,262 @@
+@import '@/styles/token';
+
+// 头部：图标 + 标题 + 当前路径（右侧省略）——原型「选择工作目录」fspicker
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-right: 40px; // 给右上角关闭钮留位
+}
+
+.header-icon {
+  color: @colorPrimary;
+  font-size: 20px;
+}
+
+.header-title {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: @fontWeightStrong;
+}
+
+.header-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 14px;
+  color: @colorTextTertiary;
+}
+
+// 工具栏：上一级胶囊钮 + 灰底面包屑容器
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding-bottom: 14px;
+}
+
+.up-button,
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: @colorFillQuaternary;
+  color: @colorText;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: @colorFillTertiary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.breadcrumb-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: @borderRadiusLg;
+  background: @colorFillQuaternary;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  white-space: nowrap;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+}
+
+.crumb-item {
+  flex-shrink: 0;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    color: @colorPrimary;
+  }
+
+  &.crumb-current {
+    color: @colorText;
+    font-weight: @fontWeightStrong;
+    cursor: default;
+
+    &:hover {
+      color: @colorText;
+    }
+  }
+}
+
+.crumb-sep {
+  flex-shrink: 0;
+  color: @colorTextQuaternary;
+  font-size: 13px;
+}
+
+// 列表主体
+.body {
+  max-height: 46vh;
+  min-height: 200px;
+  overflow-y: auto;
+  padding: 6px 0;
+  border-top: 1px solid @colorBorderSecondary;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: @borderRadiusLg;
+  cursor: pointer;
+  font-size: 14px;
+  color: @colorText;
+  transition: background-color 0.12s ease;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+  }
+
+  .row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    flex-shrink: 0;
+    font-size: 18px;
+    color: @colorPrimary;
+  }
+
+  .row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-arrow {
+    flex-shrink: 0;
+    font-size: 14px;
+    color: @colorTextQuaternary;
+  }
+
+  // 行内操作（重命名）：hover 浮现，降低列表视觉噪声
+  .row-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: @borderRadiusLg;
+    background: transparent;
+    color: @colorTextSecondary;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, background-color 0.12s ease;
+
+    &:hover:not(:disabled) {
+      background: @colorFillTertiary;
+      color: @colorPrimary;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+  }
+
+  &:hover .row-action:not(:disabled) {
+    opacity: 1;
+  }
+
+  // 新建/重命名行内编辑：输入框接管名称区
+  &.row-editing {
+    .row-input {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+    }
+  }
+
+  // 文件行：不可选弱化态（目录才可作为工作目录）
+  &.row-file {
+    cursor: default;
+
+    &:hover {
+      background-color: transparent;
+    }
+
+    .row-icon {
+      color: @colorTextQuaternary;
+    }
+
+    .row-name {
+      color: @colorTextQuaternary;
+    }
+  }
+}
+
+// 最近选择区（根视图顶部快速重选）
+.recent-section {
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid @colorBorderSecondary;
+
+  .recent-title {
+    padding: 4px 16px 6px;
+    color: @colorTextTertiary;
+    font-size: 13px;
+  }
+}
+
+// 加载/空态/错误态居中
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: @marginXs;
+  min-height: 200px;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+}
+
+// 底部操作区：大按钮右对齐
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid @colorBorderSecondary;
+
+  :global(.ant-btn) {
+    height: 40px;
+    padding: 0 24px;
+    border-radius: @borderRadiusLg;
+    font-size: 15px;
+  }
+}

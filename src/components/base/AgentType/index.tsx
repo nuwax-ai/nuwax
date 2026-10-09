@@ -66,6 +66,26 @@ const AgentTypeMap: Record<
     title: dict('PC.Components.AgentType.skill'),
     styleClassName: styles.skill,
   },
+  [AgentComponentTypeEnum.NormalProject]: {
+    icon: <ICON_AGENT />,
+    title: dict('PC.Components.AgentType.normalProject'),
+    styleClassName: styles.normalProject,
+  },
+  [AgentComponentTypeEnum.UserApp]: {
+    icon: <ICON_PAGE_APP />,
+    title: dict('PC.Components.AgentType.userApp'),
+    styleClassName: styles.userApp,
+  },
+  [AgentComponentTypeEnum.ThirdApp]: {
+    icon: <ICON_PLUGIN />,
+    title: dict('PC.Components.AgentType.thirdApp'),
+    styleClassName: styles.thirdApp,
+  },
+  [AgentComponentTypeEnum.PageApp]: {
+    icon: <ICON_PAGE_APP />,
+    title: dict('PC.Components.AgentType.pageApp'),
+    styleClassName: styles.page,
+  },
 };
 
 /**

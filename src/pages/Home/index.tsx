@@ -1,22 +1,43 @@
+import agentImage from '@/assets/images/agent_image.png';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import {
   readAgentModeCache,
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
-import ChatInputHome, {
-  type ChatInputHomeRef,
-} from '@/components/ChatInputHome';
-import Loading from '@/components/custom/Loading';
-import useConversation from '@/hooks/useConversation';
-import useSelectedComponent from '@/hooks/useSelectedComponent';
+import ChatInputUnified, {
+  type ChatInputUnifiedRef,
+} from '@/components/business-component/ChatInputUnified';
+import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
+import SiteFooter from '@/components/SiteFooter';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  apiCollectAgent,
-  apiHomeCategoryList,
-  apiPublishedAgentInfo,
-  apiUnCollectAgent,
-} from '@/services/agentDev';
+  findDefaultAgent,
+  findTypeFallbackAgent,
+  getAllowedFunctionType,
+  getProjectTypeByFunctionType,
+  isAgentSelectable,
+  isTaskAgentFunctionType,
+  showSpaceSelectorForFunctionType,
+} from '@/constants/recommendAgentPolicy.constants';
+import { getWorkspaceDirPolicy } from '@/constants/workspaceDirPolicy.constants';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
+import useConversation from '@/hooks/useConversation';
+import useHomePinnedProjectHandoff, {
+  type PinnedProjectInfo,
+} from '@/hooks/useHomePinnedProjectHandoff';
+import usePinnedAgentHandoff from '@/hooks/usePinnedAgentHandoff';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useSelectSkillHandoff, {
+  type SelectedSkillInfo,
+} from '@/hooks/useSelectSkillHandoff';
+import useSummonExpertHandoff, {
+  type SummonedExpertInfo,
+} from '@/hooks/useSummonExpertHandoff';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
+import { fetchChatboxCategories } from '@/services/square';
+import { apiNormalProjectGetById } from '@/services/userProjectApp';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -25,20 +46,20 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentDetailDto,
   AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
-import type {
-  CategoryItemInfo,
-  HomeAgentCategoryInfo,
-} from '@/types/interfaces/agentConfig';
-import type {
-  MessageSourceType,
-  UploadFileInfo,
-} from '@/types/interfaces/common';
+import type { UploadFileInfo } from '@/types/interfaces/common';
+import { type DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import type { SquareCategoryInfo } from '@/types/interfaces/square';
 import {
-  DisplayRecommendFunctionTypeEnum,
-  type DisplayRecommendInfo,
-} from '@/types/interfaces/displayRecommend';
-import { App, message as antdMessage } from 'antd';
+  buildHomeSendPlan,
+  resolvePersonalWorkspacePath,
+  resolvePinnedProjectComputerId,
+  resolvePinnedSandboxSelectable,
+  resolveProjectWorkspacePath,
+} from '@/utils/homeSendPlan';
+import { App } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -47,72 +68,153 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import { useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
-import DraggableHomeContent from './DraggableHomeContent';
+import HomeCategoryTabs, {
+  type HomeCategoryDef,
+} from './components/HomeCategoryTabs';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
 
-const PROJECT_FUNCTION_TYPE_MAP: Partial<
-  Record<DisplayRecommendFunctionTypeEnum | string, AgentComponentTypeEnum>
-> = {
-  [DisplayRecommendFunctionTypeEnum.AgentDev]: AgentComponentTypeEnum.Agent,
-  [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
-  [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
-  [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
-};
-
-const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
-  DisplayRecommendFunctionTypeEnum.AgentDev,
-  DisplayRecommendFunctionTypeEnum.SkillDev,
-  DisplayRecommendFunctionTypeEnum.PluginDev,
-]);
-
-const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
-  DisplayRecommendFunctionTypeEnum.AgentDev,
-  DisplayRecommendFunctionTypeEnum.PageAppDev,
-  DisplayRecommendFunctionTypeEnum.SkillDev,
-  DisplayRecommendFunctionTypeEnum.PluginDev,
-]);
+// 推荐位功能类型 → 项目类型 / 任务态 / 空间选择器映射已上移至
+// @/constants/recommendAgentPolicy.constants（策略单源，弹窗选择等场景复用）
 
 const Home: React.FC = () => {
   const { message } = App.useApp();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const { getSpaceId } = useModel('spaceModel');
-  const { setContext } = useModel('pageHandoffContext');
+  const { setContext, contextMap } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
-  const chatInputRef = useRef<ChatInputHomeRef>(null);
+  const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
+  const chatInputRef = useRef<ChatInputUnifiedRef>(null);
+  const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
+  // 广场智能体上框通道（bug 2398）：广场/空间广场卡片点击透传进本页
+  const { consume: consumePinnedAgent } = usePinnedAgentHandoff();
+  const { consume: consumeSelectedSkill } = useSelectSkillHandoff();
+  // 导航键：同路由 push（如侧栏搜索弹窗在 /home 内发起召唤/选择）也会生成新 key，
+  // 供下方消费 effect 依赖触发重读（handoff 写入方不重挂 Home）
+  const location = useLocation();
   const {
     selectedComponentList,
+    selectedComponentDetails,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
+  /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
+  const [workspacePath, setWorkspaceDir] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
-  const [activeTab, setActiveTab] = useState<string>();
-  const [loading, setLoading] = useState<boolean>(false);
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
   >([]);
+  // 推荐位/内容分类两接口完成标记:输入框上方异步区块空态判定用(见 aboveInputEmpty)
+  const [recommendLoaded, setRecommendLoaded] = useState(false);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  /** 内容分类 pill 数据源:已发布分类接口的 ChatBox 分类(与推荐管理配置同源) */
+  const [chatboxCategories, setChatboxCategories] = useState<
+    SquareCategoryInfo[]
+  >([]);
   const [selectedRecommend, setSelectedRecommend] =
     useState<DisplayRecommendInfo>();
-  const [homeCategoryInfo, setHomeCategoryInfo] =
-    useState<HomeAgentCategoryInfo>();
+  /** 项目上框（项目列表「+ 新建会话」透传；存在期间约束智能体可选范围并直接建会话绑定项目） */
+  const [pinnedProject, setPinnedProject] = useState<PinnedProjectInfo>();
+  const [pinnedProjectConfigLoading, setPinnedProjectConfigLoading] =
+    useState(false);
+  const pinnedProjectConfigSequence = useRef(0);
+  const homeMounted = useRef(true);
+  useEffect(() => {
+    homeMounted.current = true;
+    return () => {
+      homeMounted.current = false;
+    };
+  }, []);
+  // 上框命中失败提示去重（同一项目只提示一次）
+  const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
+  // 输入区上方内容分类:用户手动选择(null=未选过,自动取第一个有内容的分类)
+  const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
+    null,
+  );
+  // 专家召唤回执（专家页「召唤」经 pageHandoffContext 一次性透传，刷新即失效）
+  const [summonedExpert, setSummonedExpert] = useState<SummonedExpertInfo>();
+  // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
+  const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
+    summonedExpert?.icon,
+  );
+  // 外部带入技能（广场技能卡「选择」经 pageHandoffContext 一次性透传，
+  // 与专家召唤相互独立、互不覆盖）；复用「直接选技能」链路：转为编辑器
+  // mention chip 回填，skillIds 由编辑器 selectedMentions 自然派生
+  const [selectedSkill, setSelectedSkill] = useState<SelectedSkillInfo>();
+  const skillDefaultMentions = useMemo<MentionItem[] | undefined>(() => {
+    if (!selectedSkill) return undefined;
+    return [
+      {
+        kind: 'skill',
+        targetId: selectedSkill.skillId,
+        name: selectedSkill.name,
+        icon: selectedSkill.icon,
+      },
+    ];
+  }, [selectedSkill]);
 
-  const defaultAgentId =
-    isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
-      ? tenantConfigInfo.defaultTaskAgentId
-      : tenantConfigInfo?.defaultAgentId;
-  const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
+  // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉。
+  // 依赖 location.key：侧栏搜索弹窗在 /home 内发起召唤时 push 同路由不重挂，
+  // 凭新导航键重读透传值（一次性值已清，重复执行为 no-op）
+  // 广场智能体上框（bug 2398）与召唤专家是同一「会话智能体槽位」（chip 展示 +
+  // 提交时以该智能体创建会话）：payload 结构一致，后到者覆盖（两通道不会同时写入）
+  useEffect(() => {
+    const payload = consumeSummonedExpert() ?? consumePinnedAgent();
+    if (payload) {
+      setSummonedExpert(payload);
+      // 指定智能体优先于推荐 pill：显式清掉 pill 选中态
+      setSelectedRecommend(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
+  // 技能选择透传消费：读取即清；if 守卫同上（与专家透传两份独立 key），依赖同上
+  useEffect(() => {
+    const payload = consumeSelectedSkill();
+    if (payload) {
+      setSelectedSkill(payload);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
+  const defaultAgentId = tenantConfigInfo?.defaultAgentId;
+  const isUserAppPinned =
+    pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
+  // 与推荐位的项目类型限制保持一致：全栈项目不允许通过 @ 绕过单一类型限制，常规项目可选专家。
+  const isProjectExpertRestricted = !!getAllowedFunctionType(pinnedProject);
+  // 全栈项目自动确定智能体后，隐藏其关闭按钮。
+  const isProjectAgentLocked = isUserAppPinned && !!selectedRecommend;
+  // 常规项目上框与新建常规项目共用电脑选择和工作目录行为。
+  const pinnedProjectSandboxSelectable = useMemo(
+    () => resolvePinnedSandboxSelectable(pinnedProject),
+    [pinnedProject],
+  );
+  // 会话对象优先级：召唤专家 > 推荐pill > 默认智能体；全栈上框命中推荐位前
+  // 不回落租户默认智能体（出范围，且其详情会与命中详情并发、晚到覆盖工具
+  // 选中——禅道bug2394）；常规项目上框维持默认兜底（发送链依赖它作 agentId）
+  const currentAgentId =
+    summonedExpert?.agentId ||
+    selectedRecommend?.targetId ||
+    (isUserAppPinned ? undefined : defaultAgentId);
+  // 推荐标签可指向同一智能体，详情需按标签 ID 区分；召唤专家不带推荐上下文。
+  const currentRecId = summonedExpert?.agentId
+    ? undefined
+    : selectedRecommend?.id;
+  const agentTypeLoading =
+    !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const supportsAgentCapabilities =
+    !agentTypeLoading && agentDetail?.type !== AgentTypeEnum.ChatBot;
 
   const handleAgentModeChange = useCallback(
     (mode: AgentMode) => {
@@ -125,42 +227,23 @@ const Home: React.FC = () => {
   );
   const selectedFunctionType = selectedRecommend?.functionType || '';
   const selectedProjectType = useMemo(
-    () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
+    () => getProjectTypeByFunctionType(selectedFunctionType),
     [selectedFunctionType],
   );
-  const effectiveTaskAgentActive = selectedRecommend
-    ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
-    : isTaskAgentMode;
-  const showSpaceSelector = selectedRecommend
-    ? SPACE_SELECTOR_FUNCTION_TYPES.has(selectedFunctionType)
+  // 网站应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
+  const computerProjectType = pinnedProject?.projectType ?? selectedProjectType;
+  const disablePersonalComputer = computerProjectType
+    ? !getWorkspaceDirPolicy(computerProjectType).personalComputer
     : false;
-
-  const runDetail = useCallback(async (agentId: number) => {
-    try {
-      const { data } = await apiPublishedAgentInfo(agentId);
-      setAgentDetail(data);
-    } catch {
-      setAgentDetail(undefined);
-    }
-  }, []);
-
-  const runCategoryList = useCallback(async () => {
-    try {
-      const result = await apiHomeCategoryList({ skipErrorHandler: true });
-      if (result?.success === false) {
-        antdMessage.warning(result.message);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = result;
-      setHomeCategoryInfo(data);
-      setActiveTab(data?.categories?.[0]?.type);
-      setLoading(false);
-    } catch {
-      setLoading(false);
-    }
-  }, []);
+  const effectiveTaskAgentActive = selectedRecommend
+    ? isTaskAgentFunctionType(selectedFunctionType)
+    : false;
+  // 上框项目自带空间（会话绑定项目），不再展示空间选择器
+  const showSpaceSelector = pinnedProject
+    ? false
+    : selectedRecommend
+    ? showSpaceSelectorForFunctionType(selectedFunctionType)
+    : false;
 
   const runRecommendNavList = useCallback(async () => {
     try {
@@ -176,38 +259,57 @@ const Home: React.FC = () => {
       );
     } catch {
       setRecommendNavList([]);
+    } finally {
+      // 成败均算完成:空态判定(aboveInputEmpty)依赖两接口都已落定
+      setRecommendLoaded(true);
     }
   }, []);
 
-  const { run: runCollectAgent } = useRequest(apiCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      runCategoryList();
-    },
-  });
-
-  const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      runCategoryList();
-    },
-  });
-
   useEffect(() => {
-    setLoading(true);
-    runCategoryList();
     runRecommendNavList();
-  }, [runCategoryList, runRecommendNavList]);
+  }, [runRecommendNavList]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetchChatboxCategories()
+      .then((children) => {
+        if (!cancelled) {
+          setChatboxCategories(children);
+          setCategoriesLoaded(true);
+        }
+      })
+      .catch((error) => {
+        console.error('fetch chatbox categories failed:', error);
+        // 失败也标记完成:空态判定(aboveInputEmpty)不因失败挂起
+        if (!cancelled) {
+          setCategoriesLoaded(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // 切换会话对象（默认/推荐/专家）：重拉智能体详情；
+    // 不在此清空输入——清输入只发生在用户显式切 pill/分类时（见对应 handler），
+    // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持；
+    // cancelled 守卫：快速连续切换（上框命中/召唤/切 pill）时旧响应晚到
+    // 不得覆盖新会话对象的详情与工具选中（禅道bug2394 根因之一）
     setAgentDetail(undefined);
-    chatInputRef.current?.clear();
-    if (currentAgentId) {
-      runDetail(currentAgentId);
-    }
-  }, [currentAgentId, runDetail]);
+    if (!currentAgentId) return;
+    let cancelled = false;
+    apiPublishedAgentInfo(currentAgentId, false, currentRecId)
+      .then(({ data }) => {
+        if (!cancelled) setAgentDetail(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAgentDetail(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentAgentId, currentRecId]);
 
   useEffect(() => {
     if (agentDetail) {
@@ -225,10 +327,125 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    setSelectedComputerId(selectedRecommend ? '' : '-1');
+    // 项目内保留当前电脑；项目外由选择器解析新智能体的绑定与记忆。
+    // 此处不清空，避免选择器按旧 agentId 回落。
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
+
+  // 消费项目上框（pageHandoffContext 一次性；依赖 contextMap 兼容已在 /home 不重挂载的场景）
+  useEffect(() => {
+    const pinned = consumePinnedProject();
+    if (!pinned) return;
+    // 同项目再次新建任务重读电脑与目录，保留会话对象及草稿，避免默认智能体
+    // 详情并发覆盖已选工具（禅道bug2394）。项目身份使用类型与 ID 的复合键。
+    const isSameProject =
+      pinnedProject?.projectId === pinned.projectId &&
+      pinnedProject?.projectType === pinned.projectType;
+    const requestSequence = ++pinnedProjectConfigSequence.current;
+    const isNormalProject = resolvePinnedSandboxSelectable(pinned);
+    setPinnedProjectConfigLoading(isNormalProject);
+    setPinnedProject(pinned);
+    if (!isSameProject) {
+      agentMissedPromptedRef.current = undefined;
+      // 切换项目才复位与之互斥的智能体、模型和空间选择。
+      setSummonedExpert(undefined);
+      setSelectedRecommend(undefined);
+      setUserPickedCategory(null);
+      setSelectedComputerId('-1');
+      setWorkspaceDir('');
+      setSelectedModelId(undefined);
+      setSelectedSpaceId(undefined);
+    }
+    if (!isNormalProject) return;
+
+    const applyProjectComputer = (project: PinnedProjectInfo) => {
+      const computerId = resolvePinnedProjectComputerId(project);
+      setSelectedComputerId(computerId);
+      setWorkspaceDir(
+        resolvePersonalWorkspacePath(
+          computerId,
+          project.workspacePath ?? undefined,
+        ) ?? '',
+      );
+    };
+    // 先回填入口已携带的配置，读取一次最新详情补齐列表可能缺失的目录。
+    applyProjectComputer(pinned);
+    void (async () => {
+      try {
+        const res = await apiNormalProjectGetById(pinned.projectId);
+        if (
+          !homeMounted.current ||
+          requestSequence !== pinnedProjectConfigSequence.current ||
+          res?.code !== SUCCESS_CODE ||
+          res.success === false ||
+          !res.data
+        ) {
+          return;
+        }
+        const project = {
+          ...pinned,
+          sandboxId: res.data.sandboxId ?? pinned.sandboxId,
+          sandboxType: res.data.sandboxType || pinned.sandboxType,
+          workspacePath: resolveProjectWorkspacePath(res.data),
+        };
+        setPinnedProject(project);
+        applyProjectComputer(project);
+      } catch (error) {
+        // 请求层负责业务提示；读取失败时仍保留入口配置，允许用户修改或重试。
+        console.error('读取项目任务默认配置失败', error);
+      } finally {
+        if (
+          homeMounted.current &&
+          requestSequence === pinnedProjectConfigSequence.current
+        ) {
+          setPinnedProjectConfigLoading(false);
+        }
+      }
+    })();
+  }, [
+    contextMap,
+    consumePinnedProject,
+    pinnedProject?.projectId,
+    pinnedProject?.projectType,
+  ]);
+
+  // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
+  // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
+  // （等价替用户手点）；0 个/多个同类型无法定位 → toast 提示手动选择
+  // （同一项目只提示一次）；常规项目不自动命中智能体，保留用户手选的可用类型
+  // 智能体；刚消费上框时的旧选中已在上方清掉，未手选时发送由后端兜默认；
+  // 推荐列表置灰（isAgentSelectable 的不可用判定）不受影响照常生效
+  useEffect(() => {
+    // 常规项目上框不自动命中，但必须保留用户手选的可用 Agent。
+    // 切入上框时的旧推荐项由 consume effect 清理，不能在这里反复清空。
+    // 用户随后显式选专家时也不再自动命中项目智能体，否则会叠出两个回执。
+    if (!isUserAppPinned || selectedRecommend || summonedExpert) return;
+    if (!recommendNavList.length) return; // 推荐列表未就绪不做未命中判定
+    const hit =
+      findDefaultAgent(recommendNavList, pinnedProject) ??
+      findTypeFallbackAgent(recommendNavList, pinnedProject?.projectType);
+    if (hit) {
+      setSelectedRecommend(hit);
+      // 同步切到命中项所在分类（受控 Segmented 直接置 key）。category 为空时
+      // pill 归第一个分类且该分类必非空，autoCategoryKey 天然正确无需设置
+      // （显式设置反而引入分类数据未到的竞态）
+      if (hit.category) {
+        setUserPickedCategory(hit.category);
+      }
+      return;
+    }
+    if (agentMissedPromptedRef.current !== pinnedProject?.projectId) {
+      agentMissedPromptedRef.current = pinnedProject?.projectId;
+      message.warning(dict('PC.Pages.Home.pinnedProject.agentMissed'));
+    }
+  }, [
+    isUserAppPinned,
+    pinnedProject,
+    recommendNavList,
+    selectedRecommend,
+    summonedExpert,
+  ]);
 
   const handleEnter = async (
     inputMessage: string,
@@ -236,95 +453,171 @@ const Home: React.FC = () => {
     skillIds?: number[],
     modelId?: number,
     agentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => {
-    if (submitting) return;
+    if (submitting || pinnedProjectConfigLoading) return;
 
-    if (!tenantConfigInfo || !currentAgentId) {
+    if (!tenantConfigInfo) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
       return;
     }
+    // 上框期间会话对象未定（全栈未命中且未手选）引导手选，不误报租户信息缺失
+    if (!currentAgentId) {
+      message.warning(
+        dict(
+          pinnedProject
+            ? 'PC.Pages.Home.pinnedProject.agentMissed'
+            : 'PC.Pages.Home.noTenantInfo',
+        ),
+      );
+      return;
+    }
+
+    // 专家 chip 合并进组件列表：与外部受控列表按 id+type 去重（对齐会话页规则）
+    const mergedInfos = supportsAgentCapabilities
+      ? [
+          ...selectedComponentList,
+          ...(expertComponents || []).filter(
+            (expert) =>
+              !selectedComponentList.some(
+                (selected) =>
+                  selected.id === expert.id && selected.type === expert.type,
+              ),
+          ),
+        ]
+      : [];
 
     setSubmitting(true);
     try {
-      if (selectedProjectType) {
-        const spaceId = showSpaceSelector
-          ? selectedSpaceId
-          : Number(getSpaceId());
-        if (!spaceId) {
+      // 发送计划（决策与参数拼装单源 @/utils/homeSendPlan）：
+      // 上框项目 → 直接建会话绑定项目 ＞ 项目类推荐 → 建项目 ＞ 纯会话
+      const plan = buildHomeSendPlan({
+        currentAgentId,
+        pinnedProject,
+        pinnedProjectSandboxSelection: pinnedProjectSandboxSelectable,
+        selectedFunctionType,
+        message: inputMessage,
+        files,
+        skillIds: supportsAgentCapabilities ? skillIds : [],
+        modelId: modelId || selectedModelId,
+        agentMode,
+        infos: mergedInfos,
+        selectedDocs: supportsAgentCapabilities ? selectedDocs : [],
+        selectedComputerId,
+        workspacePath,
+        selectedSpaceId,
+        fallbackSpaceId: Number(getSpaceId()),
+      });
+      if (plan.kind === 'createProject') {
+        if (!plan.spaceId) {
           message.warning(dict('PC.Pages.Home.noTenantInfo'));
           return;
         }
-
         await createProjectAndNavigate({
-          payload: {
-            type: selectedProjectType,
-            prompt: inputMessage,
-            files,
-            skillIds,
-            modelId: modelId || selectedModelId,
-            tools: selectedComponentList,
-            computerId: selectedComputerId,
-            agentMode,
-            agentId: currentAgentId,
-          },
-          spaceId,
+          payload:
+            plan.payload.type === AgentComponentTypeEnum.PageApp
+              ? {
+                  ...plan.payload,
+                  tools: plan.payload.tools?.map((item) => ({
+                    ...item,
+                    ...selectedComponentDetails.find(
+                      (detail) =>
+                        detail.id === item.id && detail.type === item.type,
+                    ),
+                  })),
+                }
+              : plan.payload,
+          spaceId: plan.spaceId,
           tenantConfigInfo,
           setContext,
         });
         return;
       }
-
-      await handleCreateConversation(currentAgentId, {
-        message: inputMessage,
-        files,
-        infos: selectedComponentList,
-        messageSourceType: 'home' as MessageSourceType,
-        selectedComputerId,
-        skillIds,
-        modelId: modelId || selectedModelId,
-        agentMode,
-      });
+      await handleCreateConversation(plan.agentId, plan.attach);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const showTaskAgentToggle = !!(
-    !selectedRecommend &&
-    tenantConfigInfo?.defaultTaskAgentId &&
-    tenantConfigInfo.defaultTaskAgentId > 0
-  );
+  // 内容分类列表(对话任务/项目开发/AI教育等):pill 来自已发布分类接口的
+  // ChatBox 分类,推荐按 category(分类 key)归入对应 pill;
+  // 存量未配置分类的推荐归入第一个 pill,避免内容丢失。
+  // 上框期间不再过滤隐藏(2026-09-11 定调):全部 pill 展示,
+  // 非同类型由 ChatBoxRecommendNav 按 isItemSelectable 置灰不可选
+  const categoryNavList = useMemo<HomeCategoryDef[]>(() => {
+    if (chatboxCategories.length === 0) return [];
+    const firstKey = chatboxCategories[0].key;
+    return chatboxCategories.map((category) => ({
+      key: category.key,
+      label: category.label,
+      icon: category.icon,
+      items: recommendNavList.filter(
+        (item) => (item.category || firstKey) === category.key,
+      ),
+    }));
+  }, [chatboxCategories, recommendNavList]);
 
-  const handleTabClick = (type: string) => {
-    setActiveTab(type);
-  };
+  // 默认分类 = 第一个有内容的分类(数据到达时 Segmented 才首挂,值直接就位,
+  // 避免挂载后回落引发滑块从起始分类滑过来的无意义动画);用户手动点过则优先
+  const autoCategoryKey =
+    categoryNavList.find((c) => c.items.length > 0)?.key ??
+    chatboxCategories[0]?.key ??
+    '';
+  const activeCategory = userPickedCategory ?? autoCategoryKey;
 
-  const handleToggleCollect = (_type: string, info: CategoryItemInfo) => {
-    if (info.collect) {
-      runUnCollectAgent(info.targetId);
-    } else {
-      runCollectAgent(info.targetId);
-    }
-  };
+  const activeCategoryItems =
+    categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
 
-  const handleAgentClick = (agentInfo: CategoryItemInfo) => {
-    const { targetId, lastConversationId } = agentInfo;
+  // 输入框上方异步区块(分类排+推荐 pill 行)终态空判定:两接口都完成且任一
+  // 无数据 → 该区域永远不会有内容,收起高度预留避免长期留白;有数据时
+  // 预留与真实内容等高,减少问候语跳动;输入框由独立网格轨道居中(禅道bug2493)
+  const aboveInputEmpty =
+    recommendLoaded &&
+    categoriesLoaded &&
+    (recommendNavList.length === 0 || chatboxCategories.length === 0);
 
-    if (lastConversationId) {
-      history.push(`/home/chat/${lastConversationId}/${targetId}`);
-      return;
-    }
-
-    history.push(`/agent/${targetId}`);
+  const handleCategoryChange = (key: string) => {
+    // 大类 Tab 仅切换推荐列表；会话框中已选智能体、草稿及其他配置保持不变。
+    setUserPickedCategory(key);
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
-    setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
+    // 推荐 pill = 显式切换会话对象，清掉召唤态（优先级让位）
+    setSummonedExpert(undefined);
+    // 上框全栈:已选中项再点不取消,避免回落到出范围的租户默认智能体
+    const isDeselectBlocked =
+      isUserAppPinned && selectedRecommend?.id === item.id;
+    setSelectedRecommend((prev) =>
+      prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
+    );
+    if (!isDeselectBlocked) {
+      // 项目内保留电脑选择，项目外由选择器解析新智能体的绑定与记忆。
+      // 模型/空间复位，输入清空；外部技能 chip 随输入一并清。
+      setSelectedSkill(undefined);
+      setSelectedModelId(undefined);
+      setSelectedSpaceId(undefined);
+      chatInputRef.current?.clear();
+    }
     // 延迟以确保重新渲染后聚焦
     setTimeout(() => {
       chatInputRef.current?.focus();
     }, 0);
   };
+
+  // 移除项目上框:恢复首页默认形态(全量推荐/默认门控/电脑复位)
+  const handleClearPinnedProject = useCallback(() => {
+    ++pinnedProjectConfigSequence.current;
+    setPinnedProjectConfigLoading(false);
+    setPinnedProject(undefined);
+    agentMissedPromptedRef.current = undefined;
+    setSelectedRecommend(undefined);
+    setUserPickedCategory(null);
+    setWorkspaceDir('');
+    setSelectedComputerId('-1');
+    chatInputRef.current?.clear();
+    chatInputRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -332,40 +625,105 @@ const Home: React.FC = () => {
       className={cx(styles.container, 'flex', 'flex-col', 'items-center')}
     >
       <main className={cx(styles.inputSection)}>
-        <div className={cx(styles.titleContainer)}>
-          <h2
-            className={cx(styles.title)}
-            dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
-          />
+        <div className={cx(styles.introSection)}>
+          <div className={cx(styles.titleContainer)}>
+            <h2
+              className={cx(styles.title)}
+              dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
+            />
+          </div>
+          {/* 保留分类与推荐区的异步高度占位(禅道bug2493)，减少问候语跳动；
+            输入框由独立的网格中间轨道居中，不随上方数据到达而移动。 */}
+          <div
+            className={cx(styles['above-input-slot'], {
+              [styles['above-input-slot-empty']]: aboveInputEmpty,
+            })}
+          >
+            {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
+              避免挂载后调整引发滑块从起始分类滑过来的动画 */}
+            {recommendNavList.length > 0 && (
+              <HomeCategoryTabs
+                categories={categoryNavList}
+                activeKey={activeCategory}
+                onChange={handleCategoryChange}
+              />
+            )}
+            <ChatBoxRecommendNav
+              items={activeCategoryItems}
+              recommendPrompts={selectedRecommend?.prompts}
+              guidQuestions={
+                agentDetail?.agentId === currentAgentId
+                  ? agentDetail?.guidQuestionDtos
+                  : []
+              }
+              onQuestionClick={(text) => chatInputRef.current?.setText(text)}
+              selectedId={selectedRecommend?.id}
+              onSelect={handleRecommendSelect}
+              // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
+              isItemSelectable={
+                pinnedProject
+                  ? (item) => isAgentSelectable(item, pinnedProject)
+                  : undefined
+              }
+            />
+          </div>
         </div>
-        <ChatBoxRecommendNav
-          items={recommendNavList}
-          onSelect={handleRecommendSelect}
-        />
-        <ChatInputHome
+        <ChatInputUnified
           ref={chatInputRef}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
-          wholeDisabled={submitting}
+          wholeDisabled={submitting || pinnedProjectConfigLoading}
+          // 首页草稿：固定作用域 key（无会话 id），24h 内回首页恢复未发送输入
+          draftKey="home"
+          showGuidQuestions={false}
+          // 项目类型受限时，@ 与能力弹窗都不开放专家，资料库等入口保留。
+          showExpertCapability={!isProjectExpertRestricted}
+          // 首页 @：未受项目限制时显示专家与资料库，受限时只显示资料库。
+          atHomePanel
           placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
             agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
           }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
-          showTaskAgentToggle={showTaskAgentToggle}
-          isTaskAgentActive={effectiveTaskAgentActive}
-          onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
-          selectedComputerId={selectedComputerId}
-          onComputerSelect={setSelectedComputerId}
-          agentId={agentDetail?.agentId}
-          agentSandboxId={agentDetail?.sandboxId}
-          readonly={agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No}
-          enableMention={
-            agentDetail?.type === AgentTypeEnum.TaskAgent &&
-            agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
+          isTaskAgentActive={
+            pinnedProjectSandboxSelectable || effectiveTaskAgentActive
           }
+          selectedComputerId={selectedComputerId}
+          onComputerSelect={(id) => {
+            if (pinnedProjectConfigLoading) return;
+            setSelectedComputerId(id);
+            // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
+            if (id !== selectedComputerId) setWorkspaceDir('');
+          }}
+          workspacePath={workspacePath}
+          onWorkspaceDirChange={
+            // 无目录能力的类型（全栈等）不传回调 → 工作目录栏不渲染
+            disablePersonalComputer
+              ? undefined
+              : (path) => {
+                  if (!pinnedProjectConfigLoading) setWorkspaceDir(path);
+                }
+          }
+          disablePersonalComputer={disablePersonalComputer}
+          agentId={agentDetail?.agentId}
+          guidQuestionDtos={
+            agentDetail && agentDetail.agentId === currentAgentId
+              ? agentDetail.guidQuestionDtos
+              : []
+          }
+          // 常规项目继承项目配置，允许修改；项目外沿用智能体绑定和记忆。
+          agentSandboxId={
+            pinnedProjectSandboxSelectable ? undefined : agentDetail?.sandboxId
+          }
+          readonly={
+            !pinnedProjectSandboxSelectable && !agentDetail?.allowPrivateSandbox
+          }
+          autoSelectComputer={!pinnedProjectSandboxSelectable}
+          strictAgentMemory
+          /* / 能力弹窗默认由首页开放；ChatBot 或详情加载期间由
+             agentType/agentTypeLoading 统一关闭。 */
           allowOtherModel={agentDetail?.allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
@@ -373,6 +731,7 @@ const Home: React.FC = () => {
           selectedSpaceId={selectedSpaceId}
           onSpaceSelect={setSelectedSpaceId}
           agentType={agentDetail?.type}
+          agentTypeLoading={agentTypeLoading}
           selectedTag={
             selectedRecommend
               ? {
@@ -380,36 +739,62 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
-          onClearSelectedTag={() => {
-            setSelectedRecommend(undefined);
-            chatInputRef.current?.clear();
-            chatInputRef.current?.focus();
-          }}
+          onClearSelectedTag={
+            isProjectAgentLocked
+              ? undefined
+              : () => {
+                  setSelectedRecommend(undefined);
+                  chatInputRef.current?.clear();
+                  chatInputRef.current?.focus();
+                }
+          }
+          pinnedProject={
+            pinnedProject
+              ? {
+                  name: pinnedProject.name,
+                  projectType: pinnedProject.projectType,
+                  icon: pinnedProject.icon ?? undefined,
+                }
+              : undefined
+          }
+          // 常规项目上框：开放电脑选择器和工作目录栏
+          pinnedProjectSandboxSelectable={pinnedProjectSandboxSelectable}
+          onClearPinnedProject={
+            pinnedProject ? handleClearPinnedProject : undefined
+          }
           agentMode={agentMode}
           onAgentModeChange={handleAgentModeChange}
-          showAgentModeSelector={
-            agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
+          agentEnableVersionControl={agentDetail?.enableVersionControl}
+          // 召唤专家 chip：提交时以该专家 agentId 创建会话（优先级高于推荐 pill）
+          // 召唤专家 chip（透传契约见 useSummonExpertHandoff）：icon 缺失或
+          // 受保护地址解析失败时回退默认智能体图，chip 恒有图标位
+          summonedExpert={
+            summonedExpert
+              ? {
+                  agentId: summonedExpert.agentId,
+                  name: summonedExpert.name,
+                  iconSrc: summonedExpertIconSrc || agentImage,
+                }
+              : undefined
           }
+          onClearSummonedExpert={() => setSummonedExpert(undefined)}
+          // 外部带入技能：复用「直接选技能」链路，编辑器回填 mention chip
+          defaultMentions={skillDefaultMentions}
+          // 能力弹窗选中专家 = 切换会话智能体：仅清上方所选的推荐智能体，
+          // 输入内容与电脑/模型/空间等已选项保持；复用召唤链路
+          // （chip 展示 + 提交时以专家 agentId 走会话创建）
+          onExpertAgentSelect={(expert) => {
+            if (isProjectExpertRestricted) return;
+            setSelectedRecommend(undefined);
+            setSummonedExpert({
+              agentId: expert.targetId,
+              name: expert.name,
+              icon: expert.icon,
+            });
+          }}
         />
+        <SiteFooter className={cx(styles['foot-tip'])} />
       </main>
-      <section className={cx(styles.recommendSection)}>
-        <div className={cx(styles.wrapper)}>
-          {loading ? (
-            <Loading className={cx('h-full')} />
-          ) : (
-            homeCategoryInfo && (
-              <DraggableHomeContent
-                homeCategoryInfo={homeCategoryInfo}
-                activeTab={activeTab}
-                onTabClick={handleTabClick}
-                onAgentClick={handleAgentClick}
-                onToggleCollect={handleToggleCollect}
-                onDataUpdate={runCategoryList}
-              />
-            )
-          )}
-        </div>
-      </section>
     </div>
   );
 };

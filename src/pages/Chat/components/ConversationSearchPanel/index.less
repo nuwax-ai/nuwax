@@ -1,0 +1,82 @@
+// 会话内搜索面板（Popover 内容挂 body，overlayClassName 引用 module 类）
+.conversation-search-popover {
+  .conversation-search-panel {
+    width: 360px;
+    max-width: 80vw;
+  }
+
+  .search-results {
+    margin-top: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .search-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 0;
+    color: rgba(0, 0, 0, 45%);
+    font-size: 12px;
+  }
+
+  .search-hit {
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 4%);
+    }
+
+    & + .search-hit {
+      margin-top: 4px;
+    }
+
+    .search-hit-header {
+      margin-bottom: 2px;
+
+      .search-hit-role {
+        font-size: 11px;
+        line-height: 16px;
+        color: rgba(0, 0, 0, 45%);
+        background: rgba(0, 0, 0, 4%);
+        border-radius: 4px;
+        padding: 0 6px;
+      }
+    }
+
+    .search-hit-snippet {
+      font-size: 12px;
+      line-height: 20px;
+      color: rgba(0, 0, 0, 65%);
+      word-break: break-all;
+
+      mark {
+        color: #d46b08;
+        background: #fff7e6;
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+    }
+  }
+}
+
+// 顶栏触发按钮与 LeftContent 的 icon-box 形态对齐（由调用方包 TooltipIcon 时可省）
+.search-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+// 定位高亮（作用于消息气泡容器，须为全局类）
+:global {
+  .conversation-search-highlight {
+    transition: box-shadow 0.3s ease;
+    box-shadow: 0 0 0 2px #ffb84d;
+    border-radius: 8px;
+  }
+}

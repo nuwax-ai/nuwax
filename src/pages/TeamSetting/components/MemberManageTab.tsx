@@ -28,11 +28,17 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
   };
 
   const request = async (params: any) => {
-    const { current = 1, pageSize = 10, role, kw } = params;
+    const {
+      current = 1,
+      pageSize = 10,
+      role: filterRole,
+      kw,
+      spaceId: querySpaceId,
+    } = params;
     try {
       const res = await apiGetSpaceUserList({
-        spaceId,
-        role: role || undefined, // empty string to undefined
+        spaceId: querySpaceId ?? spaceId,
+        role: filterRole || undefined, // empty string to undefined
         kw,
       });
 
@@ -149,6 +155,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
         rowKey="userId"
         columns={columns}
         request={request}
+        params={{ spaceId }}
         toolBarRender={() => [
           role !== TeamStatusEnum.User && (
             <Button

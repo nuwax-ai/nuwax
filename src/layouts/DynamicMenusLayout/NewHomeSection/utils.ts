@@ -1,5 +1,24 @@
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import dayjs from 'dayjs';
+
+/**
+ * 从首页智能体详情或会话地址中提取智能体 ID。
+ */
+export const getAgentIdFromHomePathname = (pathname: string) => {
+  const agentDetailMatch = pathname.match(/^\/agent\/([^/]+)/);
+  if (agentDetailMatch) return agentDetailMatch[1];
+
+  return pathname.match(/^\/home\/chat\/[^/]+\/([^/]+)/)?.[1];
+};
+
+/** 统计智能体会话中正在执行的任务数量。 */
+export const getExecutingConversationCount = (
+  conversationList?: Array<{ taskStatus?: TaskStatus }> | null,
+) =>
+  conversationList?.filter(
+    (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
+  ).length ?? 0;
 
 /**
  * 格式化会话更新时间，符合设计图逻辑
@@ -18,6 +37,46 @@ export const formatModifiedTime = (timeStr?: string) => {
     return dict('PC.Utils.Common.yesterday');
   }
 
+  const lang = getCurrentLang();
+  if (lang.startsWith('zh')) {
+    return d.format('M月D日');
+  }
+  return d.format('MMM D');
+};
+
+/**
+ * 列表条目相对时间（2026-09-08 定调，对照原型截图）:
+ * 刚刚 / x分 / x小时 / x天（不带「前」字），超过 30 天回退具体日期。
+ */
+export const formatRelativeTime = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const d = dayjs(timeStr);
+  if (!d.isValid()) return '';
+
+  const diffMs = dayjs().valueOf() - d.valueOf();
+  if (diffMs < 60 * 1000) {
+    return dict('PC.Utils.Common.justNow');
+  }
+  if (diffMs < 60 * 60 * 1000) {
+    return dict(
+      'PC.Utils.Common.relativeMinutes',
+      Math.floor(diffMs / (60 * 1000)),
+    );
+  }
+  if (diffMs < 24 * 60 * 60 * 1000) {
+    return dict(
+      'PC.Utils.Common.relativeHours',
+      Math.floor(diffMs / (60 * 60 * 1000)),
+    );
+  }
+  if (diffMs < 30 * 24 * 60 * 60 * 1000) {
+    return dict(
+      'PC.Utils.Common.relativeDays',
+      Math.floor(diffMs / (24 * 60 * 60 * 1000)),
+    );
+  }
+
+  // 超过 30 天回退具体日期，风格与 formatModifiedTime 保持一致
   const lang = getCurrentLang();
   if (lang.startsWith('zh')) {
     return d.format('M月D日');

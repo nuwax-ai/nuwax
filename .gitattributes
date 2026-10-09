@@ -1,0 +1,2 @@
+# 补丁的空白上下文行必须保留一个空格，供 git apply 解析；其它空白检查仍保留。
+micro-frontends/*/adapter.patch whitespace=-blank-at-eol

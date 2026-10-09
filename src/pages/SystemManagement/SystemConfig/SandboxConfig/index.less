@@ -77,7 +77,8 @@
   }
 
   .usage-cell {
-    width: 200px;
+    // 宽度交给列定义（bug 2458）：原固定 200px 在窄容器下会撑破单元格
+    width: 100%;
 
     .usage-text {
       display: flex;
@@ -158,7 +159,8 @@
   .action-btns {
     display: flex;
     gap: 8px;
-    justify-content: flex-end;
+    // 居中对齐（bug 2458）：对齐系统管理列表基线（操作列居中，I18nManage 同款）
+    justify-content: center;
 
     .action-btn {
       color: #999;

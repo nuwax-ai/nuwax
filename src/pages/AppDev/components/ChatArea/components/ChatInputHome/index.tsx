@@ -9,7 +9,6 @@ import {
   MAX_IMAGE_COUNT,
   UPLOAD_FILE_ACTION,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useClickOutside from '@/hooks/useClickOutside';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
@@ -66,12 +65,42 @@ const cx = classNames.bind(styles);
  * 获取模型选项工具函数
  */
 const getModeOptions = (models?: ModelConfig[]) => {
-  return (
-    models?.map((model: ModelConfig) => ({
-      label: model.name,
-      value: model.id,
-    })) || []
-  );
+  if (!models) return [];
+
+  const tenantModels: ModelConfig[] = [];
+  const spaceModels: ModelConfig[] = [];
+
+  models.forEach((model: ModelConfig) => {
+    if (model.scope === 'Tenant') {
+      tenantModels.push(model);
+    } else {
+      spaceModels.push(model);
+    }
+  });
+
+  const options: any[] = [];
+
+  if (tenantModels.length > 0) {
+    options.push({
+      label: t('PC.Pages.AppDevChatInput.systemModel'),
+      options: tenantModels.map((model: ModelConfig) => ({
+        label: model.name,
+        value: model.id,
+      })),
+    });
+  }
+
+  if (spaceModels.length > 0) {
+    options.push({
+      label: t('PC.Pages.AppDevChatInput.personalSpace'),
+      options: spaceModels.map((model: ModelConfig) => ({
+        label: model.name,
+        value: model.id,
+      })),
+    });
+  }
+
+  return options;
 };
 
 // 聊天输入框组件
@@ -140,7 +169,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     UploadFileInfo[]
   >([]);
   const [open, setOpen] = useState(false);
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   // TextArea ref，用于处理粘贴事件
   const textAreaRef = useRef<any>(null);
 
@@ -726,10 +754,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
           // 上传文件
           const response = await fetch(UPLOAD_FILE_ACTION, {
+            credentials: 'include',
             method: 'POST',
-            headers: {
-              Authorization: token ? `Bearer ${token}` : '',
-            },
+
             body: formData,
           });
 
@@ -803,7 +830,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
       }
     },
-    [attachmentPrototypeImages, token],
+    [attachmentPrototypeImages],
   );
 
   // 订阅发送消息事件
@@ -1193,12 +1220,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/*上传附件文件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
+              withCredentials
               onChange={handleChange}
               multiple={true}
               fileList={attachmentFiles}
-              headers={{
-                Authorization: token ? `Bearer ${token}` : '',
-              }}
               data={{
                 type: 'tmp',
               }}
@@ -1224,13 +1249,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/*上传原型图片附件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
+              withCredentials
               accept="image/*"
               onChange={handleChangePrototypeImages}
               multiple={true}
               fileList={attachmentPrototypeImages}
-              headers={{
-                Authorization: token ? `Bearer ${token}` : '',
-              }}
               data={{
                 type: 'tmp',
               }}

@@ -1,25 +1,89 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { dict } from '@/services/i18nRuntime';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import { CodeBlockActions, useThemeState } from 'ds-markdown';
 import { createBuildInPlugin } from 'ds-markdown/plugins';
 import rehypeRaw from 'rehype-raw';
+import { history, useModel } from 'umi';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import MarkdownCustomProcessGroup from '../MarkdownCustomProcessGroup';
+import MarkdownCustomThink from '../MarkdownCustomThink';
 import styles from './index.less';
 import OptimizedImage from './OptimizedImage';
+import remarkFixCjkAutolinks from './remarkFixCjkAutolinks';
 import TaskResult from './TaskResult';
 import { extractTableToMarkdown } from './utils';
 const cx = classNames.bind(styles);
 
+interface ConversationDetailLinkProps {
+  conversationId?: string | number;
+  agentId?: string | number;
+}
+
+const ConversationDetailLink: React.FC<ConversationDetailLinkProps> = ({
+  conversationId,
+  agentId,
+}) => {
+  const { isAppSidebarMode } = useModel('useOpenApp');
+  const targetConversationId = Number(conversationId);
+  const targetAgentId = Number(agentId);
+
+  if (!targetConversationId || !targetAgentId) {
+    return null;
+  }
+
+  return (
+    <Button
+      type="link"
+      size="small"
+      style={{ paddingInline: 4, verticalAlign: 'baseline' }}
+      onClick={() =>
+        history.push(
+          isAppSidebarMode
+            ? `/app/chat/${targetAgentId}/${targetConversationId}`
+            : `/home/chat/${targetConversationId}/${targetAgentId}`,
+        )
+      }
+    >
+      {dict('PC.Components.MarkdownRenderer.viewTaskDetails')}
+    </Button>
+  );
+};
+
 // 用插件机制传递自定义components
-export default (conversationId: string | number = '') => {
+export default (
+  conversationId: string | number = '',
+  collapseProcessGroups = false,
+  autoCollapseEnabled = true,
+) => {
   return createBuildInPlugin({
+    remarkPlugin: remarkFixCjkAutolinks,
     rehypePlugin: [rehypeRaw],
     components: {
       style: () => null, // 禁用 style 标签渲染，防止样式污染
       script: () => null, // 禁用 script 标签，增强安全性
       html: ({ children }: any) => <>{children}</>, // 处理可能存在的 html 标签包裹
+      conversation: (props: any) => {
+        const properties = props.node?.properties || {};
+        const targetConversationId =
+          props.id ??
+          props.conversationId ??
+          properties.id ??
+          properties.conversationId;
+        const targetAgentId =
+          props.agentid ??
+          props.agentId ??
+          properties.agentid ??
+          properties.agentId;
+
+        return (
+          <ConversationDetailLink
+            conversationId={targetConversationId}
+            agentId={targetAgentId}
+          />
+        );
+      },
       // 确保使用一致的组件名称格式
       'markdown-custom-process': (props: any) => {
         const node = props.node;
@@ -60,9 +124,62 @@ export default (conversationId: string | number = '') => {
           />
         );
       },
-      'markdown-custom-process-group': ({ children }: any) => {
+      'markdown-custom-process-group': ({ children, ...props }: any) => {
+        const properties = props.node?.properties || {};
+        const autoCollapse =
+          props.autocollapse ??
+          props.autoCollapse ??
+          properties.autocollapse ??
+          properties.autoCollapse;
+        const terminal = props.terminal ?? properties.terminal;
+
         return (
-          <MarkdownCustomProcessGroup>{children}</MarkdownCustomProcessGroup>
+          <MarkdownCustomProcessGroup
+            autoCollapse={
+              autoCollapseEnabled &&
+              String(autoCollapse).toLowerCase() === 'true'
+            }
+            defaultCollapsed={collapseProcessGroups}
+            terminal={String(terminal).toLowerCase() === 'true'}
+          >
+            {children}
+          </MarkdownCustomProcessGroup>
+        );
+      },
+      // 思考块按流式位置内联渲染：content 为 URL 编码的思考文本，
+      // status/autoCollapse 属性语义与工具调用组一致
+      'markdown-custom-think': ({ ...props }: any) => {
+        const node = props.node;
+        const properties = node?.properties || {};
+        const autoCollapse =
+          props.autocollapse ??
+          props.autoCollapse ??
+          properties.autocollapse ??
+          properties.autoCollapse;
+        const status = props.status ?? properties.status;
+        const rawContent = props.content ?? properties.content ?? '';
+
+        let content = rawContent;
+        try {
+          content = decodeURIComponent(rawContent);
+        } catch {
+          // 容忍非法编码序列，原样展示
+        }
+
+        const {
+          end: { offset: endOffset },
+          start: { offset: startOffset },
+        } = node?.position || {};
+        const thinkKey = `${startOffset}-${endOffset}-think`;
+
+        return (
+          <MarkdownCustomThink
+            key={thinkKey}
+            content={content}
+            status={status}
+            autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+            defaultCollapsed={collapseProcessGroups}
+          />
         );
       },
       table: ({ children, node }: any) => {

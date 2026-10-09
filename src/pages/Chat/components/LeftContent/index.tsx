@@ -1,38 +1,86 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
+import ExternalFilePreview from '@/components/business-component/ExternalFilePreview';
 import FileTreePreviewPanel, {
   type FileTreePreviewPanelProps,
 } from '@/components/business-component/FileTreePreviewPanel';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import ResizableSplit from '@/components/ResizableSplit';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
-import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { CodeOutlined } from '@ant-design/icons';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
+import { isImmersiveShell } from '@/utils/hostBridge';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
+import ConversationInstanceCacheSlot from '../ConversationInstanceCacheSlot';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 工作区外沙箱文件的独立预览目标（非空时右侧面板切换为独立预览） */
+export interface ExternalFilePreviewTarget {
+  cId: number;
+  targetDir: string;
+  relativePath: string;
+}
+
 interface LeftContentProps {
+  pageCacheKey: string;
   isFileTreeVisible: boolean;
   effectiveAgent: any;
   isAppSidebarMode: boolean;
   headerProps: any;
   chatSessionProps: any;
   fileSidebarProps: FileTreePreviewPanelProps;
+  externalFilePreview?: ExternalFilePreviewTarget | null;
+  /** 退出工作区外文件独立预览，右侧面板回落工作区文件树 */
+  onExternalFilePreviewBack?: () => void;
+  /** 会话进度面板节点：挂 left 栏与 chat-section 平级（页面层组装数据与受控态） */
+  chatPaneCapsule?: React.ReactNode;
+  /** 资料库超链接 / 智能体 Page：在顶部图标下方的内容区展开，不占整列顶栏 */
+  pagePreview?: React.ReactNode;
+  /** 是否展示资料库 / Page 预览（与文件树互斥时由页面层计算） */
+  isPagePreviewVisible?: boolean;
 }
 
+// 内容区域
 const LeftContent: React.FC<LeftContentProps> = ({
+  pageCacheKey,
   isFileTreeVisible,
   effectiveAgent,
   isAppSidebarMode,
   headerProps,
   chatSessionProps,
   fileSidebarProps,
+  externalFilePreview,
+  onExternalFilePreviewBack,
+  chatPaneCapsule,
+  pagePreview,
+  isPagePreviewVisible = false,
 }) => {
+  const { effectiveNavigationStyle } = useUnifiedTheme();
+  const alignBrowserStyle3Title =
+    effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3 &&
+    !isImmersiveShell();
+  // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
+  const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
+
+  // 右侧面板（文件树/终端/云电脑）渲染条件：通用型智能体 + 面板可见 + 未隐藏
+  const showFileTreePanel =
+    effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+    isFileTreeVisible &&
+    !headerProps.hideTree;
+  // 资料库 / Page 也走这块内容区，避免预览顶到会话标题同一行
+  const showRightPanel = showFileTreePanel || isPagePreviewVisible;
+
   return (
     <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
       {/* 页面顶部: 标题区域 */}
@@ -42,10 +90,18 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['title-container-collapsed']]: isAppSidebarMode,
           })}
         >
-          <div className={cx('flex', 'items-center', 'gap-4')}>
-            {/* 应用智能体模式下，显示内容导航按钮 */}
+          <div
+            className={cx('flex', 'items-center', 'gap-4', {
+              [styles['browser-style3-title-leading']]: alignBrowserStyle3Title,
+            })}
+          >
+            {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
             <ConditionRender
-              condition={isAppSidebarMode && !headerProps.isAppSidebarVisible}
+              condition={
+                isAppSidebarMode &&
+                !headerProps.isAppSidebarVisible &&
+                !headerProps.hideMenu
+              }
             >
               <TooltipIcon
                 title={t('PC.Pages.Chat.expandNavigation')}
@@ -58,8 +114,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   />
                 }
               />
+            </ConditionRender>
 
-              {/* 新建会话 */}
+            {/* 新建会话；hideNew 时隐藏新建会话图标 */}
+            <ConditionRender
+              condition={
+                isAppSidebarMode &&
+                !headerProps.isAppSidebarVisible &&
+                !headerProps.hideNew
+              }
+            >
               <TooltipIcon
                 title={t('PC.Pages.Chat.newConversation')}
                 className={cx(styles['icon-box'])}
@@ -74,17 +138,18 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 }
               />
             </ConditionRender>
-            {/* 下拉重命名会话、删除会话 */}
-            {headerProps.renderTitle ? (
-              headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
-            ) : (
-              <DropdownChangeName
-                agentId={headerProps.agentId}
-                conversationInfo={headerProps.conversationInfo}
-                setConversationInfo={headerProps.setConversationInfo}
-                isAppSidebarMode={isAppSidebarMode}
-              />
-            )}
+            {/* 下拉重命名会话、删除会话；hideTitle 时隐藏会话主题 */}
+            {!headerProps.hideTitle &&
+              (headerProps.renderTitle ? (
+                headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
+              ) : (
+                <DropdownChangeName
+                  agentId={headerProps.agentId}
+                  conversationInfo={headerProps.conversationInfo}
+                  setConversationInfo={headerProps.setConversationInfo}
+                  isAppSidebarMode={isAppSidebarMode}
+                />
+              ))}
           </div>
 
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -105,32 +170,27 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 />
               )}
 
-            {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-            {headerProps.showSidebar &&
-              !isAppSidebarMode &&
-              !headerProps.isSidebarVisible && (
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.viewAgentDetails')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => {
-                    headerProps.hidePagePreview();
-                    // 先关闭文件树
-                    headerProps.closePreviewView();
-                    // 然后打开 AgentSidebar
-                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                    setTimeout(() => {
-                      headerProps.sidebarRef.current?.open();
-                    }, 100);
-                  }}
-                />
-              )}
+            <ConversationPanelActions
+              iconClassName={styles['icon-box']}
+              activeClassName={styles.active}
+              progress={
+                headerProps.hasCapsuleContent && !isAppSidebarMode
+                  ? {
+                      open: headerProps.isCapsulePanelOpen,
+                      running: headerProps.capsuleRunning,
+                      onClick: headerProps.handleToggleCapsulePanel,
+                    }
+                  : undefined
+              }
+              detail={
+                headerProps.showSidebar && !isAppSidebarMode
+                  ? {
+                      open: headerProps.isAgentDetailModalOpen,
+                      onClick: headerProps.handleOpenAgentDetail,
+                    }
+                  : undefined
+              }
+            />
 
             {/*打开预览页面*/}
             {!!effectiveAgent?.expandPageArea &&
@@ -145,74 +205,49 @@ const LeftContent: React.FC<LeftContentProps> = ({
                     />
                   }
                   onClick={() => {
-                    headerProps.sidebarRef.current?.close();
                     headerProps.closePreviewView(); // 关闭文件树
                     headerProps.handleOpenPreview(effectiveAgent);
                   }}
                 />
               )}
 
-            {/* 通用智能体, 有有效消息时，文件预览/智能体电脑切换按钮 */}
-            {headerProps.isShowFilePanel && (
-              <>
-                {/* 文件预览视图 */}
-                <TooltipIcon
-                  title={
-                    headerProps.isFileTreeIconActive
-                      ? t('PC.Pages.Chat.closeFilePreview')
-                      : t('PC.Pages.Chat.openFilePreview')
-                  }
-                  className={cx(styles['icon-box'], {
-                    [styles['active']]: headerProps.isFileTreeIconActive,
-                  })}
-                  icon={
-                    <SvgIcon
-                      name="icons-common-file_preview"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={headerProps.handleFileTreeVisible}
-                />
-
-                {/* 终端视图 */}
-                <TooltipIcon
-                  title={t(
-                    'PC.Components.ConversationBottomConsole.tabTerminal',
-                  )}
-                  className={cx(styles['icon-box'], {
-                    [styles['active']]: headerProps.isTerminalIconActive,
-                  })}
-                  icon={<CodeOutlined style={{ fontSize: 16 }} />}
-                  onClick={headerProps.handleOpenTerminalPanel}
-                />
-
-                {/* 智能体电脑视图 */}
-                <ConditionRender
-                  condition={
-                    headerProps.conversationInfo?.agent?.hideDesktop ===
-                    HideDesktopEnum.No
-                  }
-                >
-                  <TooltipIcon
-                    title={
-                      headerProps.isDesktopIconActive
-                        ? t('PC.Pages.Chat.closeAgentDesktop')
-                        : t('PC.Pages.Chat.openAgentDesktop')
+            <ConversationPanelActions
+              iconClassName={styles['icon-box']}
+              activeClassName={styles.active}
+              files={
+                headerProps.isShowFilePanel &&
+                headerProps.showFilePreview &&
+                !headerProps.hideTree
+                  ? {
+                      open: headerProps.isFileTreeIconActive,
+                      onClick: headerProps.handleFileTreeVisible,
+                      title: t(
+                        headerProps.isFileTreeIconActive
+                          ? 'PC.Pages.Chat.closeArtifacts'
+                          : 'PC.Pages.Chat.openArtifacts',
+                      ),
                     }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]: headerProps.isDesktopIconActive,
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-computer-star"
-                        style={{ fontSize: 16 }}
-                      />
+                  : undefined
+              }
+              terminal={
+                headerProps.isShowFilePanel && !headerProps.hideTerminal
+                  ? {
+                      open: headerProps.isTerminalIconActive,
+                      onClick: headerProps.handleOpenTerminalPanel,
                     }
-                    onClick={headerProps.handleOpenDesktopView}
-                  />
-                </ConditionRender>
-              </>
-            )}
+                  : undefined
+              }
+              desktop={
+                headerProps.isShowFilePanel && headerProps.isShowDesktop
+                  ? {
+                      open: headerProps.isDesktopIconActive,
+                      onClick: headerProps.handleOpenDesktopView,
+                    }
+                  : undefined
+              }
+            />
+
+            {/* 会话内搜索入口暂时移除（ConversationSearchPanel 组件保留，恢复时在此回挂） */}
 
             {/* 自定义右侧控件插槽（例如发布组件） */}
             {headerProps.renderHeaderRight?.({ effectiveAgent })}
@@ -220,20 +255,31 @@ const LeftContent: React.FC<LeftContentProps> = ({
         </div>
       </header>
 
-      {/* 页面主体: 内容区域 */}
+      {/* 页面主体: 内容区域（聊天区 vs 右侧面板可拖拽调宽，宽度持久化） */}
       <div className={cx(styles['main-content-box'])}>
-        {/* 聊天内容区域 */}
-        <div
-          className={cx(styles['chat-section'], {
-            [styles['file-tree-visible']]: isFileTreeVisible,
-          })}
-        >
-          <UnifiedChatSession {...chatSessionProps} />
-        </div>
-
-        {/* 通用型(TaskAgent)智能体专用文件树区域 */}
-        {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-          isFileTreeVisible && (
+        <ResizableSplit
+          className={cx('flex-1')}
+          minLeftWidth={430}
+          minRightWidth={420}
+          defaultLeftWidth={chatPanelWidth}
+          onResizeEnd={saveChatPanelWidthPercent}
+          left={
+            <div className={cx(styles['chat-pane'])}>
+              <div className={cx(styles['chat-section'])}>
+                <UnifiedChatSession
+                  {...chatSessionProps}
+                  showClearIcon={
+                    effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
+                  }
+                />
+              </div>
+              {/* 会话进度面板：挂 left 栏与 chat-section 平级，定位/容器查询上下文 = chat-pane */}
+              {chatPaneCapsule}
+            </div>
+          }
+          resetTrigger={showRightPanel ? 'visible' : 'hidden'}
+          rightHidden={!showRightPanel}
+          right={
             <div
               className={cx(
                 styles['file-tree-sidebar'],
@@ -242,15 +288,48 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 'overflow-hide',
               )}
             >
-              <FileTreePreviewPanel
-                {...fileSidebarProps}
-                className={cx(
-                  styles['file-tree-container'],
-                  fileSidebarProps.className,
-                )}
-              />
+              <div className={cx(styles['right-panel-body'])}>
+                {showFileTreePanel ? (
+                  <ConversationInstanceCacheSlot
+                    activeKey={pageCacheKey}
+                    active={showFileTreePanel}
+                    retain={showFileTreePanel}
+                    exclusive={fileSidebarProps.viewMode === 'desktop'}
+                    testId="conversation-workspace-cache"
+                  >
+                    {externalFilePreview ? (
+                      <ExternalFilePreview
+                        className={cx(styles['file-tree-container'])}
+                        cId={externalFilePreview.cId}
+                        targetDir={externalFilePreview.targetDir}
+                        relativePath={externalFilePreview.relativePath}
+                        onBack={onExternalFilePreviewBack}
+                      />
+                    ) : (
+                      <FileTreePreviewPanel
+                        {...fileSidebarProps}
+                        className={cx(
+                          styles['file-tree-container'],
+                          fileSidebarProps.className,
+                        )}
+                      />
+                    )}
+                  </ConversationInstanceCacheSlot>
+                ) : null}
+                {pagePreview ? (
+                  <div
+                    className={cx(styles['page-preview-in-content'], {
+                      [styles['page-preview-in-content-hidden']]:
+                        !isPagePreviewVisible,
+                    })}
+                  >
+                    {pagePreview}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          )}
+          }
+        />
       </div>
     </div>
   );

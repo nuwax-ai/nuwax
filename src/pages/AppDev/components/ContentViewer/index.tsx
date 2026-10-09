@@ -10,10 +10,10 @@ import {
   processImageContent,
 } from '@/utils/appDevUtils';
 // Button, Spin 已移除，使用 AppDevEmptyState 组件替代
+import ImageViewer from '@/components/business-component/ImageViewer';
 import React, { useMemo } from 'react';
 import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
-import ImageViewer from '../ImageViewer';
 import Preview, { type PreviewRef } from '../Preview';
 import styles from './index.less';
 

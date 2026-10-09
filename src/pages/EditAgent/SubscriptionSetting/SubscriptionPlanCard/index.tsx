@@ -1,10 +1,10 @@
 import ConditionRender from '@/components/ConditionRender';
+import { dict } from '@/services/i18nRuntime';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
+} from '@/types/interfaces/subscriptionPlan';
 import { Button, Switch } from 'antd';
 import classNames from 'classnames';
 import React from 'react';

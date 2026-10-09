@@ -1,7 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { submitSpecifiedFilesUpdate } from '@/services/appDev';
 import { t } from '@/services/i18nRuntime';
 import { apiPageUpdateProject } from '@/services/pageDev';
@@ -125,8 +124,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setPendingChanges,
       selectedElement,
     } = useModel('appDevDesign');
-
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // dev-monitor 错误信息收集
     const devMonitorErrorsRef = useRef<
@@ -558,10 +555,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
                 // 上传文件
                 const response = await fetch(UPLOAD_FILE_ACTION, {
+                  credentials: 'include',
                   method: 'POST',
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
-                  },
+
                   body: formData,
                 });
 
@@ -656,10 +652,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
               // 上传文件
               const response = await fetch(UPLOAD_FILE_ACTION, {
+                credentials: 'include',
                 method: 'POST',
-                headers: {
-                  Authorization: token ? `Bearer ${token}` : '',
-                },
+
                 body: formData,
               });
 

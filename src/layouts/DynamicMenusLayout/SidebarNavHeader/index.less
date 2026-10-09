@@ -1,0 +1,293 @@
+@import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
+
+.sidebar-nav-header {
+  flex-shrink: 0;
+  padding: 0 15px;
+
+  // 单栏（style3）主栏外内缩 15→10（2026-09-14）：左缘内容整体收紧，与二级列
+  // tm-side 10px 内缩同语义；行内 12px 缩进不动（图标基线 27→22）。经典布局
+  // 共用本组件，保持 15px 栅格不波及
+  :global(.xagi-nav-style3) & {
+    padding: 0 10px;
+  }
+
+  // 顶栏：原型 15px 栅格内再缩进 10px，操作区贴右侧 15px 基线
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 41px;
+    padding: 5px 0 0 4px;
+    box-sizing: border-box;
+  }
+
+  .header-logo {
+    height: 26px;
+    width: auto;
+    border-radius: 7px;
+    display: block;
+    cursor: pointer;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 20px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: @navRowHoverBg;
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    > svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:last-child > svg {
+      height: 22px;
+    }
+  }
+
+  // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
+  // 默认文字 #4b4a53 / normal；图标保持次级灰（2026-09-12 定调：hover 不高亮
+  // 图标）；选中见 .nav-item-active（图标品牌色）
+  .action-row,
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 33px;
+    padding: 7px 12px 7px 8px;
+    border-radius: 11px;
+    cursor: pointer;
+    color: #4b4a53;
+    font-size: 13.5px;
+    font-weight: normal;
+    line-height: normal;
+    transition: background-color 0.16s ease, color 0.16s ease;
+    user-select: none;
+
+    &:hover {
+      // 单栏四类行（菜单/项目/项目会话/任务会话）hover 一律同效：与项目行/
+      // 会话行同款灰底（Phase 1 统一交互态）。原型的白透底只适配其灰底画布，
+      // 且与项目/会话行的灰底并存两套皮，2026-09-12 定调统一灰底
+      background-color: @navRowHoverBg;
+    }
+  }
+
+  .new-task-row {
+    margin-top: 13px;
+  }
+
+  .action-icon,
+  .nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    // 原型 --icon：默认次级灰，仅选中态提亮为品牌色（hover 不高亮，2026-09-12 定调）
+    color: #94939e;
+    font-size: 16px;
+  }
+
+  .action-label,
+  .nav-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .action-shortcut {
+    flex-shrink: 0;
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+  }
+
+  // 导航行（菜单接口下发）
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
+  // 选中态（2026-09-12 原型 qm-item.active）：容器白卡、文字近黑
+  // #141416、图标品牌色（--icon-active）；字重按需求定调 500（原型 600），
+  // 默认态 normal
+  .nav-item-active {
+    .nav-row-selected();
+
+    // 单栏（style3）选中底不加阴影（2026-09-12 需求）：平 pill 观感；
+    // 经典布局走 mixin 默认保持白卡阴影
+    :global(.xagi-nav-style3) & {
+      box-shadow: none;
+    }
+
+    font-weight: 500;
+    color: #141416;
+
+    .action-icon,
+    .nav-item-icon {
+      color: @colorPrimary;
+    }
+  }
+
+  // 女娲应用多开标签（插在系统菜单与自定义菜单之间，顶部带分割线；内存态刷新即失）
+  .app-tab-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    // 顶部分割线：与侧栏描边同源颜色，上下留白与菜单行呼吸感对齐
+    margin: 4px 0 2px;
+    padding-top: 8px;
+    border-top: 1px solid var(--xagi-layout-border-primary);
+    // 标签无上限，防多开挤压下方会话滚动区：超高自身滚动
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+
+  // 标签行：几何与 .nav-item 完全一致（左对齐菜单，无子项缩进）
+  .app-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 33px;
+    padding: 7px 12px;
+    border-radius: 11px;
+    cursor: pointer;
+    color: #4b4a53;
+    font-size: 13.5px;
+    font-weight: normal;
+    line-height: normal;
+    transition: background-color 0.16s ease, color 0.16s ease;
+    user-select: none;
+
+    &:hover {
+      background-color: @navRowHoverBg;
+    }
+  }
+
+  // 应用图标为下发 URL（img），非 SvgIcon 字标。尺寸 20px 对齐菜单行的
+  // SvgIcon 实际渲染尺寸（组件默认 fontSize 20 内联生效，CSS 类的 16 压不过）
+  .app-tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+
+    img {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+  }
+
+  .app-tab-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // 标签行选中态：同 .nav-item-active（白卡平 pill、文字近黑、字重 500）
+  .app-tab-item-active {
+    .nav-row-selected();
+
+    :global(.xagi-nav-style3) & {
+      box-shadow: none;
+    }
+
+    font-weight: 500;
+    color: #141416;
+  }
+
+  // 右上角关闭钮：桌面端 hover 行时显示（范式同 MenuListItem 的
+  // .collectIcon）；触屏设备无 hover，常显否则永远点不到
+  .app-tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.16s ease;
+
+    &:hover {
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      visibility: hidden;
+    }
+  }
+
+  // 标签行操作区（刷新/复制链接/关闭）：区内 2px 紧凑排布，控制触屏
+  // 常显三枚 icon 的固定占宽，label 由既有 ellipsis 截断让位
+  .app-tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-left: 2px;
+  }
+
+  // 刷新/链接操作钮：几何与显隐范式同 .app-tab-close（桌面 hover 行显示、
+  // 触屏常显）；SvgIcon 须显式传 style fontSize（组件默认 20 内联压过类字号）
+  .app-tab-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    cursor: pointer;
+    transition: color 0.16s ease;
+
+    &:hover {
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      visibility: hidden;
+    }
+  }
+
+  // hover 行时显示操作钮：须整链后代选择器——若在 .app-tab-close 内用
+  // `.app-tab-item:hover &` 反引父，& 带上 .sidebar-nav-header 父链会编译出
+  // 双容器死选择器，hover 永不生效（触屏无 hover 不命中 media，关闭钮常显）
+  @media (hover: hover) and (pointer: fine) {
+    .app-tab-item:hover .app-tab-close,
+    .app-tab-item:hover .app-tab-action {
+      visibility: visible;
+    }
+  }
+}

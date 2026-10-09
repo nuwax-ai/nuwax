@@ -1,0 +1,610 @@
+import { resetDesktopShellPreviewRuntimeForTest } from '@/utils/desktopShellPreview';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  auth,
+  hasHostBridge,
+  host,
+  hostBridge,
+  isDesktopHost,
+  isImmersiveShell,
+  isMac,
+  isShellWindow,
+  isWinLinuxShell,
+  native,
+  needsTopRightAvoid,
+  shellAvoid,
+  syncShellAvoidanceCss,
+} from './index';
+
+/**
+ * hostBridge 统一对外接入层单测：
+ * 验证「桥存在透传 / 桥缺失 no-op / 桥抛错降级」三态行为，
+ * 确保浏览器环境（无桥）与桌面宿主（有桥）调用点都安全。
+ */
+describe('hostBridge（统一对外接入层）', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  let original: unknown;
+
+  beforeEach(() => {
+    original = (window as any).NuwaClawBridge;
+  });
+  afterEach(() => {
+    if (original === undefined) delete (window as any).NuwaClawBridge;
+    else (window as any).NuwaClawBridge = original;
+    warnSpy.mockClear();
+    resetDesktopShellPreviewRuntimeForTest();
+  });
+
+  /** 桌面适配用例的商业宿主桥（产品规则 2026-09-13：沉浸避让等仅商业宿主启用） */
+  const commercialBridge = () => ({
+    auth: {},
+    native: {},
+    host: { getProduct: () => 'nuwax' },
+  });
+
+  describe('layout.setNewTaskAvailable', () => {
+    it('桥能力存在 → 透传启用与禁用状态', () => {
+      const setNewTaskAvailable = vi.fn();
+      (window as any).NuwaClawBridge = {
+        layout: { setNewTaskAvailable },
+      };
+      hostBridge.layout.setNewTaskAvailable(true);
+      hostBridge.layout.setNewTaskAvailable(false);
+      expect(setNewTaskAvailable.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('浏览器无桥或旧宿主缺少能力 → 静默忽略', () => {
+      delete (window as any).NuwaClawBridge;
+      expect(() => hostBridge.layout.setNewTaskAvailable(false)).not.toThrow();
+      (window as any).NuwaClawBridge = { layout: {} };
+      expect(() => hostBridge.layout.setNewTaskAvailable(true)).not.toThrow();
+    });
+
+    it('宿主调用失败 → 不影响页面导航', () => {
+      (window as any).NuwaClawBridge = {
+        layout: {
+          setNewTaskAvailable: () => {
+            throw new Error('host unavailable');
+          },
+        },
+      };
+      expect(() => hostBridge.layout.setNewTaskAvailable(true)).not.toThrow();
+    });
+  });
+
+  describe('hasHostBridge', () => {
+    it('桥存在 → true（聚合对象与具名导出一致）', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      expect(hasHostBridge()).toBe(true);
+      expect(hostBridge.hasHostBridge()).toBe(true);
+    });
+    it('桥缺失 → false', () => {
+      delete (window as any).NuwaClawBridge;
+      expect(hasHostBridge()).toBe(false);
+    });
+  });
+
+  describe('isShellWindow / isImmersiveShell（独立窗口标记）', () => {
+    const originalHref = window.location.href;
+    beforeEach(() => {
+      // 独立窗口标记有 sessionStorage 粘滞，逐例清空保证互不污染。
+      window.sessionStorage.clear();
+    });
+    afterEach(() => {
+      window.history.replaceState(null, '', originalHref);
+      window.sessionStorage.clear();
+    });
+    it('URL 带 _shell=1 → 独立窗口；桌面端下沉浸式判定为 false（恢复浏览器式布局）', () => {
+      (window as any).NuwaClawBridge = commercialBridge();
+      window.history.replaceState(null, '', '/agent/123?_shell=1');
+      expect(isShellWindow()).toBe(true);
+      expect(isImmersiveShell()).toBe(false);
+    });
+    it('无 _shell 标记 + 商业宿主 → 沉浸式主窗口', () => {
+      (window as any).NuwaClawBridge = commercialBridge();
+      window.history.replaceState(null, '', '/home');
+      expect(isShellWindow()).toBe(false);
+      expect(isImmersiveShell()).toBe(true);
+    });
+    it('社区宿主（getProduct=nuwaclaw）→ 非沉浸，与浏览器同形态（2026-09-13 产品规则）', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      window.history.replaceState(null, '', '/home');
+      expect(hasHostBridge()).toBe(true);
+      expect(isDesktopHost()).toBe(false);
+      expect(isImmersiveShell()).toBe(false);
+    });
+    it('粘滞：曾带 _shell=1 的窗口 SPA 路由到无标记路径仍为独立窗口', () => {
+      (window as any).NuwaClawBridge = commercialBridge();
+      window.history.replaceState(null, '', '/agent/123?_shell=1');
+      expect(isShellWindow()).toBe(true);
+      // 模拟 SPA 路由/登录重定向重写 URL 丢掉 query
+      window.history.replaceState(null, '', '/home');
+      expect(isShellWindow()).toBe(true);
+      expect(isImmersiveShell()).toBe(false);
+    });
+    it('浏览器端（无桥）即使误带 _shell → isImmersiveShell 仍 false', () => {
+      delete (window as any).NuwaClawBridge;
+      window.history.replaceState(null, '', '/home?_shell=1');
+      expect(isImmersiveShell()).toBe(false);
+    });
+  });
+
+  describe('host（宿主产品身份，可选消费）', () => {
+    it('商业宿主 host.getProduct → nuwawork（聚合对象一致）', () => {
+      (window as any).NuwaClawBridge = {
+        auth: {},
+        host: { getProduct: () => 'nuwawork' },
+      };
+      expect(host.getProduct()).toBe('nuwawork');
+      expect(hostBridge.host.getProduct()).toBe('nuwawork');
+    });
+    it('社区宿主 → nuwaclaw', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      expect(host.getProduct()).toBe('nuwaclaw');
+    });
+    it('浏览器（无桥）→ null', () => {
+      delete (window as any).NuwaClawBridge;
+      expect(host.getProduct()).toBeNull();
+    });
+    it('旧宿主桥无 host 命名空间 → null（向后兼容）', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      expect(host.getProduct()).toBeNull();
+    });
+    it('返回非契约值 → null（不透传未知标识）', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwa-work' },
+      };
+      expect(host.getProduct()).toBeNull();
+    });
+    it('getProduct 抛错 → null（降级不抛出）', () => {
+      (window as any).NuwaClawBridge = {
+        host: {
+          getProduct: () => {
+            throw new Error('boom');
+          },
+        },
+      };
+      expect(host.getProduct()).toBeNull();
+    });
+  });
+
+  describe('native.openWindow（新开独立窗口）', () => {
+    it('桥返回 success → 透传', async () => {
+      const openWindow = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openWindow } };
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: true,
+      });
+      expect(openWindow).toHaveBeenCalledWith('/agent/123');
+    });
+    it('无桥 → {success:false}（jumpTo 分流据此回落页内导航）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: false,
+      });
+    });
+    it('桥抛错 → 降级 {success:false} 且 warn', async () => {
+      (window as any).NuwaClawBridge = {
+        native: { openWindow: vi.fn().mockRejectedValue(new Error('boom')) },
+      };
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: false,
+        error: 'boom',
+      });
+    });
+  });
+
+  describe('native.openClientSettings（打开壳客户端设置弹窗）', () => {
+    it('桥返回 success → 透传', async () => {
+      const openClientSettings = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openClientSettings } };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: true,
+      });
+      expect(openClientSettings).toHaveBeenCalledWith();
+    });
+    it('无桥 / 旧版宿主未实现 → {success:false}（调用方降级）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+      });
+      (window as any).NuwaClawBridge = { native: {} };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+      });
+    });
+    it('桥抛错 → 降级 {success:false} 且带 error', async () => {
+      (window as any).NuwaClawBridge = {
+        native: {
+          openClientSettings: vi.fn().mockRejectedValue(new Error('boom')),
+        },
+      };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+        error: 'boom',
+      });
+    });
+  });
+
+  describe('平台判定与避让（isMac / needsTopRightAvoid / shellAvoid）', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+    it('mac 平台 → isMac true；有桥也无需右上避让（红绿灯在左上）', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = { auth: {} };
+      expect(isMac()).toBe(true);
+      expect(needsTopRightAvoid()).toBe(false);
+      expect(hostBridge.isMac()).toBe(true);
+    });
+    it('Windows 商业宿主 → 需要右上避让（自绘三键贴角）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      expect(isMac()).toBe(false);
+      expect(isWinLinuxShell()).toBe(true);
+      expect(needsTopRightAvoid()).toBe(true);
+    });
+    it('Windows 社区宿主 → 无需避让（与浏览器同形态）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      expect(isWinLinuxShell()).toBe(false);
+      expect(needsTopRightAvoid()).toBe(false);
+    });
+    it('Windows 浏览器（无桥）→ 不需要避让', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      delete (window as any).NuwaClawBridge;
+      expect(needsTopRightAvoid()).toBe(false);
+    });
+    it('开发态浏览器预览参数复用真实桌面平台与沉浸避让分支', () => {
+      const originalHref = window.location.href;
+      delete (window as any).NuwaClawBridge;
+      try {
+        window.history.replaceState(
+          null,
+          '',
+          '/home?__desktop_shell_preview=windows',
+        );
+        expect(hasHostBridge()).toBe(false);
+        expect(isDesktopHost()).toBe(true);
+        expect(isImmersiveShell()).toBe(true);
+        expect(isMac()).toBe(false);
+        expect(isWinLinuxShell()).toBe(true);
+        expect(needsTopRightAvoid()).toBe(true);
+
+        window.history.replaceState(
+          null,
+          '',
+          '/home?__desktop_shell_preview=macos',
+        );
+        expect(isMac()).toBe(true);
+        expect(isWinLinuxShell()).toBe(false);
+        expect(needsTopRightAvoid()).toBe(false);
+      } finally {
+        window.history.replaceState(null, '', originalHref);
+      }
+    });
+    it('独立窗口（_shell=1）→ 无需右上避让（系统标题栏承担顶部）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      const originalHref = window.location.href;
+      window.history.replaceState(null, '', '/agent/123?_shell=1');
+      expect(needsTopRightAvoid()).toBe(false);
+      window.history.replaceState(null, '', originalHref);
+    });
+    it('shellAvoid 暴露统一避让尺寸（聚合对象与具名导出同源）', () => {
+      expect(shellAvoid.TOP).toBeGreaterThan(0);
+      expect(shellAvoid.RIGHT).toBeGreaterThan(0);
+      expect(hostBridge.shellAvoid).toBe(shellAvoid);
+    });
+  });
+
+  describe('syncShellAvoidanceCss（沉浸避让状态 → html 类 + CSS 变量）', () => {
+    const root = document.documentElement;
+    const vars = [
+      '--immersive-shell-top',
+      '--immersive-shell-content-top',
+      '--immersive-shell-toolbar',
+      '--immersive-shell-fullscreen-top',
+      '--immersive-shell-right',
+    ] as const;
+
+    beforeEach(() => {
+      // 独立窗口标记 sessionStorage 粘滞，逐例清空防止前面用例泄漏污染。
+      window.sessionStorage.clear();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      root.classList.remove('immersive-shell', 'immersive-shell-frameless');
+      vars.forEach((name) => root.style.removeProperty(name));
+      window.sessionStorage.clear();
+    });
+
+    it('沉浸态（mac 主窗口）→ 类与三变量就位，值来自 shellAvoid；mac 无 frameless', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('immersive-shell')).toBe(true);
+      expect(root.classList.contains('immersive-shell-frameless')).toBe(false);
+      expect(root.style.getPropertyValue('--immersive-shell-top')).toBe(
+        `${shellAvoid.TOP}px`,
+      );
+      // mac 独立全屏页不做顶部退让（红绿灯/图标簇不占内容区页头位置）；
+      // 固定定位浮层（全高 Drawer）mac 无右侧窗控冲突，同恒 0（禅道 2429）
+      expect(root.style.getPropertyValue('--immersive-shell-toolbar')).toBe(
+        '0px',
+      );
+      expect(root.style.getPropertyValue('--immersive-shell-content-top')).toBe(
+        '0px',
+      );
+      expect(root.style.getPropertyValue('--immersive-shell-right')).toBe(
+        `${shellAvoid.RIGHT}px`,
+      );
+    });
+
+    it('沉浸态（Windows 主窗口）→ 追加 immersive-shell-frameless 且工具栏避让保留', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('immersive-shell-frameless')).toBe(true);
+      expect(root.style.getPropertyValue('--immersive-shell-toolbar')).toBe(
+        `${shellAvoid.TOOLBAR}px`,
+      );
+      // 固定定位浮层顶部退让与内容区同源（全高 Drawer 关闭键不再塞进
+      // 壳顶行透明带，禅道 2429）
+      expect(root.style.getPropertyValue('--immersive-shell-content-top')).toBe(
+        `${shellAvoid.CONTENT_TOP}px`,
+      );
+    });
+
+    it('社区宿主 → 非沉浸，不铺类与变量（与浏览器同形态）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('immersive-shell')).toBe(false);
+      expect(root.classList.contains('immersive-shell-frameless')).toBe(false);
+      vars.forEach((name) =>
+        expect(root.style.getPropertyValue(name)).toBe(''),
+      );
+    });
+
+    it('非沉浸（无桥浏览器）→ 此前写入的类与变量全部清理（规则天然失效）', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      syncShellAvoidanceCss();
+      delete (window as any).NuwaClawBridge;
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('immersive-shell')).toBe(false);
+      expect(root.classList.contains('immersive-shell-frameless')).toBe(false);
+      vars.forEach((name) =>
+        expect(root.style.getPropertyValue(name)).toBe(''),
+      );
+    });
+
+    it('幂等：连续调用两次状态不叠加、值不变', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = commercialBridge();
+      syncShellAvoidanceCss();
+      syncShellAvoidanceCss();
+      // 类名按 token 精确统计（小写子串比较会被 immersive-shell-frameless 误判）
+      const shellClassCount = root.className
+        .split(/\s+/)
+        .filter((c) => c === 'immersive-shell').length;
+      expect(shellClassCount).toBe(1);
+      expect(root.style.getPropertyValue('--immersive-shell-toolbar')).toBe(
+        `${shellAvoid.TOOLBAR}px`,
+      );
+    });
+
+    it('聚合对象同源导出', () => {
+      expect(hostBridge.syncShellAvoidanceCss).toBe(syncShellAvoidanceCss);
+    });
+  });
+
+  describe('auth.getContext', () => {
+    it('透传宿主当前业务域与网关信息', async () => {
+      const context = {
+        businessOrigin: 'https://tenant.example:8443',
+        gatewayOrigin: 'http://127.0.0.1:46801',
+        loadMode: 'gateway',
+      };
+      (window as any).NuwaClawBridge = {
+        auth: { getContext: vi.fn().mockResolvedValue(context) },
+      };
+      await expect(hostBridge.auth.getContext()).resolves.toEqual(context);
+    });
+    it('普通浏览器与旧宿主返回 null', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.getContext()).resolves.toBeNull();
+      (window as any).NuwaClawBridge = { auth: {} };
+      await expect(auth.getContext()).resolves.toBeNull();
+    });
+    it('桥调用失败返回 null', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          getContext: vi.fn().mockRejectedValue(new Error('unavailable')),
+        },
+      };
+      await expect(auth.getContext()).resolves.toBeNull();
+    });
+  });
+
+  describe('cookie session bridge', () => {
+    it('validates an already stored cookie without passing a token', async () => {
+      const syncSession = vi.fn(async () => true);
+      const beginLogin = vi.fn(async () => true);
+      (window as any).NuwaClawBridge = { auth: { syncSession, beginLogin } };
+      await expect(auth.syncSession()).resolves.toBe(true);
+      await expect(auth.beginLogin()).resolves.toBe(true);
+      expect(syncSession).toHaveBeenCalledWith();
+      expect(beginLogin).toHaveBeenCalledWith();
+    });
+    it('returns false for a browser or an old host bridge', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.syncSession()).resolves.toBe(false);
+      (window as any).NuwaClawBridge = { auth: {} };
+      await expect(auth.syncSession()).resolves.toBe(false);
+    });
+  });
+
+  describe('auth.getToken', () => {
+    it('桥返回 token → 透传', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: { getToken: async () => 'abc' },
+      };
+      await expect(auth.getToken()).resolves.toBe('abc');
+    });
+    it('无桥 → null（no-op）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.getToken()).resolves.toBeNull();
+    });
+    it('getToken 未实现 → null', async () => {
+      (window as any).NuwaClawBridge = { auth: {} };
+      await expect(auth.getToken()).resolves.toBeNull();
+    });
+    it('桥抛错 → 降级 null 且 warn', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          getToken: async () => {
+            throw new Error('x');
+          },
+        },
+      };
+      await expect(auth.getToken()).resolves.toBeNull();
+      expect(warnSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('auth.persistToken', () => {
+    it('调宿主 persistToken 并透传结果', async () => {
+      const fn = vi.fn(async () => true);
+      (window as any).NuwaClawBridge = { auth: { persistToken: fn } };
+      await expect(auth.persistToken('t')).resolves.toBe(true);
+      expect(fn).toHaveBeenCalledWith('t');
+    });
+    it('无桥 → false', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.persistToken('t')).resolves.toBe(false);
+    });
+    it('桥抛错 → 降级 false', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          persistToken: async () => {
+            throw new Error('x');
+          },
+        },
+      };
+      await expect(auth.persistToken('t')).resolves.toBe(false);
+    });
+  });
+
+  describe('auth.clear', () => {
+    it('调宿主 clear', async () => {
+      const fn = vi.fn(async () => true);
+      (window as any).NuwaClawBridge = { auth: { clear: fn } };
+      await auth.clear();
+      expect(fn).toHaveBeenCalled();
+    });
+    it('无桥 → 不抛（no-op）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.clear()).resolves.toBeUndefined();
+    });
+    it('桥抛错 → 吞掉不抛（不阻塞 nuwax 自身登出）', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          clear: async () => {
+            throw new Error('x');
+          },
+        },
+      };
+      await expect(auth.clear()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('native.saveFile', () => {
+    it('prefers file capability and returns the real write result', async () => {
+      const file = vi.fn(async () => ({
+        success: true,
+        path: '/tmp/report.json',
+      }));
+      const image = vi.fn();
+      (window as any).NuwaClawBridge = {
+        native: { saveFile: file, saveImage: image },
+      };
+      expect(await native.saveFile('/report.json', 'report.json')).toEqual({
+        success: true,
+        path: '/tmp/report.json',
+      });
+      expect(file).toHaveBeenCalledWith('/report.json', 'report.json');
+      expect(image).not.toHaveBeenCalled();
+    });
+    it('keeps old shells compatible through saveImage', async () => {
+      const image = vi.fn(async () => ({ success: true }));
+      (window as any).NuwaClawBridge = { native: { saveImage: image } };
+      expect(await native.saveFile('/report.zip', 'report.zip')).toEqual({
+        success: true,
+      });
+      expect(image).toHaveBeenCalledWith('/report.zip', 'report.zip');
+    });
+    it('does not retry cancellation or a file save failure through image saving', async () => {
+      const image = vi.fn();
+      const file = vi
+        .fn()
+        .mockResolvedValueOnce({ success: false, canceled: true })
+        .mockRejectedValueOnce(new Error('disk full'));
+      (window as any).NuwaClawBridge = {
+        native: { saveFile: file, saveImage: image },
+      };
+      expect(await native.saveFile('/report.json')).toEqual({
+        success: false,
+        canceled: true,
+      });
+      expect(await native.saveFile('/report.json')).toEqual({
+        success: false,
+        error: 'disk full',
+      });
+      expect(image).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('native.saveImage', () => {
+    it('调宿主 saveImage 透传结果', async () => {
+      const fn = vi.fn(async () => ({ success: true, path: '/tmp/a.png' }));
+      (window as any).NuwaClawBridge = { native: { saveImage: fn } };
+      const r = await native.saveImage('http://x/a.png');
+      expect(r.success).toBe(true);
+      expect(r.path).toBe('/tmp/a.png');
+      expect(fn).toHaveBeenCalledWith('http://x/a.png', undefined);
+    });
+    it('带 filename → 透传', async () => {
+      const fn = vi.fn(async () => ({ success: true }));
+      (window as any).NuwaClawBridge = { native: { saveImage: fn } };
+      await native.saveImage('http://x/a.png', 'pic.png');
+      expect(fn).toHaveBeenCalledWith('http://x/a.png', 'pic.png');
+    });
+    it('无桥 → {success:false}（浏览器端不拦截）', async () => {
+      delete (window as any).NuwaClawBridge;
+      expect(await native.saveImage('x')).toEqual({ success: false });
+    });
+    it('桥抛错 → {success:false,error}', async () => {
+      (window as any).NuwaClawBridge = {
+        native: {
+          saveImage: async () => {
+            throw new Error('boom');
+          },
+        },
+      };
+      const r = await native.saveImage('x');
+      expect(r.success).toBe(false);
+      expect(r.error).toBe('boom');
+    });
+  });
+});

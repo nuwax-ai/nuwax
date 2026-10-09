@@ -1,0 +1,72 @@
+/**
+ * 统一专家卡弹窗（共享包装）
+ * @description 专家付费拦截用的 Modal + ExpertSummonCard 组合纯展示包装：
+ * 宽度随内容自适应、居中、无 footer；详情复核/套餐订阅/召唤在
+ * ExpertSummonCard 内自闭环，外部只需传入专家信息与回调。
+ * 消费方：系统/团队广场（Square、SpaceSquare）付费智能体、
+ * 专家&专家团页（ExpertSkillConnector）付费专家——与能力弹窗
+ * （ExpertListView 内聚的付费门）同源同款：同卡同 Modal 定制样式
+ * （内容区去内边距/透明背景，见 index.less），拦截口径一致
+ * （先按 /agent/:id 详情复核，确认付费未订阅才弹）。
+ *
+ * 用法：
+ * ```tsx
+ * <ExpertSummonModal
+ *   open={!!expertPaymentItem}
+ *   expert={expertPaymentItem ? mapToCardInfo(expertPaymentItem) : null}
+ *   onClose={() => setExpertPaymentItem(null)}
+ *   onSummon={(expert, subscribed) => ...}
+ * />
+ * ```
+ */
+
+import ExpertSummonCard, {
+  type ExpertSummonCardInfo,
+} from '@/components/business-component/ExpertSummonCard';
+import { Modal } from 'antd';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+export type { ExpertSummonCardInfo };
+
+export interface ExpertSummonModalProps {
+  /** 弹窗开关（expert 为 null 时强制关闭） */
+  open: boolean;
+  /** 专家信息（null 时不渲染卡片内容） */
+  expert: ExpertSummonCardInfo | null;
+  /** 关闭回调（遮罩/关闭按钮/Escape） */
+  onClose: () => void;
+  /** 卡内召唤放行回调（subscribed=true 表示经卡内复核/订阅确认已订阅） */
+  onSummon: (expert: ExpertSummonCardInfo, subscribed?: boolean) => void;
+}
+
+const ExpertSummonModal: React.FC<ExpertSummonModalProps> = ({
+  open,
+  expert,
+  onClose,
+  onSummon,
+}) => (
+  <Modal
+    open={open && expert !== null}
+    onCancel={onClose}
+    footer={null}
+    // 宽度随内容自适应，不与宿主弹窗/页面对齐
+    width="fit-content"
+    centered
+    destroyOnHidden
+    // 钉死基础层级（bug 2489，同 2439 先例）：未钉 zIndex 的 antd Modal 会向内
+    // 注入 1100 的 zIndex 上下文，卡内 EllipsisTooltip 等嵌套弹层按 useZIndex
+    // 语义升到 1200，越过客户端壳工具栏固定层（1099–1101）盖住工具栏。
+    // 固定 1000 后嵌套弹层回到 1000+ 低区间；本弹窗是付费专家进收银台链路的
+    // 拦截弹层，与 PaymentSubscriptionModal 同批收敛。
+    zIndex={1000}
+    className={cx(styles['expert-summon-modal'])}
+  >
+    {expert && <ExpertSummonCard expert={expert} onSummon={onSummon} />}
+  </Modal>
+);
+
+export default ExpertSummonModal;

@@ -1,14 +1,16 @@
 import { XModalForm } from '@/components/ProComponents';
+import UploadAvatar from '@/components/UploadAvatar';
 import { t } from '@/services/i18nRuntime';
 import { ProFormText, ProFormTextArea } from '@ant-design/pro-components';
 import { Form } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export interface CategoryItem {
   id: string;
   name: string;
   code: string;
   description: string;
+  icon?: string;
   created?: string;
 }
 
@@ -30,6 +32,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   onFinish,
 }) => {
   const [form] = Form.useForm();
+  const [iconUrl, setIconUrl] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -39,11 +42,17 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           code: initialData.code,
           description: initialData.description,
         });
+        setIconUrl(initialData.icon || '');
       } else {
         form.resetFields();
+        setIconUrl('');
       }
     }
   }, [open, mode, initialData, form]);
+
+  const handleFinish = async (values: any) => {
+    return onFinish({ ...values, icon: iconUrl || '' });
+  };
 
   return (
     <XModalForm
@@ -66,8 +75,18 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           submitText: t('PC.Common.Global.save'),
         },
       }}
-      onFinish={onFinish}
+      onFinish={handleFinish}
     >
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 8 }}>
+          {t('PC.Components.CreateAgent.iconLabel')}
+        </div>
+        <UploadAvatar
+          onUploadSuccess={setIconUrl}
+          imageUrl={iconUrl}
+          svgIconName="icons-workspace-agent"
+        />
+      </div>
       <ProFormText
         name="name"
         label={t('PC.Pages.SystemConfigCategoryModal.name')}

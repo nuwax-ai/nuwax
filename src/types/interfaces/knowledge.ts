@@ -225,8 +225,9 @@ export interface KnowledgeRawSegmentUpdateParams {
 }
 
 // 知识库分段配置 - 数据列表查询
+// spaceId 可选：按 docId 定位文档的场景（如原文对照）可不传
 export type KnowledgeRawSegmentListParams = TablePageRequest<{
-  spaceId: number;
+  spaceId?: number;
   docId: number;
 }>;
 
@@ -407,6 +408,7 @@ export interface RawSegmentInfoProps {
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo?: KnowledgeDocumentInfo | null;
+  onSegmentSelect?: (segment: KnowledgeRawSegmentInfo | null) => void;
 }
 
 // 本地文档弹窗组件
@@ -436,6 +438,10 @@ export interface CreateSetProps {
   form: FormInstance;
   autoSegmentConfigFlag: boolean;
   onChoose: (flag: boolean) => void;
+  /** AI 分段开关当前值（新导入流程传入） */
+  isAiSegment?: boolean;
+  /** AI 分段开关切换回调 */
+  onAiSegmentChoose?: (flag: boolean) => void;
 }
 
 // 数据处理组件
@@ -469,6 +475,8 @@ export type KnowledgeQaListParams = TablePageRequest<{
   question: string;
   // 知识库ID
   kbId: number;
+  // 文档ID筛选(不传=全部, 0=未关联文档, 具体值=该文档)
+  docId?: number;
 }>;
 
 // 知识库问答 - 数据更新请求参数

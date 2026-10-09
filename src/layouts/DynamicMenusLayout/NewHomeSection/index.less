@@ -1,9 +1,11 @@
 @import '@/styles/token.less';
+@import '@/styles/scrollbar.less';
 
-@sectionMarginLeft: -16px;
-@sectionMarginTop: -9px;
-@listItemGap: 4px;
-@listMarginRight: -8px;
+@sectionMarginLeft: 0;
+@sectionMarginTop: 0;
+@listItemGap: 0;
+@listMarginRight: 0;
+@projectSectionHeaderHeight: 36px;
 
 .new-home-section {
   display: flex;
@@ -13,6 +15,210 @@
   margin-left: @sectionMarginLeft;
   margin-top: @sectionMarginTop;
 
+  // ===== 单栏（style3）分组头：项目/任务两个折叠分组（原型 .tabs/.tab 移植） =====
+  .section-tabs {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    flex-shrink: 0;
+    margin-top: 15px;
+    padding: 0 15px 0 24px;
+    cursor: pointer;
+    user-select: none;
+
+    .section-tab-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: @navSecondMenuAdaptiveTextSecondary;
+    }
+
+    .section-tab-chev {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      transition: transform 0.2s ease;
+      // 尺寸由 SvgIcon style.fontSize 传入(组件内联字号优先)，此处只管颜色与折叠旋转
+    }
+
+    &.section-tabs-collapsed .section-tab-chev {
+      transform: rotate(-90deg);
+    }
+  }
+
+  // 任务分组头：滚动区内、项目列表下方；与项目头平级，左缘同 15px 垂直对齐
+  // （原型 .tabs.task-tabs 带 30px 缩进，按需求定调改为平级不缩进）
+  .task-section-tabs {
+    margin-top: 6px;
+    padding: 2px 15px 0 24px;
+  }
+
+  // 分组头吸顶；仅项目头可见时，任务头向下偏移，避免互相覆盖。
+  // margin-top 并入 padding-top——吸顶条整块不透明，滚动内容不会从头顶缝隙穿出
+  .section-tabs-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    height: @projectSectionHeaderHeight;
+    box-sizing: border-box;
+    margin-top: 0;
+    padding-top: 15px;
+    // 吸顶条背景必须与侧栏可见底色一致：@navSecondMenuBg(color-bg-layout) 在
+    // antd css-var 作用域内被通用主题重声明为 #F5F5F5，比侧栏实际灰底
+    // (layout-bg-secondary=#F2F2F2)浅一档，列表顶部会显出一条浅色带
+    background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
+
+    // 任务头：原 margin 6px + padding 2px 并入
+    &.task-section-tabs {
+      top: 0;
+      height: 28px;
+      padding-top: 8px;
+
+      &.task-section-tabs-with-project {
+        top: @projectSectionHeaderHeight;
+      }
+    }
+  }
+
+  .task-list-section {
+    flex-shrink: 0;
+  }
+
+  // 单栏项目列表：padding 7/15/16/15（右侧 15px 与顶部导航菜单项右缘对齐，
+  // 均止于 x=245；原右 7px 使列表比导航宽出 8px）。
+  // 原文件尾曾二次声明同名规则覆盖此处的 0 15px 16px，现按实际生效值并入，级联结果不变
+  .project-list-section {
+    flex-shrink: 0;
+    padding: 7px 15px 16px;
+  }
+
+  .task-load-more {
+    display: block;
+    width: calc(100% - 20px);
+    margin: 0 10px 12px;
+    padding: @paddingXs @paddingSm;
+    border: 0;
+    border-radius: @borderRadiusSm;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    font-family: inherit;
+    font-size: @fontSizeSm;
+    line-height: inherit;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: @colorFillQuaternary;
+      color: @navSecondMenuAdaptiveTextSecondary;
+    }
+
+    &:focus-visible {
+      outline: @lineWidthBold solid @colorPrimary;
+      outline-offset: -2px;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
+  // 单栏（style3）主栏外内缩 15→10（2026-09-14，与 SidebarNavHeader 同批）：
+  // 分组头文字左缘 24→19、列表行外缘 15→10，整列相对关系原样平移；经典布局
+  // （.tabs 双 tab 线）不在此作用域，维持 15px 栅格
+  :global(.xagi-nav-style3) & {
+    .section-tabs,
+    .task-section-tabs {
+      padding-right: 10px;
+      padding-left: 19px;
+    }
+
+    .project-list-section,
+    .conversation-list-wrapper .conversation-list {
+      padding-right: 10px;
+      padding-left: 10px;
+    }
+  }
+
+  // ===== 经典布局（style1/2）tab 切换：维持改版前形态，仅任务/项目两项 =====
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    position: relative;
+    border-bottom: 1px solid @colorBorderSecondary;
+    margin: 15px 0 0;
+    padding: 0;
+
+    // 上方紧邻经典布局搜索栏，顶距收紧
+    &.tabs-under-search {
+      margin-top: 8px;
+    }
+
+    .tab {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      font-size: 14.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s ease, transform 0.15s ease;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+
+      // 按压反馈：轻微缩放，松手回弹
+      &:active {
+        transform: scale(0.96);
+      }
+
+      &.active {
+        color: @navSecondMenuAdaptiveText;
+        font-weight: @fontWeightStrong;
+      }
+    }
+
+    // 滑动指示条（原型 tab-indicator 的 CSS-only 等价）：滑轨 1/2 宽按位次平移，
+    // 内部 44px 圆角短条居中，缓动与原型同款
+    .tab-indicator {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: calc(100% / 2);
+      height: 2.5px;
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &::after {
+        position: absolute;
+        left: 50%;
+        width: 44px;
+        height: 2.5px;
+        border-radius: 2.5px;
+        background: @colorPrimary;
+        transform: translateX(-50%);
+        content: '';
+      }
+    }
+
+    &[data-active='0'] .tab-indicator {
+      transform: translateX(0);
+    }
+
+    &[data-active='1'] .tab-indicator {
+      transform: translateX(100%);
+    }
+  }
+
   // 会话列表容器 - 可滚动区域
   .conversation-list-wrapper {
     display: flex;
@@ -20,20 +226,19 @@
     flex: 1;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden; // 默认隐藏原生滚动条
+    overflow-y: auto;
     padding: 0;
-    scrollbar-gutter: stable; // 始终保留滚动条通道，防止 layout shift
-
-    &:hover {
-      overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
-    }
+    // 始终预留 8px 轨道避免宽度抖动；滑块仅滚动时显示（data-is-scrolling 由 useScrollbarScrollShow 维护），停止约 1s 后淡出。
+    .scrollbar-scroll-show();
 
     // 会话列表
     .conversation-list {
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      padding: 0 @paddingXs;
+      // 右侧 15px 与顶部导航菜单项右缘对齐（x=245，原 7px 使行比导航宽 8px）；
+      // 稳定滚动轨道在 wrapper 右缘 252-260，不再压行
+      padding: 7px 15px 16px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示
@@ -50,6 +255,56 @@
           }
         }
       }
+    }
+  }
+
+  // 经典布局（style1/2）任务列表左缘贴容器基线（2026-09-19：经典左边距过大
+  // 收窄，标题内缩由行 padding 承担）。单栏 style3 由上方带 wrapper 的高权重
+  // 规则固定 10px，此处只处理经典布局。
+  :global(.xagi-nav-style1) &,
+  :global(.xagi-nav-style2) & {
+    .conversation-list-wrapper .conversation-list {
+      padding-left: 0;
+    }
+  }
+
+  // 分组头交互样式：hover/focus 显隐与键盘焦点态
+  .section-tabs:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: -2px;
+  }
+
+  .section-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    margin-left: auto;
+    border: none;
+    border-radius: @borderRadiusOuter;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+
+    &:hover {
+      color: @colorPrimary;
+      background: @navRowHoverBg;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
+  .section-tabs:hover .section-tool,
+  .section-tabs:has(:focus-visible) .section-tool {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .section-tool {
+      opacity: 1;
     }
   }
 }

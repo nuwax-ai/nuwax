@@ -3,13 +3,9 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiGetUserDynamicCode, apiUserUpdate } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
-import type {
-  SetUserAccountInfo,
-  UserUpdateParams,
-} from '@/types/interfaces/login';
+import type { UserUpdateParams } from '@/types/interfaces/login';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
-import type { FormProps } from 'antd';
 import { Button, Form, Input, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -26,12 +22,15 @@ const cx = classNames.bind(styles);
 const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
   const { userInfo, setUserInfo } = useModel('userInfo');
+  const { runTenantConfig } = useModel('tenantConfigInfo');
   // 动态验证码相关状态
   const [dynamicCode, setDynamicCode] = useState<number | null>(null);
   const [expireTime, setExpireTime] = useState<Date | null>(null);
+  const [userNameLoading, setUserNameLoading] = useState(false);
+  const [nickNameLoading, setNickNameLoading] = useState(false);
 
   // 更新用户信息
-  const { run, loading } = useRequest(apiUserUpdate, {
+  const { run } = useRequest(apiUserUpdate, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: UserUpdateParams[]) => {
@@ -45,6 +44,19 @@ const SettingAccount: React.FC = () => {
       }
       setUserInfo(_userInfo);
       localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
+      // 首页问候语由租户配置生成，姓名保存成功后同步刷新。
+      if (
+        params[0]?.userName !== undefined ||
+        params[0]?.nickName !== undefined
+      ) {
+        runTenantConfig();
+      }
+      setUserNameLoading(false);
+      setNickNameLoading(false);
+    },
+    onError: () => {
+      setUserNameLoading(false);
+      setNickNameLoading(false);
     },
   });
 
@@ -103,10 +115,20 @@ const SettingAccount: React.FC = () => {
     }
   };
 
-  const onSaveUsername: FormProps<SetUserAccountInfo>['onFinish'] = (
-    values,
-  ) => {
-    run(values);
+  const handleSaveUserName = async () => {
+    try {
+      const values = await form.validateFields(['userName']);
+      setUserNameLoading(true);
+      run({ userName: values.userName });
+    } catch {
+      // 表单校验失败时不发起请求
+    }
+  };
+
+  const handleSaveNickName = async () => {
+    const nickName = form.getFieldValue('nickName');
+    setNickNameLoading(true);
+    run({ nickName });
   };
 
   return (
@@ -122,7 +144,6 @@ const SettingAccount: React.FC = () => {
         form={form}
         layout="vertical"
         requiredMark={customizeRequiredNoStarMark}
-        onFinish={onSaveUsername}
       >
         <Form.Item label={dict('PC.Pages.Setting.userName')}>
           <Form.Item
@@ -143,7 +164,11 @@ const SettingAccount: React.FC = () => {
             />
           </Form.Item>
           <Form.Item noStyle>
-            <Button type="primary" loading={loading} htmlType="submit">
+            <Button
+              type="primary"
+              loading={userNameLoading}
+              onClick={handleSaveUserName}
+            >
               {dict('PC.Common.Global.save')}
             </Button>
           </Form.Item>
@@ -158,7 +183,11 @@ const SettingAccount: React.FC = () => {
             />
           </Form.Item>
           <Form.Item noStyle>
-            <Button type="primary" loading={loading} htmlType="submit">
+            <Button
+              type="primary"
+              loading={nickNameLoading}
+              onClick={handleSaveNickName}
+            >
               {dict('PC.Common.Global.save')}
             </Button>
           </Form.Item>

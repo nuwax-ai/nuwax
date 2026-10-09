@@ -1,0 +1,338 @@
+/* stylelint-disable unit-no-unknown, at-rule-no-unknown -- 容器查询单位 cqh 与 @container 为合法现代 CSS */
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 面板卡片：仅展开态挂载（无收起胶囊），悬浮在会话区右上角、页头「会话进度」按钮下方
+.capsule {
+  position: absolute;
+  z-index: 20;
+  top: @marginMd;
+  right: @marginMd;
+  width: min(320px, calc(100% - 2 * @marginMd));
+  color: @colorText;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background: @colorBgElevated;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: 2px 0 @paddingXs;
+  margin-bottom: @marginXs;
+  border-bottom: 1px solid @colorBorderSecondary;
+}
+
+.panel-header-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: @fontSizeSm;
+}
+
+.panel-close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  padding: 2px;
+
+  &:hover {
+    color: @colorText;
+  }
+}
+
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: @fontSizeSm;
+  font-variant-numeric: tabular-nums;
+}
+
+.spinner {
+  color: @colorPrimary;
+  flex: none;
+}
+
+.status-icon {
+  flex: none;
+}
+
+.status-done {
+  color: @colorSuccess;
+}
+
+.status-error {
+  color: @colorError;
+}
+
+.status-stopped {
+  color: @colorTextSecondary;
+}
+
+.stat-add {
+  color: @colorSuccess;
+}
+
+.stat-del {
+  color: @colorError;
+}
+
+// 面板动效由组件内 JS 逐帧驱动（见 index.tsx animatePanelFade）：
+// CSS 动画在部分环境（系统减弱动态效果）冻结在起点会让面板不可见。
+// 面板条件渲染（收起态 DOM 无面板）。
+.panel {
+  position: relative;
+  padding: @paddingSm;
+  max-height: min(60cqh, 480px);
+  overflow-y: auto;
+}
+
+.group + .group {
+  margin-top: @marginSm;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  margin-bottom: @marginXs;
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.group-title-main {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.group-title-icon {
+  flex: none;
+  display: inline-flex;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.group-title-text {
+  // 占满图标右侧剩余宽度：否则 space-between 会把图标与文字拆到两端
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// task-result 产物行：对齐会话输出 TaskResultRow 的行形态（图标+描述+箭头）
+.result-row {
+  // button 化后补齐 reset：默认边框/字体与宽度约束（否则行溢出、截断失效）
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: 6px 10px;
+  border-radius: @borderRadius;
+  background: @colorBgContainerDisabled;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  cursor: pointer;
+
+  &:hover {
+    background: @colorBgTextHover;
+  }
+
+  // 多条产物行之间的间距
+  & + & {
+    margin-top: 6px;
+  }
+}
+
+.counter {
+  color: @colorPrimary;
+  font-variant-numeric: tabular-nums;
+}
+
+.group-toggle,
+.action-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: @marginXs;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font-size: @fontSizeSm;
+  text-align: left;
+}
+
+.toggle-chevron {
+  flex: none;
+  font-size: 10px;
+  color: @colorTextTertiary;
+  transition: transform 0.18s ease;
+}
+
+.toggle-chevron-open {
+  transform: rotate(90deg);
+}
+
+.toggle-chevron-down-open {
+  transform: rotate(180deg);
+}
+
+.chevron-dim {
+  flex: none;
+  color: @colorTextTertiary;
+  font-size: 12px;
+}
+
+.summary-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: @marginXs;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font-size: @fontSizeSm;
+  text-align: left;
+}
+
+.summary-done {
+  color: @colorSuccess;
+}
+
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  padding: 5px 0;
+  line-height: 1.45;
+}
+
+.step-icon {
+  width: 16px;
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.step-completed .step-icon {
+  color: @colorSuccess;
+}
+
+.step-active .step-icon {
+  color: @colorPrimary;
+}
+
+.step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strike {
+  text-decoration: line-through;
+  color: @colorTextTertiary;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 5px 0 0 4px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+.node {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  padding: 5px 0;
+  line-height: 1.45;
+}
+
+.node-kind-icon {
+  width: 16px;
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.node-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
+}
+
+.node-status-icon {
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.node-running .node-status-icon {
+  color: @colorPrimary;
+}
+
+.node-finished .node-status-icon {
+  color: @colorSuccess;
+}
+
+.node-failed .node-status-icon {
+  color: @colorError;
+}
+
+@container (max-width: 520px) {
+  .capsule {
+    top: @marginXs;
+    right: @marginXs;
+    width: calc(100% - 2 * @marginXs);
+  }
+}

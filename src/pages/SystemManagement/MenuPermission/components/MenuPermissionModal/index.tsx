@@ -1,22 +1,25 @@
 import Loading from '@/components/custom/Loading';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiGetRoleBoundMenuList,
+  apiRoleBindMenu,
+} from '@/services/menuPermission/roleManage';
+import {
+  apiGetGroupMenuList,
+  apiGroupBindMenu,
+} from '@/services/menuPermission/userGroupManage';
+import {
+  MenuBindTypeEnum,
+  type MenuNodeInfo,
+} from '@/types/menuPermission/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  type ResourceTreeNode,
+} from '@/types/menuPermission/permission-resources';
 import { Button, Modal, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiGetRoleBoundMenuList,
-  apiRoleBindMenu,
-} from '../../services/role-manage';
-import {
-  apiGetGroupMenuList,
-  apiGroupBindMenu,
-} from '../../services/user-group-manage';
-import { MenuBindTypeEnum, type MenuNodeInfo } from '../../types/menu-manage';
-import {
-  ResourceBindTypeEnum,
-  type ResourceTreeNode,
-} from '../../types/permission-resources';
 import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
 

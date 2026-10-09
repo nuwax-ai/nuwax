@@ -1,19 +1,21 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import CustomPopover from '@/components/CustomPopover';
 import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
 } from '@/constants/library.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
 import { jumpBack } from '@/utils/router';
-import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
+import { DownOutlined, FormOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
-import { useModel, useParams } from 'umi';
+import React, { useEffect } from 'react';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,9 +35,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 }) => {
   const { spaceId } = useParams();
 
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  let isShowGRAPH = true;
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  useEffect(() => {
+    if (!aiOSCommercialEdition && docType === KnowledgeDocTypeEnum.GRAPH) {
+      onChangeDocType(KnowledgeDocTypeEnum.DOC);
+    }
+  }, [aiOSCommercialEdition, docType, onChangeDocType]);
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -46,7 +51,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx(styles['icon-back'], 'cursor-pointer')}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />
@@ -90,7 +96,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           styles['radio-group-box'],
         )}
         optionType="button"
-        defaultValue={docType}
+        value={docType}
         onChange={handleChange}
       >
         <Radio value={KnowledgeDocTypeEnum.DOC}>
@@ -99,7 +105,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.QA}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
         </Radio>
-        {isShowGRAPH && (
+        {aiOSCommercialEdition && (
           <Radio value={KnowledgeDocTypeEnum.GRAPH}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Radio>
@@ -142,9 +148,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           <Button type="primary" onClick={onViewAllGraphs}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
-        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? (
-          null
-        ) : null}
+        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? null : null}
       </div>
     </header>
   );

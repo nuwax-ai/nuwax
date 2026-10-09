@@ -1,9 +1,27 @@
 import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { clearMicroAppDevSession } from '@/utils/businessAuth';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { isChatTemp, redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
+// 根容器在 model provider 外；仅订阅既有登录保存/失效入口，不另建鉴权机制。
+let observedLoginStatus: boolean | null = null;
+const loginStatusListeners = new Set<() => void>();
+const publishLoginStatus = (status: boolean) => {
+  if (observedLoginStatus === status) return;
+  observedLoginStatus = status;
+  loginStatusListeners.forEach((listener) => listener());
+};
+
+export const subscribeLoginStatus = (listener: () => void): (() => void) => {
+  loginStatusListeners.add(listener);
+  return () => {
+    loginStatusListeners.delete(listener);
+  };
+};
 // ===== 缓存管理方法 =====
 /**
  * 从缓存中获取登录状态
@@ -21,6 +39,7 @@ export const getLoginStatusFromCache = (): boolean | null => {
  */
 export const setLoginStatusToCache = (status: boolean): void => {
   sessionStorage.setItem(LOGIN_STATUS_KEY, status ? 'true' : 'false');
+  publishLoginStatus(status);
 };
 
 /**
@@ -28,6 +47,7 @@ export const setLoginStatusToCache = (status: boolean): void => {
  */
 export const clearLoginStatusCache = (): void => {
   sessionStorage.removeItem(LOGIN_STATUS_KEY);
+  publishLoginStatus(false);
 };
 /**
  * 用户信息服务
@@ -54,6 +74,7 @@ export class UserService {
   static saveUserInfoToStorage(userInfo: any): void {
     try {
       localStorage.setItem(USER_INFO, JSON.stringify(userInfo));
+      publishLoginStatus(!!userInfo);
     } catch (error) {
       console.error('Failed to save user info to local storage:', error);
     }
@@ -64,6 +85,7 @@ export class UserService {
    */
   static clearUserInfo(): void {
     localStorage.removeItem(USER_INFO);
+    publishLoginStatus(false);
   }
 
   /**
@@ -99,7 +121,7 @@ export class UserService {
           // 重定向到登录页
           case REDIRECT_LOGIN:
             clearLoginStatusCache();
-            window.location.href = errorMessage;
+            void navigateToAuthUrl(errorMessage);
             break;
           // 默认错误处理
           default:
@@ -156,6 +178,8 @@ export class UserService {
    * 用户登出
    */
   static logout(): void {
+    clearMicroAppDevSession();
+    eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
     this.clearUserInfo();
     // 可以在这里添加其他登出逻辑，比如清除其他缓存、跳转到登录页等
   }
@@ -171,6 +195,9 @@ export class UserService {
     }
   }
 }
+
+export const getCurrentLoginStatus = (): boolean =>
+  observedLoginStatus ?? UserService.isLoggedIn();
 
 // 导出默认实例方法（如果喜欢函数式调用）
 export const userService = {

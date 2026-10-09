@@ -1,13 +1,13 @@
 import type { StatMetricItem } from '@/components/business-component/StatMetricCard';
 import StatMetricCardList from '@/components/business-component/StatMetricCard';
-import { apiGetAgentSubscriptionPlanStats } from '@/pages/EditAgent/services/agent-subscription-plan';
+import { apiGetAgentSubscriptionPlanStats } from '@/services/agent-subscription-plan';
+import { dict } from '@/services/i18nRuntime';
 import {
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatsResult,
   SubscriptionPlanSubscriberInfo,
   UserSubscriberStatusEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
+} from '@/types/interfaces/subscriptionPlan';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { formatInteger } from '@/utils/numberFormat';
 import { Table, message } from 'antd';

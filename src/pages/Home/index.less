@@ -1,3 +1,5 @@
+@import '@/styles/token.less';
+
 .container {
   width: 100%;
   height: 100%;
@@ -13,27 +15,21 @@
 
 .inputSection {
   width: min(780px, 100%);
+  min-height: 100%;
+  flex-shrink: 0;
+  display: grid;
+  // 上下轨道等高，居中基准始终是输入框自身；内容过高时网格自然撑开供页面滚动。
+  grid-template-rows: 1fr auto 1fr;
+}
+
+.introSection {
+  min-width: 0;
+  align-self: end;
 }
 
 .titleContainer {
   width: 100%;
-  height: 33vh;
   margin: 0 auto 20px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-  scrollbar-gutter: stable both-edges;
-
-  &::before {
-    content: '';
-    flex-grow: 1;
-    min-height: 0;
-  }
-
-  &:hover {
-    overflow-y: auto;
-    overflow-y: overlay;
-  }
 }
 
 .title {
@@ -48,23 +44,42 @@
   width: 100%;
 }
 
-.recommendSection {
-  width: min(830px, 100%);
-  margin-top: 20px;
+// 输入框上方异步区块(分类排+推荐 pill 行)高度预留(禅道bug2493):
+// 45(分类排 Segmented large 实测高) + 24(分类排下间距 @marginLg)
+// + 40(推荐 pill 行 = controlHeight 32 + 上下 4 padding) + 9(推荐行下间距)
+// = 118,与两接口数据到位后的实际占位一致;改动两侧任一高度需同步此值
+.above-input-slot {
+  width: 100%;
+  min-height: 118px;
+}
 
-  .wrapper {
-    width: 100%;
-    max-width: 1080px;
-    margin: 0 auto;
+// 移动端推荐行多出 margin-top 20(ChatBoxRecommendNav 媒体查询),同步抬高预留
+@media (max-width: 768px) {
+  .above-input-slot {
+    min-height: 138px;
+  }
+}
+
+// 两接口终态均无内容(未配置分类/推荐或都失败):收起预留不留永久空白;
+// 收起只发生一次,终态与无占位方案一致。双类名抬高特异性压过上方媒体查询
+.above-input-slot.above-input-slot-empty {
+  min-height: 0;
+}
+
+.inputSection .foot-tip {
+  align-self: end;
+  padding: @paddingLg 0 0;
+  text-align: center;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+
+  a {
+    color: inherit;
   }
 }
 
 @media (max-width: 768px) {
   .container {
     padding: 96px 12px 24px;
-  }
-
-  .recommendSection {
-    margin-top: 32px;
   }
 }

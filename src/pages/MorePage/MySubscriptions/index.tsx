@@ -1,3 +1,4 @@
+import PurchaseModal from '@/components/business-component/PurchaseModal';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -10,7 +11,6 @@ import { Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import CreditsBreakdown from './components/CreditsBreakdown';
-import PurchaseModal from './components/CreditsBreakdown/components/PurchaseModal';
 // import CurrentPlanCard from './components/CurrentPlanCard';
 import SubscribedContent from './components/SubscribedContent';
 import SubscriptionPlanCards from './components/SubscriptionPlanCards';
@@ -88,6 +88,8 @@ const MySubscriptions: React.FC<{
             currentPlanId={currentSub?.planId}
             endTime={currentSub?.endTime}
             price={currentSub?.plan?.price}
+            status={currentSub?.status}
+            period={currentSub?.period}
           />
         )}
 

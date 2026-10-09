@@ -79,22 +79,28 @@ export async function apiCollectAgent(
 
 // 查询用户最近使用过的智能体列表
 export async function apiUserUsedAgentList(
-  params: ListParams,
+  params: ListParams & { type?: string },
 ): Promise<RequestResponse<AgentInfo[]>> {
-  const size = params.size;
-  return request(`/api/user/agent/used/list/${size}`, {
-    method: 'GET',
-  });
-}
+  const { size, pageIndex, keyword, type } = params;
+  const searchParams = new URLSearchParams();
+  if (pageIndex !== undefined) {
+    searchParams.set('pageIndex', String(pageIndex));
+  }
+  if (keyword) {
+    searchParams.set('kw', keyword);
+  }
+  // 智能体类型过滤(如 PageApp,用于女娲应用页最近使用)
+  if (type) {
+    searchParams.set('type', type);
+  }
+  const query = searchParams.toString();
 
-// 查询用户最近编辑的智能体列表
-export async function apiUserEditAgentList(
-  params: ListParams,
-): Promise<RequestResponse<AgentInfo[]>> {
-  const size = params.size;
-  return request(`/api/user/agent/edit/list/${size}`, {
-    method: 'GET',
-  });
+  return request(
+    `/api/user/agent/used/list/${size}${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 // 查询用户开发智能体收藏列表
@@ -131,11 +137,13 @@ export async function apiHomeCategoryList(options?: {
 export function apiPublishedAgentInfo(
   agentId: number,
   withConversationId: boolean = false,
+  recId?: number,
 ): Promise<RequestResponse<AgentDetailDto>> {
   return request(`/api/published/agent/${agentId}`, {
     method: 'GET',
     params: {
       withConversationId,
+      ...(recId !== undefined ? { recId } : {}),
     },
   });
 }

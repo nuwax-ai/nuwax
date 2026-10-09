@@ -1,0 +1,60 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.sidebar {
+  flex-shrink: 0;
+  width: 200px;
+  height: 100%;
+  padding: 16px 12px;
+  border-right: 1px solid @WHITE14;
+  overflow-y: auto;
+
+  // 标题对齐导航栏顶部「广场」文案口径(SidebarNavLayout menu-title):
+  // Typography.Title level5 + 全局 fontWeightStrong=400,颜色走二级菜单文字主题变量
+  .title {
+    padding: 4px 8px 16px;
+    font-size: @fontSizeLg;
+    font-weight: 400;
+    color: @navSecondMenuText;
+  }
+
+  .menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  // 导航项：对齐设计稿（灰底胶囊 + 深灰文字；设计稿为灰底侧栏白胶囊，
+  // 本页侧栏为白底，按同等视觉关系反转为白底灰胶囊）
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: @fontSize;
+    color: @BLANK32;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @BLANK04;
+      background-color: @WHITE04;
+    }
+  }
+
+  .menu-item-active {
+    color: @BLANK04;
+    background-color: @GRAY09;
+    font-weight: 500;
+
+    &:hover {
+      background-color: @GRAY09;
+    }
+  }
+
+  .menu-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+}

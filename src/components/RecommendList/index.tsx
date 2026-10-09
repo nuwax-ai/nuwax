@@ -1,3 +1,4 @@
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { GuidQuestionDto } from '@/types/interfaces/agent';
 import type { RecommendListProps } from '@/types/interfaces/agentConfig';
@@ -6,7 +7,6 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,11 +14,12 @@ const cx = classNames.bind(styles);
 const RecommendList: React.FC<RecommendListProps> = ({
   className,
   itemClassName,
+  itemPrefix,
   loading,
   chatSuggestList,
   onClick,
 }) => {
-  const { showPagePreview } = useModel('chat');
+  const { showPagePreview } = usePageModel('chat');
 
   const handleShowPage = (eventConfig: GuidQuestionDto) => {
     // 提取参数（从 data 中获取）
@@ -121,10 +122,13 @@ const RecommendList: React.FC<RecommendListProps> = ({
               'text-ellipsis-2',
             )}
           >
-            {typeof item === 'object' && item?.icon && (
-              <img className={cx(styles.icon)} src={item?.icon} />
-            )}
-            {typeof item === 'string' ? item : item.info}
+            {itemPrefix !== undefined
+              ? itemPrefix
+              : typeof item === 'object' &&
+                item?.icon && (
+                  <img className={cx(styles.icon)} src={item.icon} />
+                )}
+            {typeof item === 'string' ? item : item.title?.trim() || item.info}
           </div>
         );
       })}

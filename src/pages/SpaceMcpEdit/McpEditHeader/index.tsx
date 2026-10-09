@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { MCP_EDIT_HEAD_MENU_LIST } from '@/constants/mcp.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -8,11 +9,11 @@ import {
 import { McpEditHeaderProps } from '@/types/interfaces/mcp';
 import { getMcpDeployStatus } from '@/utils/mcp';
 import { jumpBack } from '@/utils/router';
-import { CheckCircleTwoTone, LeftOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { CheckCircleTwoTone } from '@ant-design/icons';
+import { Button, Segmented } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -58,6 +59,16 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
     onChooseMenu(value);
   };
 
+  const menuOptions = useMemo(
+    () =>
+      MCP_EDIT_HEAD_MENU_LIST.map((item) => ({
+        label: item.label,
+        value: item.value,
+        disabled: getMenuDisabled(item.value),
+      })),
+    [mcpInfo?.mcpConfig],
+  );
+
   return (
     <header className={cx('flex', 'content-between', styles.header)}>
       <div className={cx('flex', 'items-center', 'gap-10')}>
@@ -65,7 +76,10 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           className={cx('flex', 'items-center', 'cursor-pointer')}
           onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
         >
-          <LeftOutlined className={cx('hover-box', styles.icon)} />
+          <SvgIcon
+            name="icons-nav-backward"
+            className={cx('hover-box', styles.icon)}
+          />
           <span className={styles.name}>
             {dict('PC.Pages.SpaceMcpEdit.editMcpService')}
           </span>
@@ -87,20 +101,12 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           styles['menus-box'],
         )}
       >
-        {MCP_EDIT_HEAD_MENU_LIST.map((item) => {
-          return (
-            <div
-              key={item.value}
-              className={cx('cursor-pointer', styles['head-menu'], {
-                [styles['active']]: currentMenu === item.value,
-                [styles.disabled]: getMenuDisabled(item.value),
-              })}
-              onClick={() => handleClickMenu(item.value)}
-            >
-              {item.label}
-            </div>
-          );
-        })}
+        <Segmented
+          className={cx(styles.segmented)}
+          options={menuOptions}
+          value={currentMenu}
+          onChange={(value) => handleClickMenu(value as McpEditHeadMenusEnum)}
+        />
       </div>
       <div className={cx('flex', 'items-center', styles['extra-box'])}>
         {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}

@@ -1,0 +1,130 @@
+@import '@/styles/token.less';
+
+.category-tabs {
+  // 首页分类使用中性灰黑配色，底线代替选中胶囊。
+  --category-tab-text: #807e89;
+  --category-tab-active-text: #1c1c1f;
+  --category-tab-indicator: #48464f;
+  --category-tab-icon-filter: brightness(0);
+
+  :global(html[data-theme='dark']) & {
+    --category-tab-text: #99979f;
+    --category-tab-active-text: #e8e8eb;
+    --category-tab-indicator: #c1bfc7;
+    --category-tab-icon-filter: brightness(0) invert(1);
+  }
+
+  display: flex;
+  justify-content: center;
+  margin: 0 auto @marginLg;
+
+  // scoped 覆盖 antd Segmented:三层嵌套抬高特异性,
+  // 压过 app.tsx 全局 Segmented 主题(选中文字=品牌色),不影响其他实例;
+  // antd 把文字色直接打在 .ant-segmented-item-label 上,须命中该元素才生效
+  :global(.ant-segmented) {
+    padding: 4px 0;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  :global(.ant-segmented) :global(.ant-segmented-group) {
+    gap: 24px;
+  }
+
+  // 动效期由 thumb 承载底线，静止态由选中 item 承载。
+  :global(.ant-segmented) :global(.ant-segmented-thumb),
+  :global(.ant-segmented) :global(.ant-segmented-item-selected) {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--category-tab-indicator);
+      border-radius: 999px;
+      pointer-events: none;
+    }
+  }
+
+  // antd base 规则给 thumb 常驻 transform 过渡,而 rc-motion 的 appear 流程分
+  // PREPARE(transform:none)→START(起点)→ACTIVE(终点)多帧推进,
+  // 常驻过渡会把 none→起点也滑成动画，导致底线从第 1 项飞出;
+  // 这里在非 appear-active 阶段关掉过渡,起点瞬间就位,仅 START→ACTIVE 滑动
+  :global(.ant-segmented)
+    :global(
+      .ant-segmented-thumb:not(.ant-segmented-thumb-motion-appear-active)
+    ) {
+    transition: none;
+  }
+
+  :global(.ant-segmented) :global(.ant-segmented-item) {
+    border-radius: 0;
+  }
+
+  :global(.ant-segmented) :global(.ant-segmented-item-label) {
+    color: var(--category-tab-text);
+    padding-inline: 0;
+  }
+
+  :global(.ant-segmented)
+    :global(.ant-segmented-item-selected)
+    :global(.ant-segmented-item-label) {
+    color: var(--category-tab-active-text);
+  }
+
+  // 悬停和按下仅加深文字，避免 antd 的填充背景重新出现。
+  :global(.ant-segmented)
+    :global(
+      .ant-segmented-item:not(.ant-segmented-item-disabled):is(:hover, :active)
+    ) {
+    background: transparent;
+
+    &::after {
+      background: transparent;
+    }
+
+    :global(.ant-segmented-item-label) {
+      color: var(--category-tab-active-text);
+    }
+  }
+}
+
+.item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.item-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: var(--category-tab-icon-filter);
+  opacity: 0.5;
+
+  :global(.ant-segmented-item-selected) & {
+    opacity: 1;
+  }
+}
+
+.item-text {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .category-tabs :global(.ant-segmented) :global(.ant-segmented-group) {
+    gap: 12px;
+  }
+
+  .category-tabs :global(.ant-segmented) :global(.ant-segmented-item-label) {
+    padding-inline: 6px;
+  }
+}

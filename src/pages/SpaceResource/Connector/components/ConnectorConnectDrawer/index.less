@@ -1,0 +1,71 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+/**
+ * 「连接设置」凭据填写抽屉样式
+ *
+ * 视觉结构（与设计稿一致）：
+ *   - 顶部：连接器（灰色小标签）+ 名称静态展示框
+ *   - 中部：连接名称 + 动态凭证字段表单（layout=vertical）
+ *   - 底部：通栏「加密保存并建立连接」主按钮
+ */
+
+.drawer {
+  :global {
+    .ant-drawer-header {
+      border-bottom: 1px solid rgba(5, 5, 5, 6%);
+    }
+
+    // 关闭按钮固定在 header 右侧，与详情/新增等其他抽屉风格保持一致
+    // （antd 5 Drawer 的关闭按钮 DOM 在标题之前，需 order 后置）
+    .ant-drawer-header .ant-drawer-close {
+      order: 2;
+      margin-inline-start: auto;
+    }
+
+    // 防止 Drawer 打开时页面出现横向滚动条
+    .ant-drawer-mask {
+      overflow: hidden;
+    }
+
+    .ant-drawer-content-wrapper {
+      overflow: hidden;
+    }
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+}
+
+/* 顶部连接器名称区 */
+.connectorLabel {
+  display: block;
+  margin-bottom: 6px;
+  color: @BLANK03;
+  font-size: 12px;
+}
+
+/* 名称静态展示框（设计稿为选择框样式，按需求不做选择功能） */
+.connectorNameBox {
+  padding: 8px 12px;
+  color: @BLANK14;
+  font-size: 14px;
+  background-color: #fff;
+  border: 1px solid @GRAY01;
+  border-radius: 8px;
+  word-break: break-all;
+}
+
+.form {
+  margin-top: 20px;
+}
+
+/* 底部通栏提交按钮 */
+.submitButton {
+  margin-top: 24px;
+}

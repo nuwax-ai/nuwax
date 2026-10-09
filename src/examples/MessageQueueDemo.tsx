@@ -127,7 +127,6 @@ const MessageQueueDemo: React.FC = () => {
     messageList: messages,
     conversationId: 'demo-conv',
     sendMessage,
-    runStopConversation,
     minConsumeInterval: minInterval,
   });
 

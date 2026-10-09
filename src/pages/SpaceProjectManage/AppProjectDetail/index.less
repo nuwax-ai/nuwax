@@ -1,0 +1,388 @@
+@import '@/styles/token';
+
+.page {
+  min-height: 0;
+  background: @colorBgLayout;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: @marginXs;
+  height: calc(@controlHeightLg + @padding);
+  padding: 0 @paddingLg;
+  background: @colorBgContainer;
+  border-bottom: 1px solid @colorSplit;
+}
+
+.back {
+  color: @colorTextSecondary;
+}
+
+.project-name {
+  margin: 0;
+  max-width: 240px;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
+  color: @colorText;
+}
+
+.tabs {
+  display: flex;
+  height: 100%;
+  margin-left: @marginXs;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+
+    &::before {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-tabs-tab) {
+    padding: 0 @paddingSm;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global(.ant-tabs-tab + .ant-tabs-tab) {
+    margin: 0;
+  }
+
+  :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: @colorPrimary;
+    font-weight: @fontWeightStrong;
+    text-shadow: none;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    height: @lineWidthBold;
+    background: @colorPrimary;
+    border-radius: @borderRadiusXs;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-toggle {
+  color: @colorTextSecondary;
+
+  &:hover,
+  &.active {
+    color: @colorPrimary;
+  }
+}
+
+.body {
+  display: flex;
+  min-height: 0;
+  background: @colorBgContainer;
+}
+
+.main {
+  min-width: 0;
+  min-height: 0;
+  background: @colorBgContainer;
+}
+
+.main-scroll {
+  min-height: 0;
+  padding: @paddingMd @paddingLg @paddingLg;
+}
+
+.main-scroll.repository-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.repository-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: @colorBgContainer;
+}
+
+.repository-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  height: 100%;
+}
+
+.setting-stack {
+  display: flex;
+  flex-direction: column;
+  gap: @padding;
+  max-width: 880px;
+}
+
+.card {
+  padding: @paddingMd @paddingLg;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+  border: 1px solid @colorBorderSecondary;
+}
+
+.card-title {
+  margin: 0 0 @marginXs;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
+  color: @colorText;
+}
+
+.card-desc {
+  margin: 0 0 @margin;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  min-height: 36px;
+  margin-bottom: @marginXs;
+}
+
+.field-label {
+  flex-shrink: 0;
+  width: 120px;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+}
+
+.field-required {
+  margin-left: 2px;
+  color: @colorError;
+}
+
+.field-content {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXs;
+  min-width: 0;
+  max-width: calc(100% - 132px);
+  padding: @paddingXxs @paddingXs;
+  background: @colorFillTertiary;
+  border-radius: @borderRadius;
+}
+
+.field-value {
+  min-width: 0;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.field-icon {
+  flex-shrink: 0;
+  color: @colorTextTertiary;
+  font-size: @fontSize;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+  }
+}
+
+.regen-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: @marginSm;
+  margin-top: @marginSm;
+}
+
+.regen-hint {
+  min-width: 0;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+.deploy-title {
+  display: block;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+}
+
+.deploy-hint {
+  display: block;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
+}
+
+.domain-list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginSm;
+}
+
+.domain-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @padding;
+  min-height: @controlHeight;
+}
+
+.domain-left,
+.domain-right {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  min-width: 0;
+}
+
+.domain-name {
+  color: @colorText;
+  font-size: @fontSize;
+}
+
+.domain-cname {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  font-size: @fontSizeSm;
+  line-height: @controlHeightSm;
+  white-space: nowrap;
+}
+
+.domain-cname-label {
+  color: @colorTextTertiary;
+}
+
+.domain-cname-value {
+  color: #4b4a53;
+}
+
+.copy-cname-btn:global(.ant-btn) {
+  color: #4b4a53;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.bind-btn {
+  margin-top: @marginXs;
+}
+
+.action-btn {
+  &:global(.ant-btn) {
+    color: #4b4a53;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+
+    .anticon {
+      color: inherit;
+    }
+
+    &:hover,
+    &:focus {
+      color: #4b4a53;
+    }
+  }
+}
+
+.deploy-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: @marginSm;
+  width: 100%;
+
+  :global(.ant-radio-wrapper) {
+    align-self: flex-start;
+  }
+}
+
+.deploy-card {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  min-width: 0;
+  padding: @paddingSm @padding;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  cursor: pointer;
+  background: @colorBgContainer;
+  transition: border-color @motionDurationFast @motionEaseOut;
+
+  :global(.ant-radio-wrapper) {
+    margin-inline-end: 0;
+    align-self: flex-start;
+    padding-top: @borderRadiusXs;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.deploy-card-body {
+  min-width: 0;
+}
+
+.deploy-footer {
+  margin: @marginSm 0 0;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+.set-deploy-btn {
+  margin-top: @margin;
+}
+
+@media (max-width: 960px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: @paddingXs;
+    padding-bottom: 0;
+  }
+
+  .tabs {
+    order: 3;
+    width: 100%;
+    height: @controlHeightLg;
+  }
+
+  .header-actions {
+    order: 2;
+  }
+
+  .domain-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .deploy-options {
+    grid-template-columns: 1fr;
+  }
+}

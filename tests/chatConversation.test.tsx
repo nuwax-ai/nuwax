@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockHistoryReplace = vi.fn();
 const mockEventBusOn = vi.fn();
 const mockEventBusOff = vi.fn();
+const mockEmitConversationChanged = vi.fn();
 const mockMessageError = vi.fn();
 
 vi.mock('umi', () => ({
@@ -26,6 +27,10 @@ vi.mock('@/utils/eventBus', () => ({
     on: mockEventBusOn,
     off: mockEventBusOff,
   },
+}));
+
+vi.mock('@/utils/directorySyncEvents', () => ({
+  emitConversationChanged: mockEmitConversationChanged,
 }));
 
 vi.mock('antd', () => ({
@@ -136,6 +141,12 @@ describe('会话生命周期管理', () => {
           messageSourceType: 'new_chat',
         }),
       );
+      expect(mockEmitConversationChanged).toHaveBeenCalledWith({
+        operation: 'created',
+        conversationId: '123',
+        origin: 'chat-clear',
+        reason: 'create',
+      });
     });
 
     it('创建失败时显示错误提示', async () => {

@@ -1,0 +1,198 @@
+/**
+ * AtResourcePopup 组件样式：@ 资源弹层（宽 340 大圆角浮层卡片）
+ */
+
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 弹层本体：固定在光标附近（fixed 定位由内联 style 受控注入）
+.popup {
+  // 「更多」区高度（含 padding）：多 tab 文件页不渲染更多区时归零，
+  // 该高度让渡给列表区——弹层总高跨 tab 恒定
+  --more-h: 40px;
+
+  // 弹层宽度：右侧定位夹取（MentionEditor innerWidth - 348）随此同步
+  width: 340px;
+  max-width: calc(100vw - 8px);
+  background: @colorBgContainer;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  overflow: hidden;
+  z-index: 1050;
+  animation: at-popup-fade-in 0.2s ease-in-out;
+
+  /* 高度/位置变化即时生效（不设 transition）：向上展开时底边贴光标，
+     由内容高度变化驱动的重定位不闪动 */
+  display: flex;
+  flex-direction: column;
+
+  // 顶部分段 tab（antd Segmented：灰底容器 + 白色胶囊选中，小尺寸）
+  .tabs {
+    flex-shrink: 0;
+    padding: 4px;
+  }
+
+  // 判定期间切换器占位隐藏：保留布局高度，判定完成显形零跳动
+  .tabs-hidden {
+    visibility: hidden;
+  }
+
+  // 内容区：当前 tab 的列表（内嵌列表组件根节点即滚动容器）。
+  // 高度统一在容器层收敛（内嵌列表组件不自限）：多 tab 固定基准
+  // ——列表区与更多区之和恒为 366px（有更多按钮时列表 320+更多 46；
+  // 文件页更多区不渲染则整段让渡给列表 366），切换 tab 面板高度不随
+  // 行数/空态/loading 差异跳动（少则留白、多则列表内部滚动）；单 tab
+  // 高度随内容、以同值为上限；外部传入的弹层 maxHeight 不足时经
+  // flex 收缩让位；上下 4px 内边距给键盘聚焦描边（box-shadow）留出
+  // 空间，避免在滚动容器边缘被裁断
+  .content {
+    flex: 1 1 calc(366px - var(--more-h));
+    min-height: 0;
+    max-height: calc(366px - var(--more-h));
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+  }
+
+  // 双 tab 必须给出明确高度：仅有 flex-basis 时，父弹层为内容高度，
+  // 文件数量少会按内容塌缩；切到带 320px 空态/列表的资料库后再被撑高。
+  // 文件页把「更多」的 40px 让给内容区，资料库页则由内容区 + 更多区
+  // 共同保持 366px，总高度一致；flex-shrink 保留视口不足时的收缩能力。
+  .content-multi-tabs {
+    height: calc(366px - var(--more-h));
+    flex: 0 1 calc(366px - var(--more-h));
+  }
+
+  // 单 tab（无切换器，无切换即无跳动）：高度随内容，上限即固定基准
+  .content-no-tabs {
+    flex: 0 1 auto;
+    padding-top: 4px;
+  }
+
+  // slash（单技能 tab）等高形态：无切换器但列表区定高占满——弹层总高
+  // 与多 tab 形态（@ 专家弹层）恒等（列表+padding 374 + 更多 40）
+  .content-slash-full {
+    flex: 1 1 366px;
+    max-height: 366px;
+  }
+
+  // 多 tab 的文件页：更多区不渲染，高度让渡（见 --more-h）。
+  // 值必须带 px 单位：calc(366px - var(--more-h)) 里裸 0 与 px 混算
+  // 非法，整条 flex/max-height 会被浏览器判无效回退 auto——文件页
+  // 曾因此塌成内容高度，切换 tab 弹层高度跳变
+  &.popup-no-more {
+    --more-h: 0;
+  }
+
+  // 内嵌列表（ExpertListView / KnowledgeListView·list 变体）
+  .embed-list {
+    flex: 1;
+    min-height: 0;
+  }
+
+  // ---- 上下文文件面板（行样式沿用旧 MentionPopup 文件项视觉形态）----
+  .file-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    // 边缘留白由外层 .content 的 4px 统一提供（与资料库行口径一致）
+    padding: 0;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 3px;
+    }
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    // 定高与资料库 simple 行（32px）同口径，行间距为零首尾相接
+    height: 32px;
+    padding-block: 0;
+    padding-inline: 12px;
+    border-radius: @borderRadius;
+    cursor: pointer;
+
+    &:hover {
+      background: @colorFillSecondary;
+    }
+  }
+
+  .file-icon {
+    flex-shrink: 0;
+    color: @colorTextSecondary;
+    font-size: 15px;
+  }
+
+  .file-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: @fontSize;
+    color: @colorText;
+  }
+
+  .file-path {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+  }
+
+  .file-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: @paddingLg;
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+  }
+
+  // 底部「更多」入口（仅专家/资料库 tab）：wrap 承载与列表的间距及左右
+  // 内收，block 按钮 width:100% 相对 wrap content 区（避免 100%+水平
+  // margin 溢出弹层容器）；按钮视觉随 antd 主题
+  .more-wrap {
+    flex-shrink: 0;
+    padding: 4px;
+  }
+
+  .more-icon {
+    margin-right: 4px;
+    font-size: 12px;
+  }
+}
+
+// 键盘聚焦高亮（专家/资料/文件三种行统一视觉）：仅灰底选中色——
+// list 紧凑行灰底已足够标识聚焦（红色描边视觉过重，去除）；行卡片
+// 自带 hover 背景选择器优先级更高，!important 保证聚焦态恒定可见
+:global(.at-popup-card-focus) {
+  background: @colorFillSecondary !important;
+}
+
+@keyframes at-popup-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

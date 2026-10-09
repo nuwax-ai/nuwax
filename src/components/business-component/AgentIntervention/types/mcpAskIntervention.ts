@@ -11,6 +11,8 @@ export type McpAskToolName = 'nuwax_ask_question';
 export interface InteractionUiStep {
   id: string;
   title: string;
+  /** 副标题(标题下方次级说明) */
+  subTitle?: string;
   description?: string;
   /** 本步展示的字段 name 数组,引用 ui.fields 中字段的 name */
   fields: string[];
@@ -64,6 +66,8 @@ export interface InteractionUiSchema {
   version: typeof INTERACTION_UI_SCHEMA_VERSION;
   presentation: 'modal' | 'inline' | 'wizard';
   title: string;
+  /** 副标题(标题下方次级说明) */
+  subTitle?: string;
   description?: string;
   fields?: FormField[];
   steps?: InteractionUiStep[];
@@ -85,6 +89,8 @@ export interface McpAskUserToolInput {
   revision: number;
   sessionId: string;
   title: string;
+  /** 副标题(标题下方次级说明) */
+  subTitle?: string;
   description?: string;
   ui: InteractionUiSchema;
   business?: Record<string, unknown>;

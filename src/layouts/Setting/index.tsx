@@ -1,13 +1,15 @@
 import { SETTING_ACTIONS } from '@/constants/menus.constants';
+import { apiAuthIdpLoginList, apiUserIdentityList } from '@/services/authIdp';
 import { dict } from '@/services/i18nRuntime';
 import { getTenantThemeConfig } from '@/services/tenant';
 import { SettingActionEnum } from '@/types/enums/menus';
 import { TenantThemeConfig } from '@/types/tenant';
 import { CloseOutlined } from '@ant-design/icons';
-import { Button, Modal } from 'antd';
+import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import { history, useModel } from 'umi';
+import AccountBind from './AccountBind';
 import DeveloperProfile from './DeveloperProfile';
 import styles from './index.less';
 import LanguageSwitchPanel from './LanguageSwitchPanel';
@@ -30,6 +32,43 @@ const Setting: React.FC = () => {
   const [tenantThemeConfig, setTenantThemeConfig] =
     useState<TenantThemeConfig | null>(null);
   const [loading, setLoading] = useState(false);
+  // 账号绑定入口：租户配置了三方登录或用户已有绑定时才显示（桌面客户端本期不接）
+  const [showAccountBind, setShowAccountBind] = useState(false);
+
+  // 三方绑定整页跳转回来（?setting=account-bind[&idpError=]）：打开弹窗并定位到账号绑定
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('setting') !== 'account-bind') return;
+    const idpError = params.get('idpError');
+    params.delete('setting');
+    params.delete('idpError');
+    const rest = params.toString();
+    history.replace(
+      `${window.location.pathname}${rest ? `?${rest}` : ''}${
+        window.location.hash
+      }`,
+    );
+    setAction(SettingActionEnum.Account_Bind);
+    setOpenSetting(true);
+    if (idpError) message.error(idpError);
+  }, []);
+
+  useEffect(() => {
+    if (!openSetting) return;
+    let cancelled = false;
+    Promise.all([
+      apiAuthIdpLoginList().catch(() => null),
+      apiUserIdentityList().catch(() => null),
+    ]).then(([idpRes, identityRes]) => {
+      if (cancelled) return;
+      setShowAccountBind(
+        !!idpRes?.data?.items?.length || !!identityRes?.data?.length,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [openSetting]);
 
   // 获取租户主题配置
   useEffect(() => {
@@ -63,6 +102,8 @@ const Setting: React.FC = () => {
         return <SettingEmail />;
       case SettingActionEnum.Reset_Password:
         return <ResetPassword />;
+      case SettingActionEnum.Account_Bind:
+        return <AccountBind />;
       case SettingActionEnum.Theme_Switch:
         if (loading) {
           return (
@@ -106,6 +147,8 @@ const Setting: React.FC = () => {
           : dict('PC.Pages.Setting.phoneBind');
       case SettingActionEnum.Reset_Password:
         return dict('PC.Pages.Setting.resetPassword');
+      case SettingActionEnum.Account_Bind:
+        return dict('PC.Layouts.Setting.AccountBind.title');
       case SettingActionEnum.Theme_Switch:
         return dict('PC.Pages.Setting.themeSwitch');
       case SettingActionEnum.Language_Switch:
@@ -130,6 +173,11 @@ const Setting: React.FC = () => {
       footer={null}
       onCancel={() => setOpenSetting(false)}
       className={cx(styles['modal-container'])}
+      // 钉死基础层级（bug 2439）：antd 弹层 zIndex 会随打开次数爬升，客户端壳的
+      // 顶行/拖拽热区固定在 1099–1101 层——爬升越过后遮罩盖住工具栏（不可点）。
+      // 固定 1000=antd 默认基线，PC web 无壳层不受影响；内部下拉等次级弹层
+      // 相对爬升仍在 1000+ 区间，低于壳层。
+      zIndex={1000}
       modalRender={() => (
         <div
           className={cx(styles.container, 'flex', 'overflow-hide', {
@@ -142,6 +190,9 @@ const Setting: React.FC = () => {
               {SETTING_ACTIONS.filter((item) => {
                 if (item.type === SettingActionEnum.Developer_Profile) {
                   return isEnableSubscription;
+                }
+                if (item.type === SettingActionEnum.Account_Bind) {
+                  return showAccountBind;
                 }
                 return true;
               }).map((item) => (

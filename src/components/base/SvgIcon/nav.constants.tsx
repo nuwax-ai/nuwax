@@ -2,10 +2,12 @@ import { ReactComponent as ApiKeySvgFile } from '@/assets/icons/nav/api_key.svg'
 import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
 import { ReactComponent as ComputerSvgFile } from '@/assets/icons/nav/computer.svg';
+import { ReactComponent as ConnectorSvgFile } from '@/assets/icons/nav/connector.svg';
 import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
 import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
+import { ReactComponent as ExpertSkillConnectorSvgFile } from '@/assets/icons/nav/expert_skill_connector.svg';
 import { ReactComponent as HistoryConversationSvgFile } from '@/assets/icons/nav/history_conversation.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
 import { ReactComponent as ModelSvgFile } from '@/assets/icons/nav/icons-nav-model.svg';
@@ -48,6 +50,7 @@ import { ReactComponent as PricingSvgFile } from '@/assets/icons/nav/icons-nav-p
 import { ReactComponent as SubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-subscription.svg';
 
 import { ReactComponent as DingyueyujifenSvgFile } from '@/assets/icons/nav/dingyueyujifen.svg';
+import { ReactComponent as NvwayingyongSvgFile } from '@/assets/icons/nav/nvwayingyong.svg';
 import { ReactComponent as YongliangtongjiSvgFile } from '@/assets/icons/nav/yongliangtongji.svg';
 import { ReactComponent as ZhifuyushouyiSvgFile } from '@/assets/icons/nav/zhifuyushouyi.svg';
 import { ReactComponent as ZiyuandingjiaSvgFile } from '@/assets/icons/nav/ziyuandingjia.svg';
@@ -89,6 +92,8 @@ const PaletteSvg = wrapSvg(PaletteSvgFile);
 const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
+const ConnectorSvg = wrapSvg(ConnectorSvgFile);
+const ExpertSkillConnectorSvg = wrapSvg(ExpertSkillConnectorSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
@@ -101,6 +106,7 @@ const CreditsSvg = wrapSvg(CreditsSvgFile);
 const YongliangtongjiSvg = wrapSvg(YongliangtongjiSvgFile, {
   viewBox: '0 0 1024 1024',
 });
+const NvwayingyongSvg = wrapSvg(NvwayingyongSvgFile);
 export default {
   'icons-nav-api_key': ApiKeySvg,
   'icons-nav-home': HomeSvg,
@@ -136,6 +142,8 @@ export default {
   'icons-nav-log-operation': LogOperationSvg,
   'icons-nav-log-running': LogRunningSvg,
   'icons-nav-computer': ComputerSvg,
+  'icons-nav-connector': ConnectorSvg,
+  'icons-nav-expert-skill-connector': ExpertSkillConnectorSvg,
   'icons-nav-robot': RobotSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
@@ -154,4 +162,6 @@ export default {
   'icons-nav-ziyuandingjia': ZiyuandingjiaSvgFile,
   'icons-nav-dingyueyujifen': DingyueyujifenSvgFile,
   'icons-nav-zhifuyushouyi': ZhifuyushouyiSvgFile,
+  // 女娲应用(一级菜单,菜单 code nvwayingyong 经 menuService MENU_ICON_MAP 解析)
+  'icons-nav-nvwayingyong': NvwayingyongSvg,
 } as Record<string, React.FC>;

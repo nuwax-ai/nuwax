@@ -125,3 +125,10 @@ export interface PublishedSkillListParams {
   // 只返回空间的组件
   justReturnSpaceData?: boolean;
 }
+
+// 技能转为 AI 对话开发返回
+export interface SkillConvertToConversationResponse {
+  targetType: string;
+  targetId: string;
+  conversationId: number;
+}

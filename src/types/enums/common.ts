@@ -151,10 +151,11 @@ export enum RoleEnum {
   User = 'User',
 }
 
-// 用户状态,可用值:Enabled,Disabled
+// 用户状态,可用值:Enabled,Disabled,Deleted
 export enum UserStatus {
   Enabled = 'Enabled',
   Disabled = 'Disabled',
+  Deleted = 'Deleted',
 }
 
 // 发布状态

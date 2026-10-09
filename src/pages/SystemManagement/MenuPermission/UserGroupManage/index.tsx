@@ -7,6 +7,22 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiDeleteUserGroup,
+  apiGetUserGroupList,
+  apiUpdateUserGroup,
+  apiUpdateUserGroupSort,
+} from '@/services/menuPermission/userGroupManage';
+import type {
+  GetUserGroupListParams,
+  UpdateUserGroupParams,
+  UpdateUserGroupSortItem,
+  UserGroupInfo,
+} from '@/types/menuPermission/user-group-manage';
+import {
+  UserGroupSourceEnum,
+  UserGroupStatusEnum,
+} from '@/types/menuPermission/user-group-manage';
 import { modalConfirm } from '@/utils/ant-custom';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
@@ -30,22 +46,6 @@ import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
 import MenuPermissionModal from '../components/MenuPermissionModal';
-import {
-  apiDeleteUserGroup,
-  apiGetUserGroupList,
-  apiUpdateUserGroup,
-  apiUpdateUserGroupSort,
-} from '../services/user-group-manage';
-import type {
-  GetUserGroupListParams,
-  UpdateUserGroupParams,
-  UpdateUserGroupSortItem,
-  UserGroupInfo,
-} from '../types/user-group-manage';
-import {
-  UserGroupSourceEnum,
-  UserGroupStatusEnum,
-} from '../types/user-group-manage';
 import styles from './index.less';
 import UserGroupFormModal from './UserGroupFormModal';
 

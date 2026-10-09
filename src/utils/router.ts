@@ -1,5 +1,36 @@
+import { IDP_RETURN_PATH_KEY } from '@/utils/authIdp';
 import { isWeakNumber } from '@/utils/common';
+import { hostBridge, isImmersiveShell } from '@/utils/hostBridge';
 import { history } from 'umi';
+
+/**
+ * 桌面端（nuwaclaw 主窗口）走独立新窗口打开的路由清单。
+ *
+ * 2026-09-11 清空：工作台页（工作流/网页应用/设计器/智能体编排/智能体详情/
+ * 我的电脑）已全部改为**主窗口内页内承载**（fullscreenWorkbenchPaths：侧栏
+ * 常驻 + immersiveShellAvoid 顶部避让）。此前经 jumpTo 的入口会走
+ * openWindow 的 same-window 整页导航（webview 级跳转），侧栏随之整页重载
+ * ——即「进入/退出详情整体重新渲染」问题的根因。清空后 jumpTo 一律回落
+ * history.push（SPA 页内导航，侧栏实例跨跳转存活）。
+ * 若后续有页面确需独立窗口，在此追加正则并确认其布局兼容独立窗口形态。
+ */
+const SHELL_NEW_WINDOW_ROUTES: RegExp[] = [];
+
+/** 桌面主窗口下该路由是否应新开独立窗口（独立窗口内自身不再分流）。 */
+function shouldOpenInShellWindow(url: string): boolean {
+  if (!isImmersiveShell()) return false;
+  return SHELL_NEW_WINDOW_ROUTES.some((re) => re.test(url.split('?')[0]));
+}
+
+/**
+ * 请求宿主新开独立窗口；失败（旧壳无 handler / 被安全校验拒绝 / 桥异常）
+ * 时回落页内导航，保证点击永远有响应。
+ */
+function openShellWindowOrNavigate(url: string): void {
+  void hostBridge.native.openWindow(url).then((res) => {
+    if (!res.success) history.push(url);
+  });
+}
 
 type JumpToProps =
   | {
@@ -19,11 +50,21 @@ export const jumpTo = (params: JumpToProps) => {
     history.go(Number(params));
     return;
   } else if (typeof params === 'string') {
+    if (shouldOpenInShellWindow(params)) {
+      openShellWindowOrNavigate(params);
+      return;
+    }
     history.push(params);
     return;
   }
   if (typeof params === 'object' && 'url' in params) {
     const { url, method = 'push', state } = params;
+    if (typeof url === 'string' && shouldOpenInShellWindow(url)) {
+      // 独立窗口是全新页面加载，SPA 路由 state 无法携带（各目标页均不依赖 state）；
+      // 开窗失败回落页内导航（不带 state，目标页均不依赖）
+      openShellWindowOrNavigate(url);
+      return;
+    }
     if (state) return history[method](url, state);
     return history[method](url);
   }
@@ -85,7 +126,7 @@ export const jumpToAgent = (targetSpaceId: number, agentId: number) => {
 };
 
 // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
-export const jumpBack = (url?: string) => {
+export const jumpBack = (url?: string, payload?: Record<string, any>) => {
   // document.referrer 属性返回一个字符串，该字符串包含了当前文档的来源文档的 URL。可能为空
   const referrer = document.referrer;
   const historyLength = window.history.length;
@@ -100,6 +141,12 @@ export const jumpBack = (url?: string) => {
     } else {
       jumpTo({ url: '/', method: 'replace' }); // 兜底方案，跳转到首页
     }
+    return;
+  }
+
+  // 如果从appdev跳转过来，则直接跳转到指定页面
+  if (payload?.from === 'appdev' && url) {
+    jumpTo({ url, method: 'replace' });
     return;
   }
 
@@ -133,6 +180,13 @@ export const jumpToPageDevelop = (spaceId: number) => {
 };
 
 export const redirectToLogin = (redirect: string | number = '/') => {
+  // 数字是 SPA 历史偏移，整页跳三方登录后失效：暂存当前业务路径供其回跳
+  if (!Number.isNaN(Number(redirect)) && typeof window !== 'undefined') {
+    const { pathname, search, hash } = window.location;
+    if (!/^\/(login|verify-code)/.test(pathname)) {
+      sessionStorage.setItem(IDP_RETURN_PATH_KEY, pathname + search + hash);
+    }
+  }
   jumpTo(`/login?redirect=${encodeURIComponent(redirect)}`);
 };
 

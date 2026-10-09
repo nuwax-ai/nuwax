@@ -1,8 +1,8 @@
-import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
-import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
-import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
-import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { t } from '@/services/i18nRuntime';
+import { apiGetRoleList } from '@/services/menuPermission/roleManage';
+import { apiGetUserGroupList } from '@/services/menuPermission/userGroupManage';
+import { RoleInfo } from '@/types/menuPermission/role-manage';
+import { UserGroupInfo } from '@/types/menuPermission/user-group-manage';
 import { Button, Checkbox, Empty, message, Modal, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';

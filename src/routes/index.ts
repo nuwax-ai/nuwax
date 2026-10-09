@@ -6,6 +6,9 @@ import { EN_US } from '../locales/i18n/en-US';
  * 因此路由名称统一从本地静态词典读取，缺失时回退为 key 本身。
  */
 const getRouteLabel = (key: string): string => EN_US[key] || key;
+const isDevelopment =
+  process.env.UMI_ENV === 'development' ||
+  process.env.NODE_ENV === 'development';
 
 const routes = [
   {
@@ -25,7 +28,10 @@ const routes = [
   },
   {
     path: '/chat-temp/:chatKey',
+    // 沉浸壳顶行退让（禅道 2429，同 /app 树）：临时会话页头部/预览关闭键
+    // 不再渲染进壳工具栏带；浏览器下 wrapper 直通零影响
     component: '@/pages/ChatTemp',
+    wrappers: ['@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
@@ -40,9 +46,16 @@ const routes = [
         path: '/open-iframe-page/:menuCode',
         component: '@/pages/OpenIframePage',
       },
+      // 稳定菜单入口及深链均由主站路由承接，微应用实例留在布局的持久宿主中。
+      { path: '/repo-entry', component: '@/pages/MicroAppEntry' },
+      { path: '/repo/*', component: '@/pages/MicroAppEntry' },
+      { path: '/message-entry', component: '@/pages/MicroAppEntry' },
+      { path: '/instant-message/*', component: '@/pages/MicroAppEntry' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
+      // 网站应用页(女娲应用-网站应用卡片入口:左侧会话区 + 右侧应用域名 iframe)
+      { path: '/user-app/:appId', component: '@/pages/UserApp' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       // 页面开发
@@ -54,6 +67,82 @@ const routes = [
       {
         path: '/space/:spaceId/create-project',
         component: '@/pages/SpaceCreateProject',
+      },
+      // 项目管理（三类项目列表：常规项目/网页应用/网站应用）
+      {
+        path: '/space/:spaceId/project-manage',
+        component: '@/pages/SpaceProjectManage',
+      },
+      // 常规项目
+      {
+        path: '/space/:spaceId/normal-project',
+        component: '@/pages/SpaceProjectManage/NormalProject',
+      },
+      // 常规项目详情
+      {
+        path: '/space/:spaceId/normal-project-detail/:projectId',
+        component: '@/pages/SpaceProjectManage/NormalProjectDetail',
+      },
+      // 网站应用
+      {
+        path: '/space/:spaceId/userapp-project',
+        component: '@/pages/SpaceProjectManage/UserAppProject',
+      },
+      // 第三方应用接入
+      {
+        path: '/space/:spaceId/third-app-integration',
+        component: '@/pages/SpaceProjectManage/ThirdAppIntegration',
+      },
+      // 三方应用详情
+      {
+        path: '/space/:spaceId/third-app-detail/:projectId',
+        component: '@/pages/SpaceProjectManage/ThirdAppDetail',
+      },
+      // 应用项目详情
+      {
+        path: '/space/:spaceId/app-project-detail/:appId',
+        component: '@/pages/SpaceProjectManage/AppProjectDetail',
+      },
+      // 全屏工作台页组：单栏模式（style3）下与主站同用 page-container 容器、
+      // 侧栏常驻并抑制二级菜单列（由 layouts/index.tsx 依 fullscreenWorkbenchPaths
+      // 判定，侧栏实例跨跳转存活）；经典风格/移动端经 SidebarShell bare 形态
+      // 维持全屏现状。鉴权由根路由 authWithLoading 统一承担（子路由不再套一层，
+      // 避免每次跳转闪 Loading）；immersiveShellAvoid 继续负责沉浸态顶部避让。
+      {
+        path: '/space/:spaceId/workflow/:workflowId',
+        component: '@/pages/Antv-X6',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/agent/:agentId',
+        component: '@/pages/EditAgent',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-dev/:projectId',
+        component: '@/pages/AppDev',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-pro/:appId/:conversationId',
+        component: '@/pages/AppDevPro',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-dev-design/:projectId',
+        component: '@/pages/AppDevDesign',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/agent-dev',
+        component: '@/pages/ConversationAgent',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
       },
       // 技能管理
       {
@@ -110,6 +199,11 @@ const routes = [
       {
         path: '/space/:spaceId/model-manage',
         component: '@/pages/SpaceResource/ModelManage',
+      },
+      // 连接器
+      {
+        path: '/space/:spaceId/connector',
+        component: '@/pages/SpaceResource/Connector',
       },
       // 资源定价
       {
@@ -192,6 +286,28 @@ const routes = [
       {
         path: '/square/publish/skill/:skillId',
         component: '@/pages/Square/SkillDetail',
+      },
+      // 专家·技能·连接器框架页（左侧分类菜单 + 右侧聚合内容，组件内按路径解析）
+      {
+        path: '/expert-skill-connector',
+        redirect: '/expert-skill-connector/expert',
+      },
+      {
+        path: '/expert-skill-connector/expert',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      {
+        path: '/expert-skill-connector/skill',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      {
+        path: '/expert-skill-connector/connector',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      // 女娲应用（一级菜单入口,菜单由菜单管理后台按 path 配置）
+      {
+        path: '/nuwa-apps',
+        component: '@/pages/NuwaApps',
       },
       {
         path: '/history-conversation',
@@ -277,6 +393,11 @@ const routes = [
             component: '@/pages/PublishAudit',
           },
           {
+            path: 'oauth2/scope-audit',
+            name: getRouteLabel('PC.Routes.oauth2ScopeAudit'),
+            component: '@/pages/SystemManagement/OAuth2ScopeAudit',
+          },
+          {
             path: 'published/manage',
             name: getRouteLabel('PC.Routes.publishedManagement'),
             component: '@/pages/PublishedManage',
@@ -322,6 +443,22 @@ const routes = [
                 name: getRouteLabel('PC.Routes.categoryManagement'),
                 component:
                   '@/pages/SystemManagement/SystemConfig/CategoryManage',
+              },
+              {
+                path: 'sensitive-word',
+                name: getRouteLabel('PC.Routes.sensitiveWordConfig'),
+                component:
+                  '@/pages/SystemManagement/SystemConfig/SensitiveWord',
+              },
+              {
+                path: 'auth-method',
+                name: getRouteLabel('PC.Routes.authMethodConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/AuthMethod',
+              },
+              {
+                path: 'license',
+                name: getRouteLabel('PC.Routes.licenseConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/License',
               },
               {
                 path: 'i18n-lang',
@@ -383,6 +520,11 @@ const routes = [
                 path: 'content-skill',
                 name: getRouteLabel('PC.Routes.contentSkill'),
                 component: '@/pages/SystemManagement/Content/Skill',
+              },
+              {
+                path: 'official-connector',
+                name: getRouteLabel('PC.Routes.connectorManage'),
+                component: '@/pages/SystemManagement/ConnectorManage',
               },
             ],
           },
@@ -545,39 +687,23 @@ const routes = [
     ],
   },
   {
-    path: '/space/:spaceId/workflow/:workflowId',
-    component: '@/pages/Antv-X6',
-    wrappers: ['@/wrappers/authWithLoading'],
+    // 原文对照独立页面：不挂 layouts（无左侧菜单），仅保留登录鉴权；
+    // 沉浸壳顶行退让（禅道 2429：无菜单独立页头部/关闭键原样渲染在壳
+    // 工具栏透明带下，与 Win/Linux 窗口三键错位叠置）
+    path: '/space/original-text/:segmentId/:agentId',
+    component: '@/pages/SpaceKnowledgeOriginalText',
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
-    path: '/space/:spaceId/agent/:agentId',
-    component: '@/pages/EditAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/app-dev/:projectId',
-    component: '@/pages/AppDev',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/app-dev-design/:projectId',
-    component: '@/pages/AppDevDesign',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/agent-dev',
-    component: '@/pages/ConversationAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
+    // 女娲应用独立页组（应用详情/应用内会话/历史会话/订阅订单等）：不挂
+    // layouts（自带应用侧栏）。沉浸壳顶行退让同上——整树页头/预览面板
+    // 关闭键此前渲染进壳工具栏带（真机证据：页面自身 ×(x≈1235,y≈28) 与
+    // 壳窗口关闭 ×(x≈1258,y≈14) 错位双叠，禅道 2429）。浏览器/独立窗口
+    // 下 wrapper 直通零影响。
     path: '/app',
     component: '@/pages/OpenApp/BaseTemplate',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
     routes: [
       {
@@ -619,6 +745,37 @@ const routes = [
     component: '@/pages/403',
     layout: false,
   },
+  ...(isDevelopment
+    ? [
+        {
+          path: '/desktop-shell-preview',
+          component: '@/pages/DesktopShellPreview',
+          layout: false,
+        },
+        {
+          path: '/mock-chat',
+          component: '@/examples/MockChat',
+          layout: false,
+        },
+        {
+          // /app 前缀让 useOpenApp 自动进入应用内嵌形态，验收 app 侧渲染分支
+          path: '/app/mock-chat',
+          component: '@/examples/MockChat',
+          layout: false,
+        },
+        {
+          // 综合验收画廊：多场景并行一次验收（仅 runtime 轨，legacy 轨走单页）
+          path: '/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
+        {
+          path: '/app/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
+      ]
+    : []),
   {
     path: '/*',
     component: '@/pages/404',
@@ -640,6 +797,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/openui-showcase',
+    component: '@/examples/OpenUiShowcase',
+    layout: false,
+  },
+  {
     path: '/examples/tiptap-variable-input-test',
     component: '@/examples/TiptapVariableInputTest/index',
     layout: false,
@@ -655,6 +817,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/trace-structure-demo',
+    component: '@/examples/TraceStructureDemo',
+    layout: false,
+  },
+  {
     path: '/examples/empty-state-showcase',
     component: '@/examples/EmptyStateShowcase',
     layout: false,
@@ -667,6 +834,11 @@ const routes = [
   {
     path: '/examples/message-queue-demo',
     component: '@/examples/MessageQueueDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/session-rendering-demo',
+    component: '@/examples/SessionRenderingDemo',
     layout: false,
   },
   {

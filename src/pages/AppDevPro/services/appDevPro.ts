@@ -1,0 +1,477 @@
+import type { RequestResponse } from '@/types/interfaces/request';
+import { normalizeTerminalWsUrl } from '@/utils/terminalWsUrl';
+import { request } from 'umi';
+import type {
+  BuildVersionDto,
+  CreateUserProjectParams,
+  ProjectLatestConversationResult,
+  UserAppDevTaskInfo,
+  UserAppLogSourceItem,
+  UserAppLogsQueryParams,
+  UserAppLogsQueryResult,
+  UserAppLogsSourcesQueryParams,
+  UserAppStartDevParams,
+  UserAppTasksActiveResult,
+  UserProjectItem,
+} from '../type';
+import { UserAppDbEnvEnum } from './appDb';
+
+// 基础 CRUD 已下沉共享层 @/services/userProjectApp（首页侧栏项目面板等非页面层消费），
+// 此处再导出保持页面内既有引用不变
+export {
+  apiUserAppCreate,
+  apiUserAppDelete,
+  apiUserAppGetById,
+  apiUserAppUpdate,
+  apiUserProjectDelete,
+  apiUserProjectUpdate,
+} from '@/services/userProjectApp';
+
+/** 创建常规项目（管理端入口；首页对话框创建仍走 /api/project/create） */
+export async function apiUserProjectCreate(
+  data: CreateUserProjectParams,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request('/api/user-project/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 按ID查询常规项目 */
+export async function apiUserProjectGetById(
+  id: number,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request(`/api/user-project/get/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 网站应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
+export async function apiUserAppLatestConversation(
+  id: number,
+): Promise<RequestResponse<ProjectLatestConversationResult>> {
+  return request(`/api/userapp/conversation/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 启动开发容器（异步任务，返回任务行；进行中重复发起将被拒绝） */
+export async function apiUserAppStartDev(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request('/api/userapp/dev/start', {
+    method: 'POST',
+    data,
+    // 失败由预览页展示，不走全局 message
+    skipErrorHandler: true,
+  });
+}
+
+/** 重启开发容器（异步任务，返回任务行；进行中重复发起将被拒绝） */
+export async function apiUserAppRestartDev(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request('/api/userapp/dev/restart', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 停止开发容器 */
+export async function apiUserAppStopDev(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/userapp/dev/stop', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 构建打包（异步任务；完成后自动上传产物到文件服务并记录发布版本） */
+export async function apiUserAppBuild(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request('/api/userapp/build', {
+    method: 'POST',
+    data,
+    // 失败由部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
+  });
+}
+
+/** 取消任务 */
+export async function apiUserAppBuildCancel(
+  taskId: string,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request(`/api/userapp/tasks/${taskId}/cancel`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
+ * 任务进度 SSE（dev-start、dev-restart、build 共用）。
+ * 开发环境启动 / 重启额外包含 service_starting、service_start_ok（带 service 名）。
+ * @param taskId 构建任务 ID
+ * @param fromSeq 断点序号
+ * @returns SSE URL
+ */
+export const getUserAppTaskLogsStreamUrl = (
+  taskId: string,
+  fromSeq?: number,
+): string => {
+  const baseUrl = process.env.BASE_URL || '';
+  const search =
+    fromSeq !== undefined && fromSeq !== null ? `?fromSeq=${fromSeq}` : '';
+  return `${baseUrl}/api/userapp/tasks/${encodeURIComponent(
+    taskId,
+  )}/logs/stream${search}`;
+};
+
+/** 生产部署（要求发布审核通过；异步任务，返回任务行） */
+export async function apiUserAppProdStart(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request('/api/userapp/prod/start', {
+    method: 'POST',
+    data,
+    // 失败由预览页 / 部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
+  });
+}
+
+/** 生产重启（异步任务，返回任务行） */
+export async function apiUserAppProdRestart(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
+  return request('/api/userapp/prod/restart', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 生产停止 */
+export async function apiUserAppProdStop(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/userapp/prod/stop', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 查询应用日志 */
+export async function apiUserAppLogsQuery(
+  data: UserAppLogsQueryParams,
+): Promise<RequestResponse<UserAppLogsQueryResult>> {
+  return request('/api/userapp/logs/query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 查询应用日志来源，data 为来源列表（服务、日志源、格式、匹配文件） */
+export async function apiUserAppLogsSourcesQuery(
+  data: UserAppLogsSourcesQueryParams,
+): Promise<RequestResponse<UserAppLogSourceItem[]>> {
+  return request('/api/userapp/logs/sources/query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 查询应用进行中任务与操作可用性（tasks：为进行中的任务；devActionAllowed-buildAllowed：标志可否发起） */
+export async function apiUserAppTasksActive(
+  appId: number,
+): Promise<RequestResponse<UserAppTasksActiveResult>> {
+  return request('/api/userapp/tasks/active', {
+    method: 'GET',
+    params: {
+      appId,
+    },
+  });
+}
+
+/** 版本是否可生产部署（releaseId 为空查最新版本就绪状态；前端轮询至 true 即可调 prod-start） */
+export async function apiUserAppProdDeployable(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<boolean>> {
+  const { appId, releaseId } = data;
+  return request('/api/userapp/prod/deployable', {
+    method: 'GET',
+    params: {
+      appId,
+      releaseId,
+    },
+  });
+}
+
+/**
+ * 查询应用构建包版本列表。
+ * 每项为 BuildVersionDto：version、gitCommit、latest、packageUrl、buildTime。
+ *
+ * @param appId 应用 ID
+ * @returns 构建包版本列表
+ */
+export async function apiUserAppBuildVersions(
+  appId: number,
+): Promise<RequestResponse<BuildVersionDto[]>> {
+  return request('/api/userapp/build-versions', {
+    method: 'GET',
+    params: {
+      appId,
+    },
+  });
+}
+
+// ================================ 应用预览代理地址 ================================
+
+/**
+ * 开发环境远程桌面代理地址（iframe）
+ * /api/userapp/proxy/vnc/dev/{appId}/
+ *
+ * 与文件预览里的 VncPreview 一致，带上 noVNC 自动连接参数。
+ * 不带 autoconnect 时，打开远程桌面只会停在「连接」按钮，需要再点一次。
+ *
+ * @param appId 应用 ID
+ * @returns 可嵌入 iframe 的绝对或相对地址
+ */
+export const getUserAppVncProxyUrl = (appId: number): string => {
+  const params = new URLSearchParams();
+  // resize=scale：画面按容器缩放
+  params.set('resize', 'scale');
+  // autoconnect=true：页面加载后直接连接
+  params.set('autoconnect', 'true');
+  // 断开后自动重连
+  params.set('reconnect', 'true');
+  params.set('reconnect_delay', '500');
+  const path = `/api/userapp/proxy/vnc/dev/${appId}/?${params.toString()}`;
+  const baseUrl = process.env.BASE_URL || '';
+  return `${baseUrl}${path}`;
+};
+
+/**
+ * 网站应用终端 ttyd 代理 WebSocket 地址
+ * 开发环境：/api/userapp/proxy/ttyd/dev/{appId}/
+ * 线上环境：/api/userapp/proxy/ttyd/prod/{appId}/
+ *
+ * @param appId 应用 ID
+ * @param env 当前环境（开发 / 线上）
+ * @returns 终端 WebSocket 地址；缺少 appId 时返回空字符串
+ */
+export const getUserAppTtydProxyWsUrl = (
+  appId: number,
+  env: UserAppDbEnvEnum,
+): string => {
+  if (!appId) {
+    return '';
+  }
+
+  const path = `/api/userapp/proxy/ttyd/${env}/${appId}/`;
+  const baseUrl = process.env.BASE_URL || '';
+
+  if (typeof window !== 'undefined') {
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+      return normalizeTerminalWsUrl(`${baseUrl}${path}`);
+    }
+    return normalizeTerminalWsUrl(`${wsScheme}://${host}${baseUrl}${path}`);
+  }
+
+  if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+    return normalizeTerminalWsUrl(`${baseUrl}${path}`);
+  }
+  return '';
+};
+
+/** 应用就绪探测的顶层业务状态 */
+export enum UserAppReadinessStatusEnum {
+  /** 未部署 */
+  NotDeployed = 'not_deployed',
+  /** 启动中 */
+  Starting = 'starting',
+  /** 停止中 */
+  Stopping = 'stopping',
+  /** 已停止 */
+  Stopped = 'stopped',
+  /** 可访问 */
+  Ready = 'ready',
+  /** 降级 */
+  Degraded = 'degraded',
+  /** 失败 */
+  Failed = 'failed',
+  /** 未知 */
+  Unknown = 'unknown',
+  /** 不支持 */
+  Unsupported = 'unsupported',
+}
+
+/**
+ * 计算容器状态，与应用 HTTP 就绪相互独立。
+ * 旧回包没有 container 字段时视为 unknown，不是未部署。
+ */
+export enum UserAppContainerStatusEnum {
+  /** 容器记录不存在 */
+  Missing = 'missing',
+  /** 启动中 */
+  Starting = 'starting',
+  /** 重启中 */
+  Restarting = 'restarting',
+  /** 停止中 */
+  Stopping = 'stopping',
+  /** 运行中 */
+  Running = 'running',
+  /** 已停止 */
+  Stopped = 'stopped',
+  /** 失败 */
+  Failed = 'failed',
+  /** 需要恢复 */
+  RecoveryRequired = 'recovery_required',
+  /** 未知 */
+  Unknown = 'unknown',
+}
+
+/** 计算容器当前意图操作及其终态。null 不表示此前操作已成功。 */
+export interface UserAppContainerOperation {
+  /** 操作类型，如 restart / stop */
+  action: string;
+  /** 操作 ID */
+  operation_id?: string | null;
+  /** 操作修订号 */
+  revision?: number | null;
+  /** 操作阶段，如 completed */
+  stage?: string | null;
+  /** 操作结果状态，如 succeeded */
+  state?: string | null;
+  /** 错误码 */
+  error_code?: string | null;
+  /** 错误信息 */
+  error_message?: string | null;
+}
+
+/** 计算容器就绪情况，与顶层业务 ready/status 分开。 */
+export interface UserAppContainerReadiness {
+  /** 容器状态 */
+  status: UserAppContainerStatusEnum;
+  /** 当前意图操作；没有进行中的操作时为 null */
+  operation: UserAppContainerOperation | null;
+}
+
+/** 应用就绪探测中的单个服务 */
+export interface UserAppReadinessService {
+  /** 服务 ID */
+  service_id: string;
+  /** 该服务是否就绪 */
+  ready: boolean;
+  /** 服务状态 */
+  status: string;
+  /** 未就绪原因 */
+  reason_code: string | null;
+}
+
+/** 应用就绪探测中的代理状态 */
+export interface UserAppReadinessProxy {
+  /** 代理是否就绪 */
+  ready: boolean;
+  /** 代理状态 */
+  status: string;
+  /** 未就绪原因 */
+  reason_code: string | null;
+  /** 错误来源约定 */
+  error_origin_contract: string;
+}
+
+/** 应用就绪探测结果。应用可访问以 ready 为准。 */
+export interface UserAppReadiness {
+  /** 应用 ID */
+  app_id: string;
+  /** 应用阶段，如 dev */
+  app_stage: string;
+  /** 应用是否可以访问 */
+  ready: boolean;
+  /** 顶层业务状态：not_deployed / starting / stopping / stopped / ready / degraded / failed / unknown / unsupported */
+  status: UserAppReadinessStatusEnum;
+  /**
+   * 计算容器状态。与业务 ready/status 独立。
+   * 旧回包没有此字段时视为 unknown，不是未部署。
+   */
+  container?: UserAppContainerReadiness;
+  /** 本次检查时间 */
+  checked_at: string;
+  /** 当前对外服务的版本 */
+  serving_release_id: string;
+  /** 观测修订号 */
+  observation_revision: number;
+  /** 代理就绪情况 */
+  proxy: UserAppReadinessProxy;
+  /** 各服务就绪情况 */
+  services: UserAppReadinessService[];
+}
+
+/** 顶层业务状态在预览区的展示分类 */
+export type UserAppReadinessUiKind =
+  | 'access'
+  | 'starting'
+  | 'stopping'
+  | 'stopped'
+  | 'notDeployed'
+  | 'failed'
+  | 'incomplete';
+
+/**
+ * 把就绪探测的顶层状态收成预览区要处理的几类。
+ * status 为 ready 时，还要 ready 字段为 true 才算正常访问。
+ * starting / stopping / stopped 各有提示。
+ * 未部署、启动失败可以手动重启。unsupported 视为开发未完成。unknown 先忽略。
+ *
+ * @param status 顶层业务状态；还没有探测结果时返回 null
+ * @param ready 服务是否就绪。status 为 ready 时必须为 true 才进入正常访问
+ * @returns 展示分类；没有状态，或 status 为 ready 但字段还不是 true 时返回 null
+ */
+export const getUserAppReadinessUiKind = (
+  status?: UserAppReadinessStatusEnum | null,
+  ready?: boolean | null,
+): UserAppReadinessUiKind | null => {
+  switch (status) {
+    case UserAppReadinessStatusEnum.Ready:
+      return ready === true ? 'access' : null;
+    case UserAppReadinessStatusEnum.Starting:
+      return 'starting';
+    case UserAppReadinessStatusEnum.Stopping:
+      return 'stopping';
+    case UserAppReadinessStatusEnum.Stopped:
+      return 'stopped';
+    case UserAppReadinessStatusEnum.NotDeployed:
+      return 'notDeployed';
+    case UserAppReadinessStatusEnum.Failed:
+      return 'failed';
+    case UserAppReadinessStatusEnum.Unsupported:
+    case UserAppReadinessStatusEnum.Degraded:
+      return 'incomplete';
+    case UserAppReadinessStatusEnum.Unknown:
+      return null;
+    default:
+      return null;
+  }
+};
+
+/** 探测结果是否已经可以正常打开预览。status 为 ready 且 ready 字段为 true 才算真正就绪。 */
+export const isUserAppReadinessAccessible = (
+  data?: Pick<UserAppReadiness, 'ready' | 'status'> | null,
+): boolean =>
+  !!data &&
+  data.status === UserAppReadinessStatusEnum.Ready &&
+  data.ready === true;
+
+/** 应用就绪探测 */
+export async function apiUserAppReadiness(
+  appId: number,
+  env: UserAppDbEnvEnum,
+): Promise<RequestResponse<UserAppReadiness>> {
+  return request('/api/userapp/readiness', {
+    method: 'GET',
+    params: { appId, env },
+    skipErrorHandler: true,
+  });
+}

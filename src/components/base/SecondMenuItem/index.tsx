@@ -54,7 +54,11 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
           icon?.includes('.jpeg') ? (
             <img className={cx(styles['icon-image'])} src={icon} alt={name} />
           ) : (
-            <SvgIcon name={icon} />
+            // 单栏二级列经容器注入 16px；不传 style 时 SvgIcon 内联 20px 会盖掉 CSS
+            <SvgIcon
+              name={icon}
+              style={{ fontSize: 'var(--xagi-nav-second-icon-size, 20px)' }}
+            />
           )
         ) : (
           icon

@@ -1,6 +1,13 @@
 import type { McpAskRespondPayload } from './mcpAskIntervention';
 
-export type AgentMode = 'ask' | 'yolo';
+/**
+ * plan 模式功能开关：9 月版本暂不放开，后续翻 true 即启用。
+ * false 时：模式选择器只显示 ask/yolo；isAgentMode('plan') 为 false（缓存回落 yolo）；
+ * 后端代码全量保留休眠（无 plan 入口自然不触发）。
+ */
+export const PLAN_MODE_ENABLED = false;
+
+export type AgentMode = 'ask' | 'yolo' | 'plan';
 
 export type AcpPermissionOptionKind =
   | 'allow_once'
@@ -89,6 +96,15 @@ export interface AcpPermissionInteraction {
 }
 
 export type AgentInterventionAction = 'submit' | 'cancel' | 'skip' | 'timeout';
+
+/**
+ * 权限卡附加响应信息（仅 switch_mode 使用）：修订文本随「否，继续完善计划」
+ * 应答一起提交，由响应层转为 resume 聊天消息发给 agent（权限协议线上只传
+ * option_id，文本不走该协议）。
+ */
+export interface AcpPermissionRespondExtras {
+  revisionText?: string;
+}
 
 export interface AgentInterventionRespondRequest {
   interventionId: string;

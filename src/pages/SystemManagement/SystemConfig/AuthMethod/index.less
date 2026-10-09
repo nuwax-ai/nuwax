@@ -1,0 +1,69 @@
+@import '@/styles/token.less';
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+// 无图标时显示首字
+.name-fallback {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: @colorTextSecondary;
+  font-size: 12px;
+}
+
+.summary-label {
+  margin-right: 4px;
+  color: @colorTextTertiary;
+}
+
+// 与 @fontFamilyCode 同值（该 token 是带引号整串，不能直接用于 font-family）
+.summary-value {
+  font-family: 'JetBrains Mono', monospace, 'Fira Code', Consolas, Monaco,
+    'Courier New';
+}
+
+// 编辑弹窗：字段映射两列
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+
+  :global {
+    .ant-form-item {
+      margin-bottom: 12px;
+    }
+  }
+}
+
+.callback-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}

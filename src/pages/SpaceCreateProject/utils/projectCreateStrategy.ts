@@ -1,8 +1,17 @@
 import { createAppDevInitialPayloadKey } from '@/hooks/useAppDevInitialAutoSend';
 import { apiProjectCreate } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { markAppDevProSkipReadiness } from '@/utils/appDevProSkipReadiness';
+import { buildAppProRoute } from '@/utils/appProRoute';
+import {
+  emitConversationChanged,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
+import { message } from 'antd';
 import { history } from 'umi';
 
 export interface ProjectCreatePayload {
@@ -14,8 +23,17 @@ export interface ProjectCreatePayload {
   modelId?: number;
   tools?: any[];
   computerId?: string;
+  /**
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传；
+   * 选中目录被占用时后端报错（目录禁止跨项目复用）。
+   */
+  workspacePath?: string;
   agentMode?: string;
   agentId?: number;
+  /** 调试关联智能体ID，透传 /api/project/create */
+  devAgentId?: number;
+  /** 资料库已选文档：随 routeState 透传给目标页（消费链路后续接入） */
+  selectedDocs?: SelectedDocInfo[];
 }
 
 interface ProjectStrategy {
@@ -34,6 +52,15 @@ const PROJECT_STRATEGIES: Partial<
   [AgentComponentTypeEnum.Agent]: {
     getUrl: ({ spaceId, targetId, conversationId }) =>
       `/space/${spaceId}/agent-dev?agentId=${targetId}&conversationId=${conversationId}`,
+  },
+  [AgentComponentTypeEnum.UserApp]: {
+    getUrl: ({ spaceId, targetId, conversationId }) =>
+      buildAppProRoute(spaceId, targetId, conversationId),
+  },
+  [AgentComponentTypeEnum.NormalProject]: {
+    // 常规项目会话落会话页（与 openProject 双 id 分支同口径），不走全栈 IDE
+    getUrl: ({ conversationId, agentId }) =>
+      `/home/chat/${conversationId}/${agentId}`,
   },
   [AgentComponentTypeEnum.PageApp]: {
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
@@ -67,39 +94,94 @@ export const createProjectAndNavigate = async ({
 
   const flowTargetType =
     payload.subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : payload.type;
-  const res = await apiProjectCreate({
-    spaceId,
-    targetType: flowTargetType,
-    subType: payload.subType,
-  });
-  const { targetId, conversationId } = res.data;
+  try {
+    const res = await apiProjectCreate({
+      spaceId,
+      targetType: flowTargetType,
+      subType: payload.subType,
+      sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
+      workspacePath: payload.workspacePath,
+      devAgentId: payload.devAgentId,
+    });
+    if (!res?.data?.targetId) {
+      // 业务失败（含自定义目录被占用）：展示后端错误信息并中止
+      throw new Error(
+        res?.message || dict('PC.Components.WorkspaceDir.createProjectFailed'),
+      );
+    }
+    const { targetId, conversationId } = res.data;
+    const directoryProjectTypes = new Set([
+      AgentComponentTypeEnum.NormalProject,
+      AgentComponentTypeEnum.UserApp,
+      AgentComponentTypeEnum.PageApp,
+    ]);
+    const isDirectoryProject = directoryProjectTypes.has(payload.type);
+    if (isDirectoryProject) {
+      emitProjectChanged({
+        operation: 'created',
+        project: {
+          projectId: String(targetId),
+          projectType: payload.type,
+          spaceId: String(spaceId),
+        },
+        origin: 'project-create-strategy',
+        reason: 'create',
+      });
+    }
+    if (conversationId) {
+      emitConversationChanged({
+        operation: 'created',
+        conversationId: String(conversationId),
+        ...(isDirectoryProject
+          ? {
+              project: {
+                projectId: String(targetId),
+                projectType: payload.type,
+                spaceId: String(spaceId),
+              },
+            }
+          : {}),
+        origin: 'project-create-strategy',
+        reason: 'create',
+      });
+    }
 
-  const routeState = {
-    message: payload.prompt,
-    files: payload.files,
-    skillIds: payload.skillIds,
-    modelId: payload.modelId,
-    infos: payload.tools,
-    selectedComputerId: payload.computerId,
-    agentMode: payload.agentMode,
-  };
+    const routeState = {
+      message: payload.prompt,
+      files: payload.files,
+      skillIds: payload.skillIds,
+      modelId: payload.modelId,
+      infos: payload.tools,
+      selectedComputerId: payload.computerId,
+      agentMode: payload.agentMode,
+      selectedDocs: payload.selectedDocs,
+    };
 
-  if (payload.type === AgentComponentTypeEnum.PageApp) {
-    setContext(createAppDevInitialPayloadKey(targetId), routeState);
+    if (payload.type === AgentComponentTypeEnum.PageApp) {
+      setContext(createAppDevInitialPayloadKey(targetId), routeState);
+    }
+    // 全栈应用刚创建时记录还不存在。只标记这一次跳转，进页直接 ensure，不打 readiness。
+    if (payload.type === AgentComponentTypeEnum.UserApp && conversationId) {
+      markAppDevProSkipReadiness(targetId, conversationId);
+    }
+
+    const url = strategy.getUrl({
+      spaceId,
+      targetId,
+      conversationId,
+      tenantConfigInfo,
+      agentId: payload.agentId,
+    });
+
+    const finalUrl =
+      payload.subType === AgentSubTypeEnum.Flow
+        ? `/space/${spaceId}/agent/${targetId}`
+        : url;
+
+    history.push(finalUrl, routeState);
+  } catch (error: any) {
+    message.error(
+      error?.message || dict('PC.Components.WorkspaceDir.createProjectFailed'),
+    );
   }
-
-  const url = strategy.getUrl({
-    spaceId,
-    targetId,
-    conversationId,
-    tenantConfigInfo,
-    agentId: payload.agentId,
-  });
-
-  const finalUrl =
-    payload.subType === AgentSubTypeEnum.Flow
-      ? `/space/${spaceId}/agent/${targetId}`
-      : url;
-
-  history.push(finalUrl, routeState);
 };

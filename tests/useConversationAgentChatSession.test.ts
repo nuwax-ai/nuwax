@@ -2,8 +2,8 @@
  * ConversationAgent 隔离会话 hook 测试
  */
 import { useConversationAgentChatSession } from '@/pages/ConversationAgent/hooks/useConversationAgentChatSession';
-import { TaskStatus } from '@/types/enums/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -72,10 +72,14 @@ describe('useConversationAgentChatSession', () => {
     abortResumeStream: vi.fn(),
     respondAcpPermission: vi.fn(),
     respondMcpAsk: vi.fn(),
+    // 统一终态清算入口（useConversationAgentChatSession 的 onTerminalTaskStatus 调用）
+    finalizeConversationTerminal: vi.fn(),
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // 本组合同聚焦 legacy model 透传；runtime V2 由 conversationRuntimeSession 专项覆盖。
+    localStorage.setItem('conversation_runtime_enabled', '0');
     mockUseModel.mockImplementation((name: string) => {
       if (name === 'conversationAgent') {
         return createConversationAgentModel();
@@ -125,7 +129,7 @@ describe('useConversationAgentChatSession', () => {
     expect(model.runAsync).toHaveBeenCalledWith(9001);
   });
 
-  it('onTerminalTaskStatus 只按 devConversationId 写回终态 taskStatus', () => {
+  it('onTerminalTaskStatus 只按 devConversationId 写回终态 taskStatus', async () => {
     const model = createConversationAgentModel();
     mockUseModel.mockImplementation((name: string) => {
       if (name === 'conversationAgent') return model;
@@ -149,28 +153,17 @@ describe('useConversationAgentChatSession', () => {
       }),
     );
 
-    act(() => {
-      result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
+    await act(async () => {
+      await result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
     });
 
-    expect(model.setConversationInfo).toHaveBeenCalledWith(
-      expect.any(Function),
+    // 1677549 后终态写回统一走 model 的 finalizeConversationTerminal
+    //（taskStatus + awaiting + 活跃态 + 消息残留一次性收敛），不再直调 setConversationInfo
+    expect(model.finalizeConversationTerminal).toHaveBeenCalledWith(
+      9001,
+      TaskStatus.COMPLETE,
+      'poll-snapshot',
     );
-    const updater = model.setConversationInfo.mock.calls[0][0] as (
-      prev: ConversationInfo,
-    ) => ConversationInfo;
-    expect(
-      updater({
-        id: 9001,
-        taskStatus: TaskStatus.EXECUTING,
-      } as ConversationInfo).taskStatus,
-    ).toBe(TaskStatus.COMPLETE);
-    expect(
-      updater({
-        id: 9002,
-        taskStatus: TaskStatus.EXECUTING,
-      } as ConversationInfo).taskStatus,
-    ).toBe(TaskStatus.EXECUTING);
   });
 
   it('没有 devConversationId 时不写回终态 taskStatus', () => {
@@ -201,5 +194,62 @@ describe('useConversationAgentChatSession', () => {
     });
 
     expect(model.setConversationInfo).not.toHaveBeenCalled();
+  });
+
+  it('终态 reload 返回等价列表时不替换 messageList，避免结束闪动', async () => {
+    const existingList = [
+      {
+        id: 1,
+        role: AssistantRoleEnum.USER,
+        text: 'hello',
+      },
+      {
+        id: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+    ];
+    const model = {
+      ...createConversationAgentModel(),
+      messageList: existingList,
+      runAsync: vi.fn().mockResolvedValue({
+        data: { messageList: [...existingList] },
+      }),
+      getCurrentConversationId: vi.fn().mockReturnValue(9001),
+      setMessageList: vi.fn((updater) =>
+        typeof updater === 'function' ? updater(existingList) : updater,
+      ),
+    };
+    mockUseModel.mockImplementation((name: string) => {
+      if (name === 'conversationAgent') return model;
+      if (name === 'chat') {
+        return {
+          hidePagePreview: mockHidePagePreview,
+          showPagePreview: mockShowPagePreview,
+        };
+      }
+      return {};
+    });
+
+    const { result } = renderHook(() =>
+      useConversationAgentChatSession({
+        agentId: 77,
+        agentConfigInfo: {
+          id: 77,
+          devConversationId: 9001,
+          name: 'Dev Agent',
+        } as any,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
+    });
+
+    const updater = model.setMessageList.mock.calls[0][0] as (
+      prev: typeof existingList,
+    ) => typeof existingList;
+    expect(updater(existingList)).toBe(existingList);
   });
 });

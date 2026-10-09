@@ -1,0 +1,303 @@
+@import '@/styles/token';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: @colorBgLayout;
+}
+
+.iframeWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: @colorBgContainer;
+  animation: preview-loading-fade-in 0.2s ease;
+}
+
+.iframeLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.mascot {
+  display: block;
+  overflow: visible;
+}
+
+.mascotBody {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-float 1.6s ease-in-out infinite;
+}
+
+.mascotMotion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-dash 1.6s ease-in-out infinite;
+}
+
+.mascotShadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-shadow 1.6s ease-in-out infinite;
+}
+
+.iframeLoadingTitle {
+  margin: 18px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: @colorText;
+}
+
+.iframeLoadingHint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: @colorTextSecondary;
+}
+
+@keyframes preview-mascot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes preview-mascot-dash {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(6px);
+  }
+}
+
+@keyframes preview-mascot-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: scaleX(0.78);
+    opacity: 0.45;
+  }
+}
+
+@keyframes preview-loading-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascotBody,
+  .mascotMotion,
+  .mascotShadow {
+    animation: none;
+  }
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background-color: @colorBgLayout;
+  background-image: radial-gradient(
+    @colorBorderSecondary 0.7px,
+    transparent 0.7px
+  );
+  background-size: 14px 14px;
+}
+
+.hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.mark {
+  width: 44px;
+  height: 32px;
+  margin-bottom: 4px;
+  border: 1.5px solid @colorTextQuaternary;
+  border-radius: 8px;
+  position: relative;
+  opacity: 0.85;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    height: 2px;
+    border-radius: 1px;
+    background: @colorTextQuaternary;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  color: @colorTextSecondary;
+}
+
+.errorIcon {
+  font-size: 24px;
+  color: @colorError;
+}
+
+.errorTitle {
+  color: @colorError;
+}
+
+.hint {
+  margin: 0;
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 20px;
+  color: @colorTextTertiary;
+}
+
+.error {
+  margin: 0;
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 20px;
+  color: @colorError;
+}
+
+.logBoard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.logHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-bottom: @lineWidth solid @colorBorderSecondary;
+}
+
+.logHeadText {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.logHeadTextError {
+  color: @colorError;
+  font-weight: 600;
+}
+
+.logHidden {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 24px;
+  text-align: center;
+}
+
+.logHiddenIcon {
+  font-size: 28px;
+  color: @colorTextQuaternary;
+}
+
+.logHiddenText {
+  margin: 0;
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 22px;
+  color: @colorTextTertiary;
+}
+
+.logHiddenAction {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 500;
+  color: @colorPrimary;
+
+  &:hover {
+    color: @colorPrimaryHover;
+  }
+}
+
+.logBody {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  overflow: auto;
+  font-family: @fontFamilyCode;
+  font-size: 12px;
+  line-height: 1.75;
+  color: @colorTextSecondary;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.logLine {
+  display: block;
+}
+
+.logEmpty {
+  color: @colorTextQuaternary;
+}

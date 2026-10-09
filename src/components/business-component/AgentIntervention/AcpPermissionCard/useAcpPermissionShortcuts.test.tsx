@@ -18,6 +18,8 @@ function ShortcutHarness({
     ],
     onSelect,
     onCancel,
+    activeIndex: 0,
+    setActiveIndex: vi.fn(),
   });
   return <div>shortcuts</div>;
 }

@@ -1,11 +1,11 @@
 import Loading from '@/components/custom/Loading';
+import { usePageModel } from '@/modelScopes/usePageModel';
 // import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import StickyBox from 'react-sticky-box';
-import { useModel } from 'umi';
 import AgentContent from './AgentContent';
 import AgentConversation from './AgentConversation';
 import styles from './index.less';
@@ -25,7 +25,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
   ({ className, agentId, loading, agentDetail, onVisibleChange }, ref) => {
     const [visible, setVisible] = useState<boolean>(false);
     const [foldVisible, setFoldVisible] = useState<boolean>(false);
-    const { showType } = useModel('conversationInfo');
+    const { showType } = usePageModel('conversationInfo');
 
     const handleClose = () => {
       setVisible(!visible);

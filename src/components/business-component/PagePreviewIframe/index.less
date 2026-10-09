@@ -79,5 +79,7 @@
     height: 100%;
     border: none;
     outline: none;
+    // 块级化消除 inline 基线空隙，避免底部被容器 overflow:hidden 裁切（问题区 #16 同源）
+    display: block;
   }
 }

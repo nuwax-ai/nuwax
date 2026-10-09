@@ -1,5 +1,36 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/color';
 @import '@/styles/token';
+
+.expert-guid-questions {
+  width: 100%;
+  margin-bottom: @marginSm;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// RecommendList 自带 flex-col 工具类，双重选择器保证提示始终单行。
+.expert-guid-questions.expert-guid-questions {
+  flex-flow: row nowrap;
+}
+
+.expert-guid-question {
+  flex-shrink: 0;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.expert-guid-arrow {
+  display: inline-flex;
+  flex-shrink: 0;
+  transform: rotate(-45deg);
+}
 
 .chat-container {
   width: 100%;
@@ -15,6 +46,10 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 13%);
   box-shadow: 0 5px 16px -4px #00000012;
+  // 窄容器（会话页左栏拖窄/EditAgent 预览调试面板）下按宽度降级工具栏，
+  // 防止状态栏叠加溢出被 overflow:hidden 裁掉发送钮（问题区 #15）
+  container-type: inline-size;
+  container-name: chat-input-box;
 
   &.drag-over {
     border-color: @colorPrimary;
@@ -65,6 +100,22 @@
     position: relative;
     width: 100%;
     min-width: 0;
+
+    /* 裁切随编辑器滚动上移的回执 pill（与首行文字同口径被滚出） */
+    overflow: hidden;
+  }
+
+  /* 行首回执 pill 行（专家/召唤专家/首页项目类型）：内联占据输入框最前面，
+     编辑器文本经 inlinePrefixWidth 缩进到 pill 之后；pill 本体复用 expert-pill 样式 */
+  .input-prefix-pills {
+    position: absolute;
+    top: 4px;
+    left: @paddingSm;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: calc(100% - @paddingSm * 2);
   }
 
   .selected-tag {
@@ -194,16 +245,6 @@
         }
       }
 
-      &.task-agent-box {
-        transition: all ease-in-out 0.2s;
-
-        &.task-agent-active {
-          color: @colorPrimary;
-          border-color: @colorPrimary;
-          background-color: @colorPrimaryBg;
-        }
-      }
-
       &.upload-box-disabled {
         cursor: not-allowed;
         color: @colorIcon !important;
@@ -312,6 +353,26 @@
   }
 }
 
+/* 窄容器降级（问题区 #15）：
+   ≤560px 审批 pill 只留盾牌图标（文字隐藏，Tooltip 说明仍在）；
+   ≤440px 隐藏已连接连接器头像组——连接器入口仍可从 + 号聚合菜单进入，
+   让位右侧电脑/模型选择器与发送钮。分档从宽到窄叠加生效，不换行不出滚动条 */
+@container chat-input-box (max-width: 560px) {
+  .chat-container .approval-pill {
+    padding: @paddingXxs;
+
+    > span:not(.approval-pill-icon-slot) {
+      display: none;
+    }
+  }
+}
+
+@container chat-input-box (max-width: 440px) {
+  .chat-container .connector-group {
+    display: none;
+  }
+}
+
 // 下拉菜单容器
 :global {
   .agent-mode-dropdown-overlay {
@@ -402,10 +463,11 @@
   transform: translate(-50%);
 
   .to-bottom {
-    width: 44px;
-    height: 44px;
+    width: var(--scroll-btn-size, 44px);
+    height: var(--scroll-btn-size, 44px);
     position: absolute;
-    bottom: 24px;
+    // 可由上层（如 UnifiedChatSession）通过 CSS 变量上调，避免与队列面板重叠
+    bottom: var(--scroll-btn-bottom-offset, 24px);
     border: @lineWidth solid @colorSplit;
     background-color: @colorBgContainer;
     border-radius: 50%;
@@ -414,13 +476,14 @@
     transform: translate(-50%);
     display: flex;
     align-items: center;
-    font-size: @fontSizeXl;
+    font-size: var(--scroll-btn-icon-size, @fontSizeXl);
     justify-content: center;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
     z-index: 100;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out,
+      bottom 0.2s ease;
 
     &.visible {
       opacity: 1;
@@ -440,4 +503,366 @@
   .chat-container {
     max-width: 100%;
   }
+}
+
+/* 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，仅个人电脑时展示；
+   负边距抵消卡片 padding 贴住下缘，底圆角与卡片(20px)承接 */
+.workspace-dir-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  // var() 别名 token 不能做 less 负号运算，负边距需包 calc
+  margin: @marginXxs calc(0px - @padding) -12px;
+  padding: 6px @padding;
+  border-radius: 0 0 20px 20px;
+  background: var(--xagi-layout-bg-secondary, #f2f2f2);
+}
+
+// 底栏脱离文档流，出现/收起均不改变输入卡及会话的布局高度。
+.input-card-anchor {
+  &.has-announcement > .workspace-context-bar {
+    top: calc(100% - @fontHeight - 1px);
+  }
+
+  &.has-context-bar > .chat-container {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+.announcement-covered {
+  // 底栏显示时隐藏其下方提示，避免文字重叠；无底栏时恢复提示。
+  visibility: hidden;
+}
+
+.workspace-context-bar {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  width: min(100%, 800px);
+  transform: translateX(-50%);
+  z-index: 1;
+  margin: 0;
+  // 沿用 workspace-dir-bar 的原有上下 6px 内边距和内容自然高度。
+  box-shadow: 0 5px 16px -4px #00000012;
+  gap: 12px;
+  min-width: 0;
+
+  // 描边独立于布局，沿用输入卡边框与底部圆角，不增加底栏高度。
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 13%);
+    border-top: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  > .pinned-project-bar {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+
+    &.pinned-project-with-directory {
+      max-width: 50%;
+    }
+  }
+}
+
+.workspace-space-item {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.workspace-directory-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-dir-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  color: @colorTextTertiary;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+    color: @colorText;
+  }
+}
+
+.workspace-dir-text {
+  min-width: 0;
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.workspace-dir-caret {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: @colorTextQuaternary;
+}
+
+/* 项目上框栏：与工作目录栏同槽位（复用 workspace-dir-bar 基样式），
+   直接展示项目名（类型不作徽标、降级为整行 title 悬停提示）+ 移除按钮；
+   清空按钮贴文案并排（后续目录选择等同行并排时各自按钮跟各自文案），
+   始终可见 */
+.pinned-project-bar {
+  gap: 6px;
+}
+
+.pinned-project-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  color: @colorTextTertiary;
+  font-size: 14px;
+}
+
+.pinned-project-name {
+  // 覆盖 workspace-dir-text 的 420px，给移除按钮留位
+  max-width: 360px;
+  font-weight: 500;
+}
+
+.pinned-project-remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: @colorTextQuaternary;
+  font-size: 11px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+    color: @colorText;
+  }
+}
+
+/* + 号聚合菜单（附件 / @ 上下文 / / 能力 / 连接器 / 开关组）：白色卡片 + 图标列 + 文案，
+   整体比常规下拉大一档（menu 宽度 / 行高 / 图标胶囊 / 字号） */
+.plus-menu-overlay {
+  :global(.ant-dropdown-menu) {
+    min-width: 264px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  :global(.ant-dropdown-menu-item) {
+    padding: 13px 14px;
+    border-radius: 10px;
+  }
+
+  :global(.ant-dropdown-menu-item-divider) {
+    margin: 8px 6px;
+  }
+}
+
+.plus-menu-label {
+  flex: 1;
+  gap: 12px;
+  color: @colorText;
+  font-size: @fontSize;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+/* 连接器行右侧展开箭头 */
+.plus-menu-arrow {
+  margin-left: auto;
+  color: @colorTextTertiary;
+  font-size: 11px;
+}
+
+/* 开关行（产物版本管理 / 变更自动提交 / 审批模式）：点整行切换，受控菜单保持展开，
+   Switch 纯展示（pointer-events:none）靠右，交互统一由行承接避免双重触发 */
+.plus-menu-switch-row {
+  gap: 12px;
+  width: 100%;
+  cursor: pointer;
+
+  :global(.ant-switch) {
+    pointer-events: none;
+  }
+}
+
+/* 图标胶囊：附件 / @ / / 等入口统一 20×20 灰底圆角容器（随弹层放大一档） */
+.trigger-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: @colorFillSecondary;
+  color: @colorTextSecondary;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* 审批模式回执 pill（+ 号旁，mode=ask 时显示）：
+   图标槽默认盾牌，hover 时切换为关闭 x（CSS 显隐，点击 x 切回自动） */
+.approval-pill {
+  gap: 6px;
+  height: 28px;
+  padding: @paddingXxs 10px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 999px;
+  box-sizing: border-box;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  flex-shrink: 0;
+
+  &.disabled {
+    opacity: 0.5;
+
+    .approval-pill-close {
+      cursor: not-allowed;
+    }
+  }
+
+  .approval-pill-icon-slot {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .approval-pill-icon,
+  .approval-pill-close {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .approval-pill-icon {
+    color: @colorPrimary;
+    font-size: 13px;
+  }
+
+  .approval-pill-close {
+    color: @colorTextTertiary;
+    font-size: 11px;
+    cursor: pointer;
+    visibility: hidden;
+
+    &:hover {
+      color: @colorText;
+    }
+  }
+
+  // hover（非禁用）时盾牌 → 关闭 x
+  &:hover:not(.disabled) {
+    .approval-pill-icon {
+      visibility: hidden;
+    }
+
+    .approval-pill-close {
+      visibility: visible;
+    }
+  }
+}
+
+/* 回执 pill 本体（输入框行首：已选专家/召唤专家/推荐类型）：
+   会话仅一个专家，随消息以 selectedComponents 发送 */
+.expert-pill {
+  gap: 4px;
+  max-width: 180px;
+
+  /* 垂直度量与编辑器内技能 chip（.mention-chip：12px×1.5 行高 + 上下
+     2px padding = 22px）同高；文字行高钉 18px 防宿主行高漂移 */
+  padding: 2px 6px 2px 10px;
+  line-height: 18px;
+  border-radius: 999px;
+  background: @colorFillSecondary;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.expert-pill-name {
+  overflow: hidden;
+  color: @colorText;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 召唤专家 chip 图标（iconSrc 为鉴权解析后的地址，加载失败隐藏） */
+.expert-pill-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.expert-pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: @colorTextSecondary;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFill;
+  }
+}
+
+/* 已连接连接器头像组（工具栏，重叠最多 3 个 + N）：点击唤起能力弹窗·连接器页签 */
+.connector-group {
+  flex-shrink: 0;
+  padding: 0 2px;
+  border-radius: 999px;
+  cursor: pointer;
+
+  &:hover {
+    background: @colorFillSecondary;
+  }
+
+  // 键盘聚焦态（Tab 停靠）：主色内缩描边，与能力弹窗停靠控件同语言
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+}
+
+.connector-avatar {
+  color: @colorText;
+  font-size: 12px;
 }

@@ -17,7 +17,6 @@ import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   DEFAULT_DRAWER_FORM,
   SKILL_FORM_KEY,
@@ -1266,7 +1265,6 @@ const Workflow: React.FC = () => {
       url: `${process.env.BASE_URL}/api/workflow/test/node/execute`,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
         Accept: ' application/json, text/plain, */* ',
       },
       body: _params,
@@ -1318,7 +1316,6 @@ const Workflow: React.FC = () => {
       url: `${process.env.BASE_URL}/api/workflow/test/execute`,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
         Accept: ' application/json, text/plain, */* ',
       },
       body: params,

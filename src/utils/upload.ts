@@ -60,5 +60,7 @@ export const getProgressStatus = (fileInfo: UploadFileInfo) => {
     return 'success';
   }
 
-  return 'active';
+  // 上传态应由调用方显式提供。历史消息/队列回填的已上传文件可能没有
+  // status 和 percent，不能把未知状态当作仍在上传，否则附件会一直转圈。
+  return fileInfo?.percent !== undefined ? 'active' : 'normal';
 };

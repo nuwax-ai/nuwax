@@ -1,0 +1,16 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+
+  :global(.ant-descriptions-item-content),
+  :global(.ant-table-cell) {
+    overflow-wrap: anywhere;
+  }
+}
+
+.importForm {
+  width: 100%;
+  overflow-wrap: anywhere;
+}

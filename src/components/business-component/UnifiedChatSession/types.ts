@@ -2,14 +2,24 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import type { ChatInputUnifiedProps } from '@/components/business-component/ChatInputUnified';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
+import type { FetchMentionFiles } from '@/components/ChatInputHome/MentionPopup/types';
+import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
-import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  AgentSelectedComponentInfo,
+  GuidQuestionDto,
+} from '@/types/interfaces/agent';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import * as React from 'react';
 
 export interface UnifiedAgentInfo {
@@ -21,11 +31,18 @@ export interface UnifiedAgentInfo {
   guidQuestionDtos?: any[];
   eventBindConfig?: any;
   hasPermission?: boolean;
-  sandboxId?: string;
+  /**
+   * Agent 绑定的沙箱 id（透传 ChatInputUnified agentSandboxId，后端 string/number
+   * 两态都有）。云端哨兵 '-1' 不算绑定（2451/2490 口径）：仅展示回落，不锁
+   * fixedSelection——空会话仍可改选个人电脑
+   */
+  sandboxId?: string | number;
   hideDesktop?: number;
   expandPageArea?: number;
   /** 是否允许用户在对话框中选择 Agent 模式（1 允许，其他不允许） */
   allowChooseMode?: DefaultSelectedEnum | number;
+  /** 是否开启版本控制（1 开启），作为会话框配置未配置过时的默认值 */
+  enableVersionControl?: DefaultSelectedEnum | number;
 }
 
 export interface UnifiedChatSessionProps {
@@ -47,10 +64,13 @@ export interface UnifiedChatSessionProps {
    * 本地流式中，导致既不轮询也不订阅 sub（续不上）。未传时回退到 isConversationActive。
    */
   isLocallyStreaming?: boolean;
+  /** 本地消息已发送，但当前 chat SSE 尚未收到协议终态。 */
+  isAwaitingChatTerminal?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
-  chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
+  // 与 RecommendListProps 同口径：开场白问题推荐（对象）与轮次后建议（字符串）两态
+  chatSuggestList?: GuidQuestionDto[] | string[]; // 页面会话建议
 
   // 智能体配置与信息
   agentInfo?: UnifiedAgentInfo;
@@ -65,7 +85,9 @@ export interface UnifiedChatSessionProps {
     skillIds?: number[],
     modelId?: number,
     selectedAgentMode?: AgentMode,
-  ) => void;
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
+  ) => void | Promise<unknown>;
   onClear?: () => Promise<void>; // 刷新/清空会话的回调
   onLoadMoreMessage?: (id: number) => void; // 向上滚动到顶加载历史消息的回调
 
@@ -84,6 +106,10 @@ export interface UnifiedChatSessionProps {
   isVariablesFilled?: boolean;
   isVariablesDisabled?: boolean;
   clearLoading?: boolean;
+  /** 是否展示清空会话/小刷子按钮（默认 true） */
+  showClearIcon?: boolean;
+  /** 是否展示 TaskAgent 会话底部执行状态栏（默认 true） */
+  showConversationStatus?: boolean;
   isSelectionLocked?: boolean;
   hasUserSentMessage?: boolean;
   readonly?: boolean;
@@ -92,9 +118,15 @@ export interface UnifiedChatSessionProps {
 
   // 文件预览与智能体电脑状态/操作 (通用型智能体 TaskAgent 专属)
   selectedComputerId?: string;
+  /** 空会话内由用户改选的电脑在首次发送后仍优先于创建时的默认绑定。 */
+  hasChangedComputerInEmptySession?: boolean;
+  /** 当前会话详情已加载时，按 sandboxServerId 恢复历史会话的电脑与锁定状态。 */
+  restoreConversationSandbox?: boolean;
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  /** 保活页面是否可见；隐藏时暂停滚动，切回恢复最后阅读位置。 */
+  active?: boolean;
   allowAutoScrollRef?: React.MutableRefObject<boolean>;
   scrollTimeoutRef?: React.MutableRefObject<any>;
   setShowScrollBtn?: (show: boolean) => void;
@@ -105,8 +137,24 @@ export interface UnifiedChatSessionProps {
     isLastMessage: boolean,
   ) => React.ReactNode;
   renderEmptyState?: () => React.ReactNode;
+  /**
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView；v2 = V2（统一默认）
+   * 轮次工作轨迹渲染器。renderMessageItem 恒优先走原逻辑。
+   */
+  messageRenderer?: 'v1' | 'v2';
+  /**
+   * V2 工具详情资源点击（文件路径/URL）；仅 messageRenderer='v2' 时生效。
+   * 未提供时 V2 详情内文件路径仅展示不可点。
+   */
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
+  /**
+   * V2 OpenUI sidecar 打开联动（摘要行点击 / autoOpen）；仅 messageRenderer='v2' 时生效。
+   * 未提供时由 UnifiedChatSession 内置默认实现兜底（打开预览面板并选中 .openui.json）。
+   */
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 
   // 功能配置开关
+  onFetchMentionFiles?: FetchMentionFiles;
   enableMention?: boolean; // 是否支持 @ 提及项目文件/技能
   placeholder?: string;
   messageViewRef?: React.RefObject<HTMLDivElement>;
@@ -118,7 +166,7 @@ export interface UnifiedChatSessionProps {
   voiceInputMock?: boolean;
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
-  chatInputProps?: Partial<ChatInputProps>;
+  chatInputProps?: Partial<ChatInputUnifiedProps>;
 
   /**
    * 队列两次消费之间的最小间隔（ms），用于规避会话状态切换的中间空白；默认 500。
@@ -127,9 +175,18 @@ export interface UnifiedChatSessionProps {
 
   /**
    * 消息队列上下文覆盖（预览 Tab 等隔离会话源场景）。
-   * 未传时使用全局 conversationInfo model。
+   * 未传时以本组件 props（isLocallyStreaming/isConversationActive 与 conversationInfo?.taskStatus）
+   * 构造默认上下文——不再读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
+  /**
+   * Facade Props（方案 §6.4「session/actions/presentation」三对象之首）：
+   * 语义化会话视图，由入口层（或未来的 ConversationSessionProvider）注入。
+   * 未传时组件内部以 selectConversationSessionView 从现有 props 派生（兼容并存，
+   * 逐入口迁移后内部派生将删除）。内部派生不含 resumeSubscribed（sub 订阅态在
+   * useConversationStreamResume 内部，轮询门禁由该 hook 自持真实值）。
+   */
+  sessionView?: ConversationSessionView;
   // ===== 原 ChatInputHome 中 useModel('conversationInfo') 数据，改为从外部传入 =====
   /** 停止会话的异步函数 */
   runStopConversation?: (id: string) => Promise<any>;
@@ -161,6 +218,7 @@ export interface UnifiedChatSessionProps {
     conversationId: number | string,
     currentList: MessageInfo[],
     onClose?: () => void,
+    debugSource?: string,
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream） */
   onAbortResumeStream?: () => void;
@@ -168,6 +226,12 @@ export interface UnifiedChatSessionProps {
   onReloadConversationHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /** 订阅 sub 前等待 history 中出现新 user，主要用于 agent-dev 预览 tab 外部写入续流 */
+  waitForHistoryUserBeforeResume?: boolean;
+  /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
+  resumeDebugSource?: string;
+  /** 状态轮询返回完整会话快照时，静默同步新增历史消息 */
+  onConversationSnapshot?: (snapshot: ConversationInfo) => void;
   /** 轮询拿到终态 taskStatus 时写回当前会话 model */
   onTerminalTaskStatus?: (status: TaskStatus) => void;
 }

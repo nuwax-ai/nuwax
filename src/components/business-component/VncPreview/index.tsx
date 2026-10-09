@@ -5,15 +5,20 @@ import {
 } from '@/constants/common.constants';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { t } from '@/services/i18nRuntime';
-import { apiCheckVncStatus } from '@/services/vncDesktop';
+import {
+  apiCheckVncStatus,
+  isEnsurePodThrottledError,
+} from '@/services/vncDesktop';
 import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, message, Spin, Tag } from 'antd';
+import classNames from 'classnames';
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +27,7 @@ import IdleWarningModal from './components/IdleWarningModal';
 import styles from './index.less';
 import { ConnectionStatus, VncPreviewProps, VncPreviewRef } from './type';
 import { useUrlRetry } from './useUrlRetry';
+import { buildVncClientUrl } from './vncClientUrl';
 
 // 创建 VncPreview 空闲检测专用 logger
 const vncIdleLogger = createLogger('[Idle:VncPreview]');
@@ -30,24 +36,45 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
   (
     {
       serviceUrl,
+      sourceUrl,
       cId,
       readOnly = false,
       autoConnect = false,
       style,
       className,
       idleDetection,
+      onReconnect,
+      appStage,
     },
     ref,
   ) => {
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+    const [isIframeFullscreen, setIsIframeFullscreen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const connectionGenerationRef = useRef(0);
+    const statusRef = useRef(status);
+    statusRef.current = status;
+    const appStageRef = useRef(appStage);
+    appStageRef.current = appStage;
 
     // 空闲警告弹窗状态
     const [showIdleWarning, setShowIdleWarning] = useState<boolean>(false);
     // 防止重复触发空闲超时弹窗
     const isIdleWarningActiveRef = useRef<boolean>(false);
+
+    useEffect(() => {
+      const syncFullscreenState = () => {
+        setIsIframeFullscreen(document.fullscreenElement === iframeRef.current);
+      };
+
+      document.addEventListener('fullscreenchange', syncFullscreenState);
+      syncFullscreenState();
+      return () => {
+        document.removeEventListener('fullscreenchange', syncFullscreenState);
+      };
+    }, []);
 
     // 解构空闲检测配置
     const {
@@ -64,7 +91,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       maxRetryDuration: 60000, // 最长重试 1 分钟
       retryStatusCodes: [404], // 仅对 404 重试
       checkFn: async () => {
-        const res = await apiCheckVncStatus(Number(cId));
+        const res = await apiCheckVncStatus(Number(cId), appStageRef.current);
         const isReady = res.data?.novnc_ready ?? false;
         return { ok: isReady, status: isReady ? 200 : 404 };
       },
@@ -77,22 +104,11 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         return null;
       }
 
-      const cleanBaseUrl = serviceUrl?.replace(/\/+$/, '');
-      const params = new URLSearchParams();
-
-      params.set('resize', 'scale');
-      params.set('autoconnect', 'true');
-      params.set('reconnect', 'true');
-      params.set('reconnect_delay', '500');
-
-      if (readOnly) {
-        params.set('view_only', 'true');
-      }
-
-      return `${cleanBaseUrl}/computer/desktop/${cId}/vnc.html?${params.toString()}`;
-    }, [serviceUrl, cId, readOnly]);
+      return buildVncClientUrl({ serviceUrl, sourceUrl, cId, readOnly });
+    }, [serviceUrl, sourceUrl, cId, readOnly]);
 
     const connect = useCallback(async () => {
+      const generation = connectionGenerationRef.current;
       const url = buildVncUrl();
       if (!url) {
         setStatus('error');
@@ -106,6 +122,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         connect();
       });
 
+      if (generation !== connectionGenerationRef.current || result.cancelled)
+        return;
       if (result.shouldRetry) {
         return;
       }
@@ -147,15 +165,55 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     }, [buildVncUrl, checkWithRetry]);
 
     const disconnect = useCallback(() => {
+      connectionGenerationRef.current += 1;
       resetRetry();
       setStatus('disconnected');
       setIframeUrl(null);
       setErrorMessage('');
     }, [resetRetry]);
 
+    /**
+     * 完整重连：先由父级恢复容器与保活（onReconnect），再执行本地 connect。
+     * 解决长时间空闲后容器被回收、仅 connect 检测状态永远失败的问题。
+     * 未传入 onReconnect 时行为与 connect 一致，保持向后兼容。
+     */
+    const handleRetry = useCallback(async () => {
+      const generation = ++connectionGenerationRef.current;
+      setStatus('connecting');
+      setErrorMessage('');
+      // 重置重试计时窗口，避免沿用上次 60s 超时累计
+      resetRetry();
+
+      if (onReconnect) {
+        try {
+          await onReconnect();
+        } catch (error) {
+          if (generation !== connectionGenerationRef.current) return;
+          // ensurePod 5s 本地限流属于正常情况（容器可能已在运行），继续尝试连接
+          if (!isEnsurePodThrottledError(error)) {
+            console.error('[VncPreview] onReconnect failed:', error);
+            setStatus('error');
+            setErrorMessage(
+              error instanceof Error
+                ? error.message
+                : t('PC.Components.VncPreview.cannotEstablish'),
+            );
+            return;
+          }
+          console.log(
+            '[VncPreview] ensurePod throttled during reconnect, continue connect',
+          );
+        }
+      }
+
+      if (generation !== connectionGenerationRef.current) return;
+      await connect();
+    }, [onReconnect, resetRetry, connect]);
+
     // 组件卸载时清除重试定时器
     useEffect(() => {
       return () => {
+        connectionGenerationRef.current += 1;
         resetRetry();
       };
     }, [resetRetry]);
@@ -163,6 +221,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     // 监听来自 noVNC iframe 的消息
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
+        // 只接收当前 iframe 的消息，旧配置页面或其它窗口不能改连接状态。
+        if (event.source !== iframeRef.current?.contentWindow) return;
         if (!event.data || typeof event.data !== 'object') return;
 
         const { type, msg } = event.data;
@@ -199,22 +259,28 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       };
     }, []);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-      if (autoConnect && status === 'disconnected') {
-        connect();
-      }
-    }, [autoConnect]);
-
-    // Handle re-connection when configuration changes
-    useEffect(() => {
-      if (status === 'connected' || status === 'connecting') {
-        connect();
-      }
+    // 配置提交时即清理旧请求和文档，阻止旧结果在新配置渲染后的间隙落地。
+    useLayoutEffect(() => {
+      const shouldConnect =
+        autoConnect ||
+        statusRef.current === 'connected' ||
+        statusRef.current === 'connecting';
+      connectionGenerationRef.current += 1;
+      resetRetry();
+      setIframeUrl(null);
+      setErrorMessage('');
+      setStatus('disconnected');
+      if (shouldConnect) void connect();
+      return () => {
+        connectionGenerationRef.current += 1;
+        resetRetry();
+      };
+      // connect 的底层 retry 回调每次 render 都更新；仅业务配置变化才重新连接。
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serviceUrl, cId, readOnly]);
+    }, [serviceUrl, sourceUrl, cId, readOnly, appStage, autoConnect]);
 
-    const handleIframeLoad = () => {
+    const handleIframeLoad = (event: { currentTarget: HTMLIFrameElement }) => {
+      if (event.currentTarget !== iframeRef.current) return;
       // 使用函数式 setState 避免闭包陈旧值问题
       setStatus((prevStatus) => {
         if (prevStatus === 'connecting' || prevStatus === 'error') {
@@ -225,7 +291,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       });
     };
 
-    const handleIframeError = () => {
+    const handleIframeError = (event: { currentTarget: HTMLIFrameElement }) => {
+      if (event.currentTarget !== iframeRef.current) return;
       setStatus('error');
       setErrorMessage('Failed to load VNC client.');
     };
@@ -351,12 +418,20 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       ref,
       () => ({
         connect,
+        reconnect: handleRetry,
         disconnect,
         renderStatusTag,
         getStatus: () => status,
         resetIdleTimer,
       }),
-      [connect, disconnect, renderStatusTag, status, resetIdleTimer],
+      [
+        connect,
+        handleRetry,
+        disconnect,
+        renderStatusTag,
+        status,
+        resetIdleTimer,
+      ],
     );
 
     return (
@@ -405,7 +480,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
                 type="error"
                 showIcon
                 action={
-                  <Button size="small" type="primary" onClick={connect}>
+                  <Button size="small" type="primary" onClick={handleRetry}>
                     {t('PC.Components.VncPreview.retry')}
                   </Button>
                 }
@@ -415,14 +490,20 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
           {iframeUrl && (
             <iframe
+              key={iframeUrl}
               ref={iframeRef}
               src={iframeUrl}
               data-vnc-id={cId}
               title="VNC Preview"
               sandbox={SANDBOX}
+              allow="fullscreen"
+              allowFullScreen
               scrolling="no"
               onLoad={handleIframeLoad}
               onError={handleIframeError}
+              className={classNames({
+                'immersive-shell-fullscreen': isIframeFullscreen,
+              })}
               style={{ display: status === 'disconnected' ? 'none' : 'block' }}
             />
           )}

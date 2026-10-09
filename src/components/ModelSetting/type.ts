@@ -23,4 +23,10 @@ export interface GroupModelListItemProps {
 export interface ModelSettingProp {
   form: FormInstance;
   modelConfig?: any;
+  /** 父组件统一拉取的模型列表，供下拉与参数弹窗共享 */
+  modelList?: ModelListItemProps[];
+  /** 按协议分组后的下拉选项 */
+  groupedOptionsData?: GroupModelItem[];
+  /** 模型列表加载中 */
+  loading?: boolean;
 }

@@ -15,7 +15,7 @@
 .main-content {
   height: 100%;
   position: relative;
-  min-width: 400px;
+  min-width: 0;
   animation: fade-in 0.4s ease-out forwards;
 
   .title-box {
@@ -32,6 +32,12 @@
       &.title-container-collapsed {
         padding-left: @paddingXs;
       }
+
+      // 浏览器 style3 的侧栏 logo 中心比会话标题中心低 7px；只下移左侧标题组，
+      // 右侧文件/终端/云电脑操作保持原有顶栏布局。客户端按各平台壳避让单独处理。
+      // .browser-style3-title-leading {
+      //   transform: translateY(7px);
+      // }
 
       .icon-box {
         width: 32px;
@@ -54,34 +60,30 @@
     flex: 1;
     display: flex;
     position: relative;
-    gap: 20px;
+
+    // left 栏内容包装：会话进度面板的定位上下文（与 chat-section 平级、距顶/距右等距），
+    // 并接管胶囊面板的 cqh/@container 容器查询上下文（原为 session-container）
+    .chat-pane {
+      position: relative;
+      container-type: size;
+      width: 100%;
+      height: 100%;
+    }
 
     .chat-section {
       width: 100%;
-      flex: 1;
+      height: 100%;
+      box-sizing: border-box;
+      // 与右侧面板各留 8px，让拖拽分隔条落在间隔正中
+      padding-right: 8px;
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
 
-      &.file-tree-visible {
-        flex: none;
-        width: 37%;
-      }
-
-      /* 干预固定栏：与 ChatInputHome .chat-container 外框同宽 */
-      .intervention-dock {
-        flex-shrink: 0;
-        z-index: 30;
-        width: 100%;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0 0 @paddingXs;
-        box-sizing: border-box;
-      }
-
       .chat-wrapper-content {
-        overflow: auto;
+        // 横向收敛：表格/代码块自带内部滚动，外层横向滚动冗余（问题区 #12）
+        overflow: hidden auto;
         margin-bottom: 5px;
         display: flex;
         flex-direction: column;
@@ -166,24 +168,56 @@
       }
     }
 
-    /* 文件树侧边栏样式 */
+    /* 文件树侧边栏样式（宽度由 ResizableSplit 右侧 pane 控制） */
     .file-tree-sidebar {
       flex: 1;
       // position: sticky;
       position: relative;
       height: 100%;
+      // 与聊天区各留 8px，让拖拽分隔条落在间隔正中
+      padding-left: 8px;
       padding-bottom: 20px;
       margin: 0;
       box-sizing: border-box;
       flex-shrink: 0;
       visibility: visible;
       opacity: 1;
-      transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+      transition: opacity 0.3s ease-in-out;
+
+      .right-panel-body {
+        position: relative;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+      }
 
       .file-tree-container {
         border-radius: 16px;
         border: 1px solid rgba(5, 5, 5, 6%);
         background: #f5f5f5;
+      }
+
+      /**
+       * 资料库 / Page 盖在顶部图标下方的内容区（对齐 AppDevPro .repo-doc-preview）。
+       * 相对 file-tree-sidebar，不越过会话顶栏。
+       */
+      .page-preview-in-content {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid rgba(5, 5, 5, 6%);
+        background: @colorBgContainer;
+      }
+
+      .page-preview-in-content-hidden {
+        display: none;
       }
     }
   }

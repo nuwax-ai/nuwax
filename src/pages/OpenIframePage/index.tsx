@@ -1,16 +1,18 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import { t } from '@/services/i18nRuntime';
+import { resolveMicroAppIframePath } from '@/utils/microAppRoutes';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useModel } from 'umi';
+import { Navigate, useLocation, useModel } from 'umi';
 
 /**
  * 打开iframe页面
  * @description 打开iframe页面，用于打开外部链接
  */
-const OpenIframePage: React.FC = () => {
+const LegacyIframePage: React.FC = () => {
   const location = useLocation();
   // url地址
   const [iframeUrl, setIframeUrl] = useState<string>('');
@@ -31,6 +33,7 @@ const OpenIframePage: React.FC = () => {
   const isAppShell = location.pathname.startsWith('/app/');
   const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
     useModel('useOpenApp');
+  const chromeFlags = useOpenAppChromeFlags();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   /** 生态市场页面域名地址，用于 postMessage 来源校验与回传 */
@@ -109,10 +112,19 @@ const OpenIframePage: React.FC = () => {
   }, [iframeUrl, iframeKey, ecoWebOrigin]);
 
   return (
-    <div className={classNames('h-full', 'w-full', 'relative')}>
+    // overflow-hidden + iframe 块级化：iframe 默认 inline 元素基线对齐会在底部
+    // 多出几像素，叠加容器装饰边距把宿主撑出右侧滚动条（问题区 #16）
+    <div
+      className={classNames('h-full', 'w-full', 'relative', 'overflow-hidden')}
+    >
       {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
       <ConditionRender
-        condition={isAppShell && isAppSidebarMode && !isAppSidebarVisible}
+        condition={
+          isAppShell &&
+          isAppSidebarMode &&
+          !isAppSidebarVisible &&
+          !chromeFlags.hideMenu
+        }
       >
         <div
           style={{
@@ -141,10 +153,29 @@ const OpenIframePage: React.FC = () => {
           src={iframeUrl}
           width="100%"
           height="100%"
-          style={{ border: 'none' }}
+          style={{ border: 'none', display: 'block' }}
         />
       )}
     </div>
+  );
+};
+
+const LegacyMicroAppRedirect: React.FC<{ path: string }> = ({ path }) => (
+  <Navigate to={path} replace />
+);
+
+/** 已确认的旧微应用入口迁到宿主，其余入口继续消费原 iframe 页面。 */
+const OpenIframePage: React.FC = () => {
+  const location = useLocation();
+  const microAppPath = location.pathname.startsWith('/app/')
+    ? null
+    : resolveMicroAppIframePath(
+        `${location.pathname}${location.search}${location.hash}`,
+      );
+  return microAppPath ? (
+    <LegacyMicroAppRedirect path={microAppPath} />
+  ) : (
+    <LegacyIframePage />
   );
 };
 

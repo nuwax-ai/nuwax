@@ -480,6 +480,7 @@ const SpacePluginCloudTool: React.FC = () => {
                     styles['main-container'],
                     'overflow-y',
                     'flex-1',
+                    'scroll-container',
                   )}
                 >
                   <PluginConfigTitle
@@ -545,6 +546,16 @@ const SpacePluginCloudTool: React.FC = () => {
                 </div>
               )}
             </div>
+            {/*版本历史：与内容区并排，展开时显示在最右侧（header 下方）*/}
+            <VersionHistory
+              headerClassName={cx(styles['version-history-header'])}
+              targetId={pluginId}
+              targetName={pluginInfo?.name}
+              targetType={AgentComponentTypeEnum.Plugin}
+              permissions={pluginInfo?.permissions || []}
+              visible={visible}
+              onClose={() => setVisible(false)}
+            />
           </div>
         </div>
       </div>
@@ -578,16 +589,6 @@ const SpacePluginCloudTool: React.FC = () => {
         // 取消发布
         onCancel={() => setOpenModal(false)}
         onConfirm={handleConfirmPublishPlugin}
-      />
-      {/*版本历史*/}
-      <VersionHistory
-        headerClassName={cx(styles['version-history-header'])}
-        targetId={pluginId}
-        targetName={pluginInfo?.name}
-        targetType={AgentComponentTypeEnum.Plugin}
-        permissions={pluginInfo?.permissions || []}
-        visible={visible}
-        onClose={() => setVisible(false)}
       />
       {/*修改插件弹窗*/}
       <CreateNewPlugin

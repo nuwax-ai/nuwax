@@ -2,24 +2,46 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import AcpPermissionCard from './index';
 
-vi.mock('@/services/i18nRuntime', () => ({
-  t: (key: string, ...args: string[]) => {
+vi.mock('@/services/i18nRuntime', () => {
+  const tImpl = (key: string, ...args: string[]): string => {
     const dict: Record<string, string> = {
       'PC.Components.AcpPermissionCard.defaultTitle': '权限审批',
       'PC.Components.AcpPermissionCard.eyebrow': '安全确认',
       'PC.Components.AcpPermissionCard.submitted': '已提交',
       'PC.Components.AcpPermissionCard.shortcutHint': '{0} ({1})',
+      'PC.Components.AcpPermissionCard.allowOnce': '允许一次',
+      'PC.Components.AcpPermissionCard.allowAlways': '始终允许',
+      'PC.Components.AcpPermissionCard.rejectOnce': '拒绝',
+      'PC.Components.AcpPermissionCard.option.bypassPermissions':
+        '是，并绕过所有权限',
+      'PC.Components.AcpPermissionCard.option.auto': '是，并使用 auto 模式',
+      'PC.Components.AcpPermissionCard.option.acceptEdits':
+        '是，并自动接受编辑',
+      'PC.Components.AcpPermissionCard.option.default': '是，手动逐项审批编辑',
+      'PC.Components.AcpPermissionCard.option.plan': '否，继续完善计划',
+      'PC.Components.AcpPermissionCard.option.planApprove':
+        '批准，退出计划模式并开始实施。',
+      'PC.Components.AcpPermissionCard.revisionPlaceholder':
+        '如需修改计划，请输入修改意见后提交',
+      'PC.Common.Global.confirm': '确认',
     };
     const template = dict[key] ?? key;
     return args.reduce(
       (text, item, index) => text.replace(`{${index}}`, item),
       template,
     );
-  },
-}));
+  };
+  // MarkdownCustomPlanDoc 走 dict；与 t 共用同一字典
+  return { t: tImpl, dict: tImpl };
+});
 
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_: any, key: string) => String(key) }),
+}));
+
+// MarkdownCustomPlanDoc 的样式（vitest 不把 .less 当 CSS modules，代理之）
+vi.mock('@/components/MarkdownCustomPlanDoc/index.less', () => ({
+  default: new Proxy({}, { get: () => 'cls' }),
 }));
 
 vi.mock('./useAcpPermissionShortcuts', () => ({
@@ -81,11 +103,11 @@ describe('AcpPermissionCard', () => {
 
     expect(screen.getByText('允许一次')).toBeTruthy();
     expect(screen.getByText('始终允许')).toBeTruthy();
-    expect(screen.getByText('拒绝一次')).toBeTruthy();
+    expect(screen.getByText('拒绝')).toBeTruthy();
     expect(screen.queryByText('始终拒绝')).toBeNull();
   });
 
-  it('calls onRespond with correct payload when an option is clicked', () => {
+  it('calls onRespond with correct payload when an option is double-clicked', () => {
     const onRespond = vi.fn();
     render(
       <AcpPermissionCard
@@ -95,7 +117,10 @@ describe('AcpPermissionCard', () => {
       />,
     );
 
+    // 单击仅选中（activeIndex），双击确认提交
     fireEvent.click(screen.getByText('允许一次'));
+    expect(onRespond).not.toHaveBeenCalled();
+    fireEvent.dblClick(screen.getByText('允许一次'));
 
     expect(onRespond).toHaveBeenCalledTimes(1);
     expect(onRespond).toHaveBeenCalledWith({
@@ -121,7 +146,7 @@ describe('AcpPermissionCard', () => {
     });
   });
 
-  it('shows loading on the selected option when submitting', () => {
+  it('shows loading on the submit button when submitting', () => {
     render(
       <AcpPermissionCard
         interaction={createInteraction({
@@ -133,10 +158,204 @@ describe('AcpPermissionCard', () => {
       />,
     );
 
+    // 选项按钮的 loading 已注释（见组件），loading 态落在底部确认按钮
     const buttons = screen.getAllByRole('button');
-    // antd applies "ant-btn-loading" class when loading
-    const allowOnceBtn = buttons[0];
-    expect(allowOnceBtn.className).toContain('loading');
+    const submitBtn = buttons[buttons.length - 1];
+    expect(submitBtn.className).toContain('loading');
+  });
+
+  it('renders simplified approve + revision input for switch_mode (ExitPlanMode)', () => {
+    const onRespond = vi.fn();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                },
+                options: [
+                  {
+                    optionId: 'auto',
+                    kind: 'allow_always',
+                    name: 'Yes, and use "auto" mode',
+                  },
+                  {
+                    optionId: 'acceptEdits',
+                    kind: 'allow_always',
+                    name: 'Yes, and auto-accept edits',
+                  },
+                  {
+                    optionId: 'default',
+                    kind: 'allow_once',
+                    name: 'Yes, and manually approve edits',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: 'No, keep planning',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={onRespond}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    // 简化视图：仅一个「批准」项 + 修订输入框，不再罗列引擎的多个模式选项
+    expect(screen.getByText('批准，退出计划模式并开始实施。')).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText('如需修改计划，请输入修改意见后提交'),
+    ).toBeTruthy();
+    expect(screen.queryByText('是，并使用 auto 模式')).toBeNull();
+    expect(screen.queryByText('是，手动逐项审批编辑')).toBeNull();
+    expect(screen.queryByText('否，继续完善计划')).toBeNull();
+  });
+
+  it('switch_mode approve submits the canonical allow_once optionId', () => {
+    const onRespond = vi.fn();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                },
+                options: [
+                  {
+                    optionId: 'auto',
+                    kind: 'allow_always',
+                    name: 'Yes, and use "auto" mode',
+                  },
+                  {
+                    optionId: 'default',
+                    kind: 'allow_once',
+                    name: 'Yes, and manually approve edits',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: 'No, keep planning',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={onRespond}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('批准，退出计划模式并开始实施。'));
+    expect(onRespond).toHaveBeenCalledWith({
+      outcome: { outcome: 'selected', optionId: 'default' },
+    });
+  });
+
+  it('switch_mode revision text submits reject with the text as extras', () => {
+    const onRespond = vi.fn();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                },
+                options: [
+                  {
+                    optionId: 'default',
+                    kind: 'allow_once',
+                    name: 'Yes, and manually approve edits',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: 'No, keep planning',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={onRespond}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText('如需修改计划，请输入修改意见后提交'),
+      { target: { value: '把第 2 步拆细' } },
+    );
+    fireEvent.click(screen.getByText('确认'));
+    expect(onRespond).toHaveBeenCalledWith(
+      { outcome: { outcome: 'selected', optionId: 'plan' } },
+      { revisionText: '把第 2 步拆细' },
+    );
+  });
+
+  it('falls back to engine option names when same-kind labels would collide', () => {
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-x',
+                  title: '切换',
+                  kind: 'other',
+                },
+                options: [
+                  {
+                    optionId: 'mode-a',
+                    kind: 'allow_always',
+                    name: 'Mode A（引擎语义）',
+                  },
+                  {
+                    optionId: 'mode-b',
+                    kind: 'allow_always',
+                    name: 'Mode B（引擎语义）',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={vi.fn()}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    // 非 switch_mode 且无 optionId 翻译：重复 kind 退到引擎 name 而非重复的「始终允许」
+    expect(screen.getByText('Mode A（引擎语义）')).toBeTruthy();
+    expect(screen.getByText('Mode B（引擎语义）')).toBeTruthy();
   });
 
   it('shows error message when failed', () => {
@@ -179,5 +398,49 @@ describe('AcpPermissionCard', () => {
     );
 
     expect(screen.getByText('安全确认')).toBeTruthy();
+  });
+
+  it('switch_mode（ExitPlanMode）审批直接渲染计划文档全文（不依赖 PROCESSING 翻译链）', () => {
+    const base = createInteraction();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...base.intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                  rawInput: {
+                    plan: '# 满江红三页 PPT 制作计划\n\n## Context\n宋代宣纸美学',
+                    planFilePath: '/tmp/plan.md',
+                  },
+                },
+                options: [
+                  {
+                    optionId: 'bypassPermissions',
+                    kind: 'allow_always',
+                    name: '是，并绕过所有权限',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: '否，继续完善计划',
+                  },
+                ],
+              },
+            },
+          } as any,
+        })}
+        onRespond={vi.fn()}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    expect(screen.getByText(/满江红三页 PPT 制作计划/)).toBeTruthy();
   });
 });

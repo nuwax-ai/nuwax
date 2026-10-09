@@ -1,0 +1,137 @@
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { ensurePod, keepalivePod } = vi.hoisted(() => ({
+  ensurePod: vi.fn(),
+  keepalivePod: vi.fn(),
+}));
+vi.mock('@/services/vncDesktop', () => ({
+  apiEnsurePod: (...args: unknown[]) => ensurePod(...args),
+  apiKeepalivePod: (...args: unknown[]) => keepalivePod(...args),
+  isEnsurePodThrottledError: (error: unknown) => error === 'throttled',
+}));
+vi.mock('../services/appDb', () => ({
+  UserAppDbEnvEnum: { Dev: 'dev', Prod: 'prod' },
+}));
+
+import {
+  __resetForTest,
+  handleHostActivityPayload,
+} from '@/services/hostVisibility';
+import { UserAppDbEnvEnum } from '../services/appDb';
+import { useUserAppEnvPod } from './useUserAppEnvPod';
+
+describe('环境保活真实 React / ahooks 生命周期', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __resetForTest();
+    vi.useFakeTimers();
+    keepalivePod.mockResolvedValue({ code: '0000' });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it.each(['success', 'throttled'])(
+    '卸载后的迟到 %s 不得重新启动保活',
+    async (outcome) => {
+      let resolve!: (value: object) => void;
+      let reject!: (error: unknown) => void;
+      ensurePod.mockReturnValue(
+        new Promise((done, fail) => {
+          resolve = done;
+          reject = fail;
+        }),
+      );
+      const { result, unmount } = renderHook(() =>
+        useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+      );
+      let pending!: Promise<boolean>;
+      act(() => {
+        pending = result.current.ensure();
+      });
+      unmount();
+      await act(async () => {
+        if (outcome === 'success') resolve({ code: '0000' });
+        else reject('throttled');
+        expect(await pending).toBe(false);
+        await vi.advanceTimersByTimeAsync(120_000);
+      });
+      expect(keepalivePod).not.toHaveBeenCalled();
+    },
+  );
+
+  it('服务已就绪时只保活，不调用 ensure', async () => {
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+    act(() => {
+      result.current.keepAlive();
+    });
+    expect(ensurePod).not.toHaveBeenCalled();
+    expect(keepalivePod).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('running');
+  });
+
+  it('正常接入保留 60 秒保活，卸载后停止后续查询', async () => {
+    ensurePod.mockResolvedValue({ code: '0000' });
+    const { result, unmount } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+    await act(async () => {
+      expect(await result.current.ensure()).toBe(true);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(1);
+    // 宿主 UI 暂停不取消运行任务所需的容器心跳。
+    act(() => handleHostActivityPayload({ visible: false }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(2);
+    unmount();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(2);
+  });
+
+  it('电脑重启时已有保活只补打一次，不重置 60 秒轮询', async () => {
+    ensurePod.mockResolvedValue({ code: '0000' });
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+    await act(async () => {
+      expect(await result.current.ensure()).toBe(true);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(40_000);
+    });
+    act(() => {
+      result.current.touchKeepAlive();
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20_000);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(3);
+  });
+
+  it('电脑重启时还没有保活，则启动 60 秒轮询', async () => {
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+    act(() => {
+      result.current.touchKeepAlive();
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('running');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(keepalivePod).toHaveBeenCalledTimes(2);
+  });
+});

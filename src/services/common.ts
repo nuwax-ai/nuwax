@@ -6,10 +6,18 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
+import {
+  clearMicroAppDevSession,
+  getBusinessRequestAuth,
+} from '@/utils/businessAuth';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
+import { hostBridge } from '@/utils/hostBridge';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -60,6 +68,10 @@ const cleanExpiredErrorCache = () => {
   }
 };
 
+const isAnonymousLoginStep = (): boolean =>
+  typeof window !== 'undefined' &&
+  /^\/(?:login|verify-code)(?:\/|$)/i.test(window.location.pathname);
+
 // 每 5 秒清理一次过期缓存
 setInterval(cleanExpiredErrorCache, 5000);
 
@@ -83,6 +95,9 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/custom-page/restart-dev', // 开发页面重启
     '/api/custom-page/get-dev-log', // 开发页面获取日志
     '/api/computer/logs', // 获取沙盒日志
+    '/api/userapp/logs/query', // 网站应用日志
+    '/api/userapp/logs/sources/query', // 网站应用日志来源
+    '/api/userapp/tasks/active', // 网站应用进行中任务轮询
     '/api/computer/pod/keepalive', // 远程桌面容器保活
     '/api/computer/pod/vnc-status', // 远程桌面容器检查启动状态
     '/api/computer/pod/ensure', // 远程桌面容器触发重启
@@ -126,16 +141,29 @@ const errorThrower = (res: RequestResponse<null>) => {
 /**
  * 全局错误处理器
  * 处理所有请求的错误情况，并显示适当的错误消息
+ * Umi catch 同步调用此处理器；失败分支须抛出原错误，避免遗留被忽略的 rejected Promise。
  */
 const errorHandler = (error: any, opts: any) => {
   if (!error) {
+    return;
+  }
+  // 请求方明确自行处理错误时，不弹全局网络提示；认证失效仍走统一登出。
+  if (
+    (error?.config?.skipErrorHandler || opts?.skipErrorHandler) &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
     return;
   }
   // 检查是否为不需要显示错误消息的请求
   const url = error?.config?.url || opts?.config?.url;
   const isSilentRequest = url && beSilentRequestList(url);
 
-  if (isSilentRequest) {
+  if (
+    isSilentRequest &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
     return;
   }
 
@@ -147,22 +175,39 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
-        return Promise.reject();
+        throw error;
       }
 
       // 根据错误码处理不同情况
       switch (code) {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
-          localStorage.clear();
+          if (isConversationMockPage()) {
+            return;
+          }
+          // 登录和验证码步骤仍会发全局通知等请求。它们的未登录响应不能
+          // 再次导航，否则页面重新挂载会清掉表单并退回密码登录。
+          if (isAnonymousLoginStep()) return;
+          // 会话闪断清理须保留用户显式偏好：整体 clear 会毁掉主题配置
+          // （含导航风格显式选择）与语言偏好（显式选过的语言）
+          clearStoragePreservingUserPrefs();
+          // Clear the host's cookie mirror and running services as well.
+          void hostBridge.auth.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
+          if (isConversationMockPage()) {
+            return;
+          }
+          if (isAnonymousLoginStep()) return;
+          clearMicroAppDevSession();
+          eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
           clearLoginStatusCache();
-          window.location.href = errorMessage;
+          void hostBridge.auth.clear();
+          void navigateToAuthUrl(errorMessage);
           break;
 
         // 智能体不存在或已下架
@@ -170,7 +215,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          return Promise.reject();
+          throw error;
 
         // 沙箱测试异常
         case SANDBOX_TEST_ERROR:
@@ -183,7 +228,7 @@ const errorHandler = (error: any, opts: any) => {
             });
           }
 
-          return Promise.reject();
+          throw error;
 
         // 默认错误处理
         default:
@@ -193,37 +238,44 @@ const errorHandler = (error: any, opts: any) => {
             message.warning(errorMessage);
           }
           // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
-          return Promise.reject();
+          throw error;
       }
-
-      /**
-       * 统一返回错误信息，方便调用方处理
-       * return Promise.reject() 会立即终止当前函数的执行，并将错误状态传递给接口调用方。所以此处注释掉了
-       */
-      // return Promise.reject();
     }
   } else if (error.response) {
     // 处理HTTP错误
+    const auth = url ? getBusinessRequestAuth(url) : null;
+    if (
+      error.response.status === 401 &&
+      auth &&
+      (auth.credentials === 'include' || !!auth.headers.Authorization)
+    ) {
+      if (isAnonymousLoginStep()) throw error;
+      clearStoragePreservingUserPrefs();
+      void hostBridge.auth.clear();
+      clearLoginStatusCache();
+      redirectToLogin(-1);
+      throw error;
+    }
     // message.error(`Request error ${error.response.status}`);
     const networkErrorMsg = dict('PC.Toast.Global.networkError');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   } else if (error.request) {
     // 处理请求超时
     const timeoutErrorMsg = dict('PC.Toast.Global.serverTimeout');
     if (shouldShowErrorMessage(timeoutErrorMsg)) {
       message.error(timeoutErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   } else {
     // 处理网络错误
     const networkErrorMsg = dict('PC.Toast.Global.serverUnreachable');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   }
 };
 
@@ -234,18 +286,23 @@ const errorHandler = (error: any, opts: any) => {
 const requestInterceptors = [
   // 添加基础URL
   (url: string, options: any) => {
-    const newUrl = process.env.BASE_URL + url;
-    return { url: newUrl, options };
+    // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
+    const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
+    const auth = getBusinessRequestAuth(newUrl);
+    return {
+      url: newUrl,
+      options: {
+        ...options,
+        credentials: auth.credentials,
+        // Umi 使用 Axios/XHR，cookie 开关须映射为 withCredentials。
+        withCredentials: auth.credentials === 'include',
+        headers: { ...options.headers, ...auth.headers },
+      },
+    };
   },
 
   // 添加认证头和通用头信息
   (config: any) => {
-    // 添加token认证
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // FormData 上传不需要设置 Content-Type，浏览器会自动设置 multipart/form-data; boundary=...
     if (config.data instanceof FormData) {
       config.headers['Accept'] = 'application/json, text/plain, */*';

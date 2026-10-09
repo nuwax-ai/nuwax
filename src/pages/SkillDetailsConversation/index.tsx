@@ -115,6 +115,9 @@ const SkillDetailsConversation: React.FC = () => {
       enableResizable={false}
       showClearContext={false}
       defaultFileTreeVisible={true}
+      // 本页依赖模型 fileTreeData 变化触发技能详情重拉（检测未发布更新），
+      // 保持模型全量拉取行为，不启用页面自管（#5a 懒加载门控）
+      fileTreeSelfManaged={false}
       renderTitle={() => (
         <SkillHeader
           spaceId={spaceId}

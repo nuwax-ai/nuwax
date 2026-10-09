@@ -4,6 +4,7 @@ import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import {
   AGENT_TYPE_LIST,
@@ -11,6 +12,7 @@ import {
   CREATE_LIST,
   FILTER_STATUS,
 } from '@/constants/space.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentConfigList,
@@ -36,6 +38,7 @@ import {
 } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { isCommercialAgentType } from '@/utils/commercialEdition';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
@@ -79,12 +82,27 @@ const parseSubTypeFromSearchParams = (
   return subType ? (subType as AgentSubTypeFilter) : 'All';
 };
 
+/** 从 URL 读取当前筛选条件快照 */
+const getFilterFromSearchParams = (params: URLSearchParams) => ({
+  subType: parseSubTypeFromSearchParams(params),
+  status: Number(params.get('status')) || FilterStatusEnum.All,
+  create: Number(params.get('create')) || CreateListEnum.All_Person,
+  keyword: params.get('keyword') || '',
+});
+
 /**
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
   // ✅ umi 中的 useSearchParams
   const [searchParams, setSearchParams] = useSearchParams();
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  const agentTypeOptions = AGENT_TYPE_LIST.filter(
+    (item) => aiOSCommercialEdition || !isCommercialAgentType(item.value),
+  );
+  const agentFilterOptions = AGENT_TYPE_LIST_DEV.filter(
+    (item) => aiOSCommercialEdition || !isCommercialAgentType(item.value),
+  );
 
   // ✅ 当 select 改变时同步 URL
   const handleChange = (key: IQuery, value: string) => {
@@ -134,15 +152,22 @@ const SpaceDevelop: React.FC = () => {
   const [currentAgentType, setCurrentAgentType] = useState<AgentTypeEnum>(
     AgentTypeEnum.ChatBot,
   );
+  useEffect(() => {
+    if (!aiOSCommercialEdition && isCommercialAgentType(currentAgentType)) {
+      setOpenCreateAgent(false);
+      setCurrentAgentType(AgentTypeEnum.ChatBot);
+    }
+  }, [aiOSCommercialEdition, currentAgentType]);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
   const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
+  /** 筛选条件快照，供异步 onSuccess 读取最新值 */
+  const filterRef = useRef(getFilterFromSearchParams(searchParams));
+  // 当前筛选后的展示列表
+  const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
+  // 接口返回的全量列表，供本地筛选与删除后重算
+  const agentAllRef = useRef<AgentConfigInfo[]>([]);
 
-  // 暂时隐藏开发收藏功能
-  // const { agentList, setAgentList, agentAllRef, handlerCollect } =
-  const { agentList, setAgentList, agentAllRef } = useModel('applicationDev');
-  // const { runEdit, devCollectAgentList } =
-  const { runEdit } = useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -176,28 +201,37 @@ const SpaceDevelop: React.FC = () => {
 
   // ✅ 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
-    const nextSubType = parseSubTypeFromSearchParams(searchParams);
+    const {
+      subType: nextSubType,
+      status,
+      create,
+      keyword,
+    } = getFilterFromSearchParams(searchParams);
 
-    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
-    const create =
-      Number(searchParams.get('create')) || CreateListEnum.All_Person;
-    const keyword = searchParams.get('keyword') || '';
+    if (!aiOSCommercialEdition && isCommercialAgentType(nextSubType)) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('subType');
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
 
     setSubType(nextSubType);
     setStatus(status);
     setCreate(create);
     setKeyword(keyword);
 
+    filterRef.current = { subType: nextSubType, status, create, keyword };
     handleFilterList(nextSubType, status, create, keyword);
-  }, [searchParams]);
+  }, [searchParams, aiOSCommercialEdition]);
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
-      handleFilterList(subType, status, create, keyword, result);
-      agentAllRef.current = result;
+      agentAllRef.current = result ?? [];
+      const { subType, status, create, keyword } = filterRef.current;
+      handleFilterList(subType, status, create, keyword, result ?? []);
       setLoading(false);
     },
     onError: () => {
@@ -224,15 +258,14 @@ const SpaceDevelop: React.FC = () => {
     },
   });
 
-  // 删除或者迁移智能体后, 从列表移除智能体
+  // 删除或迁移后从全量列表移除，再按当前筛选条件重算展示列表
   const handleDelAgent = () => {
     const agentId = targetAgentIdRef.current;
-    const _agentList =
-      agentList?.filter((item: AgentConfigInfo) => item.id !== agentId) || [];
-    setAgentList(_agentList);
-    agentAllRef.current = agentAllRef.current?.filter(
+    agentAllRef.current = (agentAllRef.current ?? []).filter(
       (item: AgentConfigInfo) => item.id !== agentId,
     );
+    const { subType, status, create, keyword } = filterRef.current;
+    handleFilterList(subType, status, create, keyword);
   };
 
   // 删除智能体
@@ -242,9 +275,6 @@ const SpaceDevelop: React.FC = () => {
     onSuccess: () => {
       message.success(dict('PC.Pages.SpaceDevelop.Index.deleteSuccess'));
       handleDelAgent();
-      runEdit({
-        size: 5,
-      });
     },
   });
 
@@ -289,6 +319,7 @@ const SpaceDevelop: React.FC = () => {
   const handlerChangeSubType = (value: React.Key) => {
     const _subType = value as AgentSubTypeFilter;
     setSubType(_subType);
+    filterRef.current = { ...filterRef.current, subType: _subType };
     handleFilterList(_subType, status, create, keyword);
     handleChange('subType', _subType.toString());
   };
@@ -296,6 +327,7 @@ const SpaceDevelop: React.FC = () => {
   const handlerChangeStatus = (value: React.Key) => {
     const _status = value as FilterStatusEnum;
     setStatus(_status);
+    filterRef.current = { ...filterRef.current, status: _status };
     handleFilterList(subType, _status, create, keyword);
     handleChange('status', _status.toString());
   };
@@ -304,6 +336,7 @@ const SpaceDevelop: React.FC = () => {
   const handlerChangeCreate = (value: React.Key) => {
     const _create = value as CreateListEnum;
     setCreate(_create);
+    filterRef.current = { ...filterRef.current, create: _create };
     handleFilterList(subType, status, _create, keyword);
     handleChange('create', _create.toString());
   };
@@ -312,6 +345,7 @@ const SpaceDevelop: React.FC = () => {
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
+    filterRef.current = { ...filterRef.current, keyword: _keyword };
     handleFilterList(subType, status, create, _keyword);
     handleChange('keyword', _keyword);
   };
@@ -319,6 +353,7 @@ const SpaceDevelop: React.FC = () => {
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
+    filterRef.current = { ...filterRef.current, keyword: '' };
     handleFilterList(subType, status, create, '');
   };
 
@@ -504,54 +539,60 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
-          </h3>
-          <SelectList
-            value={subType}
-            options={AGENT_TYPE_LIST_DEV}
-            onChange={handlerChangeSubType}
-            size="middle"
-          />
-          {/* 单选模式 */}
-          <ButtonToggle
-            options={FILTER_STATUS}
-            value={status}
-            onChange={(value) => handlerChangeStatus(value as React.Key)}
-          />
-          <ButtonToggle
-            options={CREATE_LIST}
-            value={create}
-            onChange={(value) => handlerChangeCreate(value as React.Key)}
-          />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceDevelop.Index.searchAgent')}
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-            style={{ width: 214 }}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={handleImportConfig}
-            beforeUpload={beforeUploadDefault}
-          />
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
+        titleExtra={
+          <>
+            <SelectList
+              value={subType}
+              options={agentFilterOptions}
+              onChange={handlerChangeSubType}
+              size="middle"
+            />
+            {/* 单选模式 */}
+            <ButtonToggle
+              options={FILTER_STATUS}
+              value={status}
+              onChange={(value) => handlerChangeStatus(value as React.Key)}
+            />
+            <ButtonToggle
+              options={CREATE_LIST}
+              value={create}
+              onChange={(value) => handlerChangeCreate(value as React.Key)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceDevelop.Index.searchAgent')}
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
+            />
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={handleImportConfig}
+              beforeUpload={beforeUploadDefault}
+            />
 
-          {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
-          <CustomPopover list={AGENT_TYPE_LIST} onClick={handlerClickAgentType}>
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpaceDevelop.Index.createAgent')}
-            </Button>
-          </CustomPopover>
-        </div>
-      </div>
+            {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+            <CustomPopover
+              list={agentTypeOptions}
+              onClick={handlerClickAgentType}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                {dict('PC.Pages.SpaceDevelop.Index.createAgent')}
+              </Button>
+            </CustomPopover>
+          </>
+        }
+      />
       {loading ? (
         <Loading />
       ) : agentList?.length > 0 ? (

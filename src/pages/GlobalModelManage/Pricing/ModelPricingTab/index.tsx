@@ -1,11 +1,11 @@
 import ModelPriceTierList from '@/components/business-component/ModelPriceTierList';
 import { TableActions, XProTable } from '@/components/ProComponents';
+import { dict } from '@/services/i18nRuntime';
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
   ResourcePricingType,
-} from '@/pages/SpaceResource/types/resource';
-import { dict } from '@/services/i18nRuntime';
+} from '@/types/interfaces/resource';
 import { modalConfirm } from '@/utils/ant-custom';
 import { getPricingTypeLabel } from '@/utils/resourcePricing';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';

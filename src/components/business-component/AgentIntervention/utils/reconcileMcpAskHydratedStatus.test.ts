@@ -1,6 +1,12 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { reconcileMcpAskHydratedMessageList } from './reconcileMcpAskHydratedStatus';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 const askInteraction = {
   input: {

@@ -1,0 +1,111 @@
+.page {
+  min-height: 100vh;
+  padding: 16px;
+  background: #f6f8fb;
+}
+
+.header {
+  max-width: 1440px;
+  margin: 0 auto 16px;
+}
+
+.back {
+  margin-bottom: 8px;
+}
+
+.headerRow {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0;
+}
+
+.notice {
+  margin-top: 12px;
+}
+
+.sessionCard,
+.sideCard {
+  height: 100%;
+  border-radius: 8px;
+}
+
+.scenarioBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sessionShell {
+  height: 680px;
+  overflow: hidden;
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.payload {
+  max-height: 420px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #dbeafe;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.timelineText {
+  margin: 4px 0 0;
+}
+
+.renderItem {
+  padding: 10px 0 !important;
+}
+
+.renderIconUser,
+.renderIconAssistant {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.renderIconUser {
+  color: #1677ff;
+  background: #e6f4ff;
+}
+
+.renderIconAssistant {
+  color: #13a8a8;
+  background: #e6fffb;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 10px;
+  }
+
+  .headerRow,
+  .scenarioBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sessionShell {
+    height: 620px;
+  }
+}

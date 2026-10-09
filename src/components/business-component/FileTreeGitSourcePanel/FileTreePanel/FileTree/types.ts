@@ -10,6 +10,15 @@ export interface FileTreeProps {
   /** 文件树数据加载状态 */
   fileTreeDataLoading?: boolean;
 
+  /** 已完成懒加载的文件夹 ID */
+  loadedFolderIds?: Set<string>;
+
+  /** 正在请求子文件列表的文件夹 ID */
+  loadingFolderIds?: Set<string>;
+
+  /** 缓存恢复时补拉仍处于展开状态的目录 */
+  onLoadDirectory?: (path: string) => void | Promise<void>;
+
   /** 通用型智能体会话中点击选中的文件ID */
   taskAgentSelectedFileId?: string;
 
@@ -23,7 +32,8 @@ export interface FileTreeProps {
   renamingNode?: FileNode | null;
 
   /** 取消重命名回调
-   *  当 removeIfNew 为 true 且 node.status === 'create' 时，父组件应删除该临时节点
+   *  当 removeIfNew 为 true 且 node.status === 'create' 时，父组件应删除该临时节点。
+   *  Esc 取消新建时无论是否已输入内容都应传 true。
    */
   onCancelRename: (options?: {
     removeIfNew?: boolean;
@@ -33,8 +43,14 @@ export interface FileTreeProps {
   /** 右键菜单回调 */
   onContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
 
-  /** 文件选择回调；selectFolder 为 true 时仅选中文件夹（不切换预览） */
-  onFileSelect: (fileId: string, options?: { selectFolder?: boolean }) => void;
+  /**
+   * 文件选择回调。selectFolder 为 true 时仅选中文件夹。
+   * openDirectory 为 false 时只改选中态，不请求该层文件列表（折叠）。
+   */
+  onFileSelect: (
+    fileId: string,
+    options?: { selectFolder?: boolean; openDirectory?: boolean },
+  ) => void;
 
   /** 重命名文件回调 */
   onConfirmRenameFile: (node: FileNode, newName: string) => void;

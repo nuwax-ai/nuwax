@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   resolveAgentFlowWorkflowNodeDescription,
   resolveNodeDescriptionWithNameFallback,
 } from '../resolveNodePresentation';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) =>
+    key === 'PC.Pages.AntvX6Params.nodeWorkflowDescription' ? '工作流' : key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 describe('resolveNodeDescriptionWithNameFallback', () => {
   it('描述为空时回退到名称', () => {

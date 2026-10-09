@@ -1,3 +1,4 @@
+/* stylelint-disable unit-no-unknown */
 @import '@/styles/color';
 @import '@/styles/token';
 @import '@/styles/scrollbar.less';
@@ -5,7 +6,9 @@
 @chat-max-width: 800px;
 @zero-value: 0;
 @slide-in-offset: 10px;
-@scroll-btn-bottom-offset: 100px;
+@scroll-btn-bottom-offset: 32px;
+@scroll-btn-size: 32px;
+@scroll-btn-icon-size: @fontSize;
 
 .session-container {
   display: flex;
@@ -15,6 +18,14 @@
   overflow: hidden;
   height: 100%;
   position: relative;
+  container-type: size;
+
+  /* 裸 0 与 cqh/px 混算会令 calc 整条失效，默认值必须带单位 */
+  --chat-input-height: 0;
+  // 遮罩下卡片可占满面板高度（减输入框高与上下留白）；AcpPermissionCard 内部滚动预算也消费此变量
+  --intervention-max-height: calc(
+    100cqh - var(--chat-input-height) - 2 * @marginXs
+  );
 
   &.only-input {
     // 隐藏核心展现内容区（针对 hash 化局部类选择器由子组件 index.less 内部 `:global` 实现）
@@ -25,16 +36,32 @@
   }
 }
 
-// 统一干预固定栏：与 ChatInputHome .chat-container 外框同宽
+// 统一干预底部 sheet：脱离文档流固定贴底，卡片直接沉到面板底、盖住输入框位置（完全遮挡）；
+// 本层对指针穿透：消息区滚动/点击、进度胶囊、快捷导航等背景交互不拦截，仅卡片自身可交互
+// （产品定调 2026-09-17：弹窗不挡页面）；决策完成后卸载、会话布局无跳动
 .intervention-dock {
-  flex-shrink: 0;
-  position: relative; // 让 z-index 生效，确保 ask/question/审批卡片置于输入框(sticky,z-index:10)之上
-  z-index: 30;
-  width: 100%;
-  max-width: @chat-max-width;
-  margin: @zero-value auto;
-  padding: @zero-value @zero-value @paddingXs;
+  position: absolute;
+  inset: 0;
+  z-index: 30; // 盖过输入框(sticky,z-index:10)与消息区
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none; // 全层穿透，交互放行给底下消息区/胶囊；卡片由 > * 子树接回
+  // 视觉底距目标 42px = 本层 26px + 链路固有 ~16px（实测：8px→16px、16px→32px）
+  padding-bottom: 30px;
   box-sizing: border-box;
+  animation: slide-in-up 0.3s ease-out;
+
+  // DockPanel 根节点（.cardSlot / .stackRoot 恒为单根）：限宽居中，与会话列对齐；
+  // 仅卡片堆叠区接回指针（后层卡片的 none 由 DockPanel.less 自带规则保持）
+  > * {
+    width: 100%;
+    max-width: @chat-max-width;
+    box-sizing: border-box;
+    padding: @zero-value @paddingXs;
+    pointer-events: auto;
+  }
 }
 
 // 会话状态栏样式
@@ -68,10 +95,17 @@
   border-radius: @borderRadiusLg @borderRadiusLg @zero-value @zero-value;
   width: 100%;
   max-width: @chat-max-width;
-  margin: @zero-value auto;
+  margin: @marginXs auto @zero-value;
+  // 滚到底部按钮相对输入框顶部上浮；队列高度由 JS 写入 --queue-panel-height
+  --scroll-btn-bottom-offset: calc(
+    @scroll-btn-bottom-offset + var(--queue-panel-height, 0px)
+  );
+  --scroll-btn-size: @scroll-btn-size;
+  --scroll-btn-icon-size: @scroll-btn-icon-size;
+}
 
-  // 调整滚动按钮位置，让它显示在会话状态栏的上方
-  :global(.chat-action .to-bottom) {
-    bottom: @scroll-btn-bottom-offset !important;
-  }
+// 队列面板高度测量容器（无内容时高度为 0）
+.queue-panel-measure {
+  width: 100%;
+  flex-shrink: 0;
 }

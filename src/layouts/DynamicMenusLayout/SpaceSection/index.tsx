@@ -1,21 +1,25 @@
-import MenuListItem from '@/components/base/MenuListItem';
-import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import { SpaceInfo } from '@/types/interfaces/workspace';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { history, useModel, useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import { updatePathUrlToLocalStorage } from '../utils';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 空间标题缓存（bug 2348）：key=spaceId，value=详情解析出的展示名
+ * （含「创建者 - 空间名」形态）。悬浮菜单/侧栏反复挂载时命中缓存免重拉
+ * apiGetSpaceDetail；空间名变更低频，成本可接受，未命中仍按原链路请求
+ */
+const spaceTitleCache = new Map<string, string>();
 
 const SpaceSection: React.FC<{
   activeTab: string;
@@ -25,7 +29,6 @@ const SpaceSection: React.FC<{
 
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo, getSpaceId } =
     useModel('spaceModel');
-  const { editAgentList, runEdit } = useModel('devCollectAgent');
   // // 关闭移动端菜单
   // const { handleCloseMobileMenu } = useModel('layout');
 
@@ -53,33 +56,45 @@ const SpaceSection: React.FC<{
           dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
       );
     } else {
-      // Fetch details
-      apiGetSpaceDetail(finalSpaceId)
-        .then((res) => {
-          if (res.code === SUCCESS_CODE && res.data) {
-            const { creatorName, name, currentUserRole } = res.data;
-            // 如果当前用户不是空间所有者，则显示空间所有者名称 （当前登录用户在空间的角色,可用值:Owner,Admin,User）
-            const display =
-              currentUserRole !== TeamStatusEnum.Owner && creatorName
-                ? `${creatorName} - ${name}`
-                : name;
-            setDynamicTitle(
-              display ||
+      // 命中标题缓存直接用，未命中才拉详情（bug 2348：反复挂载不重发请求）
+      const cacheKey = String(finalSpaceId);
+      const cachedTitle = spaceTitleCache.get(cacheKey);
+      if (cachedTitle) {
+        setDynamicTitle(cachedTitle);
+      } else {
+        // Fetch details
+        apiGetSpaceDetail(finalSpaceId)
+          .then((res) => {
+            if (res.code === SUCCESS_CODE && res.data) {
+              const { creatorName, name, currentUserRole } = res.data;
+              // 如果当前用户不是空间所有者，则显示空间所有者名称 （当前登录用户在空间的角色,可用值:Owner,Admin,User）
+              const display =
+                currentUserRole !== TeamStatusEnum.Owner && creatorName
+                  ? `${creatorName} - ${name}`
+                  : name;
+              if (display) {
+                spaceTitleCache.set(cacheKey, display);
+              }
+              setDynamicTitle(
+                display ||
+                  dict(
+                    'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace',
+                  ),
+              );
+            } else {
+              setDynamicTitle(
                 dict(
                   'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace',
                 ),
-            );
-          } else {
+              );
+            }
+          })
+          .catch(() => {
             setDynamicTitle(
               dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
             );
-          }
-        })
-        .catch(() => {
-          setDynamicTitle(
-            dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
-          );
-        });
+          });
+      }
 
       /**
        * 保存当前路径到本地, 用于后续从其他菜单跳转回工作空间时，在space页面能够跳转到当前路径
@@ -95,45 +110,16 @@ const SpaceSection: React.FC<{
     }
   }, [spaceList, finalSpaceId]);
 
-  useEffect(() => {
-    // 最近编辑
-    runEdit({
-      size: 5,
-    });
-  }, []);
-
-  // 点击进入"工作空间智能体"
-  const handleClick = (info: AgentInfo) => {
-    const { agentId, spaceId } = info;
-    history.push(`/space/${spaceId}/agent/${agentId}`);
-  };
-
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
-      <div style={{ padding: '0 12px 12px' }}>
+      {/* 头部包裹层间距走 .header-box（经典布局原 0 12px 12px；单栏 style3
+          在 less 内 scope 对齐标题分支落位 3px 10px 21px，2026-09-16） */}
+      <div className={cx(styles['header-box'])}>
         <SpaceTitle name={dynamicTitle} />
       </div>
 
       {/* 空间菜单列表 */}
       <DynamicSecondMenu parentCode={activeTab} />
-      <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles['collection-title'])}>
-          {dict('PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited')}
-        </h3>
-        <div className="flex flex-col gap-4">
-          {editAgentList?.map((item: AgentInfo) => (
-            <MenuListItem
-              key={item.id}
-              onClick={() => handleClick(item)}
-              icon={item.icon}
-              name={item.name}
-            />
-          ))}
-        </div>
-      </ConditionRender>
-      {/* 隐藏开发收藏 */}
-      {/* <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
-      <DevCollect /> */}
     </div>
   );
 };

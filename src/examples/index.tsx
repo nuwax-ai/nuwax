@@ -85,6 +85,25 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'openui-showcase',
+      title: isChineseLanguage
+        ? 'OpenUI 宿主样式回归'
+        : 'OpenUI Host Style Showcase',
+      description: isChineseLanguage
+        ? '在 .ds-markdown 宿主容器内渲染 OpenUI inline 看板（统计卡/环形图/概览列表），验证宿主样式隔离不误伤组件库样式。'
+        : 'Render an OpenUI inline dashboard (KPI cards / donut / overview list) inside a .ds-markdown host container to verify host style isolation.',
+      tags: [
+        { text: isChineseLanguage ? 'OpenUI' : 'OpenUI', color: 'blue' },
+        {
+          text: isChineseLanguage ? '样式回归' : 'Style Regression',
+          color: 'green',
+        },
+      ],
+      icon: <ExperimentOutlined />,
+      path: '/examples/openui-showcase',
+      featured: false,
+    },
+    {
       id: 'theme-demo',
       title: isChineseLanguage ? '主题功能演示' : 'Theme Demo',
       description: isChineseLanguage
@@ -200,6 +219,23 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <InboxOutlined />,
       path: '/examples/message-queue-demo',
+    },
+    {
+      id: 'session-rendering-demo',
+      title: isChineseLanguage
+        ? '会话交互处理及渲染'
+        : 'Session Interaction Rendering',
+      description: isChineseLanguage
+        ? '用 Mock 数据演示 Agent 会话与 AppDev 会话的核心状态：流式输出、后台执行中、加载更多历史、待发送队列和首条消息透传。'
+        : 'Demonstrate Agent and AppDev session states with mock data: streaming, backend executing, load-more history, message queue and initial payload handoff.',
+      tags: [
+        { text: isChineseLanguage ? '会话渲染' : 'Rendering', color: 'blue' },
+        { text: isChineseLanguage ? 'AppDev' : 'AppDev', color: 'green' },
+        { text: isChineseLanguage ? 'Agent' : 'Agent', color: 'purple' },
+      ],
+      icon: <CodeOutlined />,
+      path: '/examples/session-rendering-demo',
+      featured: true,
     },
     {
       id: 'mcp-ask-duplicate-demo',

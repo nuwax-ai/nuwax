@@ -1,13 +1,14 @@
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { HistoryData } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
 import {
+  SkillConvertToConversationResponse,
   SkillDetailInfo,
   SkillImportParams,
   SkillUpdateParams,
   SkillUploadFileParams,
   SkillUploadFilesParams,
 } from '@/types/interfaces/skill';
+import { getBusinessFileRequestAuth } from '@/utils/businessAuth';
 import {
   apiExportFileBlob,
   ExportFileBlobResponse,
@@ -158,30 +159,123 @@ export async function apiSkillConfigHistoryList(
  * @param url Relative URL, e.g. '/api/computer/static/1461016/daily-news-report.md'
  * @returns Promise<RequestResponse<string>> 返回URL的内容
  */
+/** 文本内容拉取的三态结果：missing 仅指 HTTP 404（文件不存在），其余失败一律 error */
+export type ContentFetchOutcome =
+  | { status: 'ok'; content: string }
+  | { status: 'missing' }
+  | { status: 'error' };
+
+/** 预览允许的最大文件体积：50MB。超过则不读取正文 */
+const PREVIEW_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
+
+/** 静态文件响应里的体积头。为空或不存在时不拦截预览 */
+const FILE_SIZE_HEADER = 'X-File-Size';
+
+/** 文件超过预览体积上限 */
+export class PreviewFileTooLargeError extends Error {
+  constructor() {
+    super('Preview file exceeds size limit');
+    this.name = 'PreviewFileTooLargeError';
+  }
+}
+
+/** 是否为预览体积超限 */
+export const isPreviewFileTooLargeError = (
+  error: unknown,
+): error is PreviewFileTooLargeError =>
+  error instanceof PreviewFileTooLargeError;
+
+/**
+ * 读取 X-File-Size。头不存在、为空或不是数字时返回 null，调用方按原逻辑预览。
+ */
+export const readPreviewFileSize = (response: Response): number | null => {
+  const raw = response.headers.get(FILE_SIZE_HEADER);
+  if (raw == null || raw.trim() === '') {
+    return null;
+  }
+  const size = Number(raw.trim());
+  if (!Number.isFinite(size) || size < 0) {
+    return null;
+  }
+  return size;
+};
+
+/** 体积头有值且大于 50MB */
+export const isOversizedPreviewFile = (size: number | null): boolean =>
+  size != null && size > PREVIEW_FILE_SIZE_LIMIT_BYTES;
+
+async function fetchContentResponse(url: string): Promise<Response> {
+  // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
+  const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
+  const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
+  const auth = getBusinessFileRequestAuth(fullUrl);
+  return fetch(fullUrl, {
+    method: 'GET',
+    credentials: auth.credentials,
+    /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
+    cache: 'no-store',
+    headers: {
+      Accept: 'text/plain, application/json, */*',
+      ...auth.headers,
+    },
+  });
+}
+
 export async function fetchContentFromUrl(url: string): Promise<string> {
   try {
-    // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
-    const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
-    const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
-      cache: 'no-store',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        Accept: 'text/plain, application/json, */*',
-      },
-    });
-
+    const response = await fetchContentResponse(url);
     if (!response.ok) {
       throw new Error(`Failed to get file content: ${response.status}`);
+    }
+
+    // 体积头大于 50MB 时不读取正文
+    if (isOversizedPreviewFile(readPreviewFileSize(response))) {
+      await response.body?.cancel();
+      throw new PreviewFileTooLargeError();
     }
 
     // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number
     return response.text();
   } catch (error) {
-    console.error('Failed to get file content: ', error);
+    if (!isPreviewFileTooLargeError(error)) {
+      console.error('Failed to get file content: ', error);
+    }
     throw error;
   }
+}
+
+/**
+ * 三态版内容拉取：永不抛错。
+ * 200（含空文件）→ ok；404 → missing；其余非 2xx 与网络异常 → error。
+ * 需要区分「文件不存在」与「拉取失败」的调用方（如 .gitignore 追加）用它，
+ * 其余沿用 fetchContentFromUrl。
+ */
+export async function fetchContentOutcome(
+  url: string,
+): Promise<ContentFetchOutcome> {
+  try {
+    const response = await fetchContentResponse(url);
+    if (response.status === 404) {
+      return { status: 'missing' };
+    }
+    if (!response.ok) {
+      console.error('Failed to get file content: ', response.status);
+      return { status: 'error' };
+    }
+    return { status: 'ok', content: await response.text() };
+  } catch (error) {
+    console.error('Failed to get file content: ', error);
+    return { status: 'error' };
+  }
+}
+
+/**
+ * 将文件服务技能转为 AI 对话式开发技能
+ */
+export async function apiSkillConvertToConversation(
+  skillId: number,
+): Promise<RequestResponse<SkillConvertToConversationResponse>> {
+  return request(`/api/skill/convert-to-ai-dev/${skillId}`, {
+    method: 'POST',
+  });
 }

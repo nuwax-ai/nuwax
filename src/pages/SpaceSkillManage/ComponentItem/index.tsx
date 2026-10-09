@@ -8,7 +8,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 import SkillStatus from '../SkillStatus';
-import { SKILL_MORE_ACTION } from '../type';
+import { SKILL_MORE_ACTION, SkillMoreActionEnum } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,6 +19,16 @@ const ComponentItem: React.FC<SkillItemProps> = ({
   onClick,
   onClickMore,
 }) => {
+  // 过滤更多操作列表，若 devAgentConversationId 有值则不显示「转为对话式开发」
+  const moreActions = React.useMemo(() => {
+    if (skillInfo.devAgentConversationId) {
+      return SKILL_MORE_ACTION.filter(
+        (item) => item.action !== SkillMoreActionEnum.Convert_To_Conversation,
+      );
+    }
+    return SKILL_MORE_ACTION;
+  }, [skillInfo.devAgentConversationId]);
+
   return (
     <CardWrapper
       title={skillInfo.name}
@@ -41,7 +51,7 @@ const ComponentItem: React.FC<SkillItemProps> = ({
           {/* 技能状态 */}
           <SkillStatus publishStatus={skillInfo.publishStatus} />
           {/*更多操作*/}
-          <CustomPopover list={SKILL_MORE_ACTION} onClick={onClickMore}>
+          <CustomPopover list={moreActions} onClick={onClickMore}>
             <Button size="small" type="text" icon={<ICON_MORE />}></Button>
           </CustomPopover>
         </footer>

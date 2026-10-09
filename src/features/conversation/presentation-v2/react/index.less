@@ -1,0 +1,879 @@
+// V2 会话渲染器样式（克制工具型时间线）：
+// 布局走本文件；语义色优先由组件内 antd token 内联提供（自动跟随明暗主题），
+// 此处仅保留结构性样式与少量弱色（同时给 xagi-layout-dark 提供覆盖）。
+
+.turn-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 8px 0;
+}
+
+// 正文内容层（轨迹 + 最终回答）：左右 8px 内缩，右缘对齐用户气泡（同 V1 ChatView .inner-container）
+.inner-container {
+  padding: 0 8px;
+}
+
+.agent-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .author {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .run-over {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ---- 外层工作轨迹：单 hairline + 三层渐进 disclosure ----
+.trace {
+  margin-top: 8px;
+}
+
+.trace-toggle,
+.trace-segment-toggle {
+  appearance: none;
+  border: none;
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  background: transparent;
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+.trace-segment-toggle {
+  border-bottom: none;
+  min-height: 30px;
+  padding: 0;
+}
+
+.trace-segment {
+  min-width: 0;
+}
+
+.trace-segment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trace-chevron,
+.tool-group-chevron,
+.node-disclosure,
+.todo-trace-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 10px;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+  transform: rotate(-90deg);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.trace-chevron-open,
+.tool-group-chevron-open,
+.node-disclosure-open,
+.todo-trace-chevron-open {
+  transform: rotate(0deg);
+}
+
+.trace-chevron-trailing {
+  margin-left: 0;
+}
+
+.trace-metrics {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-metrics-leading {
+  flex: 0 1 auto;
+}
+
+.trace-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0 8px;
+}
+
+// 收起后普通轨迹行不渲染，空容器不应继续占位；原位展示的产物节点仍保留间距。
+.trace[data-trace-expanded='false'] .trace-body:empty {
+  padding: 0;
+}
+
+// OpenUI 渲染元素原位容器（看板/摘要行替换工具行；收起态仍在 DOM 中保持显示）
+.openui-trace-node {
+  min-width: 0;
+}
+
+// ---- 连续工具组 ----
+.tool-group {
+  min-width: 0;
+}
+
+.tool-group-toggle,
+.node-row {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.tool-group-toggle,
+.node-row:not(.is-static) {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: -1px;
+  }
+}
+
+.tool-group-icon,
+.node-kind-icon {
+  width: 14px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tool-group-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-group-status,
+.node-status-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.tool-group-chevron,
+.node-disclosure {
+  opacity: 0;
+  transition: transform 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.tool-group-chevron-open,
+.node-disclosure-open {
+  opacity: 1;
+}
+
+.tool-group-body {
+  position: relative;
+  margin: 1px 0 5px 12px;
+  padding-left: 8px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    // 对齐左上 14px 图标列的宽度中心（行左起 7px）：组体已左进 12px，故 -5.5px
+    left: -5.5px;
+    width: 1px;
+    background: var(--v2-color-border, rgba(5, 5, 5, 8%));
+  }
+}
+
+// ---- 待办卡（Plan 结构化任务清单）----
+.todo-trace {
+  min-width: 0;
+}
+
+.todo-trace-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: -1px;
+  }
+}
+
+.todo-trace-icon {
+  width: 14px;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+.todo-trace-title {
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  font-weight: 500;
+}
+
+.todo-trace-progress {
+  margin-left: 2px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-trace-status {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+// 列表承载：浅灰圆角面板（对齐参考样式），不再用引导竖线
+.todo-trace-body {
+  margin: 2px 0 6px;
+  padding: 6px 16px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 4%));
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+// 状态图标定高居中盒：svg 基线排会高于 20px 行高的中文文字，须盒内居中
+.todo-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 32%));
+}
+
+// 待办项空心圆（对齐参考 ○）：图标集无素圈，CSS 圆环代替
+.todo-step-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+    border-radius: 50%;
+  }
+}
+
+.todo-step-text {
+  min-width: 0;
+  word-break: break-word;
+}
+
+// 完成：绿圈勾 + 删除线灰字；进行中：→ + 主文字加粗；失败：红 ✗
+.todo-step.is-completed .todo-step-icon {
+  color: var(--v2-color-success, #52c41a);
+}
+
+.todo-step.is-completed .todo-step-text {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  text-decoration: line-through;
+}
+
+.todo-step.is-in-progress .todo-step-icon {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+}
+
+.todo-step.is-in-progress .todo-step-text {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-weight: 500;
+}
+
+.todo-step.is-failed .todo-step-icon {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
+.todo-step.is-failed .todo-step-text {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
+// ---- 单行过程节点 / 工具事件 ----
+.node-row-wrapper {
+  min-width: 0;
+
+  &.is-failed:not([data-node-kind='tool']) .node-title {
+    color: var(--v2-color-error, #ff4d4f);
+  }
+}
+
+.node-title {
+  max-width: 42%;
+  overflow: hidden;
+  font-weight: 500;
+  flex-shrink: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 运行中思考摘要的贴尾滚动视口：滚动由 ProcessNodeRow 的 rAF 贴尾逐帧驱动
+// （故不设 scroll-behavior:smooth，会把程序赋值异步动画化）；滚动条隐藏保持
+// 「播放」观感，左缘淡出强化内容从右侧持续流出的方向感
+.node-summary-ticker {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px);
+  mask-image: linear-gradient(to right, transparent, #000 12px);
+}
+
+.node-summary-ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+// 「正在思考 · 内容」的点分隔
+.node-dot {
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+// 折叠行内的文件链接组：徽标 + 可点文件名逐个排列，超宽整组截断
+.node-file-links {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+
+  .tool-file-link {
+    flex-shrink: 0;
+  }
+}
+
+.node-meta {
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font: 12px/20px Menlo, Monaco, Consolas, monospace;
+}
+
+// 运行中文案扫光：一段高亮从左向右流过（思考/工具/子智能体运行行共用）
+@keyframes v2-shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 0%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 38%,
+    var(--v2-color-text, rgba(0, 0, 0, 88%)) 50%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 62%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-text-fill-color: transparent;
+  animation: v2-shimmer-sweep 2.4s linear infinite;
+}
+
+.node-row:hover .node-disclosure,
+.node-row:focus-visible .node-disclosure,
+.tool-group-toggle:hover .tool-group-chevron,
+.tool-group-toggle:focus-visible .tool-group-chevron {
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  opacity: 1;
+}
+
+.node-detail {
+  max-height: ~'min(420px, 52vh)';
+  overflow-y: auto;
+  margin: 2px 6px 8px 7px;
+  padding-left: 14px;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  // 引导竖线与工具组 body 的 ::before 同款同位（行首 14px 图标列中心 7px 处）
+  border-left: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+}
+
+.node-detail-text {
+  padding: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+// ---- 类型化工具详情：只有富内容使用承载面板，不再嵌旧工具卡 ----
+.tool-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tool-terminal,
+.tool-file-preview,
+.tool-diff-view {
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-radius: 8px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
+}
+
+.tool-terminal-header,
+.tool-file-header,
+.tool-diff-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+.tool-terminal-header {
+  justify-content: space-between;
+  padding-bottom: 6px;
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-terminal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tool-detail-description,
+.tool-detail-section-label,
+.tool-file-header > span,
+.tool-diff-summary {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+.tool-detail-path,
+.tool-detail-resource {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--v2-color-link, #1677ff);
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.tool-detail-resource {
+  appearance: none;
+  border: none;
+  border-bottom: 1px dotted currentcolor;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 2px;
+  }
+}
+
+a.tool-detail-resource {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+// ---- V2 工具详情文件路径：徽标 + 文件名 + 目录弱化（2026-09-14 商讨定调：
+// 跳转功能关闭——纯展示，无手型/hover 下划线，徽标统一中性灰不抢视觉） ----
+.tool-file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tool-file-badge {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 3px;
+  // 中性灰底 + 白字，与明暗主题均保持可读（沿用原未知类型徽标灰）
+  background: #8a8f98;
+  color: #fff;
+  font: 600 10px/16px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-file-name {
+  flex-shrink: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-file-dir {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 非会话沙箱路径回落：普通文本色原样完整展示（不可点、不高亮）
+.tool-file-plain {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 卡片头部的 .tool-file-header > span 弱化色优先级更高，显式压回普通文本色
+.tool-file-header .tool-file-plain {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+}
+
+.tool-detail-command {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  padding: 7px 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+}
+
+.tool-detail-text {
+  min-width: 0;
+  max-height: 200px;
+  margin: 0;
+  padding: 7px 9px;
+  overflow: auto;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  font: 12px/1.55 Menlo, Monaco, Consolas, monospace;
+
+  &.is-command {
+    padding: 0;
+    background: transparent;
+  }
+
+  &.is-input {
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+.tool-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-detail-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tool-detail-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  > div {
+    display: flex;
+    gap: 7px;
+    align-items: baseline;
+  }
+}
+
+.tool-diff-summary {
+  padding-bottom: 6px;
+}
+
+.is-added-text {
+  color: var(--v2-color-success, #52c41a);
+}
+
+.is-removed-text {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
+.tool-detail-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+
+  pre {
+    // 与终端入/出参（.tool-detail-text）同一限高，diff 过长时块内自滚，不撑满整个详情区
+    max-height: 200px;
+    margin: 0;
+    padding: 5px 8px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font: 12px/1.5 Menlo, Monaco, Consolas, monospace;
+  }
+
+  .is-removed {
+    background: rgba(255, 77, 79, 8%);
+  }
+
+  .is-added {
+    background: rgba(82, 196, 26, 8%);
+  }
+}
+
+.tool-result-view {
+  padding: 5px 0;
+
+  p {
+    margin: 0;
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+.tool-detail-query {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  overflow: hidden;
+  border-radius: 5px;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-result-title {
+  font-size: 13px;
+}
+
+// 隐藏项恢复入口
+.hidden-entry {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--v2-color-link, #1677ff);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+// ---- 最终回答：常显区 + 操作栏 ----
+.answer-block {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.answer-status {
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.answer-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+
+// 消息相对时间：规则与 V1 ChatSampleBottom 一致，固定在操作栏最右侧。
+.answer-time {
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  flex-shrink: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+// 用户消息气泡沿用 ChatView，不再重写（视觉零差异）
+.user-message-wrapper {
+  width: 100%;
+}
+
+// ---- 用户输入气泡折叠：正文超 10 行才收起（阈值常量在 UserBubbleCollapse） ----
+// 「展开/收起」为圆形 chevron 控件，经 portal 渲染进气泡框（.chat-content 灰底气泡）
+// 内尾部，文档流底部居中、留在气泡背景内（bug 2529/2470 + 视觉走查定稿）。
+.user-bubble-collapse {
+  width: 100%;
+}
+
+.user-bubble-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 20px;
+  margin: 4px auto 0;
+  padding: 0;
+  border: 1px solid var(--xagi-color-border, rgba(5, 5, 5, 15%));
+  border-radius: 10px;
+  background: var(--xagi-color-bg-container, #fff);
+  color: var(--xagi-color-text-secondary, rgba(5, 5, 5, 65%));
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+
+  &:hover {
+    color: var(--xagi-color-text-tertiary, rgba(5, 5, 5, 45%));
+    border-color: var(--xagi-color-text-tertiary, rgba(5, 5, 5, 45%));
+  }
+}
+
+// ---- 过程说明（narration）穿插直出：留在轨迹体原位的正文 ----
+.narration-text {
+  margin: 6px 0;
+  width: 100%;
+}
+
+// 无节点行轮次（纯说明）的直出容器
+.narration-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 4px;
+  width: 100%;
+}
+
+// 回退 V1 时的容器（与 ChatContentArea V1 分支同构）
+.fallback-list {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    // 扫光同时表达执行中状态，降低频率而不抹掉收起组的运行提示。
+    animation-duration: 4.8s;
+  }
+
+  .trace-toggle,
+  .trace-chevron,
+  .tool-group-chevron,
+  .node-disclosure {
+    transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .node-title {
+    max-width: 38%;
+  }
+
+  .tool-group-toggle,
+  .node-row {
+    gap: 5px;
+  }
+
+  .node-detail {
+    margin-left: 7px;
+    padding-left: 12px;
+  }
+
+  .tool-terminal,
+  .tool-file-preview,
+  .tool-diff-view {
+    padding: 8px;
+  }
+}

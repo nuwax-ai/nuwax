@@ -1,0 +1,55 @@
+@import '@/styles/token.less';
+
+.tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: @marginXxs;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: @paddingXxs @padding;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  transition: all @motionDurationFast @motionEaseOut;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFillSecondary;
+  }
+}
+
+.tab-active {
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+  font-weight: @fontWeightStrong;
+}
+
+.project-manage {
+  height: 100%;
+  min-height: 0;
+}
+
+.main-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: @padding;
+  align-content: start;
+  margin-top: @marginSm;
+}
+
+@media (min-width: 1440px) {
+  .main-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .main-container {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}

@@ -8,6 +8,7 @@ import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { V3_FORM_IME_SAFE_ENABLED } from '@/pages/Antv-X6/v3/constants/editorConfig';
 import {
@@ -47,10 +48,11 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel, useParams } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
 import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 import { calculateNodePosition } from './utils/graphV3';
+import { setNodeConfigFieldsValue } from './utils/nodeConfigForm';
 import { checkNodeModified, setFormDefaultValues } from './utils/workflowV3';
 // Components moved to WorkflowLayout
 import './indexV3.less';
@@ -118,6 +120,9 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   } = useModel('workflowV3');
 
   const location = useLocation();
+  // 单栏宿主下返回走真实浏览器历史（配合 workbenchHistoryBase 栈底兜底）；
+  // 经典风格全屏形态保留 jumpBack 回工作流列表的既有行为
+  const style3WorkbenchHost = useStyle3WorkbenchHost();
 
   const params = useParams();
   // id（优先使用外部注入值，便于在 EditAgent 内嵌画布时复用）
@@ -273,7 +278,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         // skip
       } else {
         const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
-        form.setFieldsValue(foldWrapItem.nodeConfig);
+        setNodeConfigFieldsValue(form, foldWrapItem.nodeConfig);
         if (Array.isArray(currentSkills) && currentSkills.length > 0) {
           form.setFieldValue(SKILL_FORM_KEY, currentSkills);
         }
@@ -854,16 +859,16 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   );
 
   const handleBack = useCallback(async () => {
-    await saveFullWorkflow(
-      false,
-      () => {
+    // 保存链路（含提示）保持不变；仅按宿主形态分流保存完成后的离页方式
+    const leaveWorkbench = () => {
+      if (style3WorkbenchHost) {
+        history.back();
+      } else {
         jumpBack(`/space/${spaceId}/library`);
-      },
-      () => {
-        jumpBack(`/space/${spaceId}/library`);
-      },
-    );
-  }, [saveFullWorkflow, spaceId]);
+      }
+    };
+    await saveFullWorkflow(false, leaveWorkbench, leaveWorkbench);
+  }, [saveFullWorkflow, spaceId, style3WorkbenchHost]);
 
   const handleDrawerClose = useCallback(() => {
     // TODO  Loop
@@ -1029,7 +1034,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
 
       form.resetFields();
 
-      form.setFieldsValue(newFoldWrapItem.nodeConfig);
+      setNodeConfigFieldsValue(form, newFoldWrapItem.nodeConfig);
 
       setFormDefaultValues({
         type: newFoldWrapItem.type,
@@ -1180,9 +1185,8 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         onAutoArrange={
           isAgentFlow
             ? () => {
-                const graph = graphRef.current?.getGraph?.();
+                const graph = graphRef.current?.getGraphRef?.();
                 if (graph) {
-                  // Simple auto-arrange: sort nodes by x position with equal spacing
                   const nodes = graph.getNodes();
                   if (nodes.length === 0) return;
                   const startNodes = nodes.filter(
@@ -1199,11 +1203,21 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                   let y = 100;
                   const xStep = 280;
                   const yStep = 120;
+                  let hasMoved = false;
                   while (queue.length > 0) {
                     const nodeId = queue.shift()!;
                     const node = graph.getCellById(nodeId);
                     if (node && node.isNode()) {
-                      node.setPosition(x, y);
+                      const position = node.getPosition();
+                      if (position.x !== x || position.y !== y) {
+                        node.setPosition(x, y);
+                        workflowProxy.updateNodePosition(
+                          node.getData<ChildNode>().id,
+                          x,
+                          y,
+                        );
+                        hasMoved = true;
+                      }
                       y += yStep;
                     }
                     const outgoingEdges = graph.getOutgoingEdges(nodeId) || [];
@@ -1227,6 +1241,11 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                         }
                       }
                     }
+                  }
+                  if (hasMoved) {
+                    // X6 setPosition 不触发拖拽结束的 node:moved，需接入原保存链。
+                    workflowSaveService.markDirty();
+                    debouncedSaveFullWorkflow();
                   }
                 }
               }

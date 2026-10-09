@@ -1,17 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 import styles from './index.module.less';
+import ResizeDivider from './ResizeDivider';
+import { getSplitBounds } from './splitBounds';
 
 interface Props {
   left?: React.ReactNode;
+  /** 左侧子树保活但不占布局。 */
+  leftHidden?: boolean;
   right?: React.ReactNode;
+  /** 保持右侧子树挂载，但从布局中隐藏（用于 iframe / 终端实例保活） */
+  rightHidden?: boolean;
+  /** 容器窄于此宽度时上下排列，两栏各占一半高度。 */
+  stackBelowWidth?: number;
   minLeftWidth?: number;
   minRightWidth?: number;
   defaultLeftWidth?: number;
   /** 重置触发器，当值变化时重置为 defaultLeftWidth */
   resetTrigger?: string | number | boolean;
-  /** 分隔线颜色 */
-  dividerColor?: string;
+  /** 拖拽结束回调，参数为最终左侧宽度百分比 */
+  onResizeEnd?: (leftPercent: number) => void;
   /** 分隔线悬停颜色 */
   dividerHoverColor?: string;
   /** 分隔线拖拽时颜色 */
@@ -24,43 +31,41 @@ interface Props {
 
 const ResizableSplit: React.FC<Props> = ({
   left,
+  leftHidden = false,
   right,
+  rightHidden = false,
+  stackBelowWidth = 0,
   minLeftWidth = 350,
   minRightWidth = 350,
   defaultLeftWidth = 50, // 默认左侧占比50%
   resetTrigger,
-  dividerColor = '#e0e0e0',
-  dividerHoverColor = '#bbb',
-  dividerDraggingColor = '#1890ff',
+  onResizeEnd,
+  // hover / 拖拽用中性深灰而非主题主色：主色在部分主题下是红色，
+  // 落在分隔条上像错误态；这里要的是「可拖动」的中性反馈
+  dividerHoverColor = '#8c8c8c',
+  dividerDraggingColor = '#595959',
   style,
   className,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const { minLeft, minRight } = getSplitBounds(
+    containerWidth,
+    minLeftWidth,
+    minRightWidth,
+  );
   const [leftWidthPercent, setLeftWidthPercent] = useState(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  // 控制分隔线的延迟淡入
-  const [dividerVisible, setDividerVisible] = useState(false);
-  // React-draggable 解决 findDOMNode 警告的 ref
-  const dividerRef = useRef<HTMLDivElement>(null);
   // 保存上一次的容器宽度，用于检测容器尺寸变化
   const prevContainerWidthRef = useRef(0);
+  const prevBoundsRef = useRef({ minLeft: 0, minRight: 0 });
   // 保存左侧固定像素宽度（当达到最小宽度时）
   const fixedLeftWidthRef = useRef<number | null>(null);
   // 保存上一次的 defaultLeftWidth，用于检测变化
   const prevDefaultLeftWidthRef = useRef(defaultLeftWidth);
   // 保存上一次的 resetTrigger，用于检测变化
   const prevResetTriggerRef = useRef(resetTrigger);
-
-  // 延迟显示分隔线，产生淡入效果
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDividerVisible(true);
-    }, 300); // 延迟 300ms 后显示分隔线
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // 监听 defaultLeftWidth 变化，更新默认比例
   useEffect(() => {
@@ -124,20 +129,26 @@ const ResizableSplit: React.FC<Props> = ({
     };
   }, [isInitialized]);
 
-  // 当容器宽度变化时，自动调整分隔线位置以避免出现滚动条
+  // 容器宽度或最小宽度变化时重新约束分隔线，覆盖文件树展开等动态布局。
   useEffect(() => {
     if (!containerWidth || !isInitialized) return;
 
     const prevWidth = prevContainerWidthRef.current;
 
-    // 只有在容器宽度发生变化时才处理
-    if (prevWidth === containerWidth) return;
+    const previousBounds = prevBoundsRef.current;
+    if (
+      prevWidth === containerWidth &&
+      previousBounds.minLeft === minLeft &&
+      previousBounds.minRight === minRight
+    )
+      return;
 
     // 拖动时不执行自适应逻辑，避免冲突和闪烁
     if (isDragging) return;
 
     // 更新上一次的宽度
     prevContainerWidthRef.current = containerWidth;
+    prevBoundsRef.current = { minLeft, minRight };
 
     // 优先使用固定宽度（如果已设置）
     let targetLeftWidth: number;
@@ -154,28 +165,28 @@ const ResizableSplit: React.FC<Props> = ({
     const targetRightWidth = containerWidth - targetLeftWidth;
 
     // 检查是否超出最小宽度限制
-    const leftBelowMin = targetLeftWidth < minLeftWidth;
-    const rightBelowMin = targetRightWidth < minRightWidth;
+    const leftBelowMin = targetLeftWidth < minLeft;
+    const rightBelowMin = targetRightWidth < minRight;
 
     // 如果两侧都低于最小宽度，优先保证左侧最小宽度，固定左侧
     if (leftBelowMin && rightBelowMin) {
-      fixedLeftWidthRef.current = minLeftWidth;
-      const newLeftPercent = (minLeftWidth / containerWidth) * 100;
+      fixedLeftWidthRef.current = minLeft;
+      const newLeftPercent = (minLeft / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
       return;
     }
 
     // 如果左侧低于最小宽度，固定左侧为最小宽度
     if (leftBelowMin) {
-      fixedLeftWidthRef.current = minLeftWidth;
-      const newLeftPercent = (minLeftWidth / containerWidth) * 100;
+      fixedLeftWidthRef.current = minLeft;
+      const newLeftPercent = (minLeft / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
       return;
     }
 
     // 如果右侧低于最小宽度，调整左侧宽度以保证右侧最小宽度
     if (rightBelowMin) {
-      const newLeftWidth = containerWidth - minRightWidth;
+      const newLeftWidth = containerWidth - minRight;
       fixedLeftWidthRef.current = newLeftWidth;
       const newLeftPercent = (newLeftWidth / containerWidth) * 100;
       setLeftWidthPercent(Math.max(0, newLeftPercent));
@@ -191,7 +202,7 @@ const ResizableSplit: React.FC<Props> = ({
 
     // 正常情况：容器放大/缩小，但都没有达到最小宽度限制
     // 检查右侧是否会超出最大范围
-    const maxLeftWidth = containerWidth - minRightWidth;
+    const maxLeftWidth = containerWidth - minRight;
     if (targetLeftWidth > maxLeftWidth) {
       const newLeftPercent = (maxLeftWidth / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
@@ -200,17 +211,24 @@ const ResizableSplit: React.FC<Props> = ({
     containerWidth,
     isInitialized,
     leftWidthPercent,
-    minLeftWidth,
-    minRightWidth,
+    minLeft,
+    minRight,
     isDragging,
   ]);
 
   // 检查是否有内容
-  const hasLeftContent = !!left;
-  const hasRightContent = !!right;
+  const shouldRenderLeft = !!left;
+  const hasLeftContent = shouldRenderLeft && !leftHidden;
+  const shouldRenderRight = !!right;
+  const hasRightContent = shouldRenderRight && !rightHidden;
 
   // 如果只有一侧有内容，则不需要分隔线
-  const showDivider = hasLeftContent && hasRightContent;
+  const isStacked =
+    hasLeftContent &&
+    hasRightContent &&
+    containerWidth > 0 &&
+    containerWidth < stackBelowWidth;
+  const showDivider = hasLeftContent && hasRightContent && !isStacked;
 
   // 计算实际宽度百分比
   const actualLeftPercent =
@@ -222,149 +240,61 @@ const ResizableSplit: React.FC<Props> = ({
 
   const disabled = !showDivider;
 
-  // 拖拽中 - 实时更新状态
-  const handleDrag = useCallback(
-    (e: DraggableEvent, data: DraggableData) => {
-      if (!containerRef.current || containerWidth === 0) return;
-
-      // 使用 data.x 获取当前位置
-      const newX = data.x;
-
-      // 计算新的左侧宽度百分比
-      const newLeftWidthPercent = (newX / containerWidth) * 100;
-
-      // 计算最小宽度百分比
-      const minLeftPercent = (minLeftWidth / containerWidth) * 100;
-      const minRightPercent = (minRightWidth / containerWidth) * 100;
-      const maxLeftPercent = 100 - minRightPercent;
-
-      // 限制宽度范围
-      const clampedWidth = Math.max(
+  // 按最小宽度约束把容器相对坐标（px）夹到合法百分比
+  const clampLeftPercent = useCallback(
+    (containerX: number) => {
+      const minLeftPercent = (minLeft / containerWidth) * 100;
+      const maxLeftPercent = 100 - (minRight / containerWidth) * 100;
+      return Math.max(
         minLeftPercent,
-        Math.min(maxLeftPercent, newLeftWidthPercent),
+        Math.min(maxLeftPercent, (containerX / containerWidth) * 100),
       );
-
-      // 实时更新状态，React 18 会自动批处理
-      setLeftWidthPercent(clampedWidth);
-
-      // 拖动时清除固定宽度，避免与自适应逻辑冲突
-      if (fixedLeftWidthRef.current !== null) {
-        fixedLeftWidthRef.current = null;
-      }
     },
-    [containerWidth, minLeftWidth, minRightWidth],
+    [containerWidth, minLeft, minRight],
   );
 
-  // 全局鼠标移动处理（防止进入 iframe 时拖拽中断）
-  const handleGlobalMouseMove = useCallback(
-    (e: MouseEvent) => {
+  // 分隔条拖拽中（Draggable onDrag 与全局 mousemove 统一出口）：
+  // clientX 换算容器相对坐标后实时更新百分比，并清除固定宽度避免与自适应逻辑冲突
+  const handleDividerMove = useCallback(
+    (clientX: number) => {
       if (!containerRef.current || containerWidth === 0) return;
-
       const containerRect = containerRef.current.getBoundingClientRect();
-      const relativeX = e.clientX - containerRect.left;
+      setLeftWidthPercent(clampLeftPercent(clientX - containerRect.left));
+      fixedLeftWidthRef.current = null;
+    },
+    [containerWidth, clampLeftPercent],
+  );
 
-      // 计算新的左侧宽度百分比
-      const newLeftWidthPercent = (relativeX / containerWidth) * 100;
-
-      // 计算最小宽度百分比
-      const minLeftPercent = (minLeftWidth / containerWidth) * 100;
-      const minRightPercent = (minRightWidth / containerWidth) * 100;
-      const maxLeftPercent = 100 - minRightPercent;
-
-      // 限制宽度范围
-      const clampedWidth = Math.max(
-        minLeftPercent,
-        Math.min(maxLeftPercent, newLeftWidthPercent),
-      );
-
-      // 实时更新状态
+  // 分隔条松手：最后一次夹取更新百分比，并通知外部最终宽度（用于持久化等）
+  const handleDividerEnd = useCallback(
+    (clientX: number) => {
+      if (!containerRef.current || containerWidth === 0) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const clampedWidth = clampLeftPercent(clientX - containerRect.left);
       setLeftWidthPercent(clampedWidth);
-
-      // 拖动时清除固定宽度，避免与自适应逻辑冲突
-      if (fixedLeftWidthRef.current !== null) {
-        fixedLeftWidthRef.current = null;
-      }
+      // 用户手动拖动后，清除固定宽度，恢复百分比模式
+      fixedLeftWidthRef.current = null;
+      onResizeEnd?.(clampedWidth);
     },
-    [containerWidth, minLeftWidth, minRightWidth],
+    [containerWidth, clampLeftPercent, onResizeEnd],
   );
-
-  // 全局鼠标松开处理
-  const handleGlobalMouseUp = useCallback(() => {
-    setIsDragging(false);
-    // 恢复文本选择
-    document.body.style.userSelect = '';
-    // 移除全局事件监听
-    document.removeEventListener('mousemove', handleGlobalMouseMove as any);
-    document.removeEventListener('mouseup', handleGlobalMouseUp as any);
-  }, [handleGlobalMouseMove]);
-
-  // 拖拽开始
-  const handleDragStart = useCallback(() => {
-    setIsDragging(true);
-    // 禁止文本选择
-    document.body.style.userSelect = 'none';
-    // 添加全局鼠标事件监听，防止进入 iframe 时拖拽中断
-    document.addEventListener('mousemove', handleGlobalMouseMove as any);
-    document.addEventListener('mouseup', handleGlobalMouseUp as any);
-  }, [handleGlobalMouseMove, handleGlobalMouseUp]);
-
-  // 拖拽结束
-  const handleDragStop = useCallback(
-    (e: DraggableEvent, data: DraggableData) => {
-      setIsDragging(false);
-      // 恢复文本选择
-      document.body.style.userSelect = '';
-      // 移除全局事件监听
-      document.removeEventListener('mousemove', handleGlobalMouseMove as any);
-      document.removeEventListener('mouseup', handleGlobalMouseUp as any);
-
-      // 最后一次更新位置
-      if (containerRef.current && containerWidth > 0) {
-        const newX = data.x;
-        const newLeftWidthPercent = (newX / containerWidth) * 100;
-        const minLeftPercent = (minLeftWidth / containerWidth) * 100;
-        const minRightPercent = (minRightWidth / containerWidth) * 100;
-        const maxLeftPercent = 100 - minRightPercent;
-        const clampedWidth = Math.max(
-          minLeftPercent,
-          Math.min(maxLeftPercent, newLeftWidthPercent),
-        );
-
-        setLeftWidthPercent(clampedWidth);
-
-        // 用户手动拖动后，清除固定宽度，恢复百分比模式
-        fixedLeftWidthRef.current = null;
-      }
-    },
-    [
-      containerWidth,
-      minLeftWidth,
-      minRightWidth,
-      handleGlobalMouseMove,
-      handleGlobalMouseUp,
-    ],
-  );
-
-  // 计算分隔线的位置 - 实时跟随状态更新
-  const dividerPosition = {
-    x: (leftWidthPercent / 100) * containerWidth,
-    y: 0,
-  };
 
   return (
     <div
       className={`${styles.container} ${className || ''}`}
-      style={style}
+      style={{
+        ...style,
+        flexDirection: isStacked ? 'column' : style?.flexDirection,
+      }}
       ref={containerRef}
     >
-      {/* 拖拽时的遮罩层，防止 iframe 干扰 */}
-      {isDragging && <div className={styles.dragOverlay} />}
-
-      {hasLeftContent && (
+      {shouldRenderLeft && (
         <div
           className={styles.left}
           style={{
-            width: `${actualLeftPercent}%`,
+            width: isStacked ? '100%' : `${actualLeftPercent}%`,
+            height: isStacked ? '50%' : undefined,
+            display: leftHidden ? 'none' : undefined,
             // 初始化完成前使用 CSS 过渡，避免抖动
             transition: isInitialized ? 'none' : 'width 0ms',
             // 拖拽时禁用滚动，避免滚动条闪烁
@@ -376,42 +306,26 @@ const ResizableSplit: React.FC<Props> = ({
       )}
 
       {showDivider && containerWidth > 0 && (
-        <Draggable
-          nodeRef={dividerRef}
-          axis="x"
-          position={dividerPosition}
-          onStart={handleDragStart}
-          onDrag={handleDrag}
-          onStop={handleDragStop}
+        <ResizeDivider
+          position={(leftWidthPercent / 100) * containerWidth}
+          minX={minLeft}
+          maxX={containerWidth - minRight}
           disabled={disabled}
-          bounds={{
-            left: minLeftWidth,
-            right: containerWidth - minRightWidth,
-          }}
-        >
-          <div
-            ref={dividerRef}
-            className={`${styles.divider} ${disabled ? styles.disabled : ''} ${
-              isDragging ? styles.dragging : ''
-            }`}
-            style={
-              {
-                '--divider-color': dividerColor,
-                '--divider-hover-color': dividerHoverColor,
-                '--divider-dragging-color': dividerDraggingColor,
-                opacity: dividerVisible ? 1 : 0,
-                transition: 'opacity 0.4s ease-in-out',
-              } as React.CSSProperties
-            }
-          />
-        </Draggable>
+          dividerHoverColor={dividerHoverColor}
+          dividerDraggingColor={dividerDraggingColor}
+          onDraggingChange={setIsDragging}
+          onDragMove={handleDividerMove}
+          onDragEnd={handleDividerEnd}
+        />
       )}
 
-      {hasRightContent && (
+      {shouldRenderRight && (
         <div
           className={styles.right}
           style={{
-            width: `${100 - actualLeftPercent}%`,
+            width: isStacked ? '100%' : `${100 - actualLeftPercent}%`,
+            height: isStacked ? '50%' : undefined,
+            display: rightHidden ? 'none' : undefined,
             // 初始化完成前使用 CSS 过渡，避免抖动
             transition: isInitialized ? 'none' : 'width 0ms',
             // 拖拽时禁用滚动，避免滚动条闪烁

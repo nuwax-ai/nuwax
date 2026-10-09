@@ -1,19 +1,22 @@
 import ConditionRender from '@/components/ConditionRender';
 import {
-  apiQueryToolPricing,
-  apiUpdateToolPricing,
-} from '@/pages/SpaceResource/services/resource';
+  apiDeleteAgentSubscriptionPlan,
+  apiGetAgentSubscriptionPlanList,
+  apiUpdateAgentSubscriptionPlan,
+  apiUpdateAgentSubscriptionPlanSort,
+} from '@/services/agent-subscription-plan';
+import { dict } from '@/services/i18nRuntime';
+import { apiQueryToolPricing, apiUpdateToolPricing } from '@/services/resource';
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
   ResourcePricingType,
   ToolPricingTargetType,
-} from '@/pages/SpaceResource/types/resource';
+} from '@/types/interfaces/resource';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanStatusEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
+} from '@/types/interfaces/subscriptionPlan';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
@@ -30,12 +33,6 @@ import { Button, Form, InputNumber, message, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiDeleteAgentSubscriptionPlan,
-  apiGetAgentSubscriptionPlanList,
-  apiUpdateAgentSubscriptionPlan,
-  apiUpdateAgentSubscriptionPlanSort,
-} from '../services/agent-subscription-plan';
 import CreatePlanModal from './CreatePlanModal';
 import SubscriptionPlanCard from './SubscriptionPlanCard';
 import styles from './index.less';

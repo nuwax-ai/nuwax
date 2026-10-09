@@ -73,6 +73,12 @@ export interface ModelFormData {
   accessControl?: AccessControlEnum;
   // 可用范围
   usageScenarios?: ModelUsageScenarioEnum[];
+  /** 模型标签(仅系统-公共模型管理维度维护,接口可能返回 null) */
+  tag?: string;
+  /** 模型标签颜色(hex,如 #1668DC;接口可能返回 null) */
+  tagColor?: string;
+  /** 模型倍率(仅系统-公共模型管理维度维护,接口可能返回 null) */
+  cost?: string;
 }
 
 // 在空间中添加或更新模型配置输入参数

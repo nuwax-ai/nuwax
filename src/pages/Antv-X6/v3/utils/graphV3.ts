@@ -1123,7 +1123,7 @@ export const getEdges = (
 };
 
 const FLOW_DASH = '8 4';
-const activeAnimations = new WeakMap<Edge, Animation>();
+const activeAnimations = new WeakMap<Edge, ReturnType<Edge['animate']>>();
 
 export const startEdgeFlowAnimation = (edge: Edge) => {
   if (activeAnimations.get(edge)) return;
@@ -1134,11 +1134,8 @@ export const startEdgeFlowAnimation = (edge: Edge) => {
   edge.attr('line/strokeWidth', 2);
   const pathEl = (edge as any).container?.querySelector?.('path.connection');
   if (!pathEl) {
-    const len = 20;
     const anim = edge.animate(
-      (t: number) => {
-        edge.attr('line/strokeDashoffset', len * (1 - t));
-      },
+      { 'attrs/line/strokeDashoffset': [20, 0] },
       { duration: 600, iterations: Infinity },
     );
     if (anim) activeAnimations.set(edge, anim);

@@ -2,32 +2,27 @@
 @import '@/styles/token';
 
 .container {
-  // background-image: @backgroundImage;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   transition: background-image 0.3s ease;
-  min-width: 1400px;
-  height: 100vh;
+  // h-full 语义（相对 wrappers/immersiveShellAvoid 的内盒）：沉浸态退让发生在
+  // 路由层，页根若用 100vh 会比内盒高出避让高度、底部溢出产生滚动条。
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
 
-  /** 页面顶部 Header，横跨整页宽度 */
-  .page-header {
-    flex-shrink: 0;
-    width: 100%;
-    padding-left: @marginSm;
-    padding-right: @marginSm;
-  }
-
   .section {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
-    margin: 0 @marginSm @marginSm;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    // 与 home/chat 对齐：右侧保留 20px，左侧间距由会话栏内部提供。
+    margin: 0 20px 0 0;
   }
 
   .main-row {
@@ -36,13 +31,16 @@
     min-width: 0;
     min-height: 0;
     height: 100%;
-    gap: @marginSm;
+    gap: 0;
 
     .content-container {
-      border-radius: @pageContainerBorderRadius;
+      // 与 app-pro 工作区一致，面板圆角独立于页面容器的布局风格。
+      border-radius: 16px;
       border: @lineWidth solid @colorSplit;
       overflow: hidden;
       background-color: #f5f5f5;
+      // 整个文件树、预览和终端工作区与输入卡片底边对齐。
+      margin-bottom: @fontHeight;
     }
 
     // 预览内容区全屏模式
@@ -58,15 +56,30 @@
       background: @colorBgContainer;
       border-radius: 0 !important;
       border: none !important;
+      margin: 0;
     }
   }
 
   .left-panel {
-    width: 480px;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    padding-left: 20px;
+    padding-right: @marginXs;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  .workspace {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    padding-left: @marginXs;
   }
 
   .middle-panel {
@@ -95,7 +108,7 @@
 
   .right-panel {
     flex: 1;
-    min-width: 0;
+    min-width: 430px;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -184,28 +197,6 @@
     .xagi-nav-style2 {
       margin: 0;
       border-radius: 0;
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    min-width: unset;
-
-    .main-row {
-      flex-direction: column;
-    }
-
-    .left-panel,
-    .middle-panel {
-      width: 100%;
-      border-right: none;
-      border-bottom: @lineWidth solid @colorSplit;
-    }
-
-    .right-panel {
-      border-left: none;
-      border-bottom: @lineWidth solid @colorSplit;
     }
   }
 }

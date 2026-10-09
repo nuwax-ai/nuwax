@@ -1,0 +1,249 @@
+/**
+ * 用户项目 / 网站应用基础接口（共享层）
+ * @description 下沉自 pages/AppDevPro/services/appDevPro：首页侧栏项目面板等
+ * 非页面层消费方需要（分层红线：非页面层禁止依赖 @/pages/**）；
+ * 页面层原路径再导出保持既有引用不变。
+ */
+
+import { UserService } from '@/services/userService';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { HistoryData } from '@/types/interfaces/publish';
+import type { RequestResponse } from '@/types/interfaces/request';
+import type {
+  CreateUserAppParams,
+  ProjectLatestConversationResult,
+  UpdateUserAppParams,
+  UpdateUserProjectParams,
+  UserAppDomainInfo,
+  UserAppInfo,
+  UserNormalProjectInfo,
+  UserProjectItem,
+  UserProjectPageQueryParams,
+  UserProjectTabPageResult,
+} from '@/types/interfaces/userProject';
+import { pickMineConversations } from '@/utils/projectConversationOwnership';
+import { request } from 'umi';
+
+/**
+ * 用户项目分页查询（2026-09-14 两接口统一后的唯一列表接口，tab/page-query 已下线）：
+ * 与原 tab 接口同款行结构（projectId 主键 + pinned/archived/collected 打标），
+ * 差异：不附带 conversations，展开项目时懒加载 conversations 接口补齐。
+ * queryFilter 支持 collectedFilter（all=默认 / only=仅收藏）与
+ * archivedFilter（不传=剔除归档行【2026-09-15 testagent 实测】/ only=仅归档 /
+ * all=含归档）。
+ */
+export async function apiUserProjectPageQuery(
+  data: UserProjectPageQueryParams,
+): Promise<RequestResponse<UserProjectTabPageResult>> {
+  return request('/api/user-project/page-query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 查询项目会话列表（统一接口不再随列表回 conversations，展开项目时懒加载）。
+ * 下沉自 SpaceProjectManage/services（页面层原路径原签名保持不动）；
+ * 会话行与 tab 接口 conversations 同构，按 ConversationInfo 消费
+ * （agent 等字段消费侧防御式可选访问）。
+ *
+ * ⚠️ 归属过滤（bug 2465，2026-09-20）：后端本项目维度回该项目下**所有用户**的会话
+ * （回包行带 userId / userName），而侧栏三处消费方——项目面板 ProjectPanel、
+ * 历史会话页「项目」tab、侧栏全局搜索 sources——语义上都只要当前用户自己的会话。
+ * 后端暂不支持 onlyMine 参数，契约缺口期在此按 userId 收敛。
+ *
+ * 本函数是共享层，当前**仅**上述侧栏三处消费；两个项目管理详情页
+ * （SpaceProjectManage/NormalProjectDetail、AppProjectDetail）走的是页面自己的
+ * 接口副本 `pages/SpaceProjectManage/services`，语义上要看全员、靠 ConversationPanel
+ * 的 userName 展示 + 置灰区分，**不受本过滤影响**。后端支持 onlyMine 后删除此处过滤。
+ */
+export async function apiUserProjectConversations(
+  projectId: number,
+  projectType: AgentComponentTypeEnum,
+): Promise<RequestResponse<ConversationInfo[]>> {
+  const res = await request(`/api/user-project/conversations/${projectId}`, {
+    method: 'GET',
+    params: { projectType },
+  });
+  if (Array.isArray(res?.data)) {
+    // 当前用户 id 取不到（本地用户信息缺失）时不过滤，与修复前行为一致
+    res.data = pickMineConversations(
+      res.data,
+      UserService.getUserInfoFromStorage()?.id,
+    );
+  }
+  return res;
+}
+
+/** 更新常规项目基本信息 */
+export async function apiUserProjectUpdate(
+  data: UpdateUserProjectParams,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request('/api/user-project/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 删除常规项目 */
+export async function apiUserProjectDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+/** 更新基本信息（传 null 的字段不更新） */
+export async function apiUserAppUpdate(
+  data: UpdateUserAppParams,
+): Promise<RequestResponse<UserAppInfo>> {
+  return request('/api/userapp/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 创建网站应用，供首页和空间项目页共用。 */
+export async function apiUserAppCreate(
+  data: CreateUserAppParams,
+): Promise<RequestResponse<UserAppInfo>> {
+  return request('/api/userapp/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 删除应用（物理删除） */
+export async function apiUserAppDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/userapp/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+/** 按应用ID查询（主键 id 即 app_id） */
+export async function apiUserAppGetById(
+  id: number,
+): Promise<RequestResponse<UserAppInfo>> {
+  return request(`/api/userapp/get/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 查询应用历史配置信息（三方应用-网站应用的发布操作流水）*/
+export async function apiUserAppConfigHistoryList(
+  projectId: number,
+  projectType: string,
+): Promise<RequestResponse<HistoryData[]>> {
+  return request(`/api/user-project/config/history/list/${projectId}`, {
+    method: 'GET',
+    params: { projectType },
+  });
+}
+
+/** 查询网站应用绑定的域名列表(应用详情页 iframe 取生产域名) */
+export async function apiUserAppDomainList(
+  appId: number,
+): Promise<RequestResponse<UserAppDomainInfo[]>> {
+  return request('/api/userapp/domain/list', {
+    method: 'GET',
+    params: {
+      appId,
+    },
+  });
+}
+
+/**
+ * 更新常规项目基本信息（wiki 2026-09-11：常规项目 CRUD 换 /api/normal-project/*，
+ * 管理端/侧栏的改名走本接口；入参语义与 user-project/update 一致）
+ */
+export async function apiNormalProjectUpdate(
+  data: UpdateUserProjectParams,
+): Promise<RequestResponse<UserNormalProjectInfo>> {
+  return request('/api/normal-project/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 删除常规项目（wiki 2026-09-11 新契约） */
+export async function apiNormalProjectDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/normal-project/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+/** 按ID查询常规项目详情 */
+export async function apiNormalProjectGetById(
+  id: number,
+): Promise<RequestResponse<UserNormalProjectInfo>> {
+  return request(`/api/normal-project/get/${id}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 常规项目：获取当前用户最新会话（进项目详情无会话 id 时调用，
+ * wiki 2026-09-11 新契约；返回体复用 ProjectLatestConversationResult
+ * 防御式取 conversationId/id/agentId）
+ */
+export async function apiNormalProjectLatestConversation(
+  id: number,
+): Promise<RequestResponse<ProjectLatestConversationResult>> {
+  return request(`/api/normal-project/conversation/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 项目置顶/取消置顶（swagger User project/pin：pinned + projectType query 均必传，
+ * 后端做项目归属校验，缺省报 Required request parameter） */
+export async function apiUserProjectPin(
+  id: number,
+  pinned: boolean,
+  projectType: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/pin/${id}`, {
+    method: 'POST',
+    params: { pinned, projectType },
+  });
+}
+
+/** 项目归档/取消归档（archived + projectType query 必传，同 pin 口径） */
+export async function apiUserProjectArchive(
+  id: number,
+  archived: boolean,
+  projectType: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/archive/${id}`, {
+    method: 'POST',
+    params: { archived, projectType },
+  });
+}
+
+/** 项目收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径；
+ * projectType 为必传 query 参数，同 conversation/create 的绑定校验口径） */
+export async function apiUserProjectCollect(
+  id: number,
+  projectType: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/collect/${id}`, {
+    method: 'POST',
+    params: { projectType },
+  });
+}
+
+/** 项目取消收藏（同上，双路径独立接口，projectType 必传） */
+export async function apiUserProjectUnCollect(
+  id: number,
+  projectType: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/unCollect/${id}`, {
+    method: 'POST',
+    params: { projectType },
+  });
+}

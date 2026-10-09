@@ -69,7 +69,7 @@ export interface BillOrderSearchParams {
   // 创建时间起止
   startTime?: string;
   endTime?: string;
-  // 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION
+  // 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION,DESK_BUDDY
   bizType?: BillBizTypeEnum;
   keyword?: string;
   pageNum?: number;

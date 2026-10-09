@@ -1,12 +1,20 @@
 @import 'styles/color.less';
 @import 'styles/custom.less';
 @import 'styles/components.less';
+@import 'styles/immersiveShell.less';
 
 html {
   width: 100%;
   height: 100%;
   min-width: 1200px; //TODO 这个要和UI 确认
   background-color: #fff;
+
+  // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container，
+  // 不再强制全局最小宽（否则窗口有效宽度窄于 1200px 时，任何页面都会出现
+  // 窗口级常驻横向滚动条）
+  &[data-nav-style='sidebar'] {
+    min-width: 0;
+  }
 }
 
 #root {
@@ -192,4 +200,115 @@ body {
 .ds-markdown .ds-typed-thinking {
   border-left-width: 1px !important;
   margin-left: 4px !important;
+}
+
+// ============================================
+// 会话快捷导航（ConversationQuickNav）：
+// 内容区左缘缩略导航条。样式走全局类而非 css-modules——
+// 该组件的 index.less 在 dev 环境曾被构建管道静默丢弃（哈希类未挂到 DOM），
+// 迁全局类规避；后端/构建侧查明后可再迁回模块样式。
+// ============================================
+.conversation-quick-nav {
+  // fixed 视口坐标定位（top/left 由组件按滚动容器几何计算，仅保留垂直居中平移）：
+  // 原 absolute 贴 session-container 左缘时，外层多层 overflow:hidden 祖先会在
+  // 容器左缘处双裁剪（负偏移不可见不可点），无法进入内容区左缘留白；
+  // fixed 不受祖先裁剪影响，可统一左移。祖先出现 transform/filter 时会退化为
+  // 相对该祖先定位（挂载约定见组件 JSDoc）
+  position: fixed;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  // overflow-y 会使横向溢出也被裁剪；预留波浪峰值宽度，避免 scaleX 只在 DOM 中生效
+  width: 24px;
+  gap: 2px;
+  max-height: 60vh;
+  padding: 6px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 等宽细线形态：常态浅灰、当前视口所在块深色。
+// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 8px，行距 10px；
+// hover 变长由组件的波浪逻辑直改按钮 transform: scaleX 驱动（不触发布局），
+// 因此 transform-origin 固定左缘、向右伸展；此处只管变色
+.conversation-quick-nav-line {
+  position: relative;
+  flex-shrink: 0;
+  width: 12px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transform-origin: left center;
+
+  // 命中区扩展（透明、不参与绘制）：铺满 2px 行距死区 + 线条右侧到导航条
+  // 右缘的死区，整条导航条 24px×10px 行距内任意位置都算命中该线条；
+  // 事件 target 仍是按钮本体（伪元素命中归属宿主），不影响波浪/索引逻辑
+  &::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    left: -2px;
+    right: -12px;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 18%));
+    transition: background-color 0.2s ease;
+  }
+
+  &:hover::before {
+    background-color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 45%));
+  }
+
+  &.active::before {
+    background-color: var(--ant-color-text, rgba(0, 0, 0, 88%));
+  }
+}
+
+// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题最多两行、正文最多三行
+.conversation-quick-nav-preview {
+  max-width: 300px;
+}
+
+.conversation-quick-nav-preview-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 88%);
+}
+
+.conversation-quick-nav-preview-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 20px;
+  color: rgba(0, 0, 0, 65%);
+  word-break: break-all;
 }

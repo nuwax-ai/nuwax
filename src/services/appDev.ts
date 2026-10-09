@@ -1,4 +1,3 @@
-import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
@@ -23,6 +22,8 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
+import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
+import { parseLogEntry } from '@/utils/devLogParser';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
@@ -475,8 +476,8 @@ export async function exportProject(projectId: string): Promise<void> {
       )}`;
 
     // 通过浏览器下载文件
-    exportFileViaBrowserDownload(linkUrl);
-    message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
+    const saved = await exportFileViaBrowserDownload(linkUrl);
+    if (saved) message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
   } catch (error) {
     // 改进错误处理，兼容不同的错误格式
     const errorMessage =
@@ -658,10 +659,57 @@ export const apiProjectCreate = async (data: {
   name?: string;
   programmingLanguage?: string;
   subType?: string;
+  /** 沙箱ID（wiki：首页对话框创建网站应用、常规项目时必传） */
+  sandboxId?: number;
+  /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
+  devAgentId?: number;
+  /**
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传。
+   * ⚠️ 后端尚未 ready（2026-09-10 与后端确认，sandboxId/devAgentId 已 ready）：
+   * 按「契约先行」惯例先发送，后端就绪即生效；当前多余字段应被后端忽略。
+   * 目录被占用的报错同样待后端 ready 后补错误码映射。
+   */
+  workspacePath?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
-    data,
+    data: {
+      ...data,
+      workspacePath: data.workspacePath || undefined,
+    },
+  });
+};
+
+/**
+ * 创建常规项目（wiki 2026-09-10：常规项目 CRUD 换 /api/normal-project/*，
+ * 用于「项目管理」入口；首页对话框创建常规项目仍走 /api/project/create）。
+ * 返回体与 /api/normal-project/get 同构（UserNormalProjectInfo）；
+ * 创建即建首个会话，conversationId 为传输字段。
+ */
+export const apiNormalProjectCreate = async (data: {
+  /** 空间 ID */
+  spaceId?: number;
+  /** 项目名称 */
+  name?: string;
+  /** 项目描述 */
+  description?: string;
+  /** 项目图标 */
+  icon?: string;
+  /** 沙箱 ID，-1 表示云端沙箱 */
+  sandboxId?: number;
+  /** 工作空间目录 */
+  workspacePath?: string;
+}): Promise<RequestResponse<UserNormalProjectInfo>> => {
+  return request('/api/normal-project/create', {
+    method: 'POST',
+    data: {
+      spaceId: data.spaceId,
+      name: data.name,
+      description: data.description || undefined,
+      icon: data.icon || undefined,
+      sandboxId: data.sandboxId ?? undefined,
+      workspacePath: data.workspacePath || undefined,
+    },
   });
 };
 

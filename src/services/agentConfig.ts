@@ -38,7 +38,12 @@ import type {
   ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { request } from 'umi';
+
+/** 开发验收页（含 /app/mock-chat）的会话接口走同源 Umi mock，不受全局远端 baseURL 影响。 */
+const conversationApiUrl = (path: string) =>
+  isConversationMockPage() ? `${window.location.origin}${path}` : path;
 
 // 智能体迁移接口
 export function apiAgentTransfer(
@@ -283,39 +288,68 @@ export async function apiAgentCardList(): Promise<
   });
 }
 
+// 会话详情在途单飞（bug 2477）：同一会话的详情拉取存在多条并发通道——
+// 快照轮询（fetchConversationSnapshot）、model 首拉（useRequest）、V2 runtime
+// 线 loadConversation、进页首条消息自动发送前查询、ChatFinished 终态补偿。
+// 跳转会话/流结束瞬间它们会同时开火，对同一会话打出 2~4 发重复请求
+// （实测 app-pro 进页 1s 内 4 发）。这里按会话 id 合并真正在途的请求：
+// 并发调用共享同一请求；已完成的响应不缓存，顺序调用语义不变。
+const agentConversationInFlight = new Map<
+  string,
+  Promise<RequestResponse<ConversationInfo>>
+>();
+
 // 查询会话
-export async function apiAgentConversation(
+export function apiAgentConversation(
   conversationId: number,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return await request(`/api/agent/conversation/${conversationId}`, {
-    method: 'POST',
+  const key = String(conversationId);
+  const existing = agentConversationInFlight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const promise = request(
+    conversationApiUrl(`/api/agent/conversation/${conversationId}`),
+    { method: 'POST' },
+  ).finally(() => {
+    if (agentConversationInFlight.get(key) === promise) {
+      agentConversationInFlight.delete(key);
+    }
   });
+  agentConversationInFlight.set(key, promise);
+  return promise;
 }
 
 // 查询会话消息列表
 export async function apiAgentConversationMessageList(
   data: ConversationMessageListParams,
 ): Promise<RequestResponse<MessageInfo[]>> {
-  return await request('/api/agent/conversation/message/list', {
-    method: 'POST',
-    data,
-  });
+  return await request(
+    conversationApiUrl('/api/agent/conversation/message/list'),
+    {
+      method: 'POST',
+      data,
+    },
+  );
 }
 
 // 停止会话
 export async function apiAgentConversationChatStop(
   requestId: string,
 ): Promise<RequestResponse<null>> {
-  return request(`/api/agent/conversation/chat/stop/${requestId}`, {
-    method: 'POST',
-  });
+  return request(
+    conversationApiUrl(`/api/agent/conversation/chat/stop/${requestId}`),
+    {
+      method: 'POST',
+    },
+  );
 }
 
 // ACP 权限审批结果回调
 export function apiResolveAcpPermission(
   data: RcoderNotifyResolvedRequest,
 ): Promise<RequestResponse<any> | Record<string, any>> {
-  return request('/api/computer/notify-resolved', {
+  return request(conversationApiUrl('/api/computer/notify-resolved'), {
     method: 'POST',
     data,
   });
@@ -336,21 +370,26 @@ export function apiAgentInterventionRespond(
       ? 'reject'
       : undefined;
 
-  return request('/api/agent/conversation/chat/permission-request/response', {
-    method: 'POST',
-    // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
-    // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
-    // found or already resolved"）重复弹窗。
-    skipErrorHandler: true,
-    data: {
-      conversationId: data.conversation_id,
-      toolId: permissionRequest?.tool_call_id,
-      option: {
-        optionId: selected?.option_id || fallbackOptionId,
-        outcome: selected ? 'selected' : 'cancelled',
+  return request(
+    conversationApiUrl(
+      '/api/agent/conversation/chat/permission-request/response',
+    ),
+    {
+      method: 'POST',
+      // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
+      // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
+      // found or already resolved"）重复弹窗。
+      skipErrorHandler: true,
+      data: {
+        conversationId: data.conversation_id,
+        toolId: permissionRequest?.tool_call_id,
+        option: {
+          optionId: selected?.option_id || fallbackOptionId,
+          outcome: selected ? 'selected' : 'cancelled',
+        },
       },
     },
-  });
+  );
 }
 
 // 停止临时会话
@@ -366,7 +405,7 @@ export async function apiTempChatConversationStop(
 export async function apiAgentConversationUpdate(
   data: AgentConversationUpdateParams,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return request('/api/agent/conversation/update', {
+  return request(conversationApiUrl('/api/agent/conversation/update'), {
     method: 'POST',
     data,
   });
@@ -378,7 +417,49 @@ export async function apiAgentConversationList(
 ): Promise<RequestResponse<ConversationInfo[]>> {
   return request('/api/agent/conversation/list', {
     method: 'POST',
-    data,
+    // 归档过滤（all/exclude/only）。旧调用点缺省按 exclude 兜底，
+    // 保持「默认不含已归档」的历史行为；需要归档视图的列表显式传 all/only。
+    data: { ...data, archivedFilter: data.archivedFilter ?? 'exclude' },
+  });
+}
+
+/** 会话置顶/取消置顶（pinned 必传；裸请求后端会默认设为 true） */
+export async function apiAgentConversationPin(
+  conversationId: number,
+  pinned: boolean,
+): Promise<RequestResponse<ConversationInfo>> {
+  return request(`/api/agent/conversation/pin/${conversationId}`, {
+    method: 'POST',
+    params: { pinned },
+  });
+}
+
+/** 会话归档/取消归档（archived 必传；裸请求后端会默认设为 true） */
+export async function apiAgentConversationArchive(
+  conversationId: number,
+  archived: boolean,
+): Promise<RequestResponse<ConversationInfo>> {
+  return request(`/api/agent/conversation/archive/${conversationId}`, {
+    method: 'POST',
+    params: { archived },
+  });
+}
+
+/** 会话收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径，无参数） */
+export async function apiAgentConversationCollect(
+  conversationId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/agent/conversation/collect/${conversationId}`, {
+    method: 'POST',
+  });
+}
+
+/** 会话取消收藏（同上，双路径独立接口） */
+export async function apiAgentConversationUnCollect(
+  conversationId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/agent/conversation/unCollect/${conversationId}`, {
+    method: 'POST',
   });
 }
 
@@ -405,7 +486,7 @@ export async function apiAgentConversationCreate(
 export async function apiAgentConversationChatSuggest(
   data: ConversationChatSuggestParams,
 ): Promise<RequestResponse<string[]>> {
-  return request('/api/agent/conversation/chat/suggest', {
+  return request(conversationApiUrl('/api/agent/conversation/chat/suggest'), {
     method: 'POST',
     data,
   });

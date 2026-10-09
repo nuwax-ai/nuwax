@@ -1,0 +1,73 @@
+# 会话模块文档入口
+
+> 会话模块相关文档集中在本目录。
+
+```text
+docs/conversation/
+├── README.md                           ← 本入口
+├── dual-track/                         ← 双轨重构相关
+│   ├── conversation-dual-track-plan.md         双轨切换方案（R1-R6 实施与 flag）
+│   ├── conversation-business-logic-checklist.md 业务逻辑验收清单（105+ 条 ID）
+│   ├── conversation-regression-test-plan.md    测试回归方案
+│   ├── conversation-maintenance-guide.md       维护指南
+│   ├── agent-session-runtime-regression.md     运行加载逻辑回归
+│   └── conversation-active-state-machine.md    会话活跃态状态机参考
+├── fixes/                              ← 修复留存（按时间倒序）
+│   ├── runtime-bridge-loop-and-terminal-text-overwrite-fix.md  runtime 桥接死循环 + 终态 text 覆盖修复（2026-08-26）
+│   ├── terminal-convergence-fix-summary.md             终态收敛修复总结（2026-08-20）
+│   ├── conversation-complete-button-stuck-analysis.md  按钮卡死分析定案（2026-08-19）
+│   ├── conversation-terminal-finalizer-fix.md          终态统一收敛修复（2026-08-18）
+│   ├── conversation-error-taskstatus-stuck-fix.md      错误终态固化修复（早期）
+│   ├── chat-terminal-polling-flash-qa-report.md        收尾闪烁 QA 报告
+│   └── poll-send-race-stale-snapshot-fix.md           轮询竞态修复
+├── adr/                                ← 架构决策记录
+├── archive/                            ← 已过时文档
+├── agent-session-rendering-analysis.md 会话渲染市面调研与差距分析（2026-08-25）
+├── agent-session-rendering-plan.md     会话渲染升级开发计划（P0/P1/P2 + 演示矩阵）
+├── agent-session-rendering-acceptance.md 会话渲染+UX 升级手动验收清单（含分步操作，2026-08-27）
+├── mobile-parity-checklist.md          会话优化 PC↔Mobile（nuwax-mobile）拉齐清单（2026-08-26）
+└── message-queue-design.md             消息队列设计（初版）
+```
+
+## 快速导航
+
+### 验收 / 回归
+
+| 要做什么 | 看哪篇 |
+| --- | --- |
+| 术语口径（V1=旧线 / V2=新线）与渲染 V2 契约 | [renderer-v2.md](./renderer-v2.md)（术语与接入）；分组、折叠和可见性规则统一见 [rendering-rules.md](./rendering-rules.md) |
+| 业务逻辑逐条验收 | [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md) |
+| 测试回归跑什么 | [dual-track/conversation-regression-test-plan.md](./dual-track/conversation-regression-test-plan.md) |
+| 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
+| Mock 故障注入验收（/mock-chat） | [mock-testing-plan.md](./mock-testing-plan.md)（含实施现状与热重载坑） |
+| Mock 体系优化与 E2E 自动化 | [mock-optimization-plan.md](./mock-optimization-plan.md) |
+| 会话渲染能力调研 / 差距对照 | [agent-session-rendering-analysis.md](./agent-session-rendering-analysis.md) |
+| 会话渲染升级开发（P0 终端渲染 / Plan 进度 / 子 agent…） | [agent-session-rendering-plan.md](./agent-session-rendering-plan.md)（含演示矩阵与 Done 定义） |
+| 手动验收走查（分步操作 + 勾选表） | [agent-session-rendering-acceptance.md](./agent-session-rendering-acceptance.md)（渲染线 + ux-m1 全功能） |
+| 会话优化需求移动端拉齐（nuwax-mobile） | [mobile-parity-checklist.md](./mobile-parity-checklist.md)（逐项差距/落点/批次） |
+
+### 排查按钮卡「会话中」
+
+1. 看修复总结：[fixes/terminal-convergence-fix-summary.md](./fixes/terminal-convergence-fix-summary.md)
+2. 看排查过程：[fixes/conversation-complete-button-stuck-analysis.md](./fixes/conversation-complete-button-stuck-analysis.md)
+3. console 过滤 `[Conv:` 拉日志 → 按 origin/prev/next/isStale 字段定位
+
+### 理解按钮状态架构
+
+```
+isSessionActive = isConversationActive（连接生命周期）
+               || hasActiveStreamingInMessages（末条 Loading/Incomplete）
+               || taskStatus === EXECUTING（后端权威）
+
+工具状态 → 仅 RunOver UI 展示，与按钮无关
+```
+
+详见 [dual-track/conversation-active-state-machine.md](./dual-track/conversation-active-state-machine.md)
+
+## 变更记录
+
+- 2026-08-27 新增手动验收清单（渲染线 + ux-m1 全功能分步走查）；e2e 文案语言钉死（?lang=zh-CN，dev server 需带正确 BASE_URL 重启）
+- 2026-08-26 新增 runtime 桥接死循环 + 终态 text 覆盖修复留存（审查处置轮，配套 file-preview 缓存版本 bump 见 docs 根）
+- 2026-08-25 新增会话渲染调研与升级开发计划（含已完成功能演示回归补齐：e2e 渲染探针）
+- 2026-08-20 终态收敛体系修复合入 + 文档按 dual-track / fixes 分组
+- 2026-08-17 基线 `cf5ab966c`（双轨重构初始文档）

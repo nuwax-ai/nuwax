@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/token';
 
 .model-selector-container {
@@ -52,6 +53,19 @@
       margin-right: @marginXxs;
     }
 
+    // 选中模型的供应商 icon(空值兜底同列表项),比列表项内的 16px 略小;
+    // 个人/团队 tab 换 antd 用户图标(单人/多人),字体图标按字号定尺寸同 14px
+    .selector-model-icon {
+      width: 14px;
+      height: 14px;
+      margin-right: @marginXxs;
+      border-radius: 2px;
+
+      &.anticon {
+        font-size: 14px;
+      }
+    }
+
     .selector-arrow {
       transition: transform @motionDurationFast ease;
     }
@@ -71,10 +85,20 @@
 }
 
 .model-dropdown-container {
+  display: flex;
+  flex-direction: column;
   background-color: @colorBgElevated;
   border-radius: @borderRadius;
   box-shadow: @boxShadowSecondary;
   padding: 4px 0 0;
+
+  // 三 tab 模式:弹层定高 368px、定宽 340px——各 tab 高度/宽度一致,
+  // 空数据 tab 也不收缩变窄;external 分组下拉不受影响
+  &.tab-mode {
+    box-sizing: border-box;
+    height: 368px;
+    width: 340px;
+  }
 
   :global {
     .ant-dropdown-menu {
@@ -84,8 +108,17 @@
   }
 
   .add-button-wrap {
+    flex-shrink: 0;
     padding: 4px;
     border-top: 1px solid @colorBorderSecondary;
+
+    // 配置自定义模型按钮:block 占满整行,内容靠左、左右 padding 8px;
+    // type=text 本无边框,显式置 none 兜底
+    .add-model-btn {
+      justify-content: flex-start;
+      padding-inline: 8px;
+      border: none;
+    }
   }
 }
 
@@ -95,6 +128,13 @@
       max-height: 240px;
       overflow-y: auto;
       overflow-x: hidden;
+    }
+
+    .ant-dropdown-menu-item-group-title {
+      color: @colorTextQuaternary !important;
+      font-size: @fontSizeSm !important;
+      font-weight: 500 !important;
+      padding: 6px 12px 2px !important;
     }
 
     .ant-dropdown-menu-item {
@@ -114,17 +154,71 @@
     }
   }
 
-  .menu-item {
+  // 三 tab 弹层(agentId 模式):Segmented 分段控件,样式对齐专家&技能&连接器页主 tab
+  // 宽度跟随弹层定宽(340px)平铺
+  .model-tabs {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    margin: 0 0 4px;
+    padding: 0 4px;
+  }
+
+  // 列表区弹性填充定高弹层的剩余空间:tab 间/空数据高度一致,超出滚动
+  .model-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2px 6px 6px;
+
+    // 收窄默认垂直滚动条(webkit 默认约 15px),同款见 MentionEditor
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 3px;
+
+      &:hover {
+        background: @colorTextTertiary;
+      }
+    }
+  }
+
+  // 空态文案在定高列表区(弹层弹性填充区)垂直居中
+  .list-empty {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 200px;
+    justify-content: center;
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+  }
 
-    .item-content {
+  // 模型项内元素(external 分组下拉与 tab 列表共用)
+  .item-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    .item-title-row {
       display: flex;
-      flex-direction: column;
-      flex: 1;
+      align-items: center;
       min-width: 0;
+
+      // 供应商 icon:恒定占位,空值由 JS 兜底 custom.png
+      .item-icon {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        margin-right: @marginXxs;
+        border-radius: 2px;
+      }
 
       .item-name {
         color: @colorTextSecondary;
@@ -136,47 +230,150 @@
         white-space: nowrap;
       }
 
-      .item-desc {
+      .item-tag {
+        flex-shrink: 0;
+        margin: 0 0 0 @marginXxs;
+        padding: 0 4px;
         font-size: 11px;
-        color: @colorTextQuaternary;
-        // margin-top: 0px;
+        line-height: 16px;
+        // 目标最多展示约 8 个汉字:1em/汉字 + 左右 padding 4px×2,
+        // 实测汉字渲染宽略超 1em,取 10em(8em 时仅容纳 6 个汉字)
+        max-width: 10em;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-    }
 
-    .item-actions {
-      display: none;
-      align-items: center;
-      gap: @marginXxs;
-      margin-left: @marginXxs;
-
-      .action-icon {
-        padding: @paddingXs;
-        border-radius: @borderRadius;
-        font-size: @fontSizeSm;
-        color: @colorTextQuaternary;
-        cursor: pointer;
-        transition: all @motionDurationMid;
-
-        &:hover {
-          color: @colorPrimary;
-          background: @colorFillTertiary;
-        }
+      // 团队 tab 的空间名 tag:覆盖 item-tag 的左间距,吸附名称行最右端
+      // (勾选 icon 统一在行末,紧排其右);置于 .item-tag 之后保证覆盖
+      // 生效。文案用三级灰(比 antd Tag 默认文案浅、比描述行的四级灰深,
+      // 保证在 tag 底色上可读)
+      .item-space-tag {
+        margin-left: auto;
+        color: @colorTextTertiary;
       }
     }
+
+    .item-desc {
+      width: 100%;
+      font-size: 11px;
+      color: @colorTextQuaternary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // 系统模型的倍率,浅灰右对齐
+  .item-cost {
+    flex-shrink: 0;
+    margin-left: @marginXs;
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+  }
+
+  .item-actions {
+    display: none;
+    align-items: center;
+    gap: @marginXxs;
+    margin-left: @marginXxs;
+
+    .action-icon {
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      font-size: @fontSizeSm;
+      color: @colorTextQuaternary;
+      cursor: pointer;
+      transition: all @motionDurationMid;
+
+      &:hover {
+        color: @colorPrimary;
+        background: @colorFillTertiary;
+      }
+    }
+  }
+
+  // 勾选 icon(external 分组下拉共用);tab 列表项内的常驻占位/显隐/
+  // 尺寸覆盖见 .list-item
+  .item-check {
+    margin-left: @marginSm;
+    color: @colorPrimary;
+    font-size: @fontSizeSm;
+  }
+
+  // external 模式:Menu 分组内的项
+  .menu-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 200px;
 
     &:hover {
       .item-actions {
         display: flex;
       }
     }
+  }
 
+  // tab 模式:脱离 Menu 的自绘列表项,弹性填满弹层定宽(340px - 列表区
+  // 两侧 padding 12px = 328px)——滚动条出现时行自行收窄,行末勾选
+  // icon 不被滚动条裁切。历史:224px(旧版弹层 200px + menu 两侧
+  // padding)→ 2026-09-15 产品要求加宽 50px 定宽 274px → 弹层定宽后改弹性
+  .list-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 6px;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    transition: background-color @motionDurationMid;
+
+    // 个人 tab 的编辑/删除按钮:常驻占位 + opacity 显隐(覆盖基础
+    // display:none→flex 切换)——hover 时按钮突然占宽会挤压名称区,
+    // 造成列表项抖动;占位恒定后布局稳定
+    .item-actions {
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity @motionDurationMid;
+    }
+
+    // 勾选 icon:同一手法常驻占位 + opacity 显隐,选中仅切换可见性,
+    // 行内布局恒定不挤压名称区;尺寸调小到与 tag 文案一致(11px),
+    // 左间距 6px(无对应 token 档位,字面量)
     .item-check {
-      margin-left: @marginSm;
-      color: @colorPrimary;
-      font-size: @fontSizeSm;
+      flex-shrink: 0;
+      margin-left: 6px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity @motionDurationMid;
+    }
+
+    &.item-selected {
+      .item-check {
+        opacity: 1;
+      }
+    }
+
+    &:hover {
+      background: @colorFillTertiary;
+
+      .item-actions {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+  }
+}
+
+/* 窄输入框容器降级（问题区 #15）：触发钮文字收窄省宽，避免右侧组溢出
+   裁掉发送钮。仅在 .chat-container 容器查询上下文内生效 */
+@container chat-input-box (max-width: 440px) {
+  .model-selector-container .selector-btn {
+    span {
+      max-width: 80px;
     }
   }
 }

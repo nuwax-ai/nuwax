@@ -1,0 +1,143 @@
+@import '@/styles/token';
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phaseText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.successIcon {
+  color: @colorSuccess;
+}
+
+.errorIcon {
+  color: @colorError;
+}
+
+.stepLogs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accessBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: @colorFillTertiary;
+  border-radius: @borderRadius;
+}
+
+.accessHint {
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.accessRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accessUrl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: @colorPrimary;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.accessCopy {
+  flex-shrink: 0;
+}
+
+.accessNotReady {
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorWarningText;
+}
+
+.stepLogsTitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: @colorText;
+}
+
+.serviceList {
+  background: transparent;
+
+  // bordered={false} 时 antd 会去掉最后一项的 border-bottom，这里显式补回
+  &:global(.ant-collapse-borderless) > :global(.ant-collapse-item) {
+    margin-bottom: 8px;
+    border: @lineWidth solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    overflow: hidden;
+
+    &:last-child {
+      margin-bottom: 0;
+      border-bottom: @lineWidth solid @colorBorderSecondary;
+    }
+  }
+
+  :global(.ant-collapse-header) {
+    align-items: center !important;
+  }
+}
+
+.serviceHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  padding-right: 8px;
+}
+
+.serviceName {
+  flex-shrink: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: @colorText;
+}
+
+.serviceTag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+
+.log {
+  max-height: 180px;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  background: @colorFillTertiary;
+  border-radius: @borderRadiusSm;
+  color: @colorText;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

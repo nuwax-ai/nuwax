@@ -1,0 +1,304 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
+  // h-full 语义（相对 page-container 内容盒）：工作台页与主站同容器后，
+  // 页根用 100vh 会比容器高出上下边距、底部（终端/日志条）被 overflow 裁掉
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  .section {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    // 与 home/chat 对齐：右侧保留 20px，左侧间距由会话栏内部提供。
+    margin: 0 20px 0 0;
+  }
+
+  .main-row {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    gap: 0;
+
+    .content-container {
+      position: relative;
+      border-radius: 16px;
+      border: @lineWidth solid @colorSplit;
+      overflow: hidden;
+      background-color: #f5f5f5;
+    }
+
+    /**
+     * 资料库文档盖在工作区上，关闭后回到原来的预览。
+     * 底部终端全屏是 z-index: 10，这里必须更高，否则先打开终端再点资料库时终端会挡住嵌入页。
+     */
+    .repo-doc-preview {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      background: @colorBgContainer;
+    }
+
+    // 预览内容区全屏模式
+    .content-container-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      z-index: 1000;
+      background: @colorBgContainer;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+  }
+
+  .left-panel {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    padding-right: @marginXs;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /** 左栏应用信息头部下方的会话区 */
+  .left-panel-body {
+    flex: 1;
+    min-height: 0;
+    // 与任务会话一致，为左缘快捷导航预留空间。
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 右栏：操作头部 + 内容区 */
+  .right-column {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    padding-left: @marginXs;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** 右栏主体：工作区 + 历史构建包版本侧栏 */
+  .right-column-body {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    // 为 AI 提示的行高留出空间，使面板底边与输入框卡片底边对齐。
+    padding-bottom: @fontHeight;
+  }
+
+  .middle-panel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .right-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .file-preview-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .right-panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /**
+   * Tab 栏下方主区域：预览内容 + 底部终端
+   * position: relative 供终端 expanded 时 absolute 定位，不遮挡 PreviewTabBar
+   */
+  .right-panel-main {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 编排面板或文件预览 */
+  .right-panel-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 编排面板「调试」Tab 内嵌聊天，占满 Tab 内容区 */
+  .arrange-debug-chat {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    border: none;
+    background-color: @colorBgContainer;
+  }
+
+  .file-tree-sidebar {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .tool-workspace-bar {
+    display: flex;
+    align-items: center;
+    height: 49px;
+    min-height: 49px;
+    padding: 0 @paddingXs;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .tool-workspace-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: @colorText;
+  }
+
+  .tool-workspace-preview-chrome {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /** 会话进行中提示：灰色靠右，结束后随会话状态一起拿掉 */
+  .preview-session-error-hint {
+    margin-left: auto;
+    padding-left: 12px;
+    min-width: 0;
+    color: @colorTextSecondary;
+    font-size: 13px;
+    line-height: 20px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tool-workspace-actions {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    gap: @marginXs;
+  }
+
+  .tool-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: @colorBgContainer;
+  }
+
+  /** 数据库管理页内容比侧栏剩余宽度宽时，允许横向滚动，避免右侧表格被裁掉 */
+  .tool-workspace-scroll {
+    overflow-x: auto;
+    // overflow-y: hidden;
+  }
+
+  .workspace-pane {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .workspace-pane-hidden {
+    display: none !important;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: @colorTextSecondary;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  :global {
+    .xagi-nav-style2 {
+      margin: 0;
+      border-radius: 0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    min-width: unset;
+
+    .left-panel,
+    .middle-panel {
+      width: 100%;
+      border-right: none;
+      border-bottom: @lineWidth solid @colorSplit;
+    }
+
+    .right-column {
+      width: 100%;
+    }
+
+    .right-panel {
+      border-left: none;
+      border-bottom: @lineWidth solid @colorSplit;
+    }
+  }
+}

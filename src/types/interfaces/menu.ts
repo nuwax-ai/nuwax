@@ -3,7 +3,7 @@
  * @description 支持三级菜单和功能权限控制
  */
 
-import { MenuNodeInfo } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
+import { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
 
 /**
  * 菜单项数据传输对象

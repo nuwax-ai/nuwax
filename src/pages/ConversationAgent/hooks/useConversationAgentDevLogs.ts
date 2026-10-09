@@ -3,13 +3,13 @@
  * 打开日志 Tab 时轮询 /api/computer/logs，渲染逻辑对齐 AppDev useDevLogs
  */
 
+import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
   filterErrorLogs,
   generateErrorFingerprint,
   getNewErrors,
   groupLogsByTimestamp,
-} from '@/pages/AppDev/utils/devLogParser';
-import type { DevLogEntry } from '@/types/interfaces/appDev';
+} from '@/utils/devLogParser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {

@@ -76,10 +76,25 @@ export default eventBus;
 
 // 定义常用的事件名称常量
 export const EVENT_NAMES = {
+  // 登出/认证失效后释放菜单中常驻的微应用实例。
+  AUTH_SESSION_CLEARED: 'auth_session_cleared',
   // 发送聊天消息事件
   SEND_CHAT_MESSAGE: 'send_chat_message',
   // 清空聊天输入框事件
   CLEAR_CHAT_INPUT: 'clear_chat_input',
   // 队列消息编辑回填事件
   QUEUE_EDIT_MESSAGE: 'queue_edit_message',
+  // 应用标签预览命令（侧栏标签行 → 保活实例内 PagePreviewIframe，经 routePath 精确寻址）
+  APP_TAB_PREVIEW_COMMAND: 'app_tab_preview_command',
 } as const;
+
+/**
+ * 应用标签预览命令载荷：routePath 为标签唯一键（/user-app/:id 或 /agent/:id），
+ * action 区分刷新（同详情页刷新 icon）与复制链接（同详情页链接 icon）
+ */
+export interface AppTabPreviewCommandPayload {
+  /** 目标应用标签的 routePath（与 openedAppTabs 的 routePath 同源） */
+  routePath: string;
+  /** reload = 重挂 iframe 重载；copyLink = 复制当前页面地址 */
+  action: 'reload' | 'copyLink';
+}

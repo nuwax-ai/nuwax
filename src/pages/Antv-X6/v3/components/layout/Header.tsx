@@ -1,4 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
+import SvgIcon from '@/components/base/SvgIcon';
+import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
@@ -15,7 +17,6 @@ import {
   ExclamationCircleFilled,
   FormOutlined,
   InfoCircleOutlined,
-  LeftOutlined,
   LoadingOutlined,
   RedoOutlined,
   SaveOutlined,
@@ -23,7 +24,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Select, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
-import { useModel, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 interface HeaderProp {
   // 是否隐藏返回箭头
   hideBack?: boolean;
@@ -82,6 +83,9 @@ const Header: React.FC<HeaderProp> = ({
 }) => {
   const isAgentFlow = useIsAgentFlow();
   const { spaceId } = useParams();
+  // 单栏宿主下返回走真实浏览器历史（配合 workbenchHistoryBase 栈底兜底）；
+  // 经典风格全屏形态保留 jumpBack 回工作流列表的既有行为
+  const style3WorkbenchHost = useStyle3WorkbenchHost();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
   const {
     name,
@@ -224,14 +228,20 @@ const Header: React.FC<HeaderProp> = ({
   };
 
   return (
+    // 顶部栏 absolute 锚定 #container（同 v1 header）：独立路由与 page-container
+    // 两种宿主下都与页面边缘对齐；沉浸态随 immersiveShellAvoid 的页根 padding
+    // 自然落在工具栏下方，无需额外 top 补偿。
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
         <ConditionRender condition={!hideBack}>
-          <LeftOutlined
+          <SvgIcon
+            name="icons-nav-backward"
             className="back-icon-style"
             onClick={() => {
               if (onBack) {
                 onBack();
+              } else if (style3WorkbenchHost) {
+                history.back();
               } else {
                 jumpBack(`/space/${spaceId}/library`);
               }

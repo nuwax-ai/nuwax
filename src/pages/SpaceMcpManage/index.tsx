@@ -1,6 +1,7 @@
 import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import {
   FILTER_DEPLOY,
   MCP_MANAGE_SEGMENTED_LIST,
@@ -28,7 +29,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal, Segmented, Space } from 'antd';
+import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
@@ -377,56 +378,55 @@ const SpaceLibrary: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div
-        className={cx('flex', 'content-between')}
-        style={{ marginBottom: 5 }}
-      >
-        <div style={{ flex: 1 }}>
-          <Space>
-            <h3 className={cx(styles.title)}>
-              {dict('PC.Pages.SpaceMcpManage.title')}
-            </h3>
-            {segmentedValue === McpManageSegmentedEnum.Custom && (
-              <>
-                <SelectList
-                  value={create}
-                  options={CREATE_LIST}
-                  onChange={handlerChangeCreate}
-                />
-                {/* 单选模式 */}
-                <ButtonToggle
-                  options={FILTER_DEPLOY}
-                  value={deployStatus}
-                  onChange={(value) =>
-                    handlerChangeDeployStatus(value as React.Key)
-                  }
-                />
-              </>
-            )}
-          </Space>
-        </div>
-        <div>
+      <PageContainerHeader
+        className={cx(styles['header-area'])}
+        title={dict('PC.Pages.SpaceMcpManage.title')}
+        titleExtra={
+          segmentedValue === McpManageSegmentedEnum.Custom ? (
+            <>
+              <SelectList
+                value={create}
+                options={CREATE_LIST}
+                onChange={handlerChangeCreate}
+              />
+              <ButtonToggle
+                options={FILTER_DEPLOY}
+                value={deployStatus}
+                onChange={(value) =>
+                  handlerChangeDeployStatus(value as React.Key)
+                }
+              />
+            </>
+          ) : null
+        }
+        middle={
           <Segmented
             options={MCP_MANAGE_SEGMENTED_LIST}
             value={segmentedValue}
             onChange={handleChangeSegmentedValue}
           />
-        </div>
-        <div style={{ flex: 1, display: 'flex' }}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceMcpManage.searchPlaceholder')}
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            {dict('PC.Pages.SpaceMcpManage.createMcpService')}
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceMcpManage.searchPlaceholder')}
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+            >
+              {dict('PC.Pages.SpaceMcpManage.createMcpService')}
+            </Button>
+          </>
+        }
+      />
       <div className={cx('flex', styles['select-search-area'])}></div>
       {loading ? (
         <Loading />

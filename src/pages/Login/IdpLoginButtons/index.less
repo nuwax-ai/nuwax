@@ -1,0 +1,68 @@
+@import '@/styles/token';
+
+.container {
+  margin-top: 8px;
+}
+
+.divider {
+  margin: 0 0 16px !important;
+  font-size: 12px !important;
+  color: @colorTextTertiary !important;
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.trailingAction {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  height: 36px;
+}
+
+.actionDivider {
+  height: 16px;
+  margin: 0;
+  border-color: @colorBorderSecondary;
+}
+
+// 登录页全局把 .ant-btn 去了边框，这里恢复成浅色描边按钮
+.item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid @colorBorderSecondary !important;
+  background: @colorBgContainer;
+
+  :global(.ant-btn-icon) {
+    display: inline-flex;
+  }
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}

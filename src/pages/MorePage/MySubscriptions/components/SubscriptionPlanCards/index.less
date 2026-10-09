@@ -63,6 +63,11 @@
     border: calc(@lineWidth * 2) solid @colorPrimary;
     box-shadow: 0 8px 24px color-mix(in srgb, @colorPrimary 12%, transparent);
 
+    &.is-expired {
+      border: @lineWidth solid @colorBorderSecondary;
+      box-shadow: none;
+    }
+
     .current-badge {
       background: linear-gradient(
         135deg,
@@ -94,6 +99,10 @@
       @colorPrimary 0%,
       @colorPrimaryHover 100%
     );
+
+    &.is-expired {
+      background: linear-gradient(135deg, #bfbfbf 0%, #8c8c8c 100%);
+    }
   }
 
   .hot-badge {
@@ -132,6 +141,7 @@
       align-items: baseline;
       gap: @marginXs;
       flex-wrap: wrap;
+      width: 100%;
 
       .price-value {
         color: @colorTextBase;
@@ -151,6 +161,14 @@
           margin-left: 2px;
           color: @colorTextSecondary;
         }
+      }
+
+      .expire-time {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        margin-left: auto;
+        font-weight: normal;
+        white-space: nowrap;
       }
 
       .original-price {

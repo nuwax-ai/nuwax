@@ -16,10 +16,7 @@ import {
   type UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
 import { debounce } from '@/utils/appDevUtils';
-import {
-  clearSSESharedTimeout,
-  createSSEConnection,
-} from '@/utils/fetchEventSource';
+import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -29,11 +26,6 @@ import {
   SUCCESS_CODE,
 } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
-import {
-  insertPlanBlock,
-  insertToolCallBlock,
-  insertToolCallUpdateBlock,
-} from '@/pages/AppDev/utils/markdownProcess';
 import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
@@ -56,6 +48,12 @@ import {
   markStreamingMessageError,
   sortMessagesByTimestamp,
 } from '@/utils/chatUtils';
+import {
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+  removePlanBlocks,
+  upsertPlanBlock,
+} from '@/utils/markdownProcess';
 
 /**
  * @ 提及的项类型（与 ChatInputHome 保持一致）
@@ -142,6 +140,8 @@ export const useAppDevChat = ({
 
   const abortConnectionRef = useRef<AbortController | null>(null);
   const aIChatAbortConnectionRef = useRef<AbortController>();
+  const finishAppDevConnectionRef = useRef<(() => void) | null>(null);
+  const mountedRef = useRef(true);
 
   // 用于存储超时定时器的 ref
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -307,7 +307,11 @@ export const useAppDevChat = ({
             }
           }
 
-          if (subType === AgentSessionUpdateSubType.PLAN) {
+          // ACP plan/plan_update：全量替换语义，同 planId 的旧块被新块替换
+          if (
+            subType === AgentSessionUpdateSubType.PLAN ||
+            subType === AgentSessionUpdateSubType.PLAN_UPDATE
+          ) {
             // 插入 Plan 前先刷新文本缓冲区，确保顺序正确
             flushTextBuffer(false);
             setChatMessages((prev) =>
@@ -318,7 +322,7 @@ export const useAppDevChat = ({
                 ) {
                   return {
                     ...msg,
-                    text: insertPlanBlock(msg.text || '', {
+                    text: upsertPlanBlock(msg.text || '', {
                       planId: data.planId || 'default-plan',
                       entries: data.entries || [],
                     }),
@@ -327,6 +331,30 @@ export const useAppDevChat = ({
                 return msg;
               }),
             );
+          }
+          // ACP plan_removed：计划不再适用，移除已渲染的计划块
+          if (subType === AgentSessionUpdateSubType.PLAN_REMOVED) {
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === AssistantRoleEnum.ASSISTANT
+                ) {
+                  return {
+                    ...msg,
+                    text: removePlanBlocks(msg.text || ''),
+                  };
+                }
+                return msg;
+              }),
+            );
+          }
+          // ACP 引擎侧模式变化（如 ExitPlanMode 批准后切回执行模式）
+          if (subType === AgentSessionUpdateSubType.CURRENT_MODE_UPDATE) {
+            const modeId = data?.currentModeId ?? data?.modeId;
+            if (typeof modeId === 'string' && modeId) {
+              message.info(t('PC.Pages.AppDevChat.agentModeChanged', modeId));
+            }
           }
           if (subType === AgentSessionUpdateSubType.TOOL_CALL) {
             // 插入 ToolCall 前先刷新文本缓冲区，确保顺序正确
@@ -486,8 +514,8 @@ export const useAppDevChat = ({
 
           setIsChatLoading(false);
 
-          // 延迟关闭SSE连接，确保消息处理完成
-          abortConnectionRef.current?.abort?.();
+          // 正常结束保留协议尾部窗口；主动取消仍立即 abort。
+          finishAppDevConnectionRef.current?.();
           break;
         }
 
@@ -520,24 +548,34 @@ export const useAppDevChat = ({
       const headers = getAuthHeaders();
 
       // 连接到SSE
-      abortConnectionRef.current = new AbortController();
+      abortConnectionRef.current?.abort();
+      const controller = new AbortController();
+      abortConnectionRef.current = controller;
 
       // // 创建ASSISTANT占位消息
       // const assistantMessage = createAssistantMessage(requestId, sessionId);
       // setChatMessages((prev) => [...prev, assistantMessage]);
 
-      await createSSEConnection({
+      const connection = createSSEConnection({
         url: sseUrl,
         method: 'GET',
-        abortController: abortConnectionRef.current,
+        abortController: controller,
         headers,
         onMessage: (data: UnifiedSessionMessage) => {
+          if (
+            !mountedRef.current ||
+            abortConnectionRef.current !== controller ||
+            controller.signal.aborted
+          )
+            return;
           // 移除 100ms 延迟，直接处理消息
           // 消息缓冲区机制已在 handleSSEMessage 中实现，
           // 通过 appendToTextBuffer 批量处理高频文本消息
           handleSSEMessage(data, requestId);
         },
         onError: (error: Error) => {
+          if (!mountedRef.current || abortConnectionRef.current !== controller)
+            return;
           // message.error('AI assistant connection failed');
           // 错误时先刷新文本缓冲区
           flushTextBuffer(true);
@@ -547,20 +585,26 @@ export const useAppDevChat = ({
           );
           setIsChatLoading(false);
 
-          abortConnectionRef.current?.abort();
+          controller.abort();
           debouncedRefreshFileTree();
         },
         onClose: () => {
+          if (!mountedRef.current || abortConnectionRef.current !== controller)
+            return;
           // 连接关闭时先刷新文本缓冲区
           flushTextBuffer(true);
           setIsChatLoading(false);
           setChatMessages((prev) =>
             markStreamingMessageComplete(prev, requestId),
           );
-          abortConnectionRef.current?.abort();
+          controller.abort();
+          abortConnectionRef.current = null;
+          finishAppDevConnectionRef.current = null;
           debouncedRefreshFileTree();
         },
       });
+      finishAppDevConnectionRef.current = connection.finish;
+      await connection;
     },
     [appDevSseModel, handleSSEMessage, flushTextBuffer],
   );
@@ -575,8 +619,6 @@ export const useAppDevChat = ({
     // 取消时先刷新文本缓冲区
     flushTextBuffer(true);
     setIsChatLoading(false);
-    // 取消前主动清理 SSE 共享定时器，避免残留定时器影响后续请求
-    clearSSESharedTimeout();
     // 将正在流式传输的消息标记为取消状态
     setChatMessages((prev) => {
       return prev.map((msg) => {
@@ -591,6 +633,7 @@ export const useAppDevChat = ({
       });
     });
     abortConnectionRef.current?.abort();
+    aIChatAbortConnectionRef.current?.abort();
   }, [projectId, appDevSseModel, flushTextBuffer]);
 
   /**
@@ -648,15 +691,24 @@ export const useAppDevChat = ({
     const sseUrl = generateAIChatSSEUrl();
     const headers = getAuthHeaders();
 
+    aIChatAbortConnectionRef.current?.abort();
+    const controller = new AbortController();
+    aIChatAbortConnectionRef.current = controller;
     setIsChatLoading(true);
 
     await createSSEConnection({
       url: sseUrl,
       method: 'POST',
       headers,
-      abortController: aIChatAbortConnectionRef.current,
+      abortController: controller,
       body: params,
       onMessage: (response: UnifiedSessionMessage) => {
+        if (
+          !mountedRef.current ||
+          aIChatAbortConnectionRef.current !== controller ||
+          controller.signal.aborted
+        )
+          return;
         if (response.type === 'session_id') {
           const _aiChatSessionId = response.session_id;
           setAiChatSessionId(_aiChatSessionId);
@@ -705,7 +757,7 @@ export const useAppDevChat = ({
               ),
             );
             setIsChatLoading(false);
-            aIChatAbortConnectionRef.current?.abort();
+            controller.abort();
             return;
           }
 
@@ -714,7 +766,7 @@ export const useAppDevChat = ({
         }
 
         if (response.type === 'error') {
-          aIChatAbortConnectionRef.current?.abort();
+          controller.abort();
           setIsChatLoading(false);
 
           // 智能体服务运行中的错误状态
@@ -750,15 +802,20 @@ export const useAppDevChat = ({
         // 如果输出的是response是{code, message}格式，并且响应码不为0000，则标记消息错误
         if (response?.code && response?.code !== SUCCESS_CODE) {
           setIsChatLoading(false);
-          aIChatAbortConnectionRef.current?.abort();
+          controller.abort();
           setChatMessages((prev) =>
             markStreamingMessageError(prev, requestId, response?.message),
           );
         }
       },
       onError: () => {
+        if (
+          !mountedRef.current ||
+          aIChatAbortConnectionRef.current !== controller
+        )
+          return;
         // message.error('AI assistant connection failed');
-        aIChatAbortConnectionRef.current?.abort();
+        controller.abort();
         setIsChatLoading(false);
         setChatMessages((prev) =>
           markStreamingMessageError(
@@ -769,7 +826,10 @@ export const useAppDevChat = ({
         );
       },
       onClose: () => {
-        aIChatAbortConnectionRef.current?.abort();
+        controller.abort();
+        if (aIChatAbortConnectionRef.current === controller) {
+          aIChatAbortConnectionRef.current = undefined;
+        }
       },
     });
   };
@@ -1092,14 +1152,16 @@ export const useAppDevChat = ({
    * 组件卸载时清理资源
    */
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       // 清理超时定时器
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      // 组件卸载时也清理 SSE 共享定时器，防止残留
-      clearSSESharedTimeout();
       abortConnectionRef.current?.abort();
+      aIChatAbortConnectionRef.current?.abort();
+      finishAppDevConnectionRef.current = null;
     };
   }, []);
 

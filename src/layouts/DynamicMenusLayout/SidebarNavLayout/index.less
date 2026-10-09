@@ -1,0 +1,295 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.mobile-container {
+  box-shadow: 12px 0 24px -4px rgba(0, 0, 0, 12%);
+  border-radius: 0 @borderRadiusLg @borderRadiusLg 0;
+}
+
+.container {
+  // 不设 overflow:hidden：根盒宽度=收缩包裹（主列+二级列），会裁掉贴右缘的
+  // 宽度拖拽分隔条（分隔条 1px + 热区右扩 4px 落在根盒外）；各列自身
+  // （.nav-menus/.second-column）已有 overflow:hidden 承担内容裁剪
+  // background-color: @colorBgLayout;
+
+  .first-menus {
+    // 使用动态导航宽度token
+    width: @navFirstMenuWidth;
+    padding-top: 14px;
+    background: @navFirstMenuBg;
+    color: @navFirstMenuText;
+    box-shadow: @navFirstMenuShadow;
+    transition: width 0.3s ease, background-color 0.3s ease;
+
+    // 风格2适配
+    .xagi-nav-style2 & {
+      width: @navFirstMenuWidthStyle2;
+    }
+  }
+
+  .nav-menus {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: 8px;
+    // width: 200px;
+    box-sizing: border-box;
+    border-left: @lineWidth solid var(--xagi-layout-border-primary);
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
+      padding-left 0.3s ease-in-out, background-color 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    background: @navSecondMenuBg;
+    // 单栏模式（主导航改造）：一级 icon 竖栏已移除，侧栏即最左列，取消左侧圆角
+    border-radius: 0;
+
+    .nav-menus-scroll {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .integral-footer {
+      // 单栏模式：积分块（width:100%）在上，用户行贴底
+      display: flex;
+      flex-direction: column;
+      gap: @marginXs;
+      padding: @marginSm 0 0;
+      margin-right: @margin;
+    }
+
+    // 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右）
+    .sidebar-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: @paddingSm 14px 14px;
+      margin-right: 0;
+
+      // 单栏（style3）左内缩随主栏外栅格 15→10 同步收到 10px，与上方行 pill 对齐
+      :global(.xagi-nav-style3) & {
+        padding-left: 10px;
+      }
+
+      .sidebar-user-row {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: @marginXxs;
+      flex-shrink: 0;
+    }
+
+    .footer-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      font-size: 13px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: @navRowHoverBg;
+        color: @navSecondMenuAdaptiveText;
+      }
+
+      :global(svg) {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    // 底部用户行（原一级栏用户头像迁移至此，横向布局）
+    .sidebar-user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 2px;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      min-width: 0;
+      transition: background-color 0.2s ease;
+
+      // UserAvatar 自带 5px 上下 margin（老一级竖栏的垂直留白），行内抵消
+      > div:first-child {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      &:hover {
+        background-color: @navRowHoverBg;
+      }
+
+      .sidebar-user-name {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @navSecondMenuAdaptiveText;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .menu-title {
+      color: @navSecondMenuText;
+    }
+
+    // 风格2下的二级导航背景适配
+    .xagi-nav-style2 & {
+      background: var(--xagi-color-bg-container);
+    }
+  }
+
+  // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
+  // 形态参考经典风格 2（2026-09-12 需求）贴边满铺；配色按原型：辅助列 #fafafa +
+  // 右边框 #f0f0f3 与内容区分隔（单栏锁定纯色浅底，浅色字面量安全）
+  .second-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    // 左右 10px 内缩（2026-09-12 原型 tm-side）：行 pill 不满铺贴边，图标起点
+    // 20px；主栏行为 15px 内缩同语义
+    padding: @padding 10px 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    background: #fafafa;
+    border-right: 1px solid #f0f0f3;
+    border-radius: 0;
+    margin-right: 0;
+    // opacity/padding/border 与 width 同步过渡（收起/展开由 SidebarNavLayout 驱动
+    // width/opacity/padding/borderRightWidth，列保持挂载）：与主列 .nav-menus 同规格，
+    // 两列同速收拢/展开不瞬移；padding/border 不同步归零会残留 21px 底色条
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
+      padding 0.3s ease-in-out, border-right-width 0.3s ease-in-out,
+      background-color 0.3s ease;
+
+    // 二级菜单项同步一级列规格（33px 项高/11px 圆角/13.5px 字号/16px 图标），
+    // 交互态按 2026-09-12 原型 tm-item 落皮：本列白底不适配「白卡+阴影」（白卡
+    // 不可见），改 hover 灰 pill 无阴影 + 选中浅紫 #f1effb pill 无阴影（文字
+    // 主题色/字重由 base 组件自带）。
+    // 本容器仅 style3 单栏挂载，变量随 DOM 继承给 DynamicSecondMenu/SpaceSection 的
+    // base 行组件；经典布局的二级菜单不在此容器内，base 组件走各自默认值不受影响
+    --xagi-nav-second-row-height: 33px;
+    // 水平 10px（原型 tm-item 8px 10px 的水平值）：容器 10 + 行 10 = 图标起点 20px
+    --xagi-nav-second-row-padding: 0 10px;
+    --xagi-nav-second-row-radius: 11px;
+    --xagi-nav-second-main-font-size: 13.5px;
+    --xagi-nav-second-leaf-font-size: 13.5px;
+    --xagi-nav-second-icon-size: 16px;
+    // hover 中性浅灰 #f6f5f9（原型 tm-item:hover），与选中浅紫 #f1effb 明确区分。
+    // 勿引用 var(--xagi-nav-row-hover-bg)：该 CSS 变量全仓无定义点（仅 less 变量
+    // 带 fallback 引用），无 fallback 的引用会断链致 hover 落到白底
+    --xagi-nav-second-row-hover-bg: #f6f5f9;
+    --xagi-nav-second-row-hover-shadow: none;
+    --xagi-nav-second-row-active-bg: #f1effb;
+    --xagi-nav-second-row-active-shadow: none;
+    // 选中项字重加粗 500（2026-09-12 需求）：仅单栏注入，base 组件默认 normal
+    --xagi-nav-second-row-active-font-weight: 500;
+    // 二级菜单 h5（24px）放进与 page-container h3 相同的 32px 标题行，按同一
+    // 水平中心线对齐；标题块总高仍为 48px，下面菜单首项位置不变。
+    --xagi-nav-second-title-padding-top: 0;
+    --xagi-nav-second-title-padding-bottom: 16px;
+
+    // Windows/Linux 的列顶仅保留 4px（32px 背景退让后），标题需补 11px；
+    // 浏览器和 macOS 的列自身已有 16px 顶内边距，不再重复补偿。
+    :global(html.immersive-shell-frameless) & {
+      --xagi-nav-second-title-padding-top: 11px;
+      --xagi-nav-second-title-padding-bottom: 5px;
+    }
+
+    .second-menu-title-box {
+      display: flex;
+      align-items: center;
+      box-sizing: content-box;
+      min-height: 32px;
+      padding: var(--xagi-nav-second-title-padding-top) 10px
+        var(--xagi-nav-second-title-padding-bottom);
+    }
+
+    // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
+    .nav-menus-scroll {
+      flex: 1;
+      min-height: 0;
+    }
+
+    // 风格2下的二级列背景适配
+    .xagi-nav-style2 & {
+      background: var(--xagi-color-bg-container);
+    }
+  }
+
+  // 折叠态展开按钮：样式/大小与 SidebarNavHeader 的收起按钮（header-action-btn）
+  // 完全一致——34×34 圆角图标钮，默认无底色描边，hover 同款填充；几何定位
+  // （left/top/宽高）由 TSX 内联注入，此处仅承载视觉样式
+  .sidebar-expand-btn {
+    position: absolute;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    transition: all 0.2s ease;
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background-color: @navRowHoverBg;
+      color: @navSecondMenuAdaptiveText;
+    }
+  }
+
+  // 折叠态展开按钮·全屏工作台页宿主变体：左缘居中半胶囊把手。该页组自带
+  // 页面头部（返回/标题/状态标签占左上角），悬浮钮会压住头部内容，退回
+  // 贴边把手形态；几何覆盖上方基类（本变体不接 TSX 内联定位）
+  .sidebar-expand-btn-edge {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 56px;
+    border-radius: 0 @borderRadiusSm @borderRadiusSm 0;
+    opacity: 0.55;
+
+    :global(svg) {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+// 风格1下的二级导航样式适配
+:global(.xagi-nav-style1) {
+  .container {
+    .nav-menus {
+      border-radius: 0 !important; // 风格1时移除所有圆角，使用!important确保优先级
+    }
+  }
+}
+
+.collection-title {
+  margin-top: @margin;
+  padding: @paddingXs;
+  line-height: @fontHeightSm;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @navSecondMenuTextSecondary;
+}

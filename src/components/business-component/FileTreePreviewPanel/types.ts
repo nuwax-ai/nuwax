@@ -31,6 +31,13 @@ export interface FileTreePreviewViewProps {
   clearTaskAgentSelectedFileId?: () => void;
   /** 通用型智能体文件选择触发标志 */
   taskAgentSelectTrigger?: number | string;
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新完成后，兜底重拉当前打开文件正文的触发标志。
+   * 当最终输出未携带指向当前打开文件的 <task-result><file> 时，既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，此处监听该值变化后
+   * 调用 refreshSelectedFileContent 同步当前打开文件的内容。
+   */
+  fileTreeRefreshTrigger?: number;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */
@@ -41,7 +48,10 @@ export interface FileTreePreviewViewProps {
   viewMode?: 'preview' | 'desktop';
   /** 是否只读 */
   readOnly?: boolean;
-  /** 上传多个文件回调 */
+  /**
+   * 上传多个文件。
+   * filePaths 由文件树按节点路径生成，已是工作区根起算的完整相对路径，按原样提交。
+   */
   onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
@@ -49,6 +59,13 @@ export interface FileTreePreviewViewProps {
   onRestartServer?: () => void;
   /** 重启智能体 */
   onRestartAgent?: () => void;
+  /**
+   * VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+   * 典型实现：ensureDesktopConnection(conversationId)
+   */
+  onReconnect?: () => void | Promise<void>;
+  /** 网站应用环境，仅 AppDevPro 传入，用于 computer/pod 老接口 */
+  appStage?: 'dev' | 'prod';
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -120,8 +137,22 @@ export interface FileTreePreviewViewProps {
   onFileRenamed?: (oldFileId: string, newFileId: string) => void;
   /** 文件/文件夹删除成功后回调，用于同步预览区标签页与 Git 状态 */
   onFileDeleted?: (node: FileNode) => void;
+  /** 外部目录数据源进入文件夹；提供后不使用树内展开行为 */
+  onOpenDirectory?: (node: FileNode) => void | Promise<void>;
   /** 刷新文件树后，当前选中文件已不存在时回调 */
   onSelectedFileMissing?: (fileId: string) => void;
+  /**
+   * 懒加载宿主传入：目标文件所在目录是否已完成加载。
+   * 自动选中未命中时，若所在目录尚未加载（父目录导航在途）则保持等待——
+   * 目录层到达后 files 变化会重入 effect 完成选中，不误判 miss 清空目标。
+   * 未传时维持「已拉取即判 miss」旧语义（全量树宿主）。
+   */
+  isAutoSelectDirectoryLoaded?: (fileId: string) => boolean;
+  /**
+   * 目标不在已加载树中时解析节点。Chat 用搜索接口拿到 fileProxyUrl 后，
+   * 仍走原有选中逻辑拉取正文。返回 null 则按未找到处理。
+   */
+  resolveAutoSelectFile?: (fileId: string) => Promise<FileNode | null>;
   /** CodeViewer 是否使用动态主题（Chat 页为 true） */
   isDynamicTheme?: boolean;
   /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */
@@ -169,6 +200,11 @@ export interface FileTreePreviewViewValue {
   gitBranch: string;
   /** 刷新 Git 变更列表（git status） */
   refreshGitList: () => Promise<void>;
+  /**
+   * 按路径没搜到变更文件时，预览区改为「未搜索到对应文件」。
+   * missing 为 false 时收起该提示，未选中文件仍用原来的文案。
+   */
+  markWorkspaceFileNotFound: (missing: boolean) => void;
   tree: FileTreeContainerProps;
   preview: FileTreePreviewViewPreview;
 }
@@ -192,6 +228,14 @@ export interface UseFileTreePreviewPanelParams {
   onRestartAgent?: () => void;
   onExportProject?: () => Promise<void>;
   idleDetection?: IdleDetectionConfig;
+  /**
+   * VNC 重连前回调：应在建立连接前确保容器已启动、保活轮询已恢复
+   * 典型实现：openDesktopView（内部 apiEnsurePod + runKeepalivePodPolling）
+   * 解决长时间空闲导致容器被回收后，仅重试检测状态永远失败的问题
+   */
+  onReconnect?: () => void | Promise<void>;
+  /** 网站应用环境，仅 AppDevPro 传入，用于 VNC 状态检测 */
+  appStage?: 'dev' | 'prod';
   hideDesktop?: HideDesktopEnum;
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo | null;
@@ -199,6 +243,8 @@ export interface UseFileTreePreviewPanelParams {
   onToggleGitVersionPanel?: () => void;
   /** Git 版本记录按钮后的额外操作按钮 */
   afterGitVersionActions?: React.ReactNode;
+  /** 终端是否处于展开状态（非隐藏且非折叠） */
+  isTerminalExpanded?: boolean;
 }
 
 /** FileTreePreviewPanel 组件属性 */

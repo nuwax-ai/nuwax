@@ -1,0 +1,320 @@
+/**
+ * 独立专家列表组件：双布局变体（grid 两栏卡片 / list 单栏横排行）。
+ * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
+ */
+@import '@/styles/token';
+
+@expert-text: @colorText;
+@expert-secondary: @colorTextSecondary;
+@expert-muted: @colorTextTertiary;
+@expert-faint: @colorTextQuaternary;
+@expert-fill: @colorFillSecondary;
+@expert-border: @colorBorderSecondary;
+
+// ---- 滚动容器（组件根）：grid 两栏网格 / list 单列行 ----
+.root {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: @colorTextQuaternary transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: @colorTextQuaternary;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.root-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.root-list {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+}
+
+// simple 紧凑行（@ 弹层等）：行间距归零，可点区域靠行自带 padding
+.root-list-simple {
+  row-gap: 0;
+}
+
+// 首次加载/空态占满可视高度（保持滚动容器尺寸稳定）
+.state {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.state-loading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+// 付费 Ribbon 包裹的条目：wrapper 拉通网格行高，与无角标条目等高
+:global(.ant-ribbon-wrapper) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  > * {
+    flex: 1;
+  }
+}
+
+// 付费/已订阅 Ribbon 角标：小号（与技能列表同口径；双写提权压过 cssinjs）
+.paid-ribbon.paid-ribbon {
+  height: 18px;
+  padding-inline: 7px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+// simple 紧凑行付费小 Tag（行尾内联）：弹层滚动容器会裁切左上角 Ribbon
+// 的负向偏移且压住图标，simple 行改内联 Tag（同 AppDev 选择弹层口径；
+// 双写提权压过 cssinjs；高 18px 与 Ribbon 角标同口径）
+.paid-tag.paid-tag {
+  flex-shrink: 0;
+  margin-right: 0;
+  margin-inline-end: 0;
+  padding-inline: 5px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+// ---- grid 变体卡片（两栏，与能力弹窗简化专家卡同款） ----
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid @expert-border;
+  border-radius: 8px;
+  background: @colorBgContainer;
+  cursor: pointer;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
+  &:hover {
+    border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+// 圆形 tinted 图标（grid 40 / list 32；与技能圆形口径对齐）
+.card-icon,
+.list-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  color: @expert-secondary;
+  font-weight: 600;
+
+  img {
+    width: 24px;
+    height: 24px;
+    // 图片本体裁圆:方形不透明切图小于容器时不裸露方角
+    // (透明底图标随圆底呈现,与名称首字/svg 回退口径一致)
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+.card-heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.card-name {
+  overflow: hidden;
+  color: @expert-text;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-desc {
+  overflow: hidden;
+  color: @expert-muted;
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 最近召唤时间：常驻弱化相对时间（grid 卡悬停整体淡出让位「聘请」,
+// 保留占位,名称/描述截断位置不回弹；list 行无悬停按钮,时间常显）
+.card-used-time {
+  flex-shrink: 0;
+  color: @expert-faint;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.card:hover .card-used-time {
+  opacity: 0;
+}
+
+// 悬停浮现按钮：未悬停不渲染入流、不占布局空间（仅 grid 卡；
+// list 行整行可点,不渲染悬停操作按钮）
+.card-hire {
+  display: none;
+  pointer-events: auto;
+}
+
+.card:hover .card-hire {
+  display: inline-block;
+}
+
+/* 「聘请」按钮覆盖层：绝对定位铺在卡右端（悬停盖住时间区域,不占
+   布局空间）；渐变蒙层仅悬停时出现（未悬停的行右端不残留色块）,grid
+   卡片底色与容器一致。圆角与所在卡的 padding-box 内弧同心
+   （8px 圆角-grid 1px 边框=7px），方形直角白底会盖住悬停主色描边的
+   圆角段 */
+.card-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 32px;
+  padding-right: 14px;
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.card:hover .card-actions {
+  background: linear-gradient(to right, transparent, @colorBgContainer 32px);
+}
+
+// 方形圆角 tint 底「聘请」按钮（双写提权压过 antd cssinjs）
+.card-select.card-select {
+  border-color: transparent;
+  background: @expert-fill;
+  color: @expert-text;
+
+  &:hover,
+  &:focus-visible {
+    border-color: transparent;
+    background: color-mix(in srgb, @colorPrimary 14%, transparent);
+    color: @colorPrimary;
+  }
+}
+
+// ---- list 变体行（单栏横排紧凑行）：无边线，悬停方形圆角灰底；
+// 名称/描述复用 .card-heading/.card-name/.card-desc 上下两行 ----
+.list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+
+  &:hover {
+    background: @expert-fill;
+  }
+}
+
+.list-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+
+  img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// ---- 付费统一专家卡弹窗：宽度随内容自适应,内容区去内边距由卡片自带
+// 分区,圆角 16px,视口内收窄防溢出（双写提权压过 antd Modal 默认样式） ----
+.summon-modal.summon-modal {
+  max-width: calc(100vw - 24px);
+  padding-bottom: 0;
+
+  :global(.ant-modal-content) {
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+// ---- 简单模式（仅 list 变体）：无背景圆形图标 + 标题单行紧凑行 ----
+.row-simple {
+  // 定高与 @ 弹层顶部 Segmented 切换器同高（controlHeight 32），
+  // 内容垂直居中靠行内 align-items:center
+  height: 32px;
+  padding-block: 0;
+  padding-inline: 12px;
+
+  .card-name {
+    font-size: @fontSize;
+    font-weight: 400;
+    line-height: 20px;
+  }
+}
+
+.list-icon.icon-simple {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  // simple 无 tinted 底,后端方形切图若小于容器会裸露方形边缘:
+  // 图片撑满容器并圆形裁切(@ 弹层等紧凑行)
+  img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}

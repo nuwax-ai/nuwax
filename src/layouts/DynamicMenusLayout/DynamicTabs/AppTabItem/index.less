@@ -1,0 +1,100 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 女娲应用多开标签项（经典布局）：几何与交互态对齐 TabItem，额外带右上角关闭钮
+.box {
+  position: relative; // 关闭钮绝对定位锚点
+  margin-bottom: @marginXs;
+  color: @navFirstMenuTextSecondary;
+  transition: background-color 0.3s, color 0.3s;
+  user-select: none;
+
+  .active-icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: @borderRadius;
+
+    .icon-image {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      object-fit: cover;
+    }
+  }
+
+  .active-box {
+    border-radius: @borderRadius;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:hover {
+    color: @colorTextSecondary;
+
+    .active-box {
+      background: @navItemHoverBg;
+      box-shadow: @navShadow;
+    }
+  }
+
+  &.active {
+    color: @colorPrimary;
+
+    .active-box {
+      background: @navItemActiveBg;
+      box-shadow: @navShadow;
+    }
+  }
+
+  // style2 图标+文字形态（同 TabItem .text）
+  .text {
+    width: 100%;
+    margin-top: @marginXxs;
+    font-size: @navFirstMenuFontSize;
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// 右上角关闭钮：悬浮于图标右上角；桌面端 hover 行时才显示、触屏常显
+// （否则无 hover 的设备永远点不到），点击不冒泡触发跳转
+.close {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: @colorBgContainer;
+  box-shadow: 0 0 0 1px @navFirstMenuTextSecondary;
+  color: @navFirstMenuTextSecondary;
+  font-size: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: @colorError;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    visibility: hidden;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .box:hover & {
+      visibility: visible;
+    }
+  }
+}

@@ -1,5 +1,4 @@
 import { TABLE_TABS_LIST } from '@/constants/dataTable.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { TableTabsEnum } from '@/types/enums/dataTable';
 import { FileType } from '@/types/interfaces/common';
@@ -109,11 +108,7 @@ const TableOperationBar: React.FC<TableOperationBarProps> = ({
               accept={'.xlsx,.xls'}
               onChange={onChangeFile}
               action={`${process.env.BASE_URL}/api/compose/db/table/importExcel/${tableId}`}
-              headers={{
-                Authorization: `Bearer ${
-                  localStorage.getItem(ACCESS_TOKEN) || ''
-                }`,
-              }}
+              withCredentials
               showUploadList={false}
               beforeUpload={beforeUploadDefault}
             >
