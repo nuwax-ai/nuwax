@@ -8,8 +8,10 @@ import {
   apiToggleSandboxConfig,
   apiUpdateSandboxUserConfig,
 } from '@/services/systemManage';
+import { EventTypeEnum } from '@/types/enums/event';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import eventBus from '@/utils/eventBus';
 import {
   DeleteOutlined,
   DesktopOutlined,
@@ -36,7 +38,7 @@ import {
   message,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
 import styles from './index.less';
 
@@ -55,23 +57,35 @@ const MyComputerManage: React.FC = () => {
   const [list, setList] = useState<SandboxItem[]>([]);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
+  const requestGeneration = useRef(0);
 
   const fetchList = async () => {
+    const generation = ++requestGeneration.current;
     setLoading(true);
     try {
       const res = await apiGetSandboxUserConfigList();
-      if (res.code === SUCCESS_CODE) {
+      if (
+        generation === requestGeneration.current &&
+        res.code === SUCCESS_CODE
+      ) {
         setList(res.data || []);
       }
     } catch (error) {
       console.error('[myComputer] load failed', error);
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchList();
+    const handleSandboxOnline = () => void fetchList();
+    eventBus.on(EventTypeEnum.SandboxOnline, handleSandboxOnline);
+    void fetchList();
+    return () => {
+      eventBus.off(EventTypeEnum.SandboxOnline, handleSandboxOnline);
+      // 路由切换或卸载后，旧响应不能覆盖新列表。
+      requestGeneration.current += 1;
+    };
   }, [location]);
 
   const filteredData = useMemo(() => {
