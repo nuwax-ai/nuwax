@@ -8,7 +8,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ImMenuBadge from '@/components/business-component/ImMenuBadge';
-import { ClientVersionBadge } from '@/features/client-shell';
+import { ClientVersionBadge, WebVersionBadge } from '@/features/client-shell';
 import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
 import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
@@ -303,7 +303,12 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
           />
         )}
         {/* 客户端版本徽标（仅桌面宿主 + 布局级实例；浏览器/旧宿主组件内部自隐藏） */}
-        {showClientVersionBadge && <ClientVersionBadge />}
+        {showClientVersionBadge && (
+          <>
+            <ClientVersionBadge />
+            <WebVersionBadge />
+          </>
+        )}
         <div className={cx(styles['header-actions'])}>
           <Tooltip
             title={dict(

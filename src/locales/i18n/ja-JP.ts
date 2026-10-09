@@ -1488,6 +1488,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "タスク",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "検索",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab": "アプリを閉じる",
+  "PC.Components.WebUpdate.update": "画面を更新",
+  "PC.Components.WebUpdate.refreshHint": "ページが更新されました。クリックして再読み込み",
   "PC.Components.ClientUpdate.versionLabel": "クライアントバージョン",
   "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.download": "アップデートをダウンロード",

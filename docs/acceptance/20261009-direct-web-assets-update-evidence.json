@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-09",
+  "fixture": "scripts/e2e/direct-web-assets-update-fixture.cjs",
+  "versions": {
+    "A": "aaaaaaa111",
+    "B": "bbbbbbb222"
+  },
+  "checks": [
+    {
+      "surface": "Ego Chromium browser",
+      "checks": [
+        "A CSS served after B publish",
+        "A loaded hash stays fixed",
+        "browser has no badge or polling",
+        "reload enters B",
+        "URL/cookie/localStorage preserved"
+      ]
+    },
+    {
+      "surface": "Electron webview",
+      "electron": "40.8.2",
+      "checks": [
+        "A CSS retained after B publish",
+        "A marker remains fixed",
+        "update badge appears without reload",
+        "user click loads B",
+        "address/cookie/localStorage preserved",
+        "B hides matching badge"
+      ]
+    }
+  ],
+  "browserRequests": [
+    {
+      "path": "/home",
+      "generation": "A",
+      "type": "text/html"
+    },
+    {
+      "path": "/app.1234abcd.js",
+      "generation": "A",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/app.1234abcd.js",
+      "generation": "A",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/p__Home__index.aaaa1111.chunk.css",
+      "generation": "B",
+      "type": "text/css"
+    },
+    {
+      "path": "/home",
+      "generation": "B",
+      "type": "text/html"
+    }
+  ],
+  "electronRequests": [
+    {
+      "path": "/home",
+      "generation": "A",
+      "type": "text/html"
+    },
+    {
+      "path": "/app.1234abcd.js",
+      "generation": "A",
+      "type": "application/javascript"
+    },
+    {
+      "path": "/version.json",
+      "generation": "A",
+      "type": "application/json"
+    },
+    {
+      "path": "/p__Home__index.aaaa1111.chunk.css",
+      "generation": "B",
+      "type": "text/css"
+    },
+    {
+      "path": "/version.json",
+      "generation": "B",
+      "type": "application/json"
+    },
+    {
+      "path": "/home",
+      "generation": "B",
+      "type": "text/html"
+    },
+    {
+      "path": "/version.json",
+      "generation": "B",
+      "type": "application/json"
+    },
+    {
+      "path": "/p__Home__index.bbbb2222.chunk.css",
+      "generation": "B",
+      "type": "text/css"
+    }
+  ],
+  "boundary": "Real Chromium/Electron webview; mocked host bridge and cookie/localStorage login markers. No real account, installed package or production deployment acceptance."
+}
