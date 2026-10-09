@@ -50,13 +50,23 @@ async function serve() {
       loader: 'tsx',
       contents: `import React from 'react'; import {createRoot} from 'react-dom/client';
 import WebVersionBadge from ${JSON.stringify(badge)};
-import {initWebUpdateCheck, subscribeWebUpdate} from ${JSON.stringify(service)};
+import ClientVersionBadge from ${JSON.stringify(
+        path.join(root, 'src/features/client-shell/ClientVersionBadge.tsx'),
+      )};
+import {start as startClient, stop as stopClient} from ${JSON.stringify(
+        path.join(root, 'src/features/client-shell/clientUpdateService.ts'),
+      )};
+import {getLatestWebBuildInfo, initWebUpdateCheck, subscribeWebUpdate} from ${JSON.stringify(
+        service,
+      )};
 import {getPageBuildInfo} from ${JSON.stringify(buildInfo)};
 window.fixtureBuildInfo=getPageBuildInfo(); window.fixtureEvents=[];
+window.fixtureLatestWebBuildInfo=getLatestWebBuildInfo;
 const dispose=initWebUpdateCheck();
 subscribeWebUpdate(available=>window.fixtureEvents.push({available,at:Date.now()}));
 window.addEventListener('pagehide',dispose,{once:true});
-createRoot(document.getElementById('header')).render(<><span>女娲 Nuwax</span><span style={{fontSize:11,marginLeft:10}}>v3.0.11-beta.6</span><WebVersionBadge/></>);
+window.fixtureSetClientStatus=status=>{window.fixtureClientState={hostVersion:'3.0.11-beta.6',status,...(status==='not-available'?{}:{version:'3.0.12'})};stopClient();startClient();};
+createRoot(document.getElementById('header')).render(<><span>女娲 Nuwax</span><ClientVersionBadge/><WebVersionBadge/></>);
 window.fixtureLoadLazyCss=()=>new Promise((resolve,reject)=>{const link=document.createElement('link');link.rel='stylesheet';link.href=window.fixtureCss;link.onload=()=>resolve(true);link.onerror=reject;document.head.appendChild(link);});
 window.fixtureForeground=()=>document.dispatchEvent(new Event('visibilitychange'));`,
     },
@@ -80,10 +90,11 @@ window.fixtureForeground=()=>document.dispatchEvent(new Event('visibilitychange'
           build.onLoad({ filter: /.*/, namespace: 'fixture' }, (args) => ({
             loader: 'js',
             contents: args.path.includes('i18nRuntime')
-              ? `export const dict=k=>k.endsWith('.refreshHint')?'网页已更新，点击刷新':k.endsWith('.update')?'界面更新':k;`
-              : `export const isDesktopHost=()=>!!window.NuwaClawBridge;
+              ? `export const dict=k=>({'PC.Components.WebUpdate.refreshHint':'网页已更新，点击刷新','PC.Components.WebUpdate.current':'当前','PC.Components.WebUpdate.latest':'最新','PC.Components.WebUpdate.version':'版本号','PC.Components.WebUpdate.buildAt':'构建时间','PC.Components.ClientUpdate.update':'更新','PC.Components.ClientUpdate.download':'下载更新','PC.Components.ClientUpdate.versionLabel':'客户端版本'})[k]||k;`
+              : `export const hasHostBridge=()=>!!window.NuwaClawBridge;
+export const isDesktopHost=()=>!!window.NuwaClawBridge;
 export const getHostProduct=()=>window.NuwaClawBridge?.host?.getProduct?.()||null;
-export const hostBridge={host:{getProduct:()=>window.NuwaClawBridge?.host?.getProduct?.()||null},auth:{getContext:async()=>window.NuwaClawBridge?.auth?.getContext?.()||null}};`,
+export const hostBridge={host:{getProduct:()=>window.NuwaClawBridge?.host?.getProduct?.()||null},auth:{getContext:async()=>window.NuwaClawBridge?.auth?.getContext?.()||null},updater:{getState:async()=>window.NuwaClawBridge?.updater?.getState?.()||null,download:async()=>({success:true}),install:async()=>({success:false})}};`,
           }));
         },
       },
@@ -96,9 +107,9 @@ export const hostBridge={host:{getProduct:()=>window.NuwaClawBridge?.host?.getPr
   const css =
     '.fixture-model-icon{width:14px;height:14px;vertical-align:middle}.fixture-input{width:440px;height:80px;border:1px solid #ddd;border-radius:16px;padding:16px;font-size:16px}.fixture-toolbar{display:flex;gap:20px;align-items:center;margin-top:12px}';
   function html(hash, filename) {
-    return `<!doctype html><html><head><meta charset="utf-8"><meta name="nuwax-build-git-hash" content="${hash}"><meta name="nuwax-build-version" content="1.2.0"><style>:root{--xagi-color-primary-bg:#f0f3ff;--xagi-color-primary:#5262ff}body{font-family:system-ui;margin:32px;background:#f8f9fa}#header{display:flex;align-items:center;height:40px;margin-bottom:32px}main{background:white;padding:24px;border-radius:20px;width:520px}h1{font-size:22px}</style></head><body><div id="header"></div><main><h1>发版后旧页面资源验收</h1><textarea class="fixture-input" placeholder="正在编辑的内容"></textarea><div class="fixture-toolbar"><img id="model-icon" class="fixture-model-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Ccircle cx='128' cy='128' r='128' fill='%234e64ff'/%3E%3C/svg%3E"><span>deepseek-v4-flash</span></div></main><script>window.fixtureCss=${JSON.stringify(
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="nuwax-build-git-hash" content="${hash}"><meta name="nuwax-build-version" content="1.2.0"><style>:root{--xagi-color-primary-bg:#f0f3ff;--xagi-color-primary:#5262ff;--xagi-color-text-secondary:rgba(0,0,0,.65);--xagi-color-text-tertiary:rgba(0,0,0,.45);--xagi-color-border-secondary:#f0f0f0}body{font-family:system-ui;margin:32px;background:#f8f9fa}#header{display:flex;align-items:center;height:40px;margin-bottom:32px}main{background:white;padding:24px;border-radius:20px;width:520px}h1{font-size:22px}</style></head><body><div id="header"></div><main><h1>发版后旧页面资源验收</h1><textarea class="fixture-input" placeholder="正在编辑的内容"></textarea><div class="fixture-toolbar"><img id="model-icon" class="fixture-model-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Ccircle cx='128' cy='128' r='128' fill='%234e64ff'/%3E%3C/svg%3E"><span>deepseek-v4-flash</span></div></main><script>window.fixtureCss=${JSON.stringify(
       '/' + filename,
-    )};if(new URLSearchParams(location.search).get('host')==='direct'){window.NuwaClawBridge={host:{getProduct:()=> 'nuwax'},auth:{getContext:async()=>({loadMode:'direct'})}};}</script><script src="/app.1234abcd.js"></script></body></html>`;
+    )};window.fixtureClientState={hostVersion:'3.0.11-beta.6',status:'idle'};const fixtureMode=new URLSearchParams(location.search).get('host');if(fixtureMode==='direct'||fixtureMode==='loopback'){window.NuwaClawBridge={host:{getProduct:()=> 'nuwax'},auth:{getContext:async()=>{window.fixtureContextRequested=true;return {loadMode:fixtureMode}}},updater:{getState:async()=>window.fixtureClientState}};}</script><script src="/app.1234abcd.js"></script></body></html>`;
   }
   for (const [dir, hash, filename] of [
     [a, HASH_A, CSS_A],
@@ -170,9 +181,11 @@ export const hostBridge={host:{getProduct:()=>window.NuwaClawBridge?.host?.getPr
           ? 'index.html'
           : url.pathname.slice(1);
       if (url.pathname === '/host.html') {
+        const mode =
+          url.searchParams.get('mode') === 'loopback' ? 'loopback' : 'direct';
         res.setHeader('Content-Type', 'text/html');
         res.end(
-          '<!doctype html><style>html,body,webview{height:100%;width:100%;margin:0}webview{display:flex}</style><webview id="guest" src="/home?host=direct&amp;workspace=42#conversation-7"></webview>',
+          `<!doctype html><style>html,body,webview{height:100%;width:100%;margin:0}webview{display:flex}</style><webview id="guest" src="/home?host=${mode}&amp;workspace=42#conversation-7"></webview>`,
         );
         return;
       }
@@ -199,6 +212,7 @@ export const hostBridge={host:{getProduct:()=>window.NuwaClawBridge?.host?.getPr
         path: url.pathname,
         generation: active === a ? 'A' : 'B',
         type,
+        referer: req.headers.referer,
       });
       res.end(data);
     } catch (error) {
@@ -242,6 +256,7 @@ async function electron() {
   app.setPath('userData', path.join(temp, 'profile'));
   app.commandLine.appendSwitch('no-proxy-server');
   let win;
+  let failed = false;
   const waitFor = async (check, label) => {
     const end = Date.now() + 15000;
     while (Date.now() < end) {
@@ -310,7 +325,7 @@ async function electron() {
     await waitFor(
       () =>
         evaluate(
-          'Boolean(document.querySelector("button[aria-label=界面更新]"))',
+          'Boolean(document.querySelector("#header > button[aria-label=更新]"))',
         ),
       'web update badge',
     );
@@ -322,6 +337,43 @@ async function electron() {
       before,
       'no automatic page reload',
     );
+    await evaluate('window.fixtureSetClientStatus("available")');
+    await waitFor(
+      () =>
+        evaluate(
+          '!document.querySelector("#header > button[aria-label=更新]") && document.querySelector("#header > span[role=button]")?.textContent.trim()==="更新"',
+        ),
+      'client update takes priority',
+    );
+    await evaluate('window.fixtureSetClientStatus("not-available")');
+    await waitFor(
+      () =>
+        evaluate(
+          'Boolean(document.querySelector("#header > button[aria-label=更新]"))',
+        ),
+      'web update restored',
+    );
+    const buttonPosition = await evaluate(
+      '(()=>{const r=document.querySelector("#header > button[aria-label=更新]").getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()',
+    );
+    (await guest()).sendInputEvent({ type: 'mouseMove', ...buttonPosition });
+    await waitFor(
+      () =>
+        evaluate('Boolean(document.querySelector(".ant-popover-inner dl"))'),
+      'web comparison hover card',
+    );
+    const comparison = await evaluate(
+      'document.querySelector(".ant-popover-inner").textContent',
+    );
+    assert.ok(comparison.includes(HASH_A));
+    assert.ok(comparison.includes(HASH_B));
+    assert.deepEqual(
+      await evaluate(
+        'Array.from(document.querySelectorAll(".ant-popover-inner time"), time => time.dateTime)',
+      ),
+      ['2026-10-09T00:00:00.000Z', '2026-10-09T01:00:00.000Z'],
+    );
+    assert.ok(comparison.includes('当前') && comparison.includes('最新'));
     await evaluate(
       'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))',
     );
@@ -330,7 +382,7 @@ async function electron() {
       (await (await guest()).capturePage()).toPNG(),
     );
     await evaluate(
-      'document.querySelector("button[aria-label=界面更新]").click()',
+      'document.querySelector("#header > button[aria-label=更新]").click()',
     );
     await waitFor(
       () => evaluate(`window.fixtureBuildInfo?.gitHash === '${HASH_B}'`),
@@ -354,14 +406,43 @@ async function electron() {
       '14px',
     );
     await waitFor(
-      () => evaluate('window.fixtureEvents?.length>0'),
-      'B update state initialized',
+      () =>
+        evaluate(`window.fixtureLatestWebBuildInfo()?.gitHash === '${HASH_B}'`),
+      'B version check completed',
     );
     assert.equal(
       await evaluate(
-        'Boolean(document.querySelector("button[aria-label=界面更新]"))',
+        'Boolean(document.querySelector("#header > button[aria-label=更新]"))',
       ),
       false,
+    );
+    const versionRequestsBeforeLoopback = (
+      await (await fetch(origin + '/__fixture/state')).json()
+    ).requests.filter((r) => r.path === '/version.json').length;
+    await fetch(origin + '/__fixture/reset');
+    await win.loadURL(origin + '/host.html?mode=loopback');
+    await waitFor(
+      () =>
+        evaluate(
+          `window.fixtureBuildInfo?.gitHash === '${HASH_A}' && window.fixtureContextRequested`,
+        ),
+      'loopback initialized',
+    );
+    await fetch(origin + '/__fixture/publish');
+    await evaluate('window.fixtureLoadLazyCss()');
+    await evaluate('window.fixtureForeground()');
+    assert.equal(
+      await evaluate(
+        'Boolean(document.querySelector("#header > button[aria-label=更新]"))',
+      ),
+      false,
+    );
+    assert.equal(
+      (await (await fetch(origin + '/__fixture/state')).json()).requests.filter(
+        (r) => r.path === '/version.json',
+      ).length,
+      versionRequestsBeforeLoopback,
+      'loopback must not check web version',
     );
     const result = {
       surface: 'Electron webview',
@@ -371,9 +452,12 @@ async function electron() {
         'A CSS retained after B publish',
         'A marker remains fixed',
         'update badge appears without reload',
+        'client update takes priority, then restores the web update',
+        'hover card compares current/latest version, gitHash and build time',
         'user click loads B',
         'address/cookie/localStorage preserved',
         'B hides matching badge',
+        'loopback never checks or shows web updates after B publish',
       ],
     };
     await fs.writeFile(
@@ -387,10 +471,11 @@ async function electron() {
     console.log('WEB_UPDATE_ELECTRON_OK ' + JSON.stringify(result));
   } catch (error) {
     console.error(error);
-    process.exitCode = 1;
+    failed = true;
   } finally {
     if (win && !win.isDestroyed()) win.destroy();
-    app.quit();
+    if (failed) app.exit(1);
+    else app.quit();
   }
 }
 
