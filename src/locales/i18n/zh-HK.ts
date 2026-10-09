@@ -3570,7 +3570,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.MyComputerManage.filterOffline": "離線",
   "PC.Pages.MyComputerManage.filterOnline": "在線",
   "PC.Pages.MyComputerManage.pageTitle": "我的電腦管理",
-  "PC.Pages.MyComputerManage.sessionTooltip": "會話",
+  "PC.Pages.MyComputerManage.sessionTooltip": "在訊息中打開",
   "PC.Pages.MyComputerManage.statusDeactivated": "已停用",
   "PC.Pages.MyComputerManage.statusOffline": "離線",
   "PC.Pages.MyComputerManage.statusOnline": "在線",

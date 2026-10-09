@@ -3779,7 +3779,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MyComputerManage.filterOffline": "Offline",
   "PC.Pages.MyComputerManage.filterOnline": "Online",
   "PC.Pages.MyComputerManage.pageTitle": "My Computers",
-  "PC.Pages.MyComputerManage.sessionTooltip": "Session",
+  "PC.Pages.MyComputerManage.sessionTooltip": "Open in messages",
   "PC.Pages.MyComputerManage.statusDeactivated": "Deactivated",
   "PC.Pages.MyComputerManage.statusOffline": "Offline",
   "PC.Pages.MyComputerManage.statusOnline": "Online",

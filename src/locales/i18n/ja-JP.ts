@@ -3578,7 +3578,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MyComputerManage.filterOffline": "オフライン",
   "PC.Pages.MyComputerManage.filterOnline": "オンライン",
   "PC.Pages.MyComputerManage.pageTitle": "私のコンピュータ",
-  "PC.Pages.MyComputerManage.sessionTooltip": "セッション",
+  "PC.Pages.MyComputerManage.sessionTooltip": "メッセージで開く",
   "PC.Pages.MyComputerManage.statusDeactivated": "無効化されました",
   "PC.Pages.MyComputerManage.statusOffline": "オフライン",
   "PC.Pages.MyComputerManage.statusOnline": "オンライン",
