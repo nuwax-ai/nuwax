@@ -10,22 +10,11 @@ import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  defaultTraceExpanded,
-  resolveNodeMode,
-  splitNodesByVisibility,
-} from '../renderPreferences';
-import {
-  composeConversationTraceItems,
-  getToolGroupActionKinds,
-  getToolGroupStatus,
-  isOpenUiRenderElementNode,
-  isTodoTraceNode,
-} from '../traceItems';
-import { composeConversationTraceSegments } from '../traceSegments';
+import React, { useEffect, useMemo, useState } from 'react';
+import { defaultTraceExpanded } from '../renderPreferences';
+import { isOpenUiRenderElementNode, isTodoTraceNode } from '../traceItems';
+import { buildTraceViewModel } from '../traceViewModel';
 import type {
-  ConversationProcessNode,
   ConversationRenderPreferencesV2,
   ConversationToolResource,
   ConversationTraceItem,
@@ -37,6 +26,7 @@ import TodoTraceNode from './TodoTraceNode';
 import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed, formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
+import { useTraceDisclosure } from './useTraceDisclosure';
 
 const cx = classNames.bind(styles);
 
@@ -106,7 +96,11 @@ const TraceMetrics: React.FC<{ turn: TraceMetricsTurn }> = ({ turn }) => {
   }
   const elapsedText = turn.running
     ? formatElapsedClock(elapsedMs ?? 0)
-    : formatElapsed(elapsedMs);
+    : formatElapsed(
+        typeof elapsedMs === 'number' && elapsedMs >= 1000
+          ? elapsedMs
+          : undefined,
+      );
   if (elapsedText) {
     metricParts.push(
       dict(
@@ -155,137 +149,32 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
   const [revealHidden, setRevealHidden] = useState(false);
   const expanded =
     manualExpanded ?? defaultTraceExpanded(turn, preferences.preset);
-  const { visibleNodes, hiddenCount } = useMemo(
-    () => splitNodesByVisibility(turn.nodes, preferences),
-    [turn.nodes, preferences],
+  const model = useMemo(
+    () => buildTraceViewModel(turn, preferences, revealHidden),
+    [
+      turn.nodes,
+      turn.running,
+      turn.finalAnswer.text,
+      preferences,
+      revealHidden,
+    ],
   );
-  const traceItems = useMemo(
-    () =>
-      composeConversationTraceItems(
-        turn.nodes,
-        turn.running && !turn.finalAnswer.text.trim(),
-      ),
-    [turn.nodes, turn.running, turn.finalAnswer.text],
+  const { segments, hiddenCount } = model;
+  const {
+    nodeIsExpanded,
+    toggleNode,
+    groupIsExpanded,
+    toggleGroup,
+    segmentDisclosure,
+    toggleSegment,
+    revealSegments,
+  } = useTraceDisclosure(
+    model,
+    turn.nodes,
+    preferences,
+    turn.running,
+    expanded,
   );
-  const segments = useMemo(
-    () => composeConversationTraceSegments(turn),
-    [turn.nodes, turn.running, turn.finalAnswer.text],
-  );
-  const shownItems = useMemo(() => {
-    if (revealHidden) return traceItems;
-    const visibleIds = new Set(visibleNodes.map((node) => node.id));
-    return traceItems.flatMap<ConversationTraceItem>((item) => {
-      if (item.kind !== 'tool-group') {
-        return visibleIds.has(item.node.id) ? [item] : [];
-      }
-      const nodes = item.nodes.filter((node) => visibleIds.has(node.id));
-      if (nodes.filter((node) => node.kind === 'tool').length < 2) {
-        return nodes.map((node) => ({ kind: 'standalone', id: node.id, node }));
-      }
-      return [
-        {
-          ...item,
-          nodes,
-          actionKinds: getToolGroupActionKinds(nodes),
-          status: getToolGroupStatus(nodes),
-        },
-      ];
-    });
-  }, [revealHidden, traceItems, visibleNodes]);
-  const itemsBySegment = useMemo(() => {
-    const segmentByNode = new Map<string, string>();
-    segments.forEach((segment) => {
-      if (segment.kind === 'process-segment') {
-        segment.nodes.forEach((node) => segmentByNode.set(node.id, segment.id));
-      }
-    });
-    const result = new Map<string, ConversationTraceItem[]>();
-    shownItems.forEach((item) => {
-      const node = item.kind === 'tool-group' ? item.nodes[0] : item.node;
-      const segmentId = segmentByNode.get(node.id);
-      if (!segmentId) return;
-      const items = result.get(segmentId) ?? [];
-      items.push(item);
-      result.set(segmentId, items);
-    });
-    return result;
-  }, [segments, shownItems]);
-
-  const [nodeExpanded, setNodeExpanded] = useState<Record<string, boolean>>({});
-  const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [segmentExpanded, setSegmentExpanded] = useState<
-    Record<string, boolean>
-  >({});
-  const previousActiveSegment = useRef<string>();
-  const activeSegmentId = segments.find(
-    (segment) => segment.kind === 'process-segment' && segment.active,
-  )?.id;
-  useEffect(() => {
-    const previousId = previousActiveSegment.current;
-    if (previousId && previousId !== activeSegmentId) {
-      setSegmentExpanded((previous) => ({ ...previous, [previousId]: false }));
-    }
-    previousActiveSegment.current = activeSegmentId;
-  }, [activeSegmentId]);
-  const previousActiveGroups = useRef<Set<string>>(new Set());
-  const autoCollapsedGroups = useRef<Set<string>>(new Set());
-  const activeGroupKey = traceItems
-    .filter((item) => item.kind === 'tool-group' && item.active)
-    .map((item) => item.id)
-    .join('|');
-
-  useEffect(() => {
-    const current = new Set(activeGroupKey ? activeGroupKey.split('|') : []);
-    const collapsed: string[] = [];
-    previousActiveGroups.current.forEach((groupId) => {
-      if (!current.has(groupId) && !autoCollapsedGroups.current.has(groupId)) {
-        collapsed.push(groupId);
-        autoCollapsedGroups.current.add(groupId);
-      }
-    });
-    if (collapsed.length) {
-      setGroupExpanded((previous) => {
-        const next = { ...previous };
-        collapsed.forEach((groupId) => {
-          next[groupId] = false;
-        });
-        return next;
-      });
-    }
-    previousActiveGroups.current = current;
-  }, [activeGroupKey]);
-
-  const toggleNode = (nodeId: string) => {
-    const node = turn.nodes.find((item) => item.id === nodeId);
-    setNodeExpanded((previous) => {
-      const current =
-        typeof previous[nodeId] === 'boolean'
-          ? previous[nodeId]
-          : Boolean(
-              node &&
-                resolveNodeMode(node, preferences) === 'expanded' &&
-                node.status !== 'running',
-            );
-      return { ...previous, [nodeId]: !current };
-    });
-  };
-  const nodeIsExpanded = (node: ConversationProcessNode): boolean => {
-    const manual = nodeExpanded[node.id];
-    if (typeof manual === 'boolean') return manual;
-    return (
-      resolveNodeMode(node, preferences) === 'expanded' &&
-      node.status !== 'running'
-    );
-  };
-  const groupIsExpanded = (
-    item: Extract<ConversationTraceItem, { kind: 'tool-group' }>,
-  ): boolean => {
-    const manual = groupExpanded[item.id];
-    // live 与终态都先显示组摘要；活动标记仅用于状态展示与超越后的自动收起。
-    return manual ?? false;
-  };
 
   // 多个缓存会话会同时留在 DOM 中，turn.key 不能作为跨实例唯一 id。
   const traceBodyId = `v2-trace-body-${React.useId().replace(/:/g, '')}`;
@@ -319,12 +208,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           group={item}
           nodes={item.nodes}
           expanded={groupIsExpanded(item)}
-          onToggle={() =>
-            setGroupExpanded((previous) => ({
-              ...previous,
-              [item.id]: !(previous[item.id] ?? false),
-            }))
-          }
+          onToggle={() => toggleGroup(item)}
           nodeIsExpanded={nodeIsExpanded}
           onToggleNode={toggleNode}
           onOpenResource={onOpenResource}
@@ -391,34 +275,13 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           if (segment.kind === 'narration') {
             return renderItem(segment, expanded);
           }
-          const items = itemsBySegment.get(segment.id) ?? [];
-          // 单条过程项直接使用自身的摘要与详情，不再套一层段级消息折叠。
-          const segmentCanCollapse =
-            items.reduce(
-              (count, item) =>
-                count + (item.kind === 'tool-group' ? item.nodes.length : 1),
-              0,
-            ) > 1;
-          // 有常显产物的段始终使用同一父路径，避免收尾/收起时重挂载表单或 iframe。
-          if (
-            !expanded &&
-            !items.some(
-              (item) =>
-                item.kind === 'standalone' &&
-                isOpenUiRenderElementNode(item.node),
-            )
-          )
-            return null;
-          const segmentIsExpanded =
-            !turn.running ||
-            !segmentCanCollapse ||
-            segment.active ||
-            Boolean(segmentExpanded[segment.id]);
-          const segmentFailed = segment.nodes.some(
-            (node) => node.failed || node.status === 'failed',
-          );
-          const showSegmentToggle =
-            expanded && turn.running && segmentCanCollapse && !segment.active;
+          const items = segment.items;
+          const {
+            mounted,
+            expanded: segmentIsExpanded,
+            showToggle: showSegmentToggle,
+          } = segmentDisclosure(segment);
+          if (!mounted) return null;
           const segmentBodyId = `${traceBodyId}-segment-${segmentIndex}`;
           return (
             <div
@@ -435,17 +298,12 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
                   data-testid="v2-trace-segment-toggle"
                   aria-expanded={segmentIsExpanded}
                   aria-controls={segmentBodyId}
-                  onClick={() =>
-                    setSegmentExpanded((previous) => ({
-                      ...previous,
-                      [segment.id]: !segmentIsExpanded,
-                    }))
-                  }
+                  onClick={() => toggleSegment(segment.id, segmentIsExpanded)}
                 >
                   <TraceMetrics
                     turn={{ running: false, metrics: segment.metrics }}
                   />
-                  {segmentFailed && (
+                  {segment.failed && (
                     <CloseCircleOutlined
                       style={{ color: token.colorError }}
                       data-testid="v2-trace-segment-failed"
@@ -483,19 +341,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
             data-testid="v2-hidden-entry"
             onClick={() => {
               setRevealHidden(true);
-              const visibleIds = new Set(visibleNodes.map((node) => node.id));
-              setSegmentExpanded((previous) => {
-                const next = { ...previous };
-                segments.forEach((segment) => {
-                  if (
-                    segment.kind === 'process-segment' &&
-                    segment.nodes.some((node) => !visibleIds.has(node.id))
-                  ) {
-                    next[segment.id] = true;
-                  }
-                });
-                return next;
-              });
+              revealSegments();
             }}
           >
             {dict(
