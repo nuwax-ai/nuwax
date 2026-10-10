@@ -26,8 +26,6 @@ const nav = vi.hoisted(() => ({
 
 vi.mock('umi', () => ({
   history: { push: nav.historyPush },
-  // 积分发放触发器（useCreditGrantTrigger）挂载即请求 summary，mock 按需手动模式
-  useRequest: (fn: unknown) => ({ run: vi.fn(), loading: false }),
   useLocation: () => ({ pathname: '/user-app/5', search: '' }),
   useParams: () => ({}),
   useModel: (name: string) => {
