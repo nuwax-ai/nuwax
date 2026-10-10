@@ -3113,8 +3113,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewConversationActive,
       previewWaitingConfirmation: hasPendingIntervention,
       previewAppStatus: serviceReadiness.readinessByEnv[dbEnv]?.status ?? null,
-      // 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览）
-      previewWorkspaceManifestReady: hasFileTreeData,
+      // 只有开发环境用文件树判断：没有有效项目文件时禁用重启 / 停止，并提示暂无可预览。
+      // 线上环境不看文件树。
+      previewWorkspaceManifestReady:
+        dbEnv === UserAppDbEnvEnum.Prod || hasFileTreeData,
     }),
     [
       currentEnvPodReady,
