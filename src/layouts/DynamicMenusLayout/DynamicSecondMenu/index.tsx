@@ -57,7 +57,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   // ================================ Model数据 ================================
 
   // 获取空间信息
-  const { currentSpaceInfo, spaceList, getSpaceId } = useModel('spaceModel');
+  const { currentSpaceInfo, spaceList } = useModel('spaceModel');
 
   // 关闭移动端菜单, 用于关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
@@ -69,15 +69,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   const { workCommercialEdition } = useCommercialEdition();
 
-  // 获取二级菜单, 用于渲染菜单；work 授权时工作空间首位本地注入「群里聊聊」
+  // 获取二级菜单, 用于渲染菜单；work 授权时工作空间首位本地注入「群里聊聊」（个人空间不展示）
   const baseSecondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
-  const groupChatSpaceId =
-    params?.spaceId ?? currentSpaceInfo?.id ?? getSpaceId();
   const secondMenus: MenuItemDto[] =
     parentCode === 'workspace'
       ? withGroupChatMenu(baseSecondMenus, {
           enabled: workCommercialEdition,
-          spaceId: groupChatSpaceId,
+          space: currentSpaceInfo,
           name: dict(
             'PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.groupChat',
           ),
