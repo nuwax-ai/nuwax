@@ -96,7 +96,8 @@ const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ConnectorSvg = wrapSvg(ConnectorSvgFile);
 const ExpertSkillConnectorSvg = wrapSvg(ExpertSkillConnectorSvgFile);
-const ModelSvg = wrapSvg(ModelSvgFile);
+// 源图为 20x20 画布且图形偏右下（外接框 1.67~19.36），viewBox 取 0.5 起点使图形居中
+const ModelSvg = wrapSvg(ModelSvgFile, { viewBox: '0.5 0.5 20 20' });
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
 const PricingSvg = wrapSvg(PricingSvgFile);
