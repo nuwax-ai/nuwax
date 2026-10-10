@@ -1,14 +1,23 @@
 /**
  * 把已登记微应用的远端 main 最新提交拉到本地，并同时写入 gitlink 与 adapter.pin。
  * 只接受相对当前 gitlink 的快进，不把指针退回更旧的提交。
- * 某个应用的远端不存在、没有凭证或超时连不上时，跳过该应用，沿用已有 pin，不中断后续构建。
  * 补丁若不能直接贴到这份新源码上，就按三方合并重算 adapter.patch 并一起暂存。
  * 同一处被两边改过、合并不了时停止，不猜测冲突结果。
  * 不提交、不推送。
+ * 在线执行时先 git submodule update --init 检出全部子模块，再逐个刷新 pin，
+ * 因此这一个命令就能把所有微应用代码落到本地。
+ *
+ * 离线模式（--offline 或环境变量 MICRO_APP_PINS_OFFLINE=1）：
+ * 镜像构建/CI/离线交付机访问不了远端（无凭证、无网络），跳过远端刷新，
+ * 只校验 adapter.pin 与 gitlink 一致、适配补丁能贴到已检出的提交上，
+ * 校验不过仍报错停止（fail fast），不改动任何文件。
+ * 需要刷新 pin 时，在有凭证的开发机上正常执行本脚本后提交结果。
  *
  * 用法：pnpm pull:micro-app-pins
  *       pnpm pull:micro-app-pins -- repo
  *       pnpm pull:micro-app-pins -- message
+ *       pnpm pull:micro-app-pins -- --offline
+ *       MICRO_APP_PINS_OFFLINE=1 pnpm pull:micro-app-pins
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,6 +26,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// 离线模式：镜像构建/CI/离线交付机没有远端凭证与网络，跳过远端刷新只做本地校验。
+const offline =
+  process.argv.includes('--offline') ||
+  ['1', 'true'].includes(
+    String(process.env.MICRO_APP_PINS_OFFLINE ?? '').toLowerCase(),
+  );
 
 /**
  * 在指定目录执行 git，返回去掉首尾空白的标准输出。
@@ -29,50 +45,8 @@ const git = (cwd, args) =>
   execFileSync('git', args, {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
-
-/** 远端 fetch 最长等待，避免没有凭证或网络不通时停在拉 pin。 */
-const FETCH_TIMEOUT_MS = 20000;
-
-/**
- * 拉取 origin/main。失败、超时或没有交互终端时返回 null，由调用方跳过该应用。
- *
- * @param source 子模块目录
- * @returns 远端 main 提交号；不可用时为 null
- */
-const fetchOriginMain = (source) => {
-  const result = spawnSync(
-    'git',
-    [
-      'fetch',
-      '--no-tags',
-      '--recurse-submodules=no',
-      'origin',
-      '+refs/heads/main:refs/remotes/origin/main',
-    ],
-    {
-      cwd: source,
-      encoding: 'utf8',
-      timeout: FETCH_TIMEOUT_MS,
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  );
-  if (result.error || result.status !== 0) {
-    const detail = `${result.stderr || ''}${result.error?.message || ''}`.trim();
-    if (detail) {
-      console.warn(`[pull-pins] ${detail.split('\n')[0]}`);
-    }
-    return null;
-  }
-  try {
-    return git(source, ['rev-parse', 'refs/remotes/origin/main^{commit}']);
-  } catch {
-    return null;
-  }
-};
 
 /**
  * 判断 ancestor 是否为 descendant 的祖先（含两者相同）。
@@ -284,19 +258,47 @@ const pullApp = (id, adapterPath) => {
   const gitlink = readGitlink(sourceDir);
   const toplevel = git(source, ['rev-parse', '--show-toplevel']);
   if (path.resolve(toplevel) !== path.resolve(source)) {
-    console.warn(
-      `[pull-pins] ${id}: 找不到独立源码仓库，跳过，沿用已有 pin ${gitlink.slice(0, 9)}`,
+    throw new Error(
+      `${id} 的 ${sourceDir} 不是独立 Git 仓库，当前命令落到了 ${toplevel}。镜像构建里没有子模块检出，不能在这里拉取远端；请在本机初始化子模块后单独执行 pnpm pull:micro-app-pins。`,
     );
-    return 'skipped';
   }
 
-  const remote = fetchOriginMain(source);
-  if (!remote) {
-    console.warn(
-      `[pull-pins] ${id}: 找不到远端 main，跳过，沿用已有 pin ${gitlink.slice(0, 9)}`,
+  if (offline) {
+    const pinned = adapter.pin;
+    if (typeof pinned !== 'string' || !/^[a-f0-9]{40}$/.test(pinned)) {
+      throw new Error(`${adapterFile} 的 pin 不是 40 位提交号`);
+    }
+    if (pinned !== gitlink) {
+      throw new Error(
+        `${id} 离线模式：adapter.pin ${pinned.slice(0, 9)} 与 gitlink ${gitlink.slice(
+          0,
+          9,
+        )} 不一致，请在有网络的开发机执行 pnpm pull:micro-app-pins 对齐后提交`,
+      );
+    }
+    const patchFile = path.resolve(path.dirname(adapterFile), adapter.patch);
+    if (!patchApplies(source, gitlink, patchFile)) {
+      throw new Error(
+        `${id} 离线模式：适配补丁无法应用到已检出的 ${gitlink.slice(
+          0,
+          9,
+        )}，后续构建同样会失败；请在有网络的开发机重算补丁后提交`,
+      );
+    }
+    console.log(
+      `[pull-pins] ${id}: 离线模式，跳过远端刷新，沿用已检出的 pin ${gitlink.slice(0, 9)}`,
     );
-    return 'skipped';
+    return false;
   }
+
+  git(source, [
+    'fetch',
+    '--no-tags',
+    '--recurse-submodules=no',
+    'origin',
+    '+refs/heads/main:refs/remotes/origin/main',
+  ]);
+  const remote = git(source, ['rev-parse', 'refs/remotes/origin/main^{commit}']);
 
   if (!isAncestor(source, gitlink, remote)) {
     throw new Error(
@@ -343,7 +345,9 @@ const pullApp = (id, adapterPath) => {
   return patchRefreshed;
 };
 
-const wanted = process.argv.slice(2).filter((arg) => arg !== '--');
+const wanted = process.argv
+  .slice(2)
+  .filter((arg) => arg !== '--' && arg !== '--offline');
 const registry = JSON.parse(
   readFileSync(path.join(root, 'micro-frontends/apps.json'), 'utf8'),
 );
@@ -356,22 +360,23 @@ if (wanted.length && apps.length !== wanted.length) {
   );
 }
 
-let refreshedPatch = false;
-let skipped = false;
-for (const app of apps) {
-  const result = pullApp(app.id, app.adapter);
-  if (result === 'skipped') {
-    skipped = true;
-    continue;
-  }
-  refreshedPatch = result || refreshedPatch;
+if (!offline) {
+  // 先把登记的子模块检出到 gitlink：本命令负责把所有微应用代码拉到本地。
+  git(root, ['submodule', 'update', '--init']);
 }
-if (skipped && !refreshedPatch) {
-  console.log('[pull-pins] 找不到的远端已跳过，沿用已有 pin，继续后续构建。');
+
+let refreshedPatch = false;
+for (const app of apps) {
+  refreshedPatch = pullApp(app.id, app.adapter) || refreshedPatch;
+}
+if (offline) {
+  console.log('[pull-pins] 离线模式完成：未访问远端，未改动任何文件。');
 } else if (refreshedPatch) {
   console.log(
     '[pull-pins] 已暂存 gitlink、adapter.pin，以及本次重算过的适配补丁。尚未提交。',
   );
 } else {
-  console.log('[pull-pins] 已暂存 gitlink 与 adapter.pin。适配补丁可直接应用，尚未提交。');
+  console.log(
+    '[pull-pins] 已暂存 gitlink 与 adapter.pin。适配补丁可直接应用，尚未提交。',
+  );
 }
