@@ -7,7 +7,6 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
-import { CloseCircleOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -303,13 +302,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
                   <TraceMetrics
                     turn={{ running: false, metrics: segment.metrics }}
                   />
-                  {segment.failed && (
-                    <CloseCircleOutlined
-                      style={{ color: token.colorError }}
-                      data-testid="v2-trace-segment-failed"
-                      aria-hidden="true"
-                    />
-                  )}
                   <span
                     className={cx(styles['trace-chevron'], {
                       [styles['trace-chevron-open']]: segmentIsExpanded,
