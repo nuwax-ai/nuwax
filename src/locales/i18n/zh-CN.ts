@@ -1587,6 +1587,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName": "请输入团队名称",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName": "团队名称",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips": "通过创建团队空间，将支持项目、智能体、插件、工作流和知识库在团队内进行协作和共享。",
+  "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.groupChat": "群里聊聊",
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "处理路径跳转失败，请检查菜单路径是否存在",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "项目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "暂无项目",

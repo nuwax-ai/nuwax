@@ -1465,6 +1465,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName": "請輸入團隊名稱",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName": "團隊名稱",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips": "通過創建團隊空間，將支持項目、智能體、插件、工作流和知識庫在團隊內進行協作和共享。",
+  "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.groupChat": "群裡傾傾",
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "處理路徑跳轉失敗，請檢查菜單路徑是否存在",
   "PC.Layouts.DynamicMenusLayout.home": "主頁",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "項目",
