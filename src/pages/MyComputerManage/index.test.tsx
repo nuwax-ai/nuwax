@@ -1,17 +1,28 @@
 import eventBus from '@/utils/eventBus';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import MyComputerManage from './index';
 
 vi.mock('./index.less', () => ({ default: {} }));
 
-const { fetchList, location } = vi.hoisted(() => ({
+const { fetchList, location, push, edition } = vi.hoisted(() => ({
   fetchList: vi.fn(),
   location: { pathname: '/my-computer' },
+  push: vi.fn(),
+  edition: { workCommercialEdition: false },
 }));
 vi.mock('umi', () => ({
   useLocation: () => location,
-  history: { push: vi.fn() },
+  history: { push },
+}));
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => edition,
 }));
 vi.mock('@/components/WorkspaceLayout', () => ({
   default: ({ children }: any) => children,
@@ -34,10 +45,46 @@ const online = {
   online: true,
   isActive: true,
 };
-beforeEach(() =>
-  fetchList.mockReset().mockResolvedValue({ code: '0000', data: [] }),
-);
+beforeEach(() => {
+  fetchList.mockReset().mockResolvedValue({ code: '0000', data: [] });
+  push.mockReset();
+  edition.workCommercialEdition = false;
+});
 afterEach(cleanup);
+
+const withAgent = { ...online, id: 7, agentId: 44 };
+const clickChat = async () => {
+  fetchList.mockResolvedValue({ code: '0000', data: [withAgent] });
+  render(<MyComputerManage />);
+  await act(async () => {});
+  fireEvent.click(
+    screen.getByRole('img', { name: 'message' }).closest('button')!,
+  );
+};
+
+it('work 授权时聊天按钮站内跳转伙伴会话', async () => {
+  edition.workCommercialEdition = true;
+  await clickChat();
+  expect(push).toHaveBeenCalledWith('/instant-message?agentId=44');
+});
+
+it('非 work 授权时聊天按钮沿用后端重定向', async () => {
+  const original = window.location;
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { href: '' },
+  });
+  try {
+    await clickChat();
+    expect(window.location.href).toBe('/api/sandbox/config/redirect/7');
+    expect(push).not.toHaveBeenCalled();
+  } finally {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: original,
+    });
+  }
+});
 
 it('上线事件刷新我的电脑列表，卸载后不再请求', async () => {
   const { unmount } = render(<MyComputerManage />);

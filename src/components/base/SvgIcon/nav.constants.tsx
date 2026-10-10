@@ -16,6 +16,7 @@ import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
 import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
 import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
 import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
+import { ReactComponent as MessageSvgFile } from '@/assets/icons/nav/message.svg';
 import { ReactComponent as RecommendManageSvgFile } from '@/assets/icons/nav/recommend_manage.svg';
 // 新会话图标
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
@@ -85,6 +86,7 @@ const HistoryConversationSvg = wrapSvg(HistoryConversationSvgFile);
 const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const RobotSvg = wrapSvg(RobotSvgFile);
+const MessageSvg = wrapSvg(MessageSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
 const BackwardSvg = wrapSvg(BackwardSvgFile);
@@ -145,6 +147,7 @@ export default {
   'icons-nav-connector': ConnectorSvg,
   'icons-nav-expert-skill-connector': ExpertSkillConnectorSvg,
   'icons-nav-robot': RobotSvg,
+  'icons-nav-message': MessageSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
   'icons-nav-computer-star': IconComputerStarSvgFile,
