@@ -53,7 +53,7 @@
       }
     </script>
     <script crossorigin="">
-      import('' + '/micro-apps/message/assets/index-7T9DqThX.js').then(() => {
+      import('' + '/micro-apps/message/assets/index-DK1wTP2k.js').then(() => {
         if (!window.__POWERED_BY_QIANKUN__) return;
         const hooks = window[`qiankunLifeCycles_nuwax-im-web`];
         if (hooks) {
@@ -67,7 +67,7 @@
         console.error(error);
         if (!window.__POWERED_BY_QIANKUN__) return;
         if (error.name === 'TypeError' && error.message && error.message.startsWith('Failed to fetch dynamically imported module:')) {
-          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-7T9DqThX.js', error } }));
+          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-DK1wTP2k.js', error } }));
         } else {
           window.dispatchEvent(new CustomEvent('qiankun:runtimeError', { detail: { error } }));
         }
