@@ -1,5 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiCreateSandboxUserConfig,
@@ -57,6 +58,7 @@ const MyComputerManage: React.FC = () => {
   const [list, setList] = useState<SandboxItem[]>([]);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
+  const { workCommercialEdition } = useCommercialEdition();
   const requestGeneration = useRef(0);
 
   const fetchList = async () => {
@@ -350,12 +352,16 @@ const MyComputerManage: React.FC = () => {
                           icon={<MessageOutlined />}
                           disabled={!item.agentId}
                           onClick={() => {
-                            if (item.agentId) {
+                            if (!item.agentId) return;
+                            // work 授权走站内伙伴会话；其余版本沿用后端重定向
+                            if (workCommercialEdition) {
                               history.push(
                                 `/instant-message?agentId=${encodeURIComponent(
                                   String(item.agentId),
                                 )}`,
                               );
+                            } else {
+                              window.location.href = `/api/sandbox/config/redirect/${item.id}`;
                             }
                           }}
                           className="action-btn"

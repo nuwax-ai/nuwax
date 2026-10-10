@@ -5,6 +5,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isAiosCommercialMenu } from '@/utils/commercialEdition';
 import { hostBridge } from '@/utils/hostBridge';
 import { normalizeHostMicroAppMenus } from '@/utils/microAppRoutes';
 import { request } from 'umi';
@@ -75,7 +76,7 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 二级菜单 - 工作空间
   // 新建项目
   create_project: 'icons-common-plus',
-  xiangmu_yingyong: 'icons-nav-cube',
+  xiangmu_yingyong: 'icons-nav-model',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"
@@ -156,8 +157,11 @@ function mapSysMenuToMenuItem(sysMenus: any[]): MenuItemDto[] {
     /**
      * 如果菜单项的图标为空，则使用本地图标映射
      * 如果菜单项的图标不为空，则使用菜单项的图标，优先级高于本地图标映射
+     * 例外：项目&应用入口固定本地图标，后端下发的图标名本地图标库查不到时整行会没有图标
      */
-    icon: item.icon || MENU_ICON_MAP[item.code],
+    icon: isAiosCommercialMenu(item)
+      ? MENU_ICON_MAP.xiangmu_yingyong
+      : item.icon || MENU_ICON_MAP[item.code],
     children: item.children ? mapSysMenuToMenuItem(item.children) : [],
   }));
 }
