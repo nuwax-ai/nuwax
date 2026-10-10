@@ -49,6 +49,8 @@ vi.mock('umi', async () => {
   };
 });
 
+import { EVENT_TYPE } from '@/constants/event.constants';
+import eventBus from '@/utils/eventBus';
 import CreditsBalance from './index';
 
 const flushRequest = () =>
@@ -143,5 +145,19 @@ describe('用户菜单积分余额刷新', () => {
     view.rerender(<CreditsBalance active />);
     await flushRequest();
     expect(mocks.summary).toHaveBeenCalledTimes(2);
+  });
+
+  it('全局积分轮询广播最新余额时同步显示，卸载后不再响应', async () => {
+    const view = render(<CreditsBalance active />);
+    await flushRequest();
+    expect(screen.getByText('-6,711')).toBeTruthy();
+    act(() => {
+      eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, { totalCredit: 8800 });
+    });
+    expect(screen.getByText('8,800')).toBeTruthy();
+    view.unmount();
+    expect(() =>
+      eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, { totalCredit: 1 }),
+    ).not.toThrow();
   });
 });
