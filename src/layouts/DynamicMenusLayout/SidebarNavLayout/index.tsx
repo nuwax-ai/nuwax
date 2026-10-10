@@ -53,7 +53,6 @@ import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
 import SidebarNavHeader, { PanelToggleSvg } from '../SidebarNavHeader';
 import SidebarSearchModal from '../SidebarSearchModal';
 import { resolveNavHighlightTab } from '../sidebarSelectionPolicy';
-import { useCreditGrantTrigger } from '../useCreditGrantTrigger';
 import User from '../User';
 import UserAvatar from '../User/UserAvatar';
 import { useSecondMenuShellSync } from '../useSecondMenuShellSync';
@@ -200,8 +199,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     // 强制刷新获取用户信息
     refreshUserInfo();
   }, []);
-
-  useCreditGrantTrigger();
 
   // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务、
   // 应用菜单「文件 → 搜索」（⌘K 菜单化）经此通道下发）
