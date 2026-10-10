@@ -338,7 +338,7 @@ const AuthMethodFormModal: React.FC<AuthMethodFormModalProps> = ({
         extra={dict('PC.Pages.SystemAuthMethod.autoRegisterBindTip')}
       />
 
-      {isEdit && record?.callbackUrl && (
+      {isEdit && type !== AuthIdpTypeEnum.Wechat && record?.callbackUrl && (
         <Form.Item
           label={dict('PC.Pages.SystemAuthMethod.callbackUrl')}
           extra={dict('PC.Pages.SystemAuthMethod.callbackUrlTip')}

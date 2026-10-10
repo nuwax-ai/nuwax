@@ -109,6 +109,9 @@ const AuthMethod: React.FC = () => {
       actionRef.current?.reload();
       if (editing) {
         message.success(dict('PC.Common.Global.saveSuccess'));
+      } else if (values.type === AuthIdpTypeEnum.Wechat) {
+        // 微信无需在提供方登记回调地址，只告知默认停用
+        message.success(dict('PC.Pages.SystemAuthMethod.createdTitle'));
       } else {
         // 新增默认停用；回调地址需先登记到 IdP 侧
         Modal.success({
