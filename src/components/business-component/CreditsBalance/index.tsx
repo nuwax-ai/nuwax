@@ -1,7 +1,9 @@
 import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/components/business-component/PurchaseModal';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
+import eventBus from '@/utils/eventBus';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
@@ -44,10 +46,20 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
 
   useEffect(() => {
     if (!showCredits || !active) return;
-    // 展示即拉一次（用户弹层展开 / 进入订阅页 / 常驻栏首次挂载）；不做轮询，
-    // 余额变化靠重新展示触发（如支付后重开弹层）。
+    // 展示即拉一次（用户弹层展开 / 进入订阅页 / 常驻栏首次挂载）；定时刷新由
+    // 布局层全局积分轮询统一负责，经下方事件同步，这里不起定时器。
     fetchCredits();
   }, [showCredits, active, subscriptionRoute, fetchCredits]);
+
+  useEffect(() => {
+    const handleSummaryUpdated = (data: { totalCredit: number }) => {
+      setBalance(data.totalCredit);
+    };
+    eventBus.on(EVENT_TYPE.CreditSummaryUpdated, handleSummaryUpdated);
+    return () => {
+      eventBus.off(EVENT_TYPE.CreditSummaryUpdated, handleSummaryUpdated);
+    };
+  }, []);
 
   const handleClickBalance = () => {
     if (onClick) {

@@ -20,4 +20,6 @@ export enum EventTypeEnum {
   // layout model 的 handleCloseMobileMenu——避免列表数据层直接订阅 layout
   // 被全量广播卷入重渲染（2026-09 侧栏收展卡顿）
   CloseMobileMenu = 'close_mobile_menu',
+  // 全局积分轮询拿到最新 summary：本地事件，余额栏订阅后同步显示
+  CreditSummaryUpdated = 'credit_summary_updated',
 }

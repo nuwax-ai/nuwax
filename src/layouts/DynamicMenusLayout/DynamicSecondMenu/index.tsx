@@ -4,6 +4,7 @@
  * 支持特殊菜单（主页、工作空间）注入默认内容
  */
 import SecondMenuItem from '@/components/base/SecondMenuItem';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,6 +14,11 @@ import { PATH_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
+import {
+  GROUP_CHAT_MENU_CODE,
+  isGroupChatMenuActive,
+  withGroupChatMenu,
+} from '../groupChatMenu';
 import {
   handleOpenUrl,
   isHttpMenuPath,
@@ -61,8 +67,20 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
-  // 获取二级菜单, 用于渲染菜单
-  const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
+  const { workCommercialEdition } = useCommercialEdition();
+
+  // 获取二级菜单, 用于渲染菜单；work 授权时工作空间首位本地注入「群里聊聊」（个人空间不展示）
+  const baseSecondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
+  const secondMenus: MenuItemDto[] =
+    parentCode === 'workspace'
+      ? withGroupChatMenu(baseSecondMenus, {
+          enabled: workCommercialEdition,
+          space: currentSpaceInfo,
+          name: dict(
+            'PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.groupChat',
+          ),
+        })
+      : baseSecondMenus;
 
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
@@ -261,6 +279,12 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   // 处理路径URL路径跳转
   const handlePathUrl = (menu: MenuItemDto) => {
     const { path = '' } = menu;
+    // 本地注入的群聊入口：直接跳转，不写入工作空间路径缓存（否则会把工作空间入口带到 /instant-message）
+    if (menu.code === GROUP_CHAT_MENU_CODE) {
+      handleCloseMobileMenu();
+      history.push(path, { _t: Date.now(), menuCode: menu.code });
+      return;
+    }
     // http 或 %siteUrl% 开头的路径，直接打开
     if (isHttpMenuPath(path)) {
       handleOpenUrl(menu, parentCode);
@@ -645,11 +669,17 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       const isExpanded = expandedMenus.includes(menuCode);
       let menuActive = false;
 
-      // iframe 场景：根据 URL 上的 menuCode，在「当前菜单及其子菜单」中递归查找是否存在
-      if (
+      if (menuCode === GROUP_CHAT_MENU_CODE) {
+        menuActive = isGroupChatMenuActive(
+          menu.path,
+          location.pathname,
+          location.search,
+        );
+      } else if (
         location.pathname.includes('/open-iframe-page') &&
         !!params?.menuCode
       ) {
+        // iframe 场景：根据 URL 上的 menuCode，在「当前菜单及其子菜单」中递归查找是否存在
         menuActive = params.menuCode === menu.code;
       } else {
         // 普通场景：根据路径判断是否激活

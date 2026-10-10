@@ -9,6 +9,7 @@ import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import React from 'react';
 import ClassicLayout from './ClassicLayout';
 import SidebarNavLayout from './SidebarNavLayout';
+import { useCreditSummaryPolling } from './useCreditSummaryPolling';
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
@@ -21,6 +22,8 @@ export interface DynamicMenusLayoutProps {
 
 const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = (props) => {
   const { effectiveNavigationStyle } = useUnifiedTheme();
+  // 分发器常驻：单栏/经典共用同一份积分轮询，切主题不重挂
+  useCreditSummaryPolling();
 
   if (effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3) {
     return <SidebarNavLayout {...props} />;

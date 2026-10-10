@@ -1465,6 +1465,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName": "チーム名を入力してください",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName": "チーム名",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips": "チーム スペースを作成すると、プロジェクト、エージェント、プラグイン、ワークフロー、ナレッジ ベースをチーム内で共同作業および共有できます。",
+  "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.groupChat": "グループチャット",
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "パス解決に失敗しました。メニューパスが存在するかどうかを確認してください",
   "PC.Layouts.DynamicMenusLayout.home": "家",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "プロジェクト",

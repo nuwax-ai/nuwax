@@ -14,7 +14,6 @@ import { dict } from '@/services/i18nRuntime';
 import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import {
   BulbOutlined,
-  CloseCircleOutlined,
   CodeOutlined,
   CommentOutlined,
   EditOutlined,
@@ -501,16 +500,6 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
       )}
       {toolPresentation?.meta && (
         <span className={cx(styles['node-meta'])}>{toolPresentation.meta}</span>
-      )}
-      {node.failed && node.status !== 'running' && (
-        <CloseCircleOutlined
-          className={cx(styles['node-status-icon'])}
-          style={{
-            color:
-              node.kind === 'tool' ? token.colorTextTertiary : token.colorError,
-          }}
-          aria-hidden="true"
-        />
       )}
       {hasDetail && (
         <span
