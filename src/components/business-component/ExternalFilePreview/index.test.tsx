@@ -59,6 +59,23 @@ const renderPreview = (
   );
 
 describe('ExternalFilePreview', () => {
+  it('Windows绝对路径保持盘符，不强加POSIX根斜杠', () => {
+    renderPreview({
+      targetDir: 'C:\\Users\\alice',
+      relativePath: 'Desktop\\note.md',
+    });
+    expect(
+      screen.getByText('C:\\Users\\alice\\Desktop\\note.md'),
+    ).toBeInTheDocument();
+    const parsed = new URL(
+      screen.getByTestId('file-preview').dataset.src!,
+      'https://test.invalid',
+    );
+    expect(parsed.pathname).toBe('/api/computer/static/100/note.md');
+    expect(parsed.searchParams.get('customTargetDir')).toBe(
+      'C:\\Users\\alice/Desktop',
+    );
+  });
   it('直连静态代理地址：customTargetDir=文件父目录，URL 段只带文件名', () => {
     renderPreview();
 

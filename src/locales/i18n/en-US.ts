@@ -653,6 +653,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FilePathHeader.share": "Share",
   "PC.Components.FilePreview.alertCannotPreview": "Unable to preview this file",
   "PC.Components.FilePreview.alertPreviewFailed": "Preview failed",
+  "PC.Components.FilePreview.openInSystem": "Open in system",
+  "PC.Components.FilePreview.revealInFolder": "Show in folder",
   "PC.Components.FilePreview.downloadFile": "Download file",
   "PC.Components.FilePreview.emptyNoFile": "No file available for preview",
   "PC.Components.FilePreview.errorDefaultPreview": "File preview failed. Please try again",

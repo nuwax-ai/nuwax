@@ -17,6 +17,14 @@ import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifa
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  assertLocalFileReferenceCurrent,
+  getLocalFileReference,
+  isAbsoluteFileUrl,
+  saveLocalFile,
+  useLocalFilesRevision,
+  type LocalFileReference,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import {
   fetchContentFromUrl,
@@ -214,6 +222,7 @@ export function useFileTreePreviewView(
     enableVersionControl,
   } = props;
   const isCloudComputer = agentSandboxId === '-1';
+  useLocalFilesRevision();
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
@@ -241,6 +250,10 @@ export function useFileTreePreviewView(
   const [oversizedPreviewFileId, setOversizedPreviewFileId] = useState<
     string | null
   >(null);
+  const [localContentError, setLocalContentError] = useState<{
+    fileId: string;
+    message: string;
+  } | null>(null);
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
   const renamingNodeRef = useRef(renamingNode);
@@ -412,10 +425,18 @@ export function useFileTreePreviewView(
 
   // 获取文件内容并更新文件树
   const fetchFileContentUpdateFiles = useCallback(
-    async (fileProxyUrl: string, fileId: string) => {
+    async (
+      fileProxyUrl: string,
+      fileId: string,
+      localFile?: LocalFileReference,
+      rejectLocalFailure = false,
+    ) => {
       try {
         // 获取文件内容。体积头大于 50MB 时不读正文
-        const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        const fileContent = await fetchContentFromUrl(fileProxyUrl, localFile);
+        setLocalContentError((current) =>
+          current?.fileId === fileId ? null : current,
+        );
         setOversizedPreviewFileId((current) =>
           current === fileId ? null : current,
         );
@@ -439,6 +460,17 @@ export function useFileTreePreviewView(
           return null;
         }
         console.error('Failed to fetch file content:', error);
+        if (
+          localFile ||
+          getLocalFileReference(fileProxyUrl) ||
+          (error instanceof Error && error.name === 'LocalFileAccessError')
+        ) {
+          setLocalContentError({
+            fileId,
+            message: error instanceof Error ? error.message : String(error),
+          });
+          if (rejectLocalFailure) throw error;
+        }
         return '';
       }
     },
@@ -448,6 +480,7 @@ export function useFileTreePreviewView(
   /** 导出 PDF 前先通过 fileProxyUrl 拉取 md/html 文件内容 */
   const resolveNodeContentForPdfExport = useCallback(
     async (node: FileNode): Promise<FileNode> => {
+      if (node.localFile) assertLocalFileReferenceCurrent(node.localFile);
       const fileName = node.name || '';
       const canExportPdf =
         isMarkdownFile(fileName) ||
@@ -460,13 +493,15 @@ export function useFileTreePreviewView(
       const fileContent = await fetchFileContentUpdateFiles(
         node.fileProxyUrl,
         node.id,
+        node.localFile ?? getLocalFileReference(node, targetId),
+        true,
       );
       return {
         ...node,
         content: fileContent || '',
       };
     },
-    [fetchFileContentUpdateFiles],
+    [fetchFileContentUpdateFiles, targetId],
   );
 
   // 判断文件是否为图片类型
@@ -572,6 +607,7 @@ export function useFileTreePreviewView(
       const newFileContent = await fetchFileContentUpdateFiles(
         fileProxyUrl,
         currentSelectedFileId,
+        currentNode.localFile ?? getLocalFileReference(currentNode, targetId),
       );
 
       // 请求返回时如果用户已经切换文件，则丢弃本次回写
@@ -599,6 +635,7 @@ export function useFileTreePreviewView(
     },
     [
       selectedFileId,
+      targetId,
       selectedFileNode,
       viewFileType,
       fetchFileContentUpdateFiles,
@@ -929,6 +966,7 @@ export function useFileTreePreviewView(
           const newFileContent = await fetchFileContentUpdateFiles(
             fileProxyUrl,
             currentSelectedId,
+            fileNode.localFile ?? getLocalFileReference(fileNode, targetId),
           );
 
           // 只允许“当前最新选中”的请求回写编辑器内容，避免 302 跳转/慢请求导致旧数据覆盖
@@ -2081,6 +2119,15 @@ export function useFileTreePreviewView(
     setIsDownloadingFile(true);
     setCurrentDownloadingFileId(node?.id);
     try {
+      const localFile = !exportAsPdf
+        ? node.localFile ?? getLocalFileReference(node, targetId)
+        : undefined;
+      if (localFile) {
+        await saveLocalFile(localFile, node.name);
+        setIsDownloadingFile(false);
+        setCurrentDownloadingFileId('');
+        return;
+      }
       const targetNode = exportAsPdf
         ? await resolveNodeContentForPdfExport(node)
         : node;
@@ -2091,6 +2138,13 @@ export function useFileTreePreviewView(
       }, 1000);
     } catch (error) {
       console.error('Failed to download file', error);
+      if (
+        node.localFile ||
+        getLocalFileReference(node, targetId) ||
+        (error instanceof Error && error.name === 'LocalFileAccessError')
+      ) {
+        message.error(error instanceof Error ? error.message : String(error));
+      }
       setIsDownloadingFile(false);
       setCurrentDownloadingFileId('');
     }
@@ -2123,6 +2177,8 @@ export function useFileTreePreviewView(
       const newFileContent = await fetchFileContentUpdateFiles(
         fileProxyUrl,
         currentRefreshFileId,
+        selectedFileNode!.localFile ??
+          getLocalFileReference(selectedFileNode!, targetId),
       );
       // 请求返回时若用户已切换文件，则丢弃本次回写
       if (selectedFileIdRef.current !== currentRefreshFileId) {
@@ -2148,6 +2204,7 @@ export function useFileTreePreviewView(
   }, [
     selectedFileNode,
     selectedFileId,
+    targetId,
     isOfficeDocument,
     isVideo,
     isAudio,
@@ -2171,6 +2228,8 @@ export function useFileTreePreviewView(
     try {
       const targetNode = await resolveNodeContentForPdfExport(node);
       await downloadFileByUrl?.(targetNode, true);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : String(error));
     } finally {
       setIsExportingPdf(false);
     }
@@ -2320,6 +2379,15 @@ export function useFileTreePreviewView(
       );
     }
 
+    if (localContentError?.fileId === selectedFileId) {
+      return (
+        <AppDevEmptyState
+          type="error"
+          showButtons={false}
+          description={localContentError.message}
+        />
+      );
+    }
     if (oversizedPreviewFileId && oversizedPreviewFileId === selectedFileId) {
       return (
         <AppDevEmptyState
@@ -2334,7 +2402,7 @@ export function useFileTreePreviewView(
     // 获取文件代理URL
     let fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
     // 如果是相对路径（不以 http://, https:// 或 // 开头），则添加 BASE_URL 前缀
-    if (fileProxyUrl && !/^(https?:)?\/\//i.test(fileProxyUrl)) {
+    if (fileProxyUrl && !isAbsoluteFileUrl(fileProxyUrl)) {
       fileProxyUrl = `${process.env.BASE_URL || ''}${fileProxyUrl}`;
     }
 
@@ -2346,7 +2414,14 @@ export function useFileTreePreviewView(
         selectedFileId,
       );
 
-      return <FilePreview key={videoKey} src={videoUrl} fileType="video" />;
+      return (
+        <FilePreview
+          key={videoKey}
+          src={videoUrl}
+          localFile={selectedFileNode.localFile}
+          fileType="video"
+        />
+      );
     }
 
     // 音频文件：使用FilePreview组件
@@ -2357,7 +2432,14 @@ export function useFileTreePreviewView(
         selectedFileId,
       );
 
-      return <FilePreview key={audioKey} src={audioUrl} fileType="audio" />;
+      return (
+        <FilePreview
+          key={audioKey}
+          src={audioUrl}
+          localFile={selectedFileNode.localFile}
+          fileType="audio"
+        />
+      );
     }
 
     // office文档文件：使用FilePreview组件
@@ -2372,6 +2454,7 @@ export function useFileTreePreviewView(
         <FilePreview
           key={officeKey}
           src={officeUrl}
+          localFile={selectedFileNode.localFile}
           fileType={documentFileType as FileType}
         />
       );
@@ -2387,7 +2470,14 @@ export function useFileTreePreviewView(
           selectedFileId,
         );
 
-        return <FilePreview key={imageKey} src={imageUrl} fileType="image" />;
+        return (
+          <FilePreview
+            key={imageKey}
+            src={imageUrl}
+            localFile={selectedFileNode.localFile}
+            fileType="image"
+          />
+        );
       }
 
       return (
@@ -2467,6 +2557,7 @@ export function useFileTreePreviewView(
         // 不加 key={selectedFileId}：让 openui 文件间复用同一 OpenUiRuntimeFrame 实例，
         // 切换走 OPENUI_LOAD 增量更新（iframe 只加载一次），避免每文件重载 3.4MB runtime。
         <OpenUiRuntimeFrame
+          localFile={selectedFileNode.localFile}
           artifact={openUiInlineArtifact}
           artifactUrl={
             openUiInlineArtifact ? undefined : fileProxyUrl || undefined
@@ -2531,6 +2622,7 @@ export function useFileTreePreviewView(
         <FilePreview
           key={filePreviewKey}
           src={filePreviewUrl}
+          localFile={selectedFileNode.localFile}
           // 远程 Markdown 不传编辑器缓存，避免旧正文覆盖预览自己的刷新结果。
           content={
             !isHtmlInCondition && fileProxyUrl
@@ -2640,6 +2732,7 @@ export function useFileTreePreviewView(
       selectedFileNode,
       selectedFileId,
       selectedFolderId,
+      localContentError,
       workspaceFileNotFound,
       isVideo,
       isAudio,

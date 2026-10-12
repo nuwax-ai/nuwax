@@ -458,7 +458,16 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           )}
           <span className={cx(styles['node-file-links'])}>
             {toolPresentation.files.map((filePath) => (
-              <FileResourceLink key={filePath} target={filePath} inline />
+              <FileResourceLink
+                key={filePath}
+                target={filePath}
+                inline
+                onOpen={
+                  onOpenResource
+                    ? () => onOpenResource({ kind: 'file', target: filePath })
+                    : undefined
+                }
+              />
             ))}
           </span>
         </>

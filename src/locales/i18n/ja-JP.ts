@@ -539,6 +539,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FilePathHeader.share": "共有",
   "PC.Components.FilePreview.alertCannotPreview": "このファイルをプレビューできません",
   "PC.Components.FilePreview.alertPreviewFailed": "プレビューに失敗しました",
+  "PC.Components.FilePreview.openInSystem": "Open in system",
+  "PC.Components.FilePreview.revealInFolder": "Show in folder",
   "PC.Components.FilePreview.downloadFile": "ファイルをダウンロードする",
   "PC.Components.FilePreview.emptyNoFile": "プレビューに使用できるファイルがありません",
   "PC.Components.FilePreview.errorDefaultPreview": "ファイルのプレビューに失敗しました。もう一度試してください",

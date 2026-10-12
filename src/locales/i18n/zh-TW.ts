@@ -555,6 +555,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.FilePathHeader.share": "分享",
   "PC.Components.FilePreview.alertCannotPreview": "無法預覽此檔案",
   "PC.Components.FilePreview.alertPreviewFailed": "預覽失敗",
+  "PC.Components.FilePreview.openInSystem": "用系统打开",
+  "PC.Components.FilePreview.revealInFolder": "在文件夹中显示",
   "PC.Components.FilePreview.downloadFile": "下載檔案",
   "PC.Components.FilePreview.emptyNoFile": "暫無檔案可預覽",
   "PC.Components.FilePreview.errorDefaultPreview": "檔案預覽失敗，請重試",
