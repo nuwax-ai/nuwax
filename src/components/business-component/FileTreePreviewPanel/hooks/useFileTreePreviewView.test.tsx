@@ -123,6 +123,60 @@ afterEach(() => {
 });
 
 describe('Markdown 文件树刷新', () => {
+  it('本机链接文件可以预览、刷新和读取代码视图', async () => {
+    const reference = { contextId: 'live', cId: '9', path: 'linked.md' };
+    render(
+      <Harness
+        targetId="9"
+        originalFiles={[
+          {
+            name: 'linked.md',
+            isDir: false,
+            isLink: true,
+            fileProxyUrl: '/api/computer/static/9/linked.md',
+            localFile: reference,
+          },
+        ]}
+      />,
+    );
+    await selectFile('linked.md');
+    expect(screen.getByTestId('preview')).toBeInTheDocument();
+    await act(async () => {
+      await view.preview.refreshSelectedFileContent();
+    });
+    expect(screen.getByTestId('preview').dataset.refresh).toBe('1');
+    await act(async () => {
+      await view.preview.filePathHeaderProps.onViewFileTypeChange?.('code');
+    });
+    await waitFor(() =>
+      expect(mocks.fetchContent).toHaveBeenCalledWith(
+        '/api/computer/static/9/linked.md',
+        reference,
+      ),
+    );
+    expect(screen.getByTestId('code')).toHaveTextContent('latest content');
+  });
+
+  it('旧桥或远端链接仍保留既有不支持预览行为', async () => {
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'linked.md',
+            isLink: true,
+            fileProxyUrl: '/static/linked.md',
+          },
+        ]}
+      />,
+    );
+    await selectFile('linked.md');
+    expect(
+      screen.getByText('PC.Components.FileTreeView.unsupportedFormat'),
+    ).toBeInTheDocument();
+    expect(mocks.previewMount).not.toHaveBeenCalled();
+    expect(mocks.fetchContent).not.toHaveBeenCalled();
+  });
+
   const oldReference = { contextId: 'old-context', cId: '9', path: 'first.md' };
   const oldLocalFiles = [
     {
