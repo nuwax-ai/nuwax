@@ -1039,6 +1039,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.RunOver.runError": "运行错误",
   "PC.Components.RunOver.thinking": "正在思考",
   "PC.Components.SearchView.noMatchingFiles": "暂无匹配文件",
+  "PC.Components.SearchView.localSearchFailed": "搜索本机文件失败，请重试",
   "PC.Components.SearchView.searching": "搜索中...",
   "PC.Components.SearchView.searchPlaceholder": "搜索文件...",
   "PC.Components.SelectComponent.add": "添加",

@@ -1032,6 +1032,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.RunOver.runError": "Run Error",
   "PC.Components.RunOver.thinking": "Thinking",
   "PC.Components.SearchView.noMatchingFiles": "No matching files",
+  "PC.Components.SearchView.localSearchFailed": "Local file search failed. Please retry.",
   "PC.Components.SearchView.searching": "Searching...",
   "PC.Components.SearchView.searchPlaceholder": "Search files...",
   "PC.Components.SelectComponent.add": "Add ",

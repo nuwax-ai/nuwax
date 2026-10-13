@@ -913,6 +913,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.RunOver.runError": "運行錯誤",
   "PC.Components.RunOver.thinking": "正在思考",
   "PC.Components.SearchView.noMatchingFiles": "暫無匹配文件",
+  "PC.Components.SearchView.localSearchFailed": "搜尋本機文件失敗，請重試",
   "PC.Components.SearchView.searching": "搜索中...",
   "PC.Components.SearchView.searchPlaceholder": "搜索文件...",
   "PC.Components.SelectComponent.add": "添加",

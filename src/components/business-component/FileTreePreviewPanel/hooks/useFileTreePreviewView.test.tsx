@@ -52,11 +52,13 @@ vi.mock('@/components/business-component/AppDevEmptyState', () => ({
   ),
 }));
 vi.mock('@/components/business-component/OpenUiArtifactView', () => ({
-  OpenUiRuntimeFrame: () => null,
+  OpenUiRuntimeFrame: () => <div data-testid="openui" />,
 }));
 vi.mock('@/components/CodeViewer', () => ({
-  default: ({ content }: { content: string }) => (
-    <div data-testid="code">{content}</div>
+  default: ({ content, readOnly }: { content: string; readOnly?: boolean }) => (
+    <div data-testid="code" data-readonly={readOnly}>
+      {content}
+    </div>
   ),
 }));
 vi.mock('@/components/custom/Loading', () => ({ default: () => null }));
@@ -141,10 +143,13 @@ describe('Markdown 文件树刷新', () => {
     );
     await selectFile('linked.md');
     expect(screen.getByTestId('preview')).toBeInTheDocument();
+    const refresh = Number(screen.getByTestId('preview').dataset.refresh);
     await act(async () => {
       await view.preview.refreshSelectedFileContent();
     });
-    expect(screen.getByTestId('preview').dataset.refresh).toBe('1');
+    expect(
+      Number(screen.getByTestId('preview').dataset.refresh),
+    ).toBeGreaterThan(refresh);
     await act(async () => {
       await view.preview.filePathHeaderProps.onViewFileTypeChange?.('code');
     });
@@ -155,6 +160,28 @@ describe('Markdown 文件树刷新', () => {
       ),
     );
     expect(screen.getByTestId('code')).toHaveTextContent('latest content');
+    expect(screen.getByTestId('code')).toHaveAttribute('data-readonly', 'true');
+  });
+
+  it.each([
+    ['linked.html', 'preview'],
+    ['linked.openui.json', 'openui'],
+  ])('本机链接 %s 可进入对应预览', async (name, testId) => {
+    render(
+      <Harness
+        targetId="9"
+        originalFiles={[
+          {
+            name,
+            isLink: true,
+            fileProxyUrl: `/api/computer/static/9/${name}`,
+            localFile: { contextId: 'live', cId: '9', path: name },
+          },
+        ]}
+      />,
+    );
+    await selectFile(name);
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
   });
 
   it('旧桥或远端链接仍保留既有不支持预览行为', async () => {

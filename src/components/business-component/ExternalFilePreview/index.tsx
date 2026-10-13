@@ -58,11 +58,16 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
   className,
 }) => {
   // 沙箱内绝对路径（头部完整展示 + 一键复制）
-  const separator = /^[a-z]:[\\/]|^\\\\/i.test(targetDir) ? '\\' : '/';
+  const normalizedTargetDir = /^[a-z]:$/i.test(targetDir)
+    ? `${targetDir}\\`
+    : targetDir;
+  const separator = /^[a-z]:[\\/]|^\\\\/i.test(normalizedTargetDir)
+    ? '\\'
+    : '/';
   const root =
-    separator === '/' && !targetDir.startsWith('/')
-      ? `/${targetDir}`
-      : targetDir;
+    separator === '/' && !normalizedTargetDir.startsWith('/')
+      ? `/${normalizedTargetDir}`
+      : normalizedTargetDir;
   const absolutePath = `${root.replace(/[\\/]+$/, '')}${separator}${relativePath
     .replace(/^[\\/]+/, '')
     .replace(/[\\/]/g, separator)}`;
@@ -71,11 +76,13 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
   // t 为防缓存时间戳，随挂载生成（重拉缓存由 FilePreview 刷新按钮同 URL 复现）
   const fileProxyUrl = useMemo(() => {
     const { fileName, parentDir } = splitRelativePath(relativePath);
-    const dir = parentDir ? `${targetDir}/${parentDir}` : targetDir;
+    const dir = parentDir
+      ? `${normalizedTargetDir}/${parentDir}`
+      : normalizedTargetDir;
     return `/api/computer/static/${cId}/${encodeURIComponent(
       fileName,
     )}?t=${Date.now()}&customTargetDir=${encodeURIComponent(dir)}`;
-  }, [cId, targetDir, relativePath]);
+  }, [cId, normalizedTargetDir, relativePath]);
   useLocalFilesRevision();
   const localFile = getLocalFileReference(fileProxyUrl, cId, absolutePath);
 

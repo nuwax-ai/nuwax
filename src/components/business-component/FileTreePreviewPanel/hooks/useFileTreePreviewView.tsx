@@ -84,6 +84,12 @@ import { ChangeFileInfo } from '../types/file-tree';
 /** 压缩包后缀。这类文件不搜索、不拉内容，直接提示不支持预览 */
 const ARCHIVE_FILE_PATTERN = /\.(zip|skill|rar|7z|tar|tgz|gz|bz2|xz)$/i;
 
+/** Explicit local files may be symlinks; remote links retain the existing policy. */
+const isUnsupportedLink = (
+  node: FileNode | null | undefined,
+  cId?: string | number,
+) => !!node?.isLink && !(node.localFile ?? getLocalFileReference(node, cId));
+
 const removeNodeByIdFromTree = (
   nodes: FileNode[],
   targetId: string,
@@ -576,7 +582,11 @@ export function useFileTreePreviewView(
         findFileNode(currentSelectedFileId, filesRef.current) ||
         selectedFileNode;
       const fileProxyUrl = currentNode?.fileProxyUrl || '';
-      if (!currentNode || !fileProxyUrl || currentNode.isLink) {
+      if (
+        !currentNode ||
+        !fileProxyUrl ||
+        isUnsupportedLink(currentNode, targetId)
+      ) {
         return;
       }
 
@@ -874,7 +884,7 @@ export function useFileTreePreviewView(
          * kill技能页面时，文件可能有内容，也可能文件内容为空，但是没有文件代理URL
          * 如果文件节点是链接文件，则不支持预览
          */
-        if (!fileProxyUrl || fileNode?.isLink) {
+        if (!fileProxyUrl || isUnsupportedLink(fileNode, targetId)) {
           onFileSelectOpenPreview?.(fileNode?.id || fileId);
           // 同步 ref，确保异步逻辑读取到最新选中文件
           selectedFileIdRef.current = currentSelectedId;
@@ -2163,7 +2173,7 @@ export function useFileTreePreviewView(
     const previewable = isPreviewableFile(fileName, true);
     const isNeedRefreshFileContent =
       !previewable ||
-      selectedFileNode?.isLink ||
+      isUnsupportedLink(selectedFileNode, targetId) ||
       isOfficeDocument ||
       isVideo ||
       isAudio ||
@@ -2492,8 +2502,8 @@ export function useFileTreePreviewView(
     const selectedFileName = selectedFileNode.name || '';
     const fileExtension = selectedFileName.split('.').pop() || selectedFileName;
 
-    // 软链接文件不支持编辑预览
-    if (selectedFileNode?.isLink) {
+    // 远端软链接保留现有行为，本机明确选中的链接允许只读预览。
+    if (isUnsupportedLink(selectedFileNode, targetId)) {
       return (
         <AppDevEmptyState
           type="error"
@@ -2654,7 +2664,7 @@ export function useFileTreePreviewView(
         fileName={fileName}
         filePath={`app/${selectedFileId}`}
         content={fileContent}
-        readOnly={readOnly}
+        readOnly={readOnly || !!selectedFileNode.isLink}
         onContentChange={handleContentChange}
       />
     );

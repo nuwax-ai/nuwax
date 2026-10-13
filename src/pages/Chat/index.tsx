@@ -11,6 +11,7 @@ import { selectProgressCapsule } from '@/components/business-component/UnifiedCh
 import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { splitLocalToolFilePath } from '@/features/client-shell/localFilePaths';
 import {
   getLocalFileReference,
   getLocalFilesWorkspaceRoot,
@@ -2244,17 +2245,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     );
     // 本机会话直接读取当前工作区相对路径或 Win/POSIX 绝对路径。
     if (localFile) {
-      const absolute = /^(?:[a-z]:[\\/]|\\\\|\/)/i.test(resource.target);
-      const index = Math.max(
-        resource.target.lastIndexOf('/'),
-        resource.target.lastIndexOf('\\'),
+      const { targetDir, relativePath } = splitLocalToolFilePath(
+        resource.target,
+        getLocalFilesWorkspaceRoot(currentId),
       );
-      const targetDir = absolute
-        ? resource.target.slice(0, index) || '/'
-        : getLocalFilesWorkspaceRoot(currentId);
-      const relativePath = absolute
-        ? resource.target.slice(index + 1)
-        : resource.target;
       if (targetDir && relativePath) {
         openPreviewView(currentId);
         toolResourceSelectRef.current = '';
