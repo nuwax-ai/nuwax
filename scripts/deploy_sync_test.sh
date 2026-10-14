@@ -487,8 +487,10 @@ CURRENT_STEP="${TEST_BRANCH} 完整生产构建"
 # DIST_RETENTION=1：构建链路保留上一版 dist 的旧哈希资源（保 3 代，DIST_RETAIN_GENERATIONS 可调），
 # 发版后持有旧页面的用户懒加载旧 chunk 不再 404（详见 scripts/deploy-asset-retention.mjs）
 export DIST_RETENTION=1
-# M 端产物源用环境变量指定：npm run 的位置参数只会落到复合命令最后一段，传不到下载脚本
-export MOBILE_BUILD_SOURCE="${MOBILE_BUILD_SOURCE:-gitlab}"
+# 内部部署链必须带微应用：子模块缺失时 sync:micro-apps 不允许跳过（社区版构建才会跳过）
+export MICRO_APP_REQUIRED=1
+# M 端产物源默认读本地 nuwax-mobile 检出的 origin 远端（MOBILE_BUILD_REPO 可覆写；
+# npm run 的位置参数只会落到复合命令最后一段，传不到下载脚本）
 run npm run build:prod:m
 rgit add -f dist
 rgit add src/constants/version.ts
