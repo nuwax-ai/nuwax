@@ -63,7 +63,6 @@ import React, {
   useState,
 } from 'react';
 import { history, useLocation, useModel, useRequest } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import usePagePreviewController from './usePagePreviewController';
 
@@ -494,14 +493,14 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       )
       ?.map((item: BindConfigWithSub) => item.name);
     setRequiredNameList(_requiredNameList || []);
-    // 初始化会话信息: 开场白
+    // 初始化会话信息: 开场白（未落库开场白不设置持久化 id，
+    // 避免 UnifiedChatSession 误判 hasPersistedMessage 而锁定电脑选择）
     if (result?.openingChatMsg) {
       const currentMessage = {
         role: AssistantRoleEnum.ASSISTANT,
         type: MessageModeEnum.CHAT,
         text: result?.openingChatMsg,
         time: dayjs().toString(),
-        id: uuidv4(),
         messageType: MessageTypeEnum.ASSISTANT,
       } as MessageInfo;
       setMessageList([currentMessage]);
@@ -559,6 +558,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       setAgentDetail(null);
       setSelectedComponentList([]);
       setVariables([]);
+      // 切换智能体时重置电脑选择，避免沿用上一智能体的选中值
+      setSelectedComputerId('');
 
       setOpenPaymentModal(false);
     };
