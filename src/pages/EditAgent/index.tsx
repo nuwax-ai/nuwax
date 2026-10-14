@@ -20,6 +20,7 @@ import { transformToPromptVariables } from '@/components/TiptapVariableInput/uti
 import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
@@ -428,6 +429,21 @@ const EditAgent: React.FC = () => {
 
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
+  useLocalFilesContext(
+    devConversationId &&
+      conversationInfo?.id === devConversationId &&
+      finalSelectedComputerId
+      ? {
+          cId: devConversationId,
+          sandboxId: String(finalSelectedComputerId),
+          workspacePath: conversationInfo.workspacePath,
+          projectId: conversationInfo.devTargetId,
+          serviceType: conversationInfo.devTargetType,
+          userId: conversationInfo.userId,
+        }
+      : null,
+  );
+
   const terminalWsUrl = useTerminalWsUrl(devConversationId);
 
   /**

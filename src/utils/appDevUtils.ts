@@ -100,6 +100,7 @@ export const transformFlatListToTree = (
       content: file.contents || '',
       lastModified: Date.now(),
       fileProxyUrl: file?.fileProxyUrl || '',
+      localFile: file.localFile,
       isLink: file?.isLink || false,
       dataSourceId: file?.dataSourceId,
       relativePath: file?.relativePath,

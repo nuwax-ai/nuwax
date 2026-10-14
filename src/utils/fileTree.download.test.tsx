@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { downloadFileByUrl } from './fileTree';
 const mocks = vi.hoisted(() => ({
   download: vi.fn(),
+  markdown: vi.fn(),
+  html: vi.fn(),
   error: vi.fn(),
   warning: vi.fn(),
   success: vi.fn(),
@@ -18,8 +20,8 @@ vi.mock('antd', () => ({
   },
 }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
-vi.mock('./htmlToPdf', () => ({ htmlToPdf: vi.fn() }));
-vi.mock('./markdownToPdf', () => ({ markdownToPdf: vi.fn() }));
+vi.mock('./htmlToPdf', () => ({ htmlToPdf: mocks.html }));
+vi.mock('./markdownToPdf', () => ({ markdownToPdf: mocks.markdown }));
 const file = {
   id: 'report',
   name: 'report.json',
@@ -58,6 +60,32 @@ describe('artifact file-tree download', () => {
     );
     vi.restoreAllMocks();
   });
+  it.each(['md', 'html'])(
+    '旧本机 %s 的缓存正文不能绕过身份检查继续导出 PDF',
+    async (extension) => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      await downloadFileByUrl(
+        {
+          ...file,
+          name: `old.${extension}`,
+          content: 'cached old contents',
+          localFile: {
+            cId: '123',
+            contextId: 'expired-context',
+            path: `old.${extension}`,
+          },
+        },
+        true,
+      );
+      expect(mocks.markdown).not.toHaveBeenCalled();
+      expect(mocks.html).not.toHaveBeenCalled();
+      expect(mocks.download).not.toHaveBeenCalled();
+      expect(mocks.error).toHaveBeenCalledWith(
+        'PC.Utils.FileTree.downloadFailedRetry',
+      );
+      vi.restoreAllMocks();
+    },
+  );
   it('does not call cancellation a success or failure', async () => {
     mocks.download.mockResolvedValueOnce(false);
     await downloadFileByUrl(file);

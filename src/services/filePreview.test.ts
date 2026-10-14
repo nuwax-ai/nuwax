@@ -82,6 +82,17 @@ describe('文件预览内容读取', () => {
     vi.restoreAllMocks();
   });
 
+  it('本机协议不发送业务鉴权，仍按正文预算读取 Office 文件', async () => {
+    const { response } = bufferResponse([1, 2, 3]);
+    mocks.fetch.mockResolvedValue(response);
+    await loadFilePreviewBuffer('nuwax-local://grant/slide.pptx');
+    expect(mocks.getBusinessFileRequestAuth).not.toHaveBeenCalled();
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      'nuwax-local://grant/slide.pptx',
+      expect.objectContaining({ credentials: 'omit', headers: {} }),
+    );
+  });
+
   it('URL 请求复用文件业务鉴权并传入取消信号', async () => {
     const controller = new AbortController();
     const { response } = bufferResponse([1, 2, 3]);

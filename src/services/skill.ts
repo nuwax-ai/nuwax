@@ -1,3 +1,10 @@
+import {
+  assertLocalFileReferenceCurrent,
+  isAbsoluteFileUrl,
+  isLocalPreviewUrl,
+  prepareLocalFilePreview,
+} from '@/features/client-shell/localFileService';
+import type { LocalFileReference } from '@/types/interfaces/localFile';
 import { HistoryData } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
 import {
@@ -189,8 +196,10 @@ export const isPreviewFileTooLargeError = (
  * 读取 X-File-Size。头不存在、为空或不是数字时返回 null，调用方按原逻辑预览。
  */
 export const readPreviewFileSize = (response: Response): number | null => {
-  const raw = response.headers.get(FILE_SIZE_HEADER);
-  if (raw == null || raw.trim() === '') {
+  const raw =
+    response.headers.get(FILE_SIZE_HEADER) ??
+    response.headers.get('Content-Length');
+  if (raw === null || raw.trim() === '') {
     return null;
   }
   const size = Number(raw.trim());
@@ -202,28 +211,43 @@ export const readPreviewFileSize = (response: Response): number | null => {
 
 /** 体积头有值且大于 50MB */
 export const isOversizedPreviewFile = (size: number | null): boolean =>
-  size != null && size > PREVIEW_FILE_SIZE_LIMIT_BYTES;
+  size !== null && size > PREVIEW_FILE_SIZE_LIMIT_BYTES;
 
-async function fetchContentResponse(url: string): Promise<Response> {
-  // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
-  const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
-  const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
-  const auth = getBusinessFileRequestAuth(fullUrl);
-  return fetch(fullUrl, {
-    method: 'GET',
-    credentials: auth.credentials,
-    /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
-    cache: 'no-store',
-    headers: {
-      Accept: 'text/plain, application/json, */*',
-      ...auth.headers,
-    },
-  });
+async function fetchContentResponse(
+  url: string,
+  localFile?: LocalFileReference,
+): Promise<{ response: Response; release: () => void }> {
+  const preview = await prepareLocalFilePreview(localFile ?? url);
+  const resolvedUrl = preview?.url || url;
+  try {
+    const fullUrl = isAbsoluteFileUrl(resolvedUrl)
+      ? resolvedUrl
+      : `${process.env.BASE_URL || ''}${resolvedUrl}`;
+    const auth = isLocalPreviewUrl(fullUrl)
+      ? { credentials: 'omit' as const, headers: {} }
+      : getBusinessFileRequestAuth(fullUrl);
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      credentials: auth.credentials,
+      cache: 'no-store',
+      headers: { Accept: 'text/plain, application/json, */*', ...auth.headers },
+    });
+    return { response, release: preview?.release || (() => undefined) };
+  } catch (error) {
+    preview?.release();
+    throw error;
+  }
 }
 
-export async function fetchContentFromUrl(url: string): Promise<string> {
+export async function fetchContentFromUrl(
+  url: string,
+  localFile?: LocalFileReference,
+): Promise<string> {
+  let release: () => void = () => undefined;
   try {
-    const response = await fetchContentResponse(url);
+    const fetched = await fetchContentResponse(url, localFile);
+    const response = fetched.response;
+    release = fetched.release;
     if (!response.ok) {
       throw new Error(`Failed to get file content: ${response.status}`);
     }
@@ -235,12 +259,16 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
     }
 
     // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number
-    return response.text();
+    const content = await response.text();
+    if (localFile) assertLocalFileReferenceCurrent(localFile);
+    return content;
   } catch (error) {
     if (!isPreviewFileTooLargeError(error)) {
       console.error('Failed to get file content: ', error);
     }
     throw error;
+  } finally {
+    release();
   }
 }
 
@@ -252,9 +280,13 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
  */
 export async function fetchContentOutcome(
   url: string,
+  localFile?: LocalFileReference,
 ): Promise<ContentFetchOutcome> {
+  let release: () => void = () => undefined;
   try {
-    const response = await fetchContentResponse(url);
+    const fetched = await fetchContentResponse(url, localFile);
+    const response = fetched.response;
+    release = fetched.release;
     if (response.status === 404) {
       return { status: 'missing' };
     }
@@ -262,10 +294,14 @@ export async function fetchContentOutcome(
       console.error('Failed to get file content: ', response.status);
       return { status: 'error' };
     }
-    return { status: 'ok', content: await response.text() };
+    const content = await response.text();
+    if (localFile) assertLocalFileReferenceCurrent(localFile);
+    return { status: 'ok', content };
   } catch (error) {
     console.error('Failed to get file content: ', error);
     return { status: 'error' };
+  } finally {
+    release();
   }
 }
 

@@ -42,6 +42,41 @@ describe('hostBridge（统一对外接入层）', () => {
     host: { getProduct: () => 'nuwax' },
   });
 
+  describe('localFiles.getApi', () => {
+    it('只透传真实商业宿主的文件能力，旧宿主和社区宿主降级', () => {
+      const fileApi = { getCapabilities: vi.fn() };
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwax' },
+        localFiles: fileApi,
+      };
+      expect(hostBridge.localFiles.getApi()).toBe(fileApi);
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+        localFiles: fileApi,
+      };
+      expect(hostBridge.localFiles.getApi()).toBeUndefined();
+      (window as any).NuwaClawBridge = { localFiles: fileApi };
+      expect(hostBridge.localFiles.getApi()).toBeUndefined();
+    });
+    it('浏览器桌面外观预览不能启用本机文件能力', () => {
+      const originalUrl = window.location.href;
+      try {
+        delete (window as any).NuwaClawBridge;
+        window.history.replaceState(
+          {},
+          '',
+          '/home?__desktop_shell_preview=windows',
+        );
+        resetDesktopShellPreviewRuntimeForTest();
+        expect(isDesktopHost()).toBe(true);
+        expect(hostBridge.localFiles.getApi()).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', originalUrl);
+        resetDesktopShellPreviewRuntimeForTest();
+      }
+    });
+  });
+
   describe('layout.setNewTaskAvailable', () => {
     it('桥能力存在 → 透传启用与禁用状态', () => {
       const setNewTaskAvailable = vi.fn();

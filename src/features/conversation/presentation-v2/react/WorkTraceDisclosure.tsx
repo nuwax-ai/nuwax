@@ -19,6 +19,7 @@ import type {
   ConversationTraceItem,
   ConversationTurnPresentationV2,
 } from '../types';
+import { LocalToolFileContext } from './LocalToolFileContext';
 import OpenUiTraceNode from './OpenUiTraceNode';
 import ProcessNodeRow from './ProcessNodeRow';
 import TodoTraceNode from './TodoTraceNode';
@@ -240,110 +241,114 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
   } as React.CSSProperties;
 
   return (
-    <div
-      className={cx(styles['trace'])}
-      style={traceThemeStyle}
-      data-trace-key={turn.key}
-      data-trace-running={turn.running ? 'true' : 'false'}
-      data-trace-expanded={expanded ? 'true' : 'false'}
-    >
-      <button
-        type="button"
-        className={cx(styles['trace-toggle'])}
-        aria-expanded={expanded}
-        aria-controls={traceBodyId}
-        data-testid="v2-trace-toggle"
-        onClick={() => onManualToggle(!expanded)}
+    <LocalToolFileContext.Provider value={conversationId}>
+      <div
+        className={cx(styles['trace'])}
+        style={traceThemeStyle}
+        data-trace-key={turn.key}
+        data-trace-running={turn.running ? 'true' : 'false'}
+        data-trace-expanded={expanded ? 'true' : 'false'}
       >
-        <TraceMetrics turn={turn} />
-        <span
-          className={cx(
-            styles['trace-chevron'],
-            styles['trace-chevron-trailing'],
-            { [styles['trace-chevron-open']]: expanded },
-          )}
-          aria-hidden="true"
+        <button
+          type="button"
+          className={cx(styles['trace-toggle'])}
+          aria-expanded={expanded}
+          aria-controls={traceBodyId}
+          data-testid="v2-trace-toggle"
+          onClick={() => onManualToggle(!expanded)}
         >
-          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
-        </span>
-      </button>
-      {/* 轨迹体：产物为 inline/sidecar 的 OpenUI 节点原位渲染看板/摘要行，收起态保持
-          显示；失败与无产物退化态回落普通工具行（词条化动作，协议名不外露） */}
-      <div id={traceBodyId} className={cx(styles['trace-body'])}>
-        {segments.map((segment, segmentIndex) => {
-          if (segment.kind === 'narration') {
-            return renderItem(segment, expanded);
-          }
-          const items = segment.items;
-          const {
-            mounted,
-            expanded: segmentIsExpanded,
-            showToggle: showSegmentToggle,
-          } = segmentDisclosure(segment);
-          if (!mounted) return null;
-          const segmentBodyId = `${traceBodyId}-segment-${segmentIndex}`;
-          return (
-            <div
-              key={segment.id}
-              className={cx(styles['trace-segment'])}
-              data-trace-segment-id={segment.id}
-              data-trace-segment-active={segment.active ? 'true' : 'false'}
-              data-trace-segment-expanded={segmentIsExpanded ? 'true' : 'false'}
-            >
-              {showSegmentToggle && (
-                <button
-                  type="button"
-                  className={cx(styles['trace-segment-toggle'])}
-                  data-testid="v2-trace-segment-toggle"
-                  aria-expanded={segmentIsExpanded}
-                  aria-controls={segmentBodyId}
-                  onClick={() => toggleSegment(segment.id, segmentIsExpanded)}
-                >
-                  <TraceMetrics
-                    turn={{ running: false, metrics: segment.metrics }}
-                  />
-                  <span
-                    className={cx(styles['trace-chevron'], {
-                      [styles['trace-chevron-open']]: segmentIsExpanded,
-                    })}
-                    aria-hidden="true"
-                  >
-                    <SvgIcon
-                      name="icons-common-caret_down"
-                      style={{ fontSize: 10 }}
-                    />
-                  </span>
-                </button>
-              )}
-              <div
-                id={segmentBodyId}
-                className={cx(styles['trace-segment-body'])}
-              >
-                {items.map((item) =>
-                  renderItem(item, expanded && segmentIsExpanded),
-                )}
-              </div>
-            </div>
-          );
-        })}
-        {expanded && !revealHidden && hiddenCount > 0 && (
-          <button
-            type="button"
-            className={cx(styles['hidden-entry'])}
-            data-testid="v2-hidden-entry"
-            onClick={() => {
-              setRevealHidden(true);
-              revealSegments();
-            }}
-          >
-            {dict(
-              'PC.Components.ConversationRendererV2.hiddenEntry',
-              hiddenCount,
+          <TraceMetrics turn={turn} />
+          <span
+            className={cx(
+              styles['trace-chevron'],
+              styles['trace-chevron-trailing'],
+              { [styles['trace-chevron-open']]: expanded },
             )}
-          </button>
-        )}
+            aria-hidden="true"
+          >
+            <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+          </span>
+        </button>
+        {/* 轨迹体：产物为 inline/sidecar 的 OpenUI 节点原位渲染看板/摘要行，收起态保持
+          显示；失败与无产物退化态回落普通工具行（词条化动作，协议名不外露） */}
+        <div id={traceBodyId} className={cx(styles['trace-body'])}>
+          {segments.map((segment, segmentIndex) => {
+            if (segment.kind === 'narration') {
+              return renderItem(segment, expanded);
+            }
+            const items = segment.items;
+            const {
+              mounted,
+              expanded: segmentIsExpanded,
+              showToggle: showSegmentToggle,
+            } = segmentDisclosure(segment);
+            if (!mounted) return null;
+            const segmentBodyId = `${traceBodyId}-segment-${segmentIndex}`;
+            return (
+              <div
+                key={segment.id}
+                className={cx(styles['trace-segment'])}
+                data-trace-segment-id={segment.id}
+                data-trace-segment-active={segment.active ? 'true' : 'false'}
+                data-trace-segment-expanded={
+                  segmentIsExpanded ? 'true' : 'false'
+                }
+              >
+                {showSegmentToggle && (
+                  <button
+                    type="button"
+                    className={cx(styles['trace-segment-toggle'])}
+                    data-testid="v2-trace-segment-toggle"
+                    aria-expanded={segmentIsExpanded}
+                    aria-controls={segmentBodyId}
+                    onClick={() => toggleSegment(segment.id, segmentIsExpanded)}
+                  >
+                    <TraceMetrics
+                      turn={{ running: false, metrics: segment.metrics }}
+                    />
+                    <span
+                      className={cx(styles['trace-chevron'], {
+                        [styles['trace-chevron-open']]: segmentIsExpanded,
+                      })}
+                      aria-hidden="true"
+                    >
+                      <SvgIcon
+                        name="icons-common-caret_down"
+                        style={{ fontSize: 10 }}
+                      />
+                    </span>
+                  </button>
+                )}
+                <div
+                  id={segmentBodyId}
+                  className={cx(styles['trace-segment-body'])}
+                >
+                  {items.map((item) =>
+                    renderItem(item, expanded && segmentIsExpanded),
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {expanded && !revealHidden && hiddenCount > 0 && (
+            <button
+              type="button"
+              className={cx(styles['hidden-entry'])}
+              data-testid="v2-hidden-entry"
+              onClick={() => {
+                setRevealHidden(true);
+                revealSegments();
+              }}
+            >
+              {dict(
+                'PC.Components.ConversationRendererV2.hiddenEntry',
+                hiddenCount,
+              )}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </LocalToolFileContext.Provider>
   );
 };
 
