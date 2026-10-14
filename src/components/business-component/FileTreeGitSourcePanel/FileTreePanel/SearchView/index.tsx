@@ -1,11 +1,15 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  LocalFileAccessError,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import { apiSearchFiles } from '@/services/vncDesktop';
 import { FileNode } from '@/types/interfaces/appDev';
 import { flattenFiles, getFileIcon } from '@/utils/fileTree';
 import { SearchOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { FileTreeContainerProps } from '../../types/file-tree-git-source';
@@ -43,6 +47,9 @@ const SearchView: React.FC<SearchViewProps> = ({
   const [remoteFiles, setRemoteFiles] = useState<FileNode[]>([]);
   /** 服务端搜索是否进行中；进行中时不展示「暂无匹配」 */
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const localFilesRevision = useLocalFilesRevision();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   /**
@@ -79,6 +86,8 @@ const SearchView: React.FC<SearchViewProps> = ({
    * 接口失败时退回已加载树的本地过滤。
    */
   useEffect(() => {
+    setSearchError(false);
+    setRemoteFiles([]);
     const search = remoteSearchRef.current;
     // 未配置服务端搜索（如应用开发页）时不请求
     if (!search) {
@@ -94,7 +103,6 @@ const SearchView: React.FC<SearchViewProps> = ({
     }
 
     // 本次请求的序号，响应对不上时说明已有更新的搜索。
-    // 不在这里清空已有结果：清空会让下拉先收起，等接口返回再弹出。
     const seq = requestSeqRef.current + 1;
     requestSeqRef.current = seq;
     setSearching(true);
@@ -118,11 +126,16 @@ const SearchView: React.FC<SearchViewProps> = ({
             ),
           );
         } catch (error) {
-          console.error('搜索文件失败，回退到已加载文件过滤', error);
           if (seq !== requestSeqRef.current) {
             return;
           }
-          setRemoteFiles(flattenFiles(filesRef.current, kw));
+          if (error instanceof LocalFileAccessError) {
+            setRemoteFiles([]);
+            setSearchError(true);
+          } else {
+            console.error('搜索文件失败，回退到已加载文件过滤', error);
+            setRemoteFiles(flattenFiles(filesRef.current, kw));
+          }
         } finally {
           if (seq === requestSeqRef.current) {
             setSearching(false);
@@ -133,8 +146,16 @@ const SearchView: React.FC<SearchViewProps> = ({
 
     return () => {
       window.clearTimeout(timer);
+      requestSeqRef.current += 1;
     };
-  }, [remoteCId, remoteDataSourceId, remoteToNodeId, searchValue]);
+  }, [
+    remoteCId,
+    remoteDataSourceId,
+    remoteToNodeId,
+    searchValue,
+    localFilesRevision,
+    retryKey,
+  ]);
 
   /**
    * 处理搜索输入变化
@@ -266,8 +287,14 @@ const SearchView: React.FC<SearchViewProps> = ({
       {/* 搜索结果下拉列表 */}
       {isDropdownVisible && (
         <div className={cx(styles['search-dropdown'])} ref={dropdownRef}>
-          {filteredFiles.length > 0 ? (
-            // 有搜索结果时显示文件列表；新关键词的结果返回前继续展示上一份，避免下拉收起
+          {searchError ? (
+            <div className={cx(styles['search-empty'])} role="alert">
+              <div>{dict('PC.Components.SearchView.localSearchFailed')}</div>
+              <Button type="link" onClick={() => setRetryKey((key) => key + 1)}>
+                {dict('PC.Components.FilePreview.retry')}
+              </Button>
+            </div>
+          ) : filteredFiles.length > 0 ? (
             filteredFiles.map((file: FileNode, index: number) => {
               const isSelected = index === selectedIndex;
               const fileDirPath = getFileDirPath(file.path || file.id);

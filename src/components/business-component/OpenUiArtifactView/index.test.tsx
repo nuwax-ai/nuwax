@@ -7,9 +7,31 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerOpenUiActionSender } from './actionRegistry';
 import OpenUiArtifactView, { OpenUiRuntimeFrame } from './index';
+const local = vi.hoisted(() => ({
+  reference: vi.fn(),
+  pending: vi.fn(),
+  knownLocal: vi.fn(),
+  prepare: vi.fn(),
+  key: vi.fn(),
+}));
+vi.mock('@/features/client-shell/localFileService', () => ({
+  getLocalFileReference: local.reference,
+  getLocalFilesContextKey: local.key,
+  getLocalFilesContextPending: local.pending,
+  getLocalFilesContextKnownLocal: local.knownLocal,
+  useLocalFilesRevision: () => 0,
+  prepareLocalFilePreview: local.prepare,
+}));
+beforeEach(() => {
+  local.reference.mockReset().mockReturnValue(undefined);
+  local.pending.mockReset().mockReturnValue(false);
+  local.knownLocal.mockReset().mockReturnValue(false);
+  local.prepare.mockReset().mockResolvedValue(null);
+  local.key.mockReset().mockReturnValue('ctx');
+});
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@openuidev/react-lang', () => ({
@@ -87,6 +109,146 @@ const baseArtifact: OpenUiArtifact = {
 };
 
 describe('OpenUiArtifactView', () => {
+  it('曾确定为本机的上下文不可用时，新artifact也先显示本机错误，不先导航云端file_path', async () => {
+    local.knownLocal.mockReturnValue(true);
+    local.prepare.mockRejectedValue(new Error('本机服务已不可用'));
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy;
+    try {
+      const { container } = render(
+        <OpenUiRuntimeFrame
+          filePath="/9/data/panel.openui.json"
+          conversationId="9"
+        />,
+      );
+      expect(
+        container.querySelector('iframe')?.getAttribute('src'),
+      ).not.toContain('file_path');
+      await waitFor(() =>
+        expect(screen.getByText('本机服务已不可用')).toBeInTheDocument(),
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(local.prepare).toHaveBeenCalledWith(
+        '/api/computer/static/9/data/panel.openui.json',
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it('本机file_path在停服或清理登录上下文后显示expired，不切换到云端请求', async () => {
+    const reference = {
+      contextId: 'ctx',
+      cId: '9',
+      path: 'data/panel.openui.json',
+    };
+    const grant = {
+      url: 'nuwax-local://grant/data/panel.openui.json',
+      baseUrl: 'nuwax-local://grant/',
+      release: vi.fn(),
+    };
+    local.reference.mockReturnValue(reference);
+    local.prepare.mockResolvedValue(grant);
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn().mockReturnValue(new Promise(() => {}));
+    globalThis.fetch = fetchSpy;
+    try {
+      const props = {
+        filePath: '/9/data/panel.openui.json',
+        conversationId: '9',
+      };
+      const { container, rerender } = render(<OpenUiRuntimeFrame {...props} />);
+      await waitFor(() =>
+        expect(fetchSpy).toHaveBeenCalledWith(grant.url, expect.anything()),
+      );
+      expect(
+        container.querySelector('iframe')?.getAttribute('src'),
+      ).not.toContain('file_path');
+
+      local.reference.mockReturnValue(undefined);
+      local.key.mockReturnValue('expired');
+      local.prepare.mockRejectedValue(new Error('本机访问已过期（expired）'));
+      rerender(<OpenUiRuntimeFrame {...props} />);
+      await waitFor(() =>
+        expect(
+          screen.getByText('本机访问已过期（expired）'),
+        ).toBeInTheDocument(),
+      );
+      expect(container.querySelector('iframe')).toBeNull();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(local.prepare).toHaveBeenLastCalledWith(reference);
+      expect(grant.release).toHaveBeenCalledOnce();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('首次远端file_path保留Runtime自主加载路线', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy;
+    try {
+      const { container } = render(
+        <OpenUiRuntimeFrame
+          filePath="/9/data/panel.openui.json"
+          conversationId="9"
+        />,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const frameUrl = new URL(
+        container.querySelector('iframe')!.getAttribute('src')!,
+        'http://localhost',
+      );
+      expect(frameUrl.searchParams.get('file_path')).toBe(
+        '/9/data/panel.openui.json',
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('本机file_path转为授权artifact URL，Runtime不再拼云端路径；卸载释放', async () => {
+    const reference = {
+      contextId: 'ctx',
+      cId: '9',
+      path: 'data/panel.openui.json',
+    };
+    const grant = {
+      url: 'nuwax-local://grant/data/panel.openui.json',
+      baseUrl: 'nuwax-local://grant/',
+      release: vi.fn(),
+    };
+    local.reference.mockReturnValue(reference);
+    local.prepare.mockResolvedValue(grant);
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn().mockReturnValue(new Promise(() => {}));
+    globalThis.fetch = fetchSpy;
+    const { container, unmount } = render(
+      <OpenUiRuntimeFrame
+        filePath="/9/data/panel.openui.json"
+        conversationId="9"
+      />,
+    );
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(fetchSpy).toHaveBeenCalledWith(
+      grant.url,
+      expect.objectContaining({
+        credentials: 'omit',
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(
+      container.querySelector('iframe')?.getAttribute('src'),
+    ).not.toContain('file_path');
+    expect(local.prepare).toHaveBeenCalledWith(reference);
+    unmount();
+    expect(grant.release).toHaveBeenCalledOnce();
+    globalThis.fetch = originalFetch;
+  });
+
   it('uses the original Renderer for legacy inline artifacts', () => {
     const { container } = render(
       <OpenUiArtifactView artifact={baseArtifact} />,

@@ -1,8 +1,26 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const translations = vi.hoisted(() => ({ table: '表格' }));
+const local = vi.hoisted(() => ({
+  reference: vi.fn(),
+  prepare: vi.fn(),
+  save: vi.fn(),
+}));
+vi.mock('@/features/client-shell/localFileService', () => ({
+  useLocalFilesRevision: () => 0,
+  getLocalFileReference: local.reference,
+  getLocalFilesContextKey: () => 'ctx',
+  prepareLocalFilePreview: local.prepare,
+  saveLocalFile: local.save,
+}));
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -94,6 +112,9 @@ const settlePreview = async () => {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  local.reference.mockReturnValue(undefined);
+  local.prepare.mockResolvedValue(null);
+  local.save.mockResolvedValue(false);
   translations.table = '表格';
   vi.stubGlobal('fetch', vi.fn());
   vi.stubGlobal(
@@ -109,6 +130,108 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+describe('FilePreview 本机流式预览', () => {
+  const reference = { contextId: 'ctx', cId: '9', path: 'docs/report.md' };
+  const grant = {
+    url: 'nuwax-local://grant/docs/report.md',
+    baseUrl: 'nuwax-local://grant/',
+    bytes: 60 * 1024 * 1024,
+    release: vi.fn(),
+  };
+  beforeEach(() => {
+    local.reference.mockReturnValue(reference);
+    local.prepare.mockResolvedValue(grant);
+    grant.release.mockClear();
+  });
+
+  it('大媒体直接使用授权地址，HTML仅允许脚本与同源且不使用srcDoc', async () => {
+    const { container, rerender } = render(
+      <FilePreview src="/api/computer/static/9/video.mp4" fileType="video" />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(container.querySelector('video source')).toHaveAttribute(
+      'src',
+      grant.url,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    rerender(
+      <FilePreview
+        src="/api/computer/static/9/page.html"
+        content="旧缓存"
+        fileType="html"
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const frame = screen.getByTitle('HTML Preview');
+    expect(frame).toHaveAttribute('src', grant.url);
+    expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
+    expect(frame).toHaveAttribute('referrerpolicy', 'no-referrer');
+    expect(frame).not.toHaveAttribute('srcdoc');
+    expect(grant.release).toHaveBeenCalledOnce();
+  });
+
+  it('Markdown图片相对本机文件解析，授权scheme通过Markdown安全URL转换', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        '![邻居](images/a.png)\n![上级](../b.png)\n<img src="./raw.png" alt="HTML图" />',
+      ),
+    );
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        content="旧缓存"
+        fileType="markdown"
+      />,
+    );
+    await settlePreview();
+    expect(screen.getByAltText('邻居')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/docs/images/a.png',
+    );
+    expect(screen.getByAltText('上级')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/b.png',
+    );
+    expect(screen.getByAltText('HTML图')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/docs/raw.png',
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      grant.url,
+      expect.objectContaining({ credentials: 'omit' }),
+    );
+    expect(screen.queryByText('旧缓存')).not.toBeInTheDocument();
+  });
+
+  it('下载取消由宿主消费，不创建浏览器下载或错误', async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+    const onError = vi.fn();
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        fileType="image"
+        showDownload
+        onError={onError}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /download/ }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(local.save).toHaveBeenCalledOnce();
+    expect(click).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    click.mockRestore();
+  });
 });
 
 describe('FilePreview Markdown 渲染隔离', () => {

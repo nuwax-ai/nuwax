@@ -24,6 +24,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
@@ -594,6 +595,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const finalSelectedComputerId = useMemo(() => {
     return getEffectiveSandboxId();
   }, [selectedComputerId, conversationInfo, routeAction, routeState]);
+
+  useLocalFilesContext(
+    active &&
+      queryConversationId &&
+      conversationInfo?.id === queryConversationId
+      ? {
+          cId: queryConversationId,
+          sandboxId: String(finalSelectedComputerId),
+          workspacePath: conversationInfo.workspacePath,
+          projectId: appId,
+          serviceType: 'PageApp',
+          userId: conversationInfo.userId,
+        }
+      : null,
+  );
 
   /** 开发、线上容器分别维护状态与保活，同环境由终端和数据库共同复用 */
   const envPodConversationId =

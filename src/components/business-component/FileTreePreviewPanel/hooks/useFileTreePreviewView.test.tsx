@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { message } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   FileTreePreviewViewProps,
@@ -9,6 +10,18 @@ import { useFileTreePreviewView } from './useFileTreePreviewView';
 const mocks = vi.hoisted(() => ({
   fetchContent: vi.fn(),
   previewMount: vi.fn(),
+  localReference: vi.fn(),
+  assertReference: vi.fn(),
+  download: vi.fn(),
+  save: vi.fn(),
+}));
+vi.mock('@/features/client-shell/localFileService', () => ({
+  getLocalFileReference: mocks.localReference,
+  assertLocalFileReferenceCurrent: mocks.assertReference,
+  useLocalFilesRevision: () => 0,
+  isAbsoluteFileUrl: (url: string) =>
+    /^[a-z][a-z0-9+.-]*:/i.test(url) || url.startsWith('//'),
+  saveLocalFile: mocks.save,
 }));
 
 vi.mock('@/components/business-component/FilePreview', async () => {
@@ -34,14 +47,18 @@ vi.mock('@/components/business-component/FilePreview', async () => {
   return { default: MockFilePreview };
 });
 vi.mock('@/components/business-component/AppDevEmptyState', () => ({
-  default: () => null,
+  default: ({ description }: { description?: string }) => (
+    <div>{description}</div>
+  ),
 }));
 vi.mock('@/components/business-component/OpenUiArtifactView', () => ({
-  OpenUiRuntimeFrame: () => null,
+  OpenUiRuntimeFrame: () => <div data-testid="openui" />,
 }));
 vi.mock('@/components/CodeViewer', () => ({
-  default: ({ content }: { content: string }) => (
-    <div data-testid="code">{content}</div>
+  default: ({ content, readOnly }: { content: string; readOnly?: boolean }) => (
+    <div data-testid="code" data-readonly={readOnly}>
+      {content}
+    </div>
   ),
 }));
 vi.mock('@/components/custom/Loading', () => ({ default: () => null }));
@@ -60,7 +77,7 @@ vi.mock(
 );
 vi.mock('@/utils', () => ({ checkFileSizeExceedLimit: vi.fn() }));
 vi.mock('@/utils/fileTree', () => ({
-  downloadFileByUrl: vi.fn(),
+  downloadFileByUrl: mocks.download,
   updateFileProxyUrl: vi.fn(),
   updateFileTreeName: vi.fn(),
   updateFileTreeContent: (id: string, content: string, nodes: any[]) =>
@@ -94,6 +111,10 @@ beforeEach(() => {
   vi.stubEnv('BASE_URL', '');
   mocks.fetchContent.mockReset().mockResolvedValue('latest content');
   mocks.previewMount.mockClear();
+  mocks.localReference.mockReset().mockReturnValue(undefined);
+  mocks.assertReference.mockReset();
+  mocks.download.mockReset();
+  mocks.save.mockReset();
   vi.spyOn(Date, 'now').mockReturnValue(1000);
 });
 
@@ -104,6 +125,198 @@ afterEach(() => {
 });
 
 describe('Markdown 文件树刷新', () => {
+  it('本机链接文件可以预览、刷新和读取代码视图', async () => {
+    const reference = { contextId: 'live', cId: '9', path: 'linked.md' };
+    render(
+      <Harness
+        targetId="9"
+        originalFiles={[
+          {
+            name: 'linked.md',
+            isDir: false,
+            isLink: true,
+            fileProxyUrl: '/api/computer/static/9/linked.md',
+            localFile: reference,
+          },
+        ]}
+      />,
+    );
+    await selectFile('linked.md');
+    expect(screen.getByTestId('preview')).toBeInTheDocument();
+    const refresh = Number(screen.getByTestId('preview').dataset.refresh);
+    await act(async () => {
+      await view.preview.refreshSelectedFileContent();
+    });
+    expect(
+      Number(screen.getByTestId('preview').dataset.refresh),
+    ).toBeGreaterThan(refresh);
+    await act(async () => {
+      await view.preview.filePathHeaderProps.onViewFileTypeChange?.('code');
+    });
+    await waitFor(() =>
+      expect(mocks.fetchContent).toHaveBeenCalledWith(
+        '/api/computer/static/9/linked.md',
+        reference,
+      ),
+    );
+    expect(screen.getByTestId('code')).toHaveTextContent('latest content');
+    expect(screen.getByTestId('code')).toHaveAttribute('data-readonly', 'true');
+  });
+
+  it.each([
+    ['linked.html', 'preview'],
+    ['linked.openui.json', 'openui'],
+  ])('本机链接 %s 可进入对应预览', async (name, testId) => {
+    render(
+      <Harness
+        targetId="9"
+        originalFiles={[
+          {
+            name,
+            isLink: true,
+            fileProxyUrl: `/api/computer/static/9/${name}`,
+            localFile: { contextId: 'live', cId: '9', path: name },
+          },
+        ]}
+      />,
+    );
+    await selectFile(name);
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
+  });
+
+  it('旧桥或远端链接仍保留既有不支持预览行为', async () => {
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'linked.md',
+            isLink: true,
+            fileProxyUrl: '/static/linked.md',
+          },
+        ]}
+      />,
+    );
+    await selectFile('linked.md');
+    expect(
+      screen.getByText('PC.Components.FileTreeView.unsupportedFormat'),
+    ).toBeInTheDocument();
+    expect(mocks.previewMount).not.toHaveBeenCalled();
+    expect(mocks.fetchContent).not.toHaveBeenCalled();
+  });
+
+  const oldReference = { contextId: 'old-context', cId: '9', path: 'first.md' };
+  const oldLocalFiles = [
+    {
+      name: 'first.md',
+      fileProxyUrl: '/api/computer/static/9/first.md',
+      localFile: oldReference,
+    },
+  ];
+  const expired = () =>
+    Object.assign(new Error('expired'), { name: 'LocalFileAccessError' });
+  it.each(['clear', 'switch'])(
+    '代码视图刷新在 %s 后仍携带旧引用，错误不换成云端或新root正文',
+    async (change) => {
+      let valid = true;
+      const cloudOrNewRootRead = vi.fn();
+      mocks.fetchContent.mockImplementation(
+        async (_url: string, reference?: typeof oldReference) => {
+          if (reference !== oldReference) {
+            cloudOrNewRootRead();
+            return '新root正文';
+          }
+          if (!valid) throw expired();
+          return '旧本机正文';
+        },
+      );
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <Harness
+          targetId="9"
+          originalFiles={oldLocalFiles}
+          initViewFileType="code"
+        />,
+      );
+      await selectFile('first.md');
+      expect(screen.getByTestId('code')).toHaveTextContent('旧本机正文');
+      valid = false;
+      mocks.localReference.mockReturnValue(
+        change === 'switch'
+          ? { ...oldReference, contextId: 'new-context' }
+          : undefined,
+      );
+      await act(async () => {
+        await view.preview.refreshSelectedFileContent();
+      });
+      expect(mocks.fetchContent).toHaveBeenLastCalledWith(
+        '/api/computer/static/9/first.md',
+        oldReference,
+      );
+      expect(screen.getByText('expired')).toBeInTheDocument();
+      expect(cloudOrNewRootRead).not.toHaveBeenCalled();
+      expect(screen.queryByText('新root正文')).toBeNull();
+    },
+  );
+
+  it.each(['clear', 'switch'])(
+    'PDF导出在 %s 后拒绝旧引用并提示expired，不继续空正文转换',
+    async (change) => {
+      const toast = vi
+        .spyOn(message, 'error')
+        .mockImplementation(() => undefined as never);
+      render(<Harness targetId="9" originalFiles={oldLocalFiles} />);
+      await selectFile('first.md');
+      mocks.assertReference.mockImplementation(() => {
+        throw expired();
+      });
+      mocks.localReference.mockReturnValue(
+        change === 'switch'
+          ? { ...oldReference, contextId: 'new-context' }
+          : undefined,
+      );
+      await act(async () => {
+        await view.preview.filePathHeaderProps.onExportPdf?.(
+          view.preview.selectedFileNode!,
+        );
+      });
+      expect(mocks.assertReference).toHaveBeenCalledWith(oldReference);
+      expect(mocks.fetchContent).not.toHaveBeenCalled();
+      expect(mocks.download).not.toHaveBeenCalled();
+      expect(toast).toHaveBeenCalledWith('expired');
+    },
+  );
+
+  it('PDF读取期间失效会停止导出并提示expired，不把失败转为空文档', async () => {
+    const toast = vi
+      .spyOn(message, 'error')
+      .mockImplementation(() => undefined as never);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.fetchContent.mockRejectedValue(expired());
+    render(<Harness targetId="9" originalFiles={oldLocalFiles} />);
+    await selectFile('first.md');
+    await act(async () => {
+      await view.preview.filePathHeaderProps.onExportPdf?.(
+        view.preview.selectedFileNode!,
+      );
+    });
+    expect(mocks.fetchContent).toHaveBeenCalledWith(
+      '/api/computer/static/9/first.md',
+      oldReference,
+    );
+    expect(mocks.download).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('expired');
+  });
+  it('确定本机的代码读取失败直接显示权限错误，不显示空编辑器', async () => {
+    const error = new Error('权限不足');
+    error.name = 'LocalFileAccessError';
+    mocks.fetchContent.mockRejectedValue(error);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(<Harness initViewFileType="code" />);
+    await selectFile('first.md');
+    expect(screen.getByText('权限不足')).toBeInTheDocument();
+    expect(screen.queryByTestId('code')).toBeNull();
+    expect(mocks.fetchContent).toHaveBeenCalledOnce();
+  });
   it('显式 preview 初始模式也由预览组件唯一加载 Markdown', async () => {
     render(<Harness initViewFileType="preview" />);
     await selectFile('first.md');

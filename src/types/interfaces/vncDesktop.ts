@@ -1,9 +1,12 @@
 import { UpdateFileInfo } from './fileTree';
+import type { LocalFileReference } from './localFile';
 
 /**
  * 静态文件相关类型定义
  */
 export interface StaticFileInfo {
+  /** 本机文件身份，不包含短期授权地址。 */
+  localFile?: LocalFileReference;
   // 文件ID(自定义文件ID)
   fileId?: string;
   // 文件名称

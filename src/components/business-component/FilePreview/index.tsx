@@ -1,4 +1,8 @@
 import {
+  saveLocalFile,
+  type LocalFileReference,
+} from '@/features/client-shell/localFileService';
+import {
   CloudDownloadOutlined,
   CodeOutlined,
   FileExcelOutlined,
@@ -15,7 +19,7 @@ import {
   RightOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Spin, Tooltip } from 'antd';
+import { Alert, Button, message, Spin, Tooltip } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -23,12 +27,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
+import { useLocalPreviewSource } from './useLocalPreviewSource';
 
 // @ts-ignore
 import jsPreviewDocx from '@js-preview/docx';
@@ -309,6 +314,8 @@ export type FileType =
   | UnsupportedType;
 
 export interface FilePreviewProps {
+  /** 当前本机上下文引用，不持久化临时预览授权地址。 */
+  localFile?: LocalFileReference;
   /** 静态资源文件基础路径 */
   staticFileBasePath?: string;
   /** File source: URL string, ArrayBuffer, Blob, or File object */
@@ -619,7 +626,12 @@ function resolvePathAgainstDirectory(
   return `${parts.join('/')}${suffix}`;
 }
 
-const FilePreview: React.FC<FilePreviewProps> = ({
+const FilePreviewContent: React.FC<
+  FilePreviewProps & {
+    localPreview?: boolean;
+    onRefreshLocal?: () => void;
+  }
+> = ({
   src,
   staticFileBasePath,
   srcList,
@@ -635,6 +647,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   style,
   content: propsContent,
   refreshKey,
+  localFile,
+  localPreview = false,
+  onRefreshLocal,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
@@ -709,13 +724,14 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const fileName = useMemo(() => {
     if (downloadFileName) return downloadFileName;
+    if (localFile) return localFile.path.split(/[\\/]/).pop() || 'download';
     if (typeof src === 'string') {
       const parts = src.split('/');
       return parts[parts.length - 1].split('?')[0] || 'download';
     }
     if (src instanceof File) return src.name;
     return 'download';
-  }, [src, downloadFileName]);
+  }, [src, downloadFileName, localFile?.path]);
 
   useEffect(() => {
     return () => {
@@ -773,6 +789,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const handleDownload = useCallback(async () => {
     if (!src) return;
+    if (localFile) {
+      setDownloading(true);
+      try {
+        await saveLocalFile(localFile, fileName);
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : String(error));
+        setErrorMessage(getLocalizedErrorMessage(String(error), resolvedType));
+        onError?.(error instanceof Error ? error : new Error(String(error)));
+      } finally {
+        setDownloading(false);
+      }
+      return;
+    }
     // 兼容处理只供预览，下载保持用户原件；已授权加载的 URL 也可直接下载原始 bytes。
     let downloadSource =
       resolvedType === 'pptx' && originalPptxRef.current?.src === src
@@ -815,7 +844,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     a.click();
     document.body.removeChild(a);
     if (typeof downloadSource !== 'string') URL.revokeObjectURL(url);
-  }, [src, fileName, resolvedType, onError]);
+  }, [src, fileName, resolvedType, onError, localFile]);
 
   const initPreview = async (
     options: { reusePptx?: boolean; refreshPptx?: boolean } = {},
@@ -863,7 +892,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         // Try Content-Type for URLs without extension
         if (type === 'unsupported') {
           try {
-            const response = await fetch(src, { method: 'HEAD' });
+            const response = await fetch(src, {
+              method: 'HEAD',
+              ...(localPreview ? { credentials: 'omit' as const } : {}),
+            });
             const contentType = response.headers.get('Content-Type');
             if (contentType) type = getFileTypeFromContentType(contentType);
           } catch (e) {
@@ -917,11 +949,23 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         if (typeof src === 'string') {
           const response = await fetch(src, {
             signal: controller.signal,
+            ...(localPreview ? { credentials: 'omit' as const } : {}),
             ...(refreshKey !== undefined ? { cache: 'no-cache' as const } : {}),
           });
           // 非 2xx（文件不存在/网关拒绝）时响应体是错误报文，走失败态而非当文档渲染
           if (!response.ok) {
             throw new Error(`Load file failed: ${response.status}`);
+          }
+          const fileSize = localPreview
+            ? Number(response.headers.get('Content-Length'))
+            : 0;
+          if (
+            localPreview &&
+            Number.isFinite(fileSize) &&
+            fileSize > 50 * 1024 * 1024
+          ) {
+            void response.body?.cancel().catch(() => undefined);
+            throw new Error('Preview file exceeds 50MB');
           }
           content = await response.text();
         } else if (src instanceof File || src instanceof Blob) {
@@ -998,6 +1042,22 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     let pptxHost: HTMLDivElement | undefined;
     try {
       let previewSrc: any = src;
+
+      if (
+        localPreview &&
+        typeof src === 'string' &&
+        ['docx', 'xlsx', 'pdf'].includes(type)
+      ) {
+        const controller = new AbortController();
+        pptxAbortControllerRef.current = controller;
+        const { loadFilePreviewBuffer } = await import(
+          '@/services/filePreview'
+        );
+        previewSrc = await loadFilePreviewBuffer(src, {
+          signal: controller.signal,
+        });
+        if (!isCurrentRequest() || controller.signal.aborted) return;
+      }
 
       if (src instanceof File && type !== 'pptx') {
         previewSrc = await src.arrayBuffer();
@@ -1209,6 +1269,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [status, resolvedType]);
 
   const handleRetry = () => {
+    if (onRefreshLocal) {
+      onRefreshLocal();
+      return;
+    }
     initPreview({ refreshPptx: true });
   };
 
@@ -1239,6 +1303,14 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const normalizeImageSrc = useCallback(
     (imageSrc: string) => {
       if (!imageSrc || !staticFileBasePath) return imageSrc;
+      if (localPreview && typeof src === 'string') {
+        // URL 自身保留 Markdown 所在目录；协议 handler 执行资源根和符号链接边界校验。
+        try {
+          return new URL(imageSrc, src).href;
+        } catch {
+          return imageSrc;
+        }
+      }
 
       // 外部链接直接返回
       if (imageSrc.startsWith('http') || imageSrc.startsWith('data:')) {
@@ -1276,7 +1348,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         imageSrc,
       )}`;
     },
-    [src, staticFileBasePath],
+    [src, staticFileBasePath, localPreview],
   );
 
   // 对 Markdown 文本中的图片链接进行统一路径处理，并拆开反引号包裹的 $...$ / LaTeX
@@ -1303,11 +1375,18 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         remarkPlugins={FILE_PREVIEW_REMARK_PLUGINS}
         rehypePlugins={FILE_PREVIEW_REHYPE_PLUGINS}
         components={FILE_PREVIEW_MARKDOWN_COMPONENTS}
+        urlTransform={(url, key) => {
+          const normalized =
+            localPreview && key === 'src' ? normalizeImageSrc(url) : url;
+          return normalized.startsWith('nuwax-local://')
+            ? normalized
+            : defaultUrlTransform(normalized);
+        }}
       >
         {processedMarkdown}
       </ReactMarkdown>
     ),
-    [processedMarkdown, markdownTableLabel],
+    [processedMarkdown, markdownTableLabel, localPreview, normalizeImageSrc],
   );
 
   const renderPreviewContent = () => {
@@ -1372,7 +1451,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             <iframe
               src={htmlUrl || undefined}
               srcDoc={htmlUrl ? undefined : textContent}
-              sandbox={HTML_PREVIEW_SANDBOX}
+              sandbox={
+                localPreview
+                  ? 'allow-scripts allow-same-origin'
+                  : HTML_PREVIEW_SANDBOX
+              }
+              referrerPolicy={localPreview ? 'no-referrer' : undefined}
               className={styles.htmlFrame}
               title="HTML Preview"
               onLoad={handleHtmlIframeLoad}
@@ -1570,6 +1654,45 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         }}
       />
     </div>
+  );
+};
+
+const FilePreview: React.FC<FilePreviewProps> = (props) => {
+  const preview = useLocalPreviewSource(
+    props.src,
+    props.localFile,
+    props.refreshKey,
+  );
+  if (preview.loading)
+    return (
+      <Spin
+        style={{ width: props.width ?? '100%', height: props.height ?? '100%' }}
+      />
+    );
+  if (preview.error) {
+    return (
+      <Alert
+        type="error"
+        showIcon
+        message={preview.error.message}
+        action={
+          <Button onClick={preview.refresh}>
+            {t('PC.Components.FilePreview.retry')}
+          </Button>
+        }
+      />
+    );
+  }
+  return (
+    <FilePreviewContent
+      {...props}
+      src={preview.source}
+      localFile={preview.localFile}
+      localPreview={preview.isLocal}
+      content={preview.isLocal ? undefined : props.content}
+      staticFileBasePath={preview.baseUrl ?? props.staticFileBasePath}
+      onRefreshLocal={preview.isLocal ? preview.refresh : undefined}
+    />
   );
 };
 

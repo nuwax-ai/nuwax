@@ -559,14 +559,25 @@ a.tool-detail-resource {
   text-underline-offset: 2px;
 }
 
-// ---- V2 工具详情文件路径：徽标 + 文件名 + 目录弱化（2026-09-14 商讨定调：
-// 跳转功能关闭——纯展示，无手型/hover 下划线，徽标统一中性灰不抢视觉） ----
+// ---- V2 工具详情文件路径：徽标 + 文件名 + 目录弱化，本机路径可点 ----
 .tool-file-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   min-width: 0;
   max-width: 100%;
+}
+
+.tool-file-clickable {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover .tool-file-name {
+    text-decoration: underline;
+  }
 }
 
 .tool-file-badge {
