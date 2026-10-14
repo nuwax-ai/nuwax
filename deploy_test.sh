@@ -11,7 +11,7 @@
 #   3. 本地 test 汇合 gitlab/test 与 origin/test，再合入 dev
 #      机器产物（dist/、version.ts、adapter.patch）冲突自动消化；源码冲突打印清单后回滚退出
 #   4. test:conversation 质量门：源码与已部署的 gitlab/test 相同则跳过；同一提交成功过不重跑
-#   5. 生产构建（M 端产物取内网 gitlab）→ 提交 dist
+#   5. 生产构建（M 端产物取本地 nuwax-mobile 检出的 origin 远端）→ 提交 dist
 #   6. 推 origin/test + gitlab/test，打印两处落点
 #
 # 决策（2026-10-14，见 plans/20261014-deploy-test-fast-lane-plan.md）：
@@ -23,7 +23,7 @@
 #   bash deploy_test.sh                 # 真实执行
 #   DRY_RUN=1 bash deploy_test.sh       # 只读演练：打印执行顺序，不 fetch、不改任何引用/文件
 #   GATE=0 bash deploy_test.sh          # 紧急绕过质量门（会大字提示）
-#   MOBILE_BUILD_SOURCE=github bash deploy_test.sh   # M 端产物改取 GitHub 镜像（默认 gitlab）
+#   MOBILE_BUILD_REPO=<url> bash deploy_test.sh      # M 端产物源覆写（默认本地 nuwax-mobile@origin，无检出回退 GitHub）
 #   DEV_BRANCH=... TEST_BRANCH=...      # 分支名覆写（默认 dev / test）
 
 # 以 sh 调用时（macOS 的 /bin/sh 是 POSIX 模式 bash，不支持进程替换）切回完整 bash 重新执行
@@ -62,13 +62,14 @@ main() {
   GATE="${GATE:-1}"
   DEV_BRANCH="${DEV_BRANCH:-dev}"
   TEST_BRANCH="${TEST_BRANCH:-test}"
-  export MOBILE_BUILD_SOURCE="${MOBILE_BUILD_SOURCE:-gitlab}"
   export DIST_RETENTION=1
+  # 内部部署链必须带微应用：子模块缺失时 sync:micro-apps 不允许跳过（社区版构建才会跳过）
+  export MICRO_APP_REQUIRED=1
   START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   GATE_RECORD="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/fast-lane.test-gate"
   CURRENT_STEP="预检"
 
-  log "快速通道提测：${DEV_BRANCH} → ${TEST_BRANCH}（推 origin + gitlab，M 端源 ${MOBILE_BUILD_SOURCE}，质量门 GATE=${GATE}）"
+  log "快速通道提测：${DEV_BRANCH} → ${TEST_BRANCH}（推 origin + gitlab，M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}，质量门 GATE=${GATE}）"
 
   if [ "$DRY_RUN" = "1" ]; then
     log "只读演练：不 fetch、不修改 refs/index/文件；以下为真实执行时的顺序"
@@ -156,7 +157,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   verified_head="$(git rev-parse HEAD)"
 
   CURRENT_STEP="生产构建"
-  log "步骤 5/6：生产构建（M 端源 ${MOBILE_BUILD_SOURCE}，保留上版哈希资源）"
+  log "步骤 5/6：生产构建（M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}，保留上版哈希资源）"
   run npm run build:prod:m
   rgit add -f dist
   rgit add src/constants/version.ts
@@ -188,7 +189,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   CURRENT_STEP="收尾"
   rgit checkout -q "$START_BRANCH"
   retry_git 3 submodule update --init --recursive
-  log "✅ 快速通道提测完成：gitlab/${TEST_BRANCH} 已更新（M 端源 ${MOBILE_BUILD_SOURCE}）"
+  log "✅ 快速通道提测完成：gitlab/${TEST_BRANCH} 已更新（M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}）"
 }
 
 trap 'on_exit $?' EXIT
