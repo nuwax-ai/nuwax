@@ -1,3 +1,4 @@
+import type { LocalFileReference } from './localFile';
 /**
  * AppDev 相关类型定义
  * 基于OpenAPI规范的用户前端页面项目内容接口
@@ -657,6 +658,7 @@ export interface AppDevChatMessage {
  * 文件节点类型
  */
 export interface FileNode {
+  localFile?: LocalFileReference;
   /** 文件ID（完整路径） */
   id: string;
   /** 文件名 */

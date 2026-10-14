@@ -32,6 +32,7 @@ export function mapSearchFileToNode(
     binary: file.binary,
     sizeExceeded: file.sizeExceeded,
     fileProxyUrl: file.fileProxyUrl,
+    localFile: file.localFile,
     isLink: file.isLink,
     relativePath,
     dataSourceId: options?.dataSourceId,

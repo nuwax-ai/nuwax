@@ -21,6 +21,7 @@ import type {
   ConversationToolResource,
 } from '../types';
 import FileResourceLink from './FileResourceLink';
+import { useLocalToolFileReference } from './LocalToolFileContext';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -51,18 +52,28 @@ const ResourceLink: React.FC<{
   line?: number;
   onOpenResource?: (resource: ConversationToolResource) => void;
 }> = ({ kind, target, line, onOpenResource }) => {
+  const localFile = useLocalToolFileReference(target);
   if (kind === 'file') {
     // 卡片头部：会话沙箱路径做「徽标+文件名」展示，其余（如
     // /home/user/Desktop/x.md）完整地址普通文本色展示。
-    // 2026-09-14 商讨定调：跳转功能关闭，文件路径一律纯展示不可点（URL 仍可点）
-    if (!isConversationSandboxPath(target)) {
+    // 本机授权路径可点；远端保留原来的普通文本展示。
+    if (!isConversationSandboxPath(target) && !localFile) {
       return (
         <span className={cx(styles['tool-file-plain'])} title={target}>
           {target}
         </span>
       );
     }
-    return <FileResourceLink target={target} />;
+    return (
+      <FileResourceLink
+        target={target}
+        onOpen={
+          onOpenResource
+            ? () => onOpenResource({ kind, target, line })
+            : undefined
+        }
+      />
+    );
   }
   if (onOpenResource) {
     return (

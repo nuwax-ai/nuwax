@@ -1,7 +1,10 @@
+import { openLocalFile } from '@/features/client-shell/localFileService';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { getFileTypeInfo, splitFilePath } from '../toolFilePresentation';
 import styles from './index.less';
+import { useLocalToolFileReference } from './LocalToolFileContext';
 
 const cx = classNames.bind(styles);
 
@@ -10,23 +13,44 @@ export interface FileResourceLinkProps {
   /**
    * 行内嵌套变体（ProcessNodeRow 折叠行内使用）：不展示目录段，保持行紧凑
    * （完整路径见 title）。
-   * 2026-09-14 商讨定调：文件路径跳转功能关闭——纯展示（灰徽标 + 普通色
-   * 文件名，无下划线/手型/点击）。未来可能按「个人电脑」场景重新打开
-   * （网关 customTargetDir 仅个人电脑会话放行、云端待后端契约）；恢复时
-   * 重新接回 onOpenResource 与可点样式即可（git 历史可回溯 4c52fa9ac）。
+   * 本机授权上下文内可点，其他电脑继续纯展示。
    */
   inline?: boolean;
+  onOpen?: () => void;
 }
 
-/** 文件路径展示：类型徽标 + 文件名（+ 目录弱化），不可点、不抢焦点 */
+/** 文件路径展示；本机通过宿主预览回调或系统默认应用打开。 */
 const FileResourceLink: React.FC<FileResourceLinkProps> = ({
   target,
   inline = false,
+  onOpen,
 }) => {
-  const { dir, name } = splitFilePath(target);
+  const localFile = useLocalToolFileReference(target);
+  const { dir, name } = splitFilePath(target.replace(/\\/g, '/'));
   const typeInfo = getFileTypeInfo(name);
+  const Component = localFile ? 'button' : 'span';
   return (
-    <span className={cx(styles['tool-file-link'])} title={target}>
+    <Component
+      className={cx(styles['tool-file-link'], {
+        [styles['tool-file-clickable']]: localFile,
+      })}
+      title={target}
+      {...(Component === 'button'
+        ? {
+            type: 'button',
+            onClick: (event: React.MouseEvent) => {
+              event.stopPropagation();
+              if (onOpen) onOpen();
+              else if (localFile)
+                void openLocalFile(localFile).catch((error) =>
+                  message.error(
+                    error instanceof Error ? error.message : String(error),
+                  ),
+                );
+            },
+          }
+        : {})}
+    >
       <span className={cx(styles['tool-file-badge'])} aria-hidden="true">
         {typeInfo.label}
       </span>
@@ -34,7 +58,7 @@ const FileResourceLink: React.FC<FileResourceLinkProps> = ({
       {!inline && dir && (
         <span className={cx(styles['tool-file-dir'])}>{dir}/</span>
       )}
-    </span>
+    </Component>
   );
 };
 

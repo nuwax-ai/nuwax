@@ -1,6 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { USER_INFO } from '@/constants/home.constants';
+import {
+  getLocalFileReference,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
@@ -18,6 +22,7 @@ import {
 import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import LocalFileActions from '../../FilePreview/LocalFileActions';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import ShareDesktopModal from './ShareDesktopModal';
@@ -81,6 +86,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onToggleGitVersionPanel,
   afterGitVersionActions,
 }) => {
+  useLocalFilesRevision();
+  const localFile = targetNode
+    ? getLocalFileReference(targetNode, conversationId)
+    : undefined;
   const fileName = targetNode?.name;
   const fileSize = targetNode?.size;
   const formattedSize = useMemo(() => {
@@ -311,7 +320,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               </Tooltip>
             )}
 
-          {targetNode?.fileProxyUrl &&
+          {viewMode === 'preview' && <LocalFileActions reference={localFile} />}
+          {(targetNode?.fileProxyUrl || localFile) &&
             isShowDownloadButton &&
             viewMode === 'preview' && (
               <Tooltip

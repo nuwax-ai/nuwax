@@ -28,7 +28,15 @@ import { useModel } from 'umi';
 import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
 // OpenUI ↔ ds-markdown 样式隔离（层序 + revert + 宿主复位）；须先于 layered CSS
+import {
+  getLocalFileReference,
+  getLocalFilesContextKnownLocal,
+  getLocalFilesContextPending,
+  useLocalFilesRevision,
+  type LocalFileReference,
+} from '@/features/client-shell/localFileService';
 import '@openuidev/react-ui/layered/styles/index.css';
+import { useLocalPreviewSource } from '../FilePreview/useLocalPreviewSource';
 import './openui-host-reset.css';
 
 const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
@@ -39,6 +47,7 @@ const RUNTIME_URL = `${(process.env.BASE_URL || '').replace(
 )}/static/openui-runtime/index.html`;
 
 interface OpenUiRuntimeFrameProps {
+  localFile?: LocalFileReference;
   artifact?: OpenUiFile;
   artifactUrl?: string;
   /** OpenUI Runtime「自主拉取」模式：/api/computer/static 之后的相对路径，传给 iframe 内 inline script */
@@ -60,14 +69,41 @@ async function sha256(value: string): Promise<string> {
 
 export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   artifact: initialArtifact,
-  artifactUrl,
-  filePath,
+  artifactUrl: originalArtifactUrl,
+  filePath: originalFilePath,
+  localFile,
   expectedArtifactId,
   expectedDigest,
   variant = 'inline',
   fallbackMarkdown = '',
   conversationId,
 }) => {
+  useLocalFilesRevision();
+  const filePathUrl = originalFilePath
+    ? `/api/computer/static/${originalFilePath.replace(/^\/+/, '')}`
+    : undefined;
+  const localReference =
+    localFile ?? (filePathUrl ? getLocalFileReference(filePathUrl) : undefined);
+  const pathConversationId =
+    originalFilePath?.match(/^\/?(\d+)\//)?.[1] ?? conversationId;
+  const localPathCandidate = Boolean(
+    localReference ||
+      (pathConversationId !== undefined &&
+        (getLocalFilesContextPending(pathConversationId) ||
+          getLocalFilesContextKnownLocal(pathConversationId))),
+  );
+  const preview = useLocalPreviewSource(
+    // 来源身份始终保留，让已授权 file_path 在上下文失效后继续报告 expired。
+    originalArtifactUrl ?? filePathUrl,
+    localReference,
+  );
+  // 本机 artifact 由宿主取授权 URL；Runtime 不再按 cloud file_path 自主请求。
+  const filePath =
+    localPathCandidate || preview.isLocal || preview.localFile
+      ? undefined
+      : originalFilePath;
+  const artifactUrl =
+    typeof preview.source === 'string' ? preview.source : undefined;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { isMobile } = useModel('layout');
   const sentActionIds = useRef(new Set<string>());
@@ -143,11 +179,17 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     // 仅更新 artifact 状态；不回打 loading/error——切换内容走 OPENUI_LOAD 增量更新，不重载 iframe。
     // 初始 loading 由 useState 初值提供，retry/恢复由 reloadKey 渲染期 reset 提供。
     setArtifact(filePath ? null : initialArtifactRef.current ?? null);
+    if (preview.error) {
+      setStatus('failed');
+      setError(preview.error.message);
+      return;
+    }
     if (filePath) {
       // 由 iframe 自主拉取（inline script），Host 不主动 fetch
       return;
     }
     if (!artifactUrl) {
+      if (preview.loading) return;
       if (!initialArtifactRef.current) {
         setStatus('failed');
         setError('OpenUI artifact data is unavailable.');
@@ -157,7 +199,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     const controller = new AbortController();
     void fetch(artifactUrl, {
       cache: 'no-store',
-      credentials: 'same-origin',
+      credentials: preview.isLocal ? 'omit' : 'same-origin',
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -185,6 +227,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     expectedDigest,
     inlineArtifactIdentity,
     reloadTick,
+    preview.loading,
+    preview.isLocal,
+    preview.error,
     validateArtifact,
   ]);
 
@@ -366,7 +411,10 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         action={
           <Button
             size="small"
-            onClick={() => setReloadTick((value) => value + 1)}
+            onClick={() => {
+              preview.refresh();
+              setReloadTick((value) => value + 1);
+            }}
           >
             {dict('PC.Components.OpenUi.retry')}
           </Button>

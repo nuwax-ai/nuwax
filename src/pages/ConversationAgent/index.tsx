@@ -26,6 +26,7 @@ import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
@@ -473,6 +474,21 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   const finalSelectedComputerId = useMemo(() => {
     return getEffectiveSandboxId();
   }, [selectedComputerId, conversationInfo, routeAction, routeState]);
+
+  useLocalFilesContext(
+    active &&
+      queryConversationId &&
+      conversationInfo?.id === queryConversationId
+      ? {
+          cId: queryConversationId,
+          sandboxId: String(finalSelectedComputerId),
+          workspacePath: conversationInfo.workspacePath,
+          projectId: conversationInfo.devTargetId,
+          serviceType: conversationInfo.devTargetType,
+          userId: conversationInfo.userId,
+        }
+      : null,
+  );
 
   /**
    * 终端 WebSocket 连接地址（ttyd）

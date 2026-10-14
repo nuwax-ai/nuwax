@@ -1,4 +1,10 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  assertLocalFilesContextUnchanged,
+  exportLocalWorkspace,
+  getLocalFileList,
+  getLocalFilesContextKey,
+} from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
@@ -40,7 +46,20 @@ export async function apiGetStaticFileList(
     depth?: number;
   },
 ): Promise<RequestResponse<StaticFileListResponse>> {
-  return request('/api/computer/static/file-list', {
+  const local = await getLocalFileList(
+    cId,
+    options
+      ? {
+          ...options,
+          relativePath: options.relativePath || '',
+          recursive: options.recursive ?? false,
+          depth: options.depth ?? 2,
+        }
+      : undefined,
+  );
+  if (local) return local;
+  const contextKey = getLocalFilesContextKey(cId);
+  const response = await request('/api/computer/static/file-list', {
     method: 'GET',
     params: {
       cId,
@@ -58,6 +77,8 @@ export async function apiGetStaticFileList(
         : {}),
     },
   });
+  assertLocalFilesContextUnchanged(cId, contextKey);
+  return response;
 }
 
 // 有界实时搜索（服务端限时限量递归，limit/maxVisit/timeoutMs 为 file-server 必填项；
@@ -99,7 +120,14 @@ export async function apiSearchFiles(
     timeoutMs = 2000,
     type = 'file',
   } = params;
-  return request('/api/computer/static/search-files', {
+  const local = await getLocalFileList(
+    cId,
+    {},
+    { kw, customTargetDir, relativePath, limit, maxVisit, timeoutMs, type },
+  );
+  if (local) return local;
+  const contextKey = getLocalFilesContextKey(cId);
+  const response = await request('/api/computer/static/search-files', {
     method: 'GET',
     params: {
       cId,
@@ -112,6 +140,8 @@ export async function apiSearchFiles(
       type,
     },
   });
+  assertLocalFilesContextUnchanged(cId, contextKey);
+  return response;
 }
 
 // 静态文件访问
@@ -185,6 +215,11 @@ export async function apiUploadFiles(
 // 下载全部文件
 export async function apiDownloadAllFiles(cId: number): Promise<void> {
   try {
+    const localSaved = await exportLocalWorkspace(cId);
+    if (localSaved !== undefined) {
+      if (localSaved) message.success(t('PC.Pages.Chat.exportSuccess'));
+      return;
+    }
     // 获取导出文件链接地址
     const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
     // 通过浏览器下载文件
