@@ -39,7 +39,7 @@ return_to_start() {
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$START_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
   if git checkout -q "$START_BRANCH" 2>/dev/null; then
-    git submodule update --init --recursive >/dev/null 2>&1 || true
+    update_submodules_soft >/dev/null 2>&1
     echo "↩ 已切回起跑分支 ${START_BRANCH}（处理完问题后直接重跑本脚本即可）" >&2
   fi
 }
@@ -95,7 +95,7 @@ main() {
     run git merge "gitlab/${TEST_BRANCH}" --no-verify
     run git merge "origin/${TEST_BRANCH}" --no-verify
     run git merge "$DEV_BRANCH" --no-verify
-    run git submodule update --init --recursive
+    update_submodules_soft
     log "步骤 4/6：质量门（源码与 gitlab/${TEST_BRANCH} 相同则跳过）"
     if [ "$GATE" = "0" ]; then log "GATE=0：跳过质量门"; else run_test_gate; fi
     log "步骤 5/6：构建并提交产物"
@@ -145,7 +145,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   merge_or_die "origin/${TEST_BRANCH}" "merge: 拉取 origin/${TEST_BRANCH}（快速通道提测）"
   merge_or_die "$DEV_BRANCH" "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（快速通道提测）"
   verify_microapp_pins
-  retry_git 3 submodule update --init --recursive
+  update_submodules_soft
   local upgrades
   upgrades="$(detect_microapp_upgrades)"
   if [ -n "$upgrades" ]; then
@@ -195,7 +195,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   done
   CURRENT_STEP="收尾"
   rgit checkout -q "$START_BRANCH"
-  retry_git 3 submodule update --init --recursive
+  update_submodules_soft
   log "✅ 快速通道提测完成：gitlab/${TEST_BRANCH} 已更新（M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}）"
 }
 

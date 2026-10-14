@@ -93,7 +93,7 @@ async function fixture(t, { skipGitlabRemote = false } = {}) {
   }
   await fs.writeFile(
     path.join(tools, 'pnpm'),
-    '#!/bin/sh\ngit rev-parse HEAD >> "$FIXTURE_GATE_LOG"\n[ -z "${FIXTURE_FAIL_GATE:-}" ] || exit 1\nexit 0\n',
+    '#!/bin/sh\n[ "$2" = "test:conversation" ] || exit 0\ngit rev-parse HEAD >> "$FIXTURE_GATE_LOG"\n[ -z "${FIXTURE_FAIL_GATE:-}" ] || exit 1\nexit 0\n',
     { mode: 0o755 },
   );
   await fs.writeFile(
