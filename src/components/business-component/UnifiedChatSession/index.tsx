@@ -38,6 +38,7 @@ import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
+import { isRealAgentSandboxBinding } from '@/utils/effectiveSandbox';
 import ChatContentArea from './components/ChatContentArea';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
@@ -354,6 +355,22 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     hasPersistedMessage: messageList.some((message) => Boolean(message?.id)),
   });
 
+  // Agent 详情/主页（atHomePanel）恢复原锁定口径：仅智能体真实绑定个人电脑时锁选。
+  // 勿把 resolveComputerSelection 回填的 selectedComputerId 当作 agentSandboxId——
+  // ChatInputUnified 会把「已选手动个人电脑」误判为 isHomeAgentSandboxBound，导致
+  // 切换一次后无法再切（BUG #2673）。其它入口（Chat 等）不受影响。
+  const atHomePanel = Boolean(chatInputProps?.atHomePanel);
+  const homeAgentSandboxBound = isRealAgentSandboxBinding(agentInfo?.sandboxId);
+  const inputAgentSandboxId = atHomePanel
+    ? agentInfo?.sandboxId
+    : computerSelection.agentSandboxId;
+  const inputFixedSelection = atHomePanel
+    ? homeAgentSandboxBound
+    : computerSelection.fixedSelection;
+  const inputIsPersonalComputer = atHomePanel
+    ? homeAgentSandboxBound
+    : computerSelection.isPersonalComputer;
+
   /**
    * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
    * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
@@ -507,15 +524,15 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           onComputerSelect={onComputerSelect}
           agentId={agentInfo?.id}
           showGuidQuestions={false}
-          agentSandboxId={computerSelection.agentSandboxId}
+          agentSandboxId={inputAgentSandboxId}
           hasPermission={agentInfo?.hasPermission !== false}
           maskText={
             agentInfo?.hasPermission !== false
               ? ''
               : dict('PC.Components.ChatInputHome.noAgentPermission')
           }
-          fixedSelection={computerSelection.fixedSelection}
-          isPersonalComputer={computerSelection.isPersonalComputer}
+          fixedSelection={inputFixedSelection}
+          isPersonalComputer={inputIsPersonalComputer}
           {...interventionLayer.agentModeInputProps}
           agentEnableVersionControl={agentInfo?.enableVersionControl}
           onFetchMentionFiles={onFetchMentionFiles}

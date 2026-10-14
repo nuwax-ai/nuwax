@@ -5,7 +5,7 @@
  */
 import ConversationDetails from '@/components/business-component/ConversationDetails';
 import type { AgentDetailDto } from '@/types/interfaces/agent';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,12 +18,13 @@ class ResizeObserverStub {
 // @ts-expect-error jsdom polyfill
 global.ResizeObserver = ResizeObserverStub;
 
-const { detailResult } = vi.hoisted(() => ({
+const h = vi.hoisted(() => ({
   // onResultSuccess 读取的字段：openingChatMsg 进入 messageList，付费字段
-  // 走订阅分支。
+  // 走订阅分支。用例内可改 sandboxId 等字段。
   detailResult: {
     name: 'Mock Agent',
     icon: '',
+    type: 'TaskAgent',
     openingChatMsg: '开场白消息',
     conversationId: 777,
     variables: [],
@@ -32,6 +33,13 @@ const { detailResult } = vi.hoisted(() => ({
     paymentRequired: false,
     subscribed: true,
   } as unknown as AgentDetailDto,
+  // 捕获透传给 ChatInputUnified 的电脑选择相关 props（BUG #2673）
+  lastChatInputProps: null as {
+    fixedSelection?: boolean;
+    agentSandboxId?: string | number;
+    selectedComputerId?: string;
+    onComputerSelect?: (id: string) => void;
+  } | null,
 }));
 
 vi.mock('umi', () => ({
@@ -83,7 +91,7 @@ vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string) => key,
 }));
 vi.mock('@/services/agentDev', () => ({
-  apiPublishedAgentInfo: vi.fn(() => Promise.resolve(detailResult)),
+  apiPublishedAgentInfo: vi.fn(() => Promise.resolve(h.detailResult)),
 }));
 vi.mock(
   '@/components/business-component/ConversationDetails/index.less',
@@ -116,7 +124,26 @@ vi.mock('@/components/ChatView', () => ({
 }));
 // ConversationDetails 已迁移到统一输入组件（保持原 testid 便于断言稳定）
 vi.mock('@/components/business-component/ChatInputUnified', () => ({
-  default: () => <div data-testid="chat-input-home" />,
+  default: (props: {
+    fixedSelection?: boolean;
+    agentSandboxId?: string | number;
+    selectedComputerId?: string;
+    onComputerSelect?: (id: string) => void;
+  }) => {
+    h.lastChatInputProps = {
+      fixedSelection: props.fixedSelection,
+      agentSandboxId: props.agentSandboxId,
+      selectedComputerId: props.selectedComputerId,
+      onComputerSelect: props.onComputerSelect,
+    };
+    return (
+      <div
+        data-testid="chat-input-home"
+        data-fixed-selection={String(props.fixedSelection)}
+        data-selected-computer={String(props.selectedComputerId ?? '')}
+      />
+    );
+  },
 }));
 vi.mock('@/components/custom/TooltipIcon', () => ({
   default: ({ title, onClick }: { title: string; onClick?: () => void }) => (
@@ -172,12 +199,17 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
     },
   }),
 }));
-vi.mock('@/hooks/useAgentDetails', () => ({
-  default: () => ({
-    agentDetail: { name: 'Mock Agent', icon: '' },
-    setAgentDetail: vi.fn(),
-  }),
-}));
+// 真实局部 state：详情回包 setAgentDetail 后 sandboxId 才能透传给 UnifiedChatSession
+vi.mock('@/hooks/useAgentDetails', async () => {
+  const actualReact = await vi.importActual<typeof import('react')>('react');
+  return {
+    default: () => {
+      const [agentDetail, setAgentDetail] =
+        actualReact.useState<AgentDetailDto | null>(null);
+      return { agentDetail, setAgentDetail };
+    },
+  };
+});
 vi.mock('@/hooks/useSubscription', () => ({
   default: () => ({
     agentSubscriptionPlans: [],
@@ -207,6 +239,19 @@ describe('ConversationDetails 统一渲染线选择', () => {
   beforeEach(() => {
     localStorage.clear();
     setSearch('');
+    h.lastChatInputProps = null;
+    h.detailResult = {
+      name: 'Mock Agent',
+      icon: '',
+      type: 'TaskAgent',
+      openingChatMsg: '开场白消息',
+      conversationId: 777,
+      variables: [],
+      guidQuestionDtos: [],
+      manualComponents: [],
+      paymentRequired: false,
+      subscribed: true,
+    } as unknown as AgentDetailDto;
   });
 
   afterEach(() => {
@@ -232,5 +277,76 @@ describe('ConversationDetails 统一渲染线选择', () => {
       expect(screen.getAllByTestId('chat-view')).toHaveLength(1);
     });
     expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
+  });
+});
+
+/**
+ * BUG #2673：独立会话入口 /agent/:id 有开场白时，不得因本地开场白伪造
+ * 持久化 id 误锁电脑选择。影响面仅 ConversationDetails（Agent 详情/主页），
+ * 不改 UnifiedChatSession / resolveComputerSelection 共享逻辑。
+ */
+describe('ConversationDetails 电脑选择（开场白不误锁）', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setSearch('');
+    h.lastChatInputProps = null;
+    h.detailResult = {
+      name: 'Mock Agent',
+      icon: '',
+      type: 'TaskAgent',
+      openingChatMsg: '开场白消息',
+      conversationId: 777,
+      variables: [],
+      guidQuestionDtos: [],
+      manualComponents: [],
+      paymentRequired: false,
+      subscribed: true,
+    } as unknown as AgentDetailDto;
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    setSearch('');
+    vi.restoreAllMocks();
+  });
+
+  it('有开场白且未绑定个人电脑时 fixedSelection 为 false（可切换电脑）', async () => {
+    render(<ConversationDetails agentId={1602} />);
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-input-home')).toBeInTheDocument();
+      expect(h.lastChatInputProps?.fixedSelection).toBe(false);
+    });
+    // atHomePanel 必须透传真实 agent.sandboxId（未绑定则为空），不能把已选电脑 id 当绑定
+    expect(h.lastChatInputProps?.agentSandboxId).toBeFalsy();
+  });
+
+  it('切换一次个人电脑后仍可再切（不误判为智能体绑定锁死）', async () => {
+    render(<ConversationDetails agentId={3091} />);
+    await waitFor(() => {
+      expect(h.lastChatInputProps?.onComputerSelect).toBeTypeOf('function');
+      expect(h.lastChatInputProps?.fixedSelection).toBe(false);
+    });
+    // 模拟用户首次切换到个人电脑（原 bug：此后 isHomeAgentSandboxBound 误为 true）
+    await act(async () => {
+      h.lastChatInputProps!.onComputerSelect!('339');
+    });
+    await waitFor(() => {
+      expect(h.lastChatInputProps?.selectedComputerId).toBe('339');
+      expect(h.lastChatInputProps?.fixedSelection).toBe(false);
+      expect(h.lastChatInputProps?.agentSandboxId).toBeFalsy();
+    });
+  });
+
+  it('智能体绑定真实个人电脑时 fixedSelection 为 true（恢复原锁定逻辑）', async () => {
+    h.detailResult = {
+      ...h.detailResult,
+      sandboxId: '339',
+    } as unknown as AgentDetailDto;
+    render(<ConversationDetails agentId={1602} />);
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-input-home')).toBeInTheDocument();
+      expect(h.lastChatInputProps?.fixedSelection).toBe(true);
+      expect(String(h.lastChatInputProps?.agentSandboxId)).toBe('339');
+    });
   });
 });
