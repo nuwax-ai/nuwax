@@ -67,6 +67,15 @@ ensure_gitlab_remote() {
   log "已自动补配 gitlab 远端 → ${url}"
 }
 
+# 共享分支（版本/dev/test）在同事克隆里可能未检出（单分支克隆常态）：缺失时从远端补建。
+# 基底引用由调用方先校验存在；个人分支是提测输入，不走此函数。
+ensure_local_branch() { # ensure_local_branch <分支> <基底引用>
+  local branch=$1 base=$2
+  git show-ref --verify --quiet "refs/heads/${branch}" && return 0
+  run git branch "$branch" "$base"
+  log "已自动补建本地分支 ${branch} ← ${base}（当前克隆未检出该分支）"
+}
+
 # 需人工处理的源码冲突文件（排除机器产物）
 source_conflict_files() {
   git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts' 2>/dev/null || true
@@ -239,6 +248,8 @@ run_test_gate() {
     done <<<"$failed"
     echo "② 常见形态：断言与最近合入的接口契约不符（改端点/参数/鉴权方式没同步测试）——" >&2
     echo "   对照失败断言里的期望值与实际值，找最近改该接口的提交（git log -S '<关键字>'）。" >&2
+    echo "③ 大面积一起挂（十几个文件）先查环境再查代码：node -v 看版本是否与团队一致、" >&2
+    echo "   node_modules 是否过期（pnpm install 重装；本仓锁定 pnpm，勿用 npm install 混装）。" >&2
     return 1
   }
   echo "⚠️  质量门以「仅存量挂」放行（清单：${KNOWN_BROKEN_TESTS}）。请尽快修复存量套件并从清单移除。" >&2

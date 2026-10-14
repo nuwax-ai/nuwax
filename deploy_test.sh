@@ -76,7 +76,12 @@ main() {
   if [ "$DRY_RUN" = "1" ]; then
     log "只读演练：不 fetch、不修改 refs/index/文件；以下为真实执行时的顺序"
     for b in "$DEV_BRANCH" "$TEST_BRANCH"; do
-      git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在"
+      git show-ref --verify --quiet "refs/heads/${b}" && continue
+      # 同事克隆常见单分支检出：真实执行会从远端补建，演练只提示（以本地远端缓存为准）
+      git show-ref --verify --quiet "refs/remotes/origin/${b}" ||
+        git show-ref --verify --quiet "refs/remotes/gitlab/${b}" ||
+        die "本地分支 ${b} 不存在，且本地远端缓存里没有 ${b}；请先 fetch 或核对分支名"
+      log "真实执行时会自动补建本地分支 ${b}（当前克隆未检出该分支）"
     done
     log "步骤 1/6：预检工作区，fetch 双远端"
     run git fetch origin --prune
@@ -111,14 +116,14 @@ main() {
   [ -z "$(git status --porcelain -uno)" ] ||
     die "工作区有未提交改动，快速通道会切换分支，请先提交或 stash（需要隔离并行现场请用 scripts/deploy_sync_test.sh）：
 $(git status --porcelain -uno | sed 's/^/    /')"
-  for b in "$DEV_BRANCH" "$TEST_BRANCH"; do
-    git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在"
-  done
   retry_git 3 fetch origin --prune
   retry_git 3 fetch gitlab --prune
   for r in "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
     git show-ref --verify --quiet "refs/remotes/${r}" || die "远端引用 ${r} 不存在"
   done
+  # 同事克隆常见单分支检出（只有 dev）：共享分支缺失时从远端补建，gitlab 侧为测试环境落点
+  ensure_local_branch "$DEV_BRANCH" "gitlab/${DEV_BRANCH}"
+  ensure_local_branch "$TEST_BRANCH" "gitlab/${TEST_BRANCH}"
   PIPELINE_STARTED=1
 
   CURRENT_STEP="汇合 ${DEV_BRANCH}"
