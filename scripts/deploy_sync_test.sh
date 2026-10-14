@@ -75,7 +75,7 @@ return_to_start() {
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$FEATURE_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
   if git checkout "$FEATURE_BRANCH" >/dev/null 2>&1; then
-    git submodule update --init --recursive >/dev/null 2>&1 || true
+    update_submodules_soft >/dev/null 2>&1
     echo "↩ 已自动切回起跑分支 ${FEATURE_BRANCH}（处理完问题后直接重跑本脚本即可续跑）" >&2
   fi
 }
@@ -159,12 +159,22 @@ if [ "${INIT_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
+# 同事克隆可能没配 gitlab 远端：缺失时自动补配（内网测试环境落点），否则链中 fetch gitlab 即挂
+ensure_gitlab_remote
+
 # 演练在进入任何恢复/隔离逻辑前退出。下面的真实流程包含 Git 清理、子模块升级和
 # pin 配对修复，不能仅靠 run() 包装保证只读；演练只核对缓存引用并打印执行顺序。
 if [ "$DRY_RUN" = "1" ]; then
   log "只读演练：不 fetch、不修改 refs/index/文件、不创建或删除 worktree；远端引用以本地缓存为准"
-  for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
-    git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在：请检查分支名或配置"
+  git show-ref --verify --quiet "refs/heads/${FEATURE_BRANCH}" ||
+    die "本地分支 ${FEATURE_BRANCH} 不存在：请检查分支名或配置"
+  for b in "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
+    git show-ref --verify --quiet "refs/heads/${b}" && continue
+    # 共享分支克隆未检出属常态：真实执行会从远端补建，演练只提示（以本地远端缓存为准）
+    git show-ref --verify --quiet "refs/remotes/origin/${b}" ||
+      git show-ref --verify --quiet "refs/remotes/gitlab/${b}" ||
+      die "本地分支 ${b} 不存在，且本地远端缓存里没有 ${b}；请先 fetch 或核对分支名"
+    log "真实执行时会自动补建本地分支 ${b}（当前克隆未检出该分支）"
   done
   log "步骤 1/8：校验分支与干净状态；有并行现场时创建或复用本脚本登记的独立 worktree"
   run git fetch --all --prune
@@ -287,8 +297,7 @@ enter_worktree_if_needed() {
   fi
   # worktree 不会带子模块内容，而步骤 7 的 upgrade:micro-apps 强制要求子模块已初始化且
   # HEAD==pin（2026-09-30 首战实证：未 init 时 build 前置校验拦死）；按 gitlink 对齐初始化
-  (cd "$WT_DIR" && git submodule update --init --recursive) ||
-    die "worktree 子模块初始化失败（网络/子模块远端问题），重跑本脚本重试"
+  (cd "$WT_DIR" && update_submodules_soft)
   cd "$WT_DIR"
   FEATURE_BRANCH="$DEPLOY_BRANCH"
   log "已切换已登记提测专用 worktree（起跑区零接触）：${WT_DIR}"
@@ -317,7 +326,7 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" != "$FEATURE_BRANCH" ]; then
     log "当前分支不是 ${FEATURE_BRANCH}（上次失败残留？），工作区干净，自动切换过去"
     run git checkout "$FEATURE_BRANCH"
     # 子模块不随 checkout 切换：不对齐会被下方干净检查误判为未提交改动
-    retry_git 3 submodule update --init --recursive
+    update_submodules_soft
   else
     die "当前分支不是 ${FEATURE_BRANCH} 且工作区有未提交改动：请先手工处理并切回 ${FEATURE_BRANCH} 再运行本脚本（或检查 FEATURE_BRANCH 配置）"
   fi
@@ -340,15 +349,17 @@ if [ -n "$WT_DIR" ] && ! git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" "
   fi
 fi
 
-# 分支角色存在性校验（fetch 后做，确保远端引用是最新的）：覆写拼错时在这里干净地拦下
-for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
-  git show-ref --verify --quiet "refs/heads/${b}" ||
-    die "本地分支 ${b} 不存在：请检查分支名或配置"
-done
+# 分支角色存在性校验（fetch 后做，确保远端引用是最新的）：覆写拼错时在这里干净地拦下。
+# 个人分支是本轮交付输入必须本地存在；版本/dev/test 属共享分支，克隆未检出时从远端补建。
+git show-ref --verify --quiet "refs/heads/${FEATURE_BRANCH}" ||
+  die "本地分支 ${FEATURE_BRANCH} 不存在：请检查分支名或配置"
 for r in "origin/${VERSION_BRANCH}" "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
   git show-ref --verify --quiet "refs/remotes/${r}" ||
     die "远端引用 ${r} 不存在：请检查分支名或配置"
 done
+ensure_local_branch "$VERSION_BRANCH" "origin/${VERSION_BRANCH}"
+ensure_local_branch "$DEV_BRANCH" "gitlab/${DEV_BRANCH}"
+ensure_local_branch "$TEST_BRANCH" "gitlab/${TEST_BRANCH}"
 
 PIPELINE_STARTED=1
 CURRENT_STEP="合并版本开发分支"
@@ -482,7 +493,7 @@ git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" HEAD || die "本轮个人�
 run_combined_source_gate "$TEST_BRANCH" "$DEV_BRANCH" "$TEST_GATE_RECORD" "步骤 7.1"
 TEST_VERIFIED_HEAD="$(git rev-parse HEAD)"
 # 子模块对齐 test 的 gitlink：否则构建后的残留改动检查会把指针差异当成未提交改动
-retry_git 3 submodule update --init --recursive
+update_submodules_soft
 CURRENT_STEP="${TEST_BRANCH} 完整生产构建"
 # DIST_RETENTION=1：构建链路保留上一版 dist 的旧哈希资源（保 3 代，DIST_RETAIN_GENERATIONS 可调），
 # 发版后持有旧页面的用户懒加载旧 chunk 不再 404（详见 scripts/deploy-asset-retention.mjs）
@@ -520,7 +531,7 @@ done
 CURRENT_STEP="收尾"
 log "步骤 8/8：切回 ${REAL_FEATURE}"
 run git checkout "$FEATURE_BRANCH"
-retry_git 3 submodule update --init --recursive
+update_submodules_soft
 if [ -n "$WT_DIR" ]; then
   log "worktree 模式提示：本次链路在 ${WT_DIR} 完成（本地临时分支 ${FEATURE_BRANCH}）；主区分支未动，下次重跑自动复用该 worktree"
 fi

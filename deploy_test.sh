@@ -39,7 +39,7 @@ return_to_start() {
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$START_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
   if git checkout -q "$START_BRANCH" 2>/dev/null; then
-    git submodule update --init --recursive >/dev/null 2>&1 || true
+    update_submodules_soft >/dev/null 2>&1
     echo "↩ 已切回起跑分支 ${START_BRANCH}（处理完问题后直接重跑本脚本即可）" >&2
   fi
 }
@@ -68,13 +68,20 @@ main() {
   START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   GATE_RECORD="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/fast-lane.test-gate"
   CURRENT_STEP="预检"
+  # 同事克隆可能没配 gitlab 远端：缺失时自动补配（内网测试环境落点），否则第一步 fetch 就挂
+  ensure_gitlab_remote
 
   log "快速通道提测：${DEV_BRANCH} → ${TEST_BRANCH}（推 origin + gitlab，M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}，质量门 GATE=${GATE}）"
 
   if [ "$DRY_RUN" = "1" ]; then
     log "只读演练：不 fetch、不修改 refs/index/文件；以下为真实执行时的顺序"
     for b in "$DEV_BRANCH" "$TEST_BRANCH"; do
-      git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在"
+      git show-ref --verify --quiet "refs/heads/${b}" && continue
+      # 同事克隆常见单分支检出：真实执行会从远端补建，演练只提示（以本地远端缓存为准）
+      git show-ref --verify --quiet "refs/remotes/origin/${b}" ||
+        git show-ref --verify --quiet "refs/remotes/gitlab/${b}" ||
+        die "本地分支 ${b} 不存在，且本地远端缓存里没有 ${b}；请先 fetch 或核对分支名"
+      log "真实执行时会自动补建本地分支 ${b}（当前克隆未检出该分支）"
     done
     log "步骤 1/6：预检工作区，fetch 双远端"
     run git fetch origin --prune
@@ -88,7 +95,7 @@ main() {
     run git merge "gitlab/${TEST_BRANCH}" --no-verify
     run git merge "origin/${TEST_BRANCH}" --no-verify
     run git merge "$DEV_BRANCH" --no-verify
-    run git submodule update --init --recursive
+    update_submodules_soft
     log "步骤 4/6：质量门（源码与 gitlab/${TEST_BRANCH} 相同则跳过）"
     if [ "$GATE" = "0" ]; then log "GATE=0：跳过质量门"; else run_test_gate; fi
     log "步骤 5/6：构建并提交产物"
@@ -109,14 +116,14 @@ main() {
   [ -z "$(git status --porcelain -uno)" ] ||
     die "工作区有未提交改动，快速通道会切换分支，请先提交或 stash（需要隔离并行现场请用 scripts/deploy_sync_test.sh）：
 $(git status --porcelain -uno | sed 's/^/    /')"
-  for b in "$DEV_BRANCH" "$TEST_BRANCH"; do
-    git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在"
-  done
   retry_git 3 fetch origin --prune
   retry_git 3 fetch gitlab --prune
   for r in "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
     git show-ref --verify --quiet "refs/remotes/${r}" || die "远端引用 ${r} 不存在"
   done
+  # 同事克隆常见单分支检出（只有 dev）：共享分支缺失时从远端补建，gitlab 侧为测试环境落点
+  ensure_local_branch "$DEV_BRANCH" "gitlab/${DEV_BRANCH}"
+  ensure_local_branch "$TEST_BRANCH" "gitlab/${TEST_BRANCH}"
   PIPELINE_STARTED=1
 
   CURRENT_STEP="汇合 ${DEV_BRANCH}"
@@ -138,7 +145,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   merge_or_die "origin/${TEST_BRANCH}" "merge: 拉取 origin/${TEST_BRANCH}（快速通道提测）"
   merge_or_die "$DEV_BRANCH" "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（快速通道提测）"
   verify_microapp_pins
-  retry_git 3 submodule update --init --recursive
+  update_submodules_soft
   local upgrades
   upgrades="$(detect_microapp_upgrades)"
   if [ -n "$upgrades" ]; then
@@ -188,7 +195,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   done
   CURRENT_STEP="收尾"
   rgit checkout -q "$START_BRANCH"
-  retry_git 3 submodule update --init --recursive
+  update_submodules_soft
   log "✅ 快速通道提测完成：gitlab/${TEST_BRANCH} 已更新（M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}）"
 }
 

@@ -55,6 +55,40 @@ retry_git() { # retry_git <最大次数> <git 子命令...>
   done
 }
 
+# 子模块对齐：无仓库权限/网络不通（开源社区版、无权限同事的常态）只警告并跳过，
+# 不弹登录（GCM/终端口令）、不退避重试；已存的凭据仍可静默使用。后续 sync-micro-apps 按空目录跳过微应用。
+update_submodules_soft() {
+  if (
+    export GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never
+    run git -c credential.interactive=never submodule update --init --recursive
+  ); then
+    return 0
+  fi
+  echo "    ⚠️ 子模块拉取失败（多为无仓库权限），已跳过；对应微应用将被跳过（资料库/消息等功能缺失）" >&2
+  return 0
+}
+
+# gitlab 远端是内网测试环境落点；同事克隆常只配了 origin，缺失时自动补配
+# （2026-10-14 实证：缺远端被当网络错误空耗 3 轮重试后中止）。URL 可用 GITLAB_REMOTE_URL 覆写。
+# DRY_RUN 下经 run() 只打印不落配置。
+ensure_gitlab_remote() {
+  if git remote get-url gitlab >/dev/null 2>&1; then
+    return 0
+  fi
+  local url="${GITLAB_REMOTE_URL:-https://git.yichamao.com/agent-platform/nuwax.git}"
+  run git remote add gitlab "$url"
+  log "已自动补配 gitlab 远端 → ${url}"
+}
+
+# 共享分支（版本/dev/test）在同事克隆里可能未检出（单分支克隆常态）：缺失时从远端补建。
+# 基底引用由调用方先校验存在；个人分支是提测输入，不走此函数。
+ensure_local_branch() { # ensure_local_branch <分支> <基底引用>
+  local branch=$1 base=$2
+  git show-ref --verify --quiet "refs/heads/${branch}" && return 0
+  run git branch "$branch" "$base"
+  log "已自动补建本地分支 ${branch} ← ${base}（当前克隆未检出该分支）"
+}
+
 # 需人工处理的源码冲突文件（排除机器产物）
 source_conflict_files() {
   git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts' 2>/dev/null || true
@@ -202,6 +236,11 @@ run_test_gate() {
     return 0
   fi
   local log_file failed f unexpected=0
+  # src/.umi 是 gitignored 的生成物，tsconfig.json extends 它；缺失会让 14 个会话测试文件整体加载失败
+  if [ ! -f src/.umi/tsconfig.json ]; then
+    echo "    src/.umi 缺失，先执行 pnpm run setup 生成"
+    pnpm run setup || return 1
+  fi
   log_file="$(mktemp -t deploy_sync_gate)"
   if pnpm run test:conversation 2>&1 | tee "$log_file"; then
     rm -f "$log_file"
@@ -210,7 +249,12 @@ run_test_gate() {
   echo "---- 质量门未全绿，核对失败套件是否全部在存量挂清单内 ----" >&2
   # 只认 vitest 规范的行首 FAIL 行；用例名含 FAILED 字样的 stdout/stderr 行不得误报
   failed="$(grep -E '^[[:space:]]*FAIL[[:space:]]+tests/' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
-  rm -f "$log_file"
+  # 保留完整日志：终端断言差异一滚而过，落盘后整文件可直接发给同事/AI 定位
+  local keep_log
+  keep_log="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/gate-failure.log"
+  mkdir -p "$(dirname "$keep_log")"
+  mv "$log_file" "$keep_log"
+  echo "完整输出已保存：${keep_log}" >&2
   [ -n "$failed" ] || return 1
   while IFS= read -r f; do
     case "|$KNOWN_BROKEN_TESTS|" in
@@ -227,6 +271,8 @@ run_test_gate() {
     done <<<"$failed"
     echo "② 常见形态：断言与最近合入的接口契约不符（改端点/参数/鉴权方式没同步测试）——" >&2
     echo "   对照失败断言里的期望值与实际值，找最近改该接口的提交（git log -S '<关键字>'）。" >&2
+    echo "③ 大面积一起挂（十几个文件）先查环境再查代码：node -v 看版本是否与团队一致、" >&2
+    echo "   node_modules 是否过期（pnpm install 重装；本仓锁定 pnpm，勿用 npm install 混装）。" >&2
     return 1
   }
   echo "⚠️  质量门以「仅存量挂」放行（清单：${KNOWN_BROKEN_TESTS}）。请尽快修复存量套件并从清单移除。" >&2

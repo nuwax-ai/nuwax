@@ -22,7 +22,7 @@ function environment(extra = {}) {
       key.startsWith('GIT_') ||
       key.startsWith('DEPLOY_') ||
       key.startsWith('MOBILE_BUILD_') ||
-      ['GATE', 'DRY_RUN', 'DEV_BRANCH', 'TEST_BRANCH'].includes(key)
+      ['GATE', 'DRY_RUN', 'DEV_BRANCH', 'TEST_BRANCH', 'GITLAB_REMOTE_URL'].includes(key)
     )
       delete env[key];
   }
@@ -49,7 +49,7 @@ async function git(cwd, ...args) {
   return (await run(cwd, 'git', args)).stdout.trim();
 }
 
-async function fixture(t) {
+async function fixture(t, { skipGitlabRemote = false } = {}) {
   const temporary = await fs.realpath(
     await fs.mkdtemp(path.join(os.tmpdir(), 'deploy-fast-lane-')),
   );
@@ -82,13 +82,18 @@ async function fixture(t) {
   for (const remote of ['origin', 'gitlab']) {
     const bare = path.join(temporary, `${remote}.git`);
     await git(root, 'init', '--bare', bare);
+    if (remote === 'gitlab' && skipGitlabRemote) {
+      // 同事克隆场景：gitlab 远端未配置，但远端仓库存在（用 GITLAB_REMOTE_URL 指过去）
+      await git(root, 'push', bare, 'dev', 'test');
+      continue;
+    }
     await git(root, 'remote', 'add', remote, bare);
     await git(root, 'push', remote, 'dev', 'test');
     await git(root, 'fetch', remote);
   }
   await fs.writeFile(
     path.join(tools, 'pnpm'),
-    '#!/bin/sh\ngit rev-parse HEAD >> "$FIXTURE_GATE_LOG"\n[ -z "${FIXTURE_FAIL_GATE:-}" ] || exit 1\nexit 0\n',
+    '#!/bin/sh\n[ "$2" = "test:conversation" ] || exit 0\ngit rev-parse HEAD >> "$FIXTURE_GATE_LOG"\n[ -z "${FIXTURE_FAIL_GATE:-}" ] || exit 1\nexit 0\n',
     { mode: 0o755 },
   );
   await fs.writeFile(
@@ -206,6 +211,42 @@ test('MOBILE_BUILD_REPO set by the caller reaches the build unchanged', async (t
   assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), [
     'https://fixture.invalid/m.git',
   ]);
+});
+
+test('a missing gitlab remote is auto-configured and the delivery still succeeds', async (t) => {
+  const state = await fixture(t, { skipGitlabRemote: true });
+  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'colleague clone\n');
+  const result = await deploy(state, {
+    GITLAB_REMOTE_URL: path.join(state.temporary, 'gitlab.git'),
+  });
+  assert.match(result.stdout, /已自动补配 gitlab 远端/);
+  // 远端补配后正常走完 fetch/merge/push，两处 test 落点一致
+  const origin = await remoteHead(state, 'origin', 'test');
+  assert.equal(await remoteHead(state, 'gitlab', 'test'), origin);
+  assert.equal(
+    await git(state.root, 'remote', 'get-url', 'gitlab'),
+    path.join(state.temporary, 'gitlab.git'),
+  );
+  assert.equal(
+    await remoteShow(state, 'gitlab', 'test:dist/index.html'),
+    'artifact from colleague clone',
+  );
+});
+
+test('a clone without the local test branch gets it rebuilt from the remote', async (t) => {
+  const state = await fixture(t);
+  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'single-branch clone\n');
+  // 同事克隆常见单分支检出：本地只有 dev，test 分支不存在
+  await git(state.root, 'branch', '-D', 'test');
+  const result = await deploy(state);
+  assert.match(result.stdout, /已自动补建本地分支 test ← gitlab\/test/);
+  const origin = await remoteHead(state, 'origin', 'test');
+  assert.equal(await remoteHead(state, 'gitlab', 'test'), origin);
+  assert.equal(
+    await remoteShow(state, 'gitlab', 'test:dist/index.html'),
+    'artifact from single-branch clone',
+  );
+  assert.equal(await git(state.root, 'branch', '--show-current'), start);
 });
 
 test('source pushed directly to gitlab dev reaches the delivered test', async (t) => {
