@@ -49,6 +49,7 @@
     "sync:openui-runtime": "./scripts/sync-openui-runtime.sh",
     "test": "vitest",
     "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
+    "test:deploy": "node --test tests/deploySyncTest.node.mjs tests/deployTest.node.mjs tests/downloadMobileBuild.node.mjs",
     "test:micro-app-build": "node --test tests/microApps/build-pipeline.node.mjs tests/microApps/upgrade-pipeline.node.mjs",
     "test:typecheck": "node --test scripts/check-types.test.mjs",
     "typecheck": "node scripts/check-types.mjs",

@@ -12,6 +12,9 @@ const execute = promisify(execFile);
 const script = fileURLToPath(
   new URL('../scripts/deploy_sync_test.sh', import.meta.url),
 );
+const library = fileURLToPath(
+  new URL('../scripts/deploy/lib.sh', import.meta.url),
+);
 const feature = 'fixture-feature';
 const version = 'fixture-version';
 
@@ -78,6 +81,8 @@ async function fixture(t) {
     await fs.mkdir(path.join(root, dir), { recursive: true });
   }
   await fs.copyFile(script, path.join(root, 'scripts/deploy_sync_test.sh'));
+  await fs.mkdir(path.join(root, 'scripts/deploy'), { recursive: true });
+  await fs.copyFile(library, path.join(root, 'scripts/deploy/lib.sh'));
   await fs.writeFile(
     path.join(root, '.gitignore'),
     '/dist\n/node_modules\n/src/.umi\n',
@@ -856,4 +861,18 @@ test('immutable feature input survives parallel source commits after startup and
     git(state.root, 'show', `${deployed}:parallel-later.txt`),
   );
   assert.equal(await git(state.root, 'branch', '--show-current'), feature);
+});
+
+test('source conflict lists the conflicted files before rolling back', async (t) => {
+  const state = await fixture(t);
+  await instrumentTools(state);
+  await remoteCommit(state, 'origin', version, 'source.txt', 'version side\n');
+  await fs.writeFile(path.join(state.root, 'source.txt'), 'feature side\n');
+  await git(state.root, 'commit', '-am', 'feature side');
+  const failure = await deploy(state).then(
+    () => assert.fail('源码冲突必须停止'),
+    (error) => error,
+  );
+  assert.match(failure.stderr, /源码冲突文件[^\n]*\n\s+source\.txt/);
+  assert.equal(await git(state.root, 'ls-files', '-u'), '');
 });
