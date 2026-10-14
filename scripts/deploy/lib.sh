@@ -55,6 +55,18 @@ retry_git() { # retry_git <最大次数> <git 子命令...>
   done
 }
 
+# gitlab 远端是内网测试环境落点；同事克隆常只配了 origin，缺失时自动补配
+# （2026-10-14 实证：缺远端被当网络错误空耗 3 轮重试后中止）。URL 可用 GITLAB_REMOTE_URL 覆写。
+# DRY_RUN 下经 run() 只打印不落配置。
+ensure_gitlab_remote() {
+  if git remote get-url gitlab >/dev/null 2>&1; then
+    return 0
+  fi
+  local url="${GITLAB_REMOTE_URL:-https://git.yichamao.com/agent-platform/nuwax.git}"
+  run git remote add gitlab "$url"
+  log "已自动补配 gitlab 远端 → ${url}"
+}
+
 # 需人工处理的源码冲突文件（排除机器产物）
 source_conflict_files() {
   git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts' 2>/dev/null || true

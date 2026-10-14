@@ -68,6 +68,8 @@ main() {
   START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   GATE_RECORD="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/fast-lane.test-gate"
   CURRENT_STEP="预检"
+  # 同事克隆可能没配 gitlab 远端：缺失时自动补配（内网测试环境落点），否则第一步 fetch 就挂
+  ensure_gitlab_remote
 
   log "快速通道提测：${DEV_BRANCH} → ${TEST_BRANCH}（推 origin + gitlab，M 端源 ${MOBILE_BUILD_REPO:-nuwax-mobile@origin}，质量门 GATE=${GATE}）"
 
