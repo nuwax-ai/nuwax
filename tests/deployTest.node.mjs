@@ -344,3 +344,62 @@ test('invoking through sh re-executes under bash and still delivers', async (t) 
     'artifact from via sh',
   );
 });
+
+test('submodules are aligned for the build and again when handing back the start branch', async (t) => {
+  const state = await fixture(t);
+  const fileProtocol = {
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'protocol.file.allow',
+    GIT_CONFIG_VALUE_0: 'always',
+  };
+  const upstream = path.join(state.temporary, 'micro-app');
+  await fs.mkdir(upstream);
+  await git(upstream, 'init', '-b', 'main');
+  await git(upstream, 'config', 'user.name', 'Fixture');
+  await git(upstream, 'config', 'user.email', 'fixture@example.invalid');
+  await fs.writeFile(path.join(upstream, 'app.txt'), 'v1\n');
+  await git(upstream, 'add', '.');
+  await git(upstream, 'commit', '-m', 'v1');
+  await fs.writeFile(path.join(upstream, 'app.txt'), 'v2\n');
+  await git(upstream, 'commit', '-am', 'v2');
+  const [v2, v1] = (await git(upstream, 'rev-list', 'main')).split('\n');
+
+  // 起跑分支登记 v1，dev 登记 v2 并已推到 origin。
+  await run(
+    state.root,
+    'git',
+    ['submodule', 'add', upstream, 'submodules/app'],
+    fileProtocol,
+  );
+  await git(path.join(state.root, 'submodules/app'), 'checkout', '-q', v1);
+  await git(state.root, 'add', '.gitmodules', 'submodules/app');
+  await git(state.root, 'commit', '-m', 'register app v1');
+  await git(state.root, 'checkout', '-q', 'dev');
+  await git(state.root, 'merge', '-q', start);
+  await git(path.join(state.root, 'submodules/app'), 'checkout', '-q', v2);
+  await git(state.root, 'add', 'submodules/app');
+  await git(state.root, 'commit', '-m', 'dev moves app to v2');
+  await git(state.root, 'push', '-q', 'origin', 'dev');
+  await git(state.root, 'checkout', '-q', start);
+  await run(
+    state.root,
+    'git',
+    ['submodule', 'update', '--init'],
+    fileProtocol,
+  );
+
+  const result = await deploy(state, fileProtocol);
+  assert.match(result.stdout, /快速通道提测完成/);
+  assert.equal(
+    await git(
+      state.root,
+      '--git-dir',
+      path.join(state.temporary, 'gitlab.git'),
+      'rev-parse',
+      'test:submodules/app',
+    ),
+    v2,
+  );
+  assert.equal(await git(state.root, 'branch', '--show-current'), start);
+  assert.equal(await git(state.root, 'status', '--porcelain'), '');
+});
