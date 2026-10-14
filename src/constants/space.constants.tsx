@@ -387,10 +387,9 @@ export const COMPONENT_SETTING_ACTIONS = [
     type: ComponentSettingEnum.Exception_Handling,
     label: dict('PC.Constants.Space.exceptionHandling'),
   },
-  {
-    type: ComponentSettingEnum.Card_Bind,
-    label: dict('PC.Constants.Space.cardBind'),
-  },
+  // 卡片绑定入口暂时隐藏：样式预览图托管在 statics.xpace.cn，该域名已无解析，
+  // 选择样式时四张预览图全部加载失败。产品确认先不展示「卡片绑定」菜单。
+  // 会话侧已绑定卡片的渲染逻辑保留，不在此处删除。
 ];
 
 // 智能体编排-组件设置列表
