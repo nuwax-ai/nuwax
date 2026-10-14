@@ -29,9 +29,17 @@ type HostProps = {
   path: string;
   active: boolean;
   onNavigate: (path: string, replace: boolean) => void;
+  // 仅 IM：由主站适配层接线，原仓业务无需消费乾坤 props。
+  host?: {
+    navigate: (path: string, options?: { replace?: boolean }) => boolean;
+  };
   onAuthExpired: (target: string) => void;
 };
 ```
+
+主站通过乾坤 `loadMicroApp` 的 `props.host` 传递路由能力。主站维护的 IM overlay 入口及 runtime 在 mount/update/unmount 中暴露、更新和按对象身份清理 `window.NuwaxHost`；主站不直接写此全局。IM 原仓入口不改，业务仅调用 `window.NuwaxHost?.navigate(path, { replace })`，无需了解乾坤、跨工程 import 或安装 SDK。旧 `onNavigate` 仍只允许本应用路径。类型声明和联调步骤见 [IM 接入宿主页面路由](./im-host-navigation-integration.md)。
+
+导航同步返回 boolean：隐藏、卸载或加载/挂载/更新失败后返回 false；失败后全局对象可能暂留至卸载，但宿主已禁用其方法。true 表示宿主接受导航，不保证目标页加载及授权成功。
 
 隐藏实例不消费其它应用路径。资料库适配层限制样式、全局快捷键、弹层、滚动锁与标题副作用，生命周期管理广播通道；保活切换保留编辑状态，真正重建时清理旧账号的内存缓存。消息固定 `VITE_IM_AUTH_MODE=platform`，复用主站 Cookie 会话，生命周期释放 WS、监听、定时器和原生通知。两应用的鉴权失效通过 `onAuthExpired` 交给宿主清理；请求发起时捕获实例代次，卸载后晚到的 401 不会清除新会话或影响新实例。
 
@@ -149,7 +157,7 @@ dist/
 
 `/m/` 继续由移动端占用。消息和资料库的静态 entry 分别是 `/micro-apps/message/index.html`、`/micro-apps/repo/index.html`；用户访问的 `/instant-message`、`/repo` 仍由主站打开侧栏并挂载子应用。静态目录不存在的文件返回 404，业务深链刷新回到主站入口。
 
-`npm run build:prod` 合入两个微应用，`npm run build:prod:m gitlab` 进一步下载移动端 H5 到 `dist/m/`。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
+`npm run build:prod` 合入两个微应用，`npm run build:prod:m` 进一步下载移动端 H5 到 `dist/m/`（来源用环境变量 `MOBILE_BUILD_SOURCE` 指定，默认内网 gitlab）。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
 
 产物生成过程目前不同：移动端从独立仓库下载已提交的 `unpackage/dist/build/web/`，消息/资料库则由主站构建固定 main 的源码并应用适配层。如果后续要独立发布两个子应用，可让子仓产出包含 qiankun 生命周期的版本包，再由主站按固定版本拉取合并；仍保持上述静态目录契约。
 

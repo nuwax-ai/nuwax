@@ -209,6 +209,9 @@ export interface DataPermission {
   /*可创建网站应用数量，-1表示不限制 */
   maxUserAppCount?: number;
 
+  /*网站应用闲置回收超时(秒)，-1表示不限制（沿用下游默认），0表示不回收（常驻） */
+  userAppIdleTimeoutSeconds?: number;
+
   /*可创建知识库数量，-1表示不限制 */
   maxKnowledgeCount?: number;
 

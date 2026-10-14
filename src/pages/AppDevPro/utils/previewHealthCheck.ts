@@ -9,6 +9,7 @@ import {
   UserAppReadinessStatusEnum,
   type UserAppReadiness,
 } from '../services/appDevPro';
+import { canConnectUserAppDatabase } from './isUserAppContainerRunning';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -80,6 +81,11 @@ export interface UserAppDbReadinessSnapshot {
   ready: boolean;
   /** 服务端说明 */
   message: string | null;
+  /**
+   * dbx 返回的容器状态。
+   * 请求失败或没有 container 字段时为 null，调用方只继续轮询，不因此启动容器。
+   */
+  containerStatus: string | null;
 }
 
 /** 数据库就绪轮询参数 */
@@ -113,7 +119,7 @@ const parseDbReadinessStatus = (
 };
 
 /**
- * 只有 ready 为 true，且状态为空或 ready，才允许连接数据库。
+ * 数据库 status 为 ready 且 ready 为 true 才允许连接。不看容器字段。
  *
  * @param payload 就绪接口数据
  * @param status 已解析的状态
@@ -123,12 +129,14 @@ const isDatabaseReady = (
   payload: UserAppDbReadiness | undefined,
   status: UserAppReadinessStatusEnum | null,
 ): boolean =>
-  payload?.ready === true &&
-  (status === null || status === UserAppReadinessStatusEnum.Ready);
+  canConnectUserAppDatabase({
+    status,
+    ready: payload?.ready === true,
+  });
 
 /**
  * 进入数据库前轮询 dbx 就绪接口。
- * 一直等到数据库就绪，或调用方离开。请求失败和未就绪都会继续下一轮。
+ * status 为 ready 且 ready 为 true 就结束。未满足时继续下一轮。
  *
  * @param appId 应用 ID
  * @param env 当前数据库环境
@@ -153,6 +161,7 @@ export const pollUserAppDbReadiness = async (
       status: null,
       ready: false,
       message: null,
+      containerStatus: null,
     };
     let ready = false;
     try {
@@ -175,6 +184,7 @@ export const pollUserAppDbReadiness = async (
           status,
           ready: payload.ready === true,
           message: payload.message ?? null,
+          containerStatus: payload.container?.status ?? null,
         };
       }
     } catch {
@@ -183,6 +193,7 @@ export const pollUserAppDbReadiness = async (
         status: null,
         ready: false,
         message: null,
+        containerStatus: null,
       };
     }
 

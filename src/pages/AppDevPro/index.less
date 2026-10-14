@@ -210,6 +210,20 @@
     min-width: 0;
   }
 
+  /** 会话进行中提示：灰色靠右，结束后随会话状态一起拿掉 */
+  .preview-session-error-hint {
+    margin-left: auto;
+    padding-left: 12px;
+    min-width: 0;
+    color: @colorTextSecondary;
+    font-size: 13px;
+    line-height: 20px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .tool-workspace-actions {
     display: inline-flex;
     align-items: center;

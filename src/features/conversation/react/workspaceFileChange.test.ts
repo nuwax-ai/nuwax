@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { latestRoundChangedWorkspaceFiles } from './workspaceFileChange';
+import {
+  latestRoundChangedWorkspaceFiles,
+  latestRoundNeedsPreviewRebuild,
+} from './workspaceFileChange';
 
 const user = { role: 'USER' };
 const readFile = {
@@ -70,5 +73,57 @@ describe('latestRoundChangedWorkspaceFiles', () => {
         },
       ]),
     ).toBe(true);
+  });
+});
+
+describe('latestRoundNeedsPreviewRebuild', () => {
+  const user = { role: 'USER' };
+  const changed = (filePath: string, kind = 'write') => ({
+    role: 'ASSISTANT',
+    processingList: [
+      {
+        type: 'ToolCall',
+        name: 'write_file',
+        status: 'FINISHED',
+        result: { kind, input: { filePath } },
+      },
+    ],
+  });
+
+  it('改了代码或资源时需要重新打包', () => {
+    expect(latestRoundNeedsPreviewRebuild([user, changed('src/App.tsx')])).toBe(
+      true,
+    );
+    expect(
+      latestRoundNeedsPreviewRebuild([
+        user,
+        changed('assets/logo.png', 'create'),
+      ]),
+    ).toBe(true);
+  });
+
+  it('只改 md、txt、json 等常见文本时不重新打包', () => {
+    expect(
+      latestRoundNeedsPreviewRebuild([
+        user,
+        changed('README.md'),
+        changed('notes/readme.TXT', 'edit'),
+        changed('config/app.json', 'delete'),
+      ]),
+    ).toBe(false);
+  });
+
+  it('文本和代码一起改时仍然重新打包', () => {
+    expect(
+      latestRoundNeedsPreviewRebuild([
+        user,
+        changed('README.md'),
+        changed('src/main.ts'),
+      ]),
+    ).toBe(true);
+  });
+
+  it('本轮没有文件变化时不重新打包', () => {
+    expect(latestRoundNeedsPreviewRebuild([user])).toBe(false);
   });
 });

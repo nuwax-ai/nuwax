@@ -109,6 +109,9 @@ const AuthMethod: React.FC = () => {
       actionRef.current?.reload();
       if (editing) {
         message.success(dict('PC.Common.Global.saveSuccess'));
+      } else if (values.type === AuthIdpTypeEnum.Wechat) {
+        // 微信无需在提供方登记回调地址，只告知默认停用
+        message.success(dict('PC.Pages.SystemAuthMethod.createdTitle'));
       } else {
         // 新增默认停用；回调地址需先登记到 IdP 侧
         Modal.success({
@@ -191,6 +194,7 @@ const AuthMethod: React.FC = () => {
     {
       title: dict('PC.Pages.SystemAuthMethod.configInfo'),
       dataIndex: 'config',
+      width: 340,
       ellipsis: false,
       render: (_, record) => <ConfigSummary record={record} />,
     },
@@ -222,7 +226,7 @@ const AuthMethod: React.FC = () => {
         </Tooltip>
       ),
       dataIndex: 'autoRedirect',
-      width: 130,
+      width: 160,
       render: (_, record) =>
         record.enabled === 1 ? (
           <Switch
@@ -308,6 +312,7 @@ const AuthMethod: React.FC = () => {
         request={request}
         search={false}
         pagination={false}
+        scroll={{ x: 1090 }}
         showQueryButtons={false}
         hideToolbar
       />

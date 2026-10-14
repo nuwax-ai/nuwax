@@ -133,6 +133,7 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue(true);
   mocks.history.push.mockClear();
   mocks.history.replace.mockClear();
+  mocks.history.location = { pathname: '/repo', search: '', hash: '' };
   mocks.expire.mockClear();
   mocks.loggedIn = true;
   mocks.loginListeners.clear();
@@ -356,6 +357,55 @@ describe('IM 事件桥与未读展示生命周期', () => {
 });
 
 describe('持久微应用宿主', () => {
+  it('乾坤 host 能力支持站内 push/replace，同地址不重复跳转，隐藏恢复与卸载按生命周期生效', async () => {
+    activateMessage();
+    render(<MicroAppHost />);
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const { host: bridge, onNavigate } = mocks.load.mock.calls[0][0].props;
+    expect(mocks.load.mock.calls[0][0].props).not.toHaveProperty(
+      'onHostNavigate',
+    );
+    expect(bridge.navigate('/agent/123?source=im#detail')).toBe(true);
+    expect(mocks.history.push).toHaveBeenCalledWith(
+      '/agent/123?source=im#detail',
+    );
+    expect(bridge.navigate('/repo/doc/456', { replace: true })).toBe(true);
+    expect(mocks.history.replace).toHaveBeenCalledWith('/repo/doc/456');
+    onNavigate('/home'); // 旧回调仍不允许跨模块。
+    expect(bridge.navigate('/repo')).toBe(true); // 当前 mock history 地址。
+    expect(mocks.history.push).toHaveBeenCalledOnce();
+    act(() => microAppHostStore.deactivate('nuwax-im-web'));
+    expect(bridge.navigate('/home')).toBe(false);
+    act(activateMessage);
+    expect(bridge.navigate('/repo')).toBe(true);
+    act(() => microAppHostStore.invalidateAll());
+    expect(bridge.navigate('/home')).toBe(false);
+    expect(mocks.history.push).toHaveBeenCalledOnce();
+  });
+
+  it('乾坤 host 能力拒绝非法地址并消费 history 异常', async () => {
+    activateMessage();
+    render(<MicroAppHost />);
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const { host: bridge, onNavigate } = mocks.load.mock.calls[0][0].props;
+    for (const path of [
+      'https://evil.example/home',
+      '//evil.example/home',
+      '/\\evil.example/home',
+      '/home\n',
+      'home',
+      '?convId=1',
+    ]) {
+      expect(bridge.navigate(path)).toBe(false);
+    }
+    onNavigate('/instant-message/%2e%2e/home');
+    expect(mocks.history.push).not.toHaveBeenCalled();
+    mocks.history.push.mockImplementationOnce(() => {
+      throw new Error('history unavailable');
+    });
+    expect(bridge.navigate('/home')).toBe(false);
+  });
+
   it('切到主站再回来复用容器和实例，仅同步可见性', async () => {
     microAppHostStore.activate({ name: 'nuwax-repo-web', path: '/repo/doc/a' });
     const view = render(<MicroAppHost />);
@@ -422,17 +472,69 @@ describe('持久微应用宿主', () => {
     expect(mocks.expire).toHaveBeenCalledTimes(1);
   });
 
-  it('加载失败可重试，重新创建一次有效实例', async () => {
-    mocks.load.mockImplementationOnce(() => {
-      throw new Error('资源下载失败');
-    });
-    microAppHostStore.activate({ name: 'nuwax-repo-web', path: '/repo/doc/a' });
-    const view = render(<MicroAppHost />);
-    await waitFor(() => expect(view.getByRole('alert')).toBeInTheDocument());
-    fireEvent.click(view.getByRole('button'));
+  it.each(['load', 'mount', 'update'])(
+    'IM %s 失败禁用宿主能力，重试使用新对象且旧引用始终失效',
+    async (phase) => {
+      let failedBridge: typeof window.NuwaxHost;
+      mocks.load.mockImplementationOnce((app) => {
+        failedBridge = app.props.host;
+        if (phase === 'load') throw new Error('资源下载失败');
+        return {
+          mountPromise:
+            phase === 'mount'
+              ? Promise.reject(new Error('挂载失败'))
+              : Promise.resolve(),
+          update: vi.fn(async () => {
+            if (phase === 'update') throw new Error('更新失败');
+          }),
+          unmount: vi.fn(async () => undefined),
+        };
+      });
+      activateMessage();
+      const view = render(<MicroAppHost />);
+      await waitFor(() => expect(view.getByRole('alert')).toBeInTheDocument());
+      expect(failedBridge).toBeDefined();
+      expect(failedBridge!.navigate('/home')).toBe(false);
+      fireEvent.click(view.getByRole('button'));
+      await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(view.queryByRole('alert')).toBeNull());
+      expect(mocks.load.mock.calls[1][0].props.path).toBe('/instant-message');
+      const bridge = mocks.load.mock.calls[1][0].props.host;
+      expect(bridge).not.toBe(failedBridge);
+      expect(bridge.navigate('/home')).toBe(true);
+      expect(failedBridge!.navigate('/home')).toBe(false);
+      expect(mocks.history.push).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('重建等待旧 IM 完全卸载后才加载新实例，旧宿主能力始终失效', async () => {
+    let finishUnmount!: () => void;
+    const unmount = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishUnmount = resolve;
+        }),
+    );
+    mocks.load.mockImplementationOnce(() => ({
+      mountPromise: Promise.resolve(),
+      update: vi.fn(async () => undefined),
+      unmount,
+    }));
+    activateMessage();
+    render(<MicroAppHost />);
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const oldBridge = mocks.load.mock.calls[0][0].props.host;
+    act(() => microAppHostStore.reload('nuwax-im-web'));
+    await waitFor(() => expect(unmount).toHaveBeenCalledOnce());
+    expect(mocks.load).toHaveBeenCalledOnce();
+    expect(oldBridge.navigate('/home')).toBe(false);
+    await act(async () => finishUnmount());
     await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(view.queryByRole('alert')).toBeNull());
-    expect(mocks.load.mock.calls[1][0].props.path).toBe('/repo/doc/a');
+    const bridge = mocks.load.mock.calls[1][0].props.host;
+    expect(bridge).not.toBe(oldBridge);
+    expect(bridge.navigate('/home')).toBe(true);
+    expect(oldBridge.navigate('/home')).toBe(false);
+    expect(mocks.history.push).toHaveBeenCalledOnce();
   });
 
   it('同步宿主 Cookie 途中登出，晚到的同步结果不创建应用', async () => {

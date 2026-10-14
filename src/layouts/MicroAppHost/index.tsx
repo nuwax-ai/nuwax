@@ -32,6 +32,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
   const currentRef = useRef({ entry, active });
   currentRef.current = { entry, active };
   const leaseRef = useRef<ReturnType<typeof microAppLifecycleQueue.acquire>>();
+  const navigationEnabledRef = useRef(false);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
   );
@@ -43,24 +44,46 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     let mounted = true;
     let unsubscribeImEvents: (() => void) | undefined;
 
-    const onNavigate = (path: string, replace = false) => {
-      if (!mounted || !currentRef.current.active || !path.startsWith('/'))
-        return;
-      const url = new URL(path, window.location.origin);
+    const navigate = (
+      path: string,
+      replace = false,
+      ownAppOnly = false,
+    ): boolean => {
       if (
-        url.origin !== window.location.origin ||
-        findMicroAppRoute(url.pathname)?.name !== entry.name
-      ) {
-        return;
-      }
-      const target = `${url.pathname}${url.search}${url.hash}`;
-      const current = history.location;
-      if (
-        `${current.pathname}${current.search}${current.hash || ''}` === target
+        !mounted ||
+        !navigationEnabledRef.current ||
+        !currentRef.current.active ||
+        typeof path !== 'string' ||
+        !/^\/(?!\/)/.test(path) ||
+        /[\\\u0000-\u001f\u007f]/.test(path)
       )
-        return;
-      if (replace) history.replace(target);
-      else history.push(target);
+        return false;
+      try {
+        const url = new URL(path, window.location.origin);
+        if (
+          url.origin !== window.location.origin ||
+          (ownAppOnly && findMicroAppRoute(url.pathname)?.name !== entry.name)
+        )
+          return false;
+        const target = `${url.pathname}${url.search}${url.hash}`;
+        const current = history.location;
+        if (
+          `${current.pathname}${current.search}${current.hash || ''}` !== target
+        ) {
+          if (replace) history.replace(target);
+          else history.push(target);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    // 保留旧内部路由的边界；IM 的宿主能力由乾坤 props.host 下发。
+    const onNavigate = (path: string, replace = false) => {
+      navigate(path, replace, true);
+    };
+    const host: Window['NuwaxHost'] = {
+      navigate: (path, options) => navigate(path, options?.replace === true),
     };
 
     const lease = microAppLifecycleQueue.acquire(entry.name, async () => {
@@ -70,6 +93,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
       if (!mounted) throw new Error('微应用加载已取消');
       const { loadMicroApp } = await import('qiankun');
       if (!mounted) throw new Error('微应用加载已取消');
+      navigationEnabledRef.current = true;
       return loadMicroApp(
         {
           name: entry.name,
@@ -80,6 +104,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
             active: currentRef.current.active,
             navigationRevision: currentRef.current.entry.navigationRevision,
             onNavigate,
+            ...(entry.name === 'nuwax-im-web' ? { host } : {}),
             onAuthExpired: (target: string) => {
               if (mounted) {
                 void expireMicroAppSession(target).catch((error) =>
@@ -105,12 +130,14 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
       (error) => {
         if (!lease.isDisposed()) {
           console.error('[micro-app] 加载失败', error);
+          navigationEnabledRef.current = false;
           setStatus('failed');
         }
       },
     );
     return () => {
       mounted = false;
+      navigationEnabledRef.current = false;
       unsubscribeImEvents?.();
       lease.dispose();
       if (leaseRef.current === lease) leaseRef.current = undefined;
@@ -129,6 +156,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
       .catch((error) => {
         if (!lease.isDisposed()) {
           console.error('[micro-app] 路由同步失败', error);
+          navigationEnabledRef.current = false;
           setStatus('failed');
         }
       });

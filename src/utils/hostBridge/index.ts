@@ -27,6 +27,11 @@ function getBridge(): NuwaClawBridgeLike | undefined {
   return typeof window !== 'undefined' ? window.NuwaClawBridge : undefined;
 }
 
+/** 原生截图/录屏能力应在点击时取得，兼容旧宿主和普通浏览器。 */
+export function getCaptureBridge(): NuwaClawBridgeLike['capture'] {
+  return getBridge()?.capture;
+}
+
 /**
  * 是否运行在 nuwax 平台桌面宿主中（宿主桥已注入，社区/商业均真）。
  * ⚠️ 仅用于环境/桥能力探测（如 perf 打点可用性）；**桌面适配（沉浸退让、
@@ -626,6 +631,7 @@ export const host = {
 
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
 export const hostBridge = {
+  getCaptureBridge,
   hasHostBridge,
   isDesktopHost,
   isShellWindow,

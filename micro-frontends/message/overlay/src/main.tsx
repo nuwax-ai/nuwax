@@ -87,6 +87,15 @@ exportQiankunLifeCycles({
         console.error('[message-host] direct navigation failed', error);
       });
     }
+    // IM 常驻隐藏，切回不触发 focus/visibilitychange；回到前台时主动对账未读总数。
+    if (
+      !previous.active &&
+      next.active &&
+      state.userId !== null &&
+      state.userId !== undefined
+    ) {
+      void state.refreshUnreadTotal().catch(() => undefined);
+    }
     // 从其它菜单回来时补已读仍走源仓的真实焦点/可见性判据。
     if (isMessageActive()) useChatStore.getState().flushPendingRead();
   },

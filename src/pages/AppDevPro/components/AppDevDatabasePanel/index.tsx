@@ -1,10 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
 import { UserAppReadinessStatusEnum } from '../../services/appDevPro';
+import { canConnectUserAppDatabase } from '../../utils/isUserAppContainerRunning';
 import {
   pollUserAppDbReadiness,
   type UserAppDbReadinessSnapshot,
@@ -102,6 +103,11 @@ export interface AppDevDatabasePanelProps {
    * 第一次可见时才挂 iframe；之后隐藏也保留，再次进入不重新加载。
    */
   active?: boolean;
+  /**
+   * 数据库还不能连接时，回传 dbx 里的容器状态。
+   * 没有容器字段时为 null。页面只在明确需要时才 ensure。
+   */
+  onContainerStatus?: (containerStatus: string | null) => void;
 }
 
 /**
@@ -118,6 +124,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   onRetryContainer,
   iframeKey = 0,
   active = true,
+  onContainerStatus,
 }) => {
   const iframeSrc = useMemo(() => {
     if (!appId) {
@@ -133,6 +140,8 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   const [readiness, setReadiness] = useState<UserAppDbReadinessSnapshot | null>(
     null,
   );
+  const onContainerStatusRef = useRef(onContainerStatus);
+  onContainerStatusRef.current = onContainerStatus;
 
   const waitingContainer =
     containerStatus !== undefined && containerStatus !== 'running';
@@ -156,9 +165,21 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
       const ready = await pollUserAppDbReadiness(appId, env, {
         shouldStop: () => cancelled,
         onProgress: (snapshot) => {
-          if (!cancelled) {
-            setReadiness(snapshot);
+          if (cancelled) {
+            return;
           }
+          setReadiness(snapshot);
+          // 已经可以连接时不再看容器。请求失败也没有容器状态。
+          if (
+            snapshot.requestFailed ||
+            canConnectUserAppDatabase({
+              status: snapshot.status,
+              ready: snapshot.ready,
+            })
+          ) {
+            return;
+          }
+          onContainerStatusRef.current?.(snapshot.containerStatus);
         },
       });
       if (cancelled || !ready) {

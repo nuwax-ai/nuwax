@@ -7,6 +7,50 @@ const APP_STATUS_STARTING = 'starting';
 /** 与 UserAppReadinessStatusEnum.NotDeployed 对齐。 */
 const APP_STATUS_NOT_DEPLOYED = 'not_deployed';
 
+/** 容器还在变化，继续轮询，不要再调 ensure。 */
+const DATABASE_CONTAINER_WAIT_STATUSES = new Set([
+  'starting',
+  'restarting',
+  'stopping',
+]);
+
+/**
+ * 数据库还不能连接时，根据 dbx/readiness 的容器状态决定要不要启动容器。
+ * 回包可能只有 status 和 ready，没有容器字段时只继续轮询。
+ * 容器 running，或 starting、restarting、stopping，也只继续轮询。
+ * stopped、failed、unknown 等其它明确状态才 ensure。
+ *
+ * @param containerStatus dbx/readiness 的 container.status；没有该字段时为 null
+ * @returns wait 继续轮询；ensure 先启动容器
+ */
+export function decideDatabaseContainerAction(
+  containerStatus?: string | null,
+): 'wait' | 'ensure' {
+  if (!containerStatus || containerStatus === CONTAINER_STATUS_RUNNING) {
+    return 'wait';
+  }
+  if (DATABASE_CONTAINER_WAIT_STATUSES.has(containerStatus)) {
+    return 'wait';
+  }
+  return 'ensure';
+}
+
+/**
+ * 数据库管理页是否可以连接。
+ * 只看数据库 status 和 ready，不看容器。status 为 ready 且 ready 为 true 即可。
+ *
+ * @param data dbx/readiness 的 status、ready
+ * @returns 是否嵌入数据库管理页
+ */
+export function canConnectUserAppDatabase(
+  data?: {
+    status?: string | null;
+    ready?: boolean | null;
+  } | null,
+): boolean {
+  return data?.status === APP_STATUS_READY && data?.ready === true;
+}
+
 /**
  * 计算容器是否已在运行。
  * 旧回包没有 container 字段时不算就绪，避免误触发应用 restart。

@@ -21,6 +21,11 @@ export interface EnsurePodOptions {
    * 状态保持 starting。保活由页面延迟启动；容器 running 后再调用 confirmContainerRunning。
    */
   deferRunning?: boolean;
+  /**
+   * 本地已经标成 running 时仍再请求一次 ensure。
+   * 数据库探测到容器实际不是 running 时使用。
+   */
+  reensure?: boolean;
 }
 
 /**
@@ -88,13 +93,15 @@ export function useUserAppEnvPod(
 
   /**
    * 接入指定环境容器。
-   * 已 running 直接成功；启动中则等待同一次请求；
+   * 已 running 直接成功；reensure 时本地虽是 running 仍再请求一次。
+   * 启动中则等待同一次请求；
    * 失败后不会自动再打，传入 force 才重试（打开终端 / 用户点重试）。
    * 默认在接口成功后就把容器视为运行中并开始保活。
    * deferRunning 时接口成功只表示请求已受理，容器是否 running 要另等 readiness。
    *
    * @param force 失败后是否允许再打一次
    * @param options.deferRunning 成功后保持 starting，不保活
+   * @param options.reensure 本地已是 running 时仍再请求一次
    * @returns 请求是否受理成功。deferRunning 时不表示容器已经 running
    */
   const ensure = useCallback(
@@ -102,7 +109,7 @@ export function useUserAppEnvPod(
       if (!mountedRef.current || !enabled || !conversationId) {
         return false;
       }
-      if (statusRef.current === 'running') {
+      if (statusRef.current === 'running' && options?.reensure !== true) {
         return true;
       }
       if (inflightPromiseRef.current) {

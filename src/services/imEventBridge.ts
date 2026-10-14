@@ -122,13 +122,9 @@ export function subscribeNativeImUnread(): () => void {
         return;
       }
       if (
-        ![
-          snapshot.sessionGeneration,
-          snapshot.revision,
-          snapshot.total,
-          snapshot.dndTotal,
-        ].every((value) => Number.isSafeInteger(value) && value >= 0) ||
-        !Number.isSafeInteger(snapshot.total + snapshot.dndTotal)
+        ![snapshot.sessionGeneration, snapshot.revision, snapshot.total].every(
+          (value) => Number.isSafeInteger(value) && value >= 0,
+        )
       )
         return;
       if (
@@ -139,7 +135,7 @@ export function subscribeNativeImUnread(): () => void {
       )
         return;
       latest = snapshot;
-      updateUnreadCount(snapshot.total + snapshot.dndTotal);
+      updateUnreadCount(snapshot.total);
     };
     try {
       // 文档先与当前账号握手，再登记推送目标。

@@ -28,7 +28,7 @@ const withBuildMetadata = (html, payload) => {
     (_head, open, body, close) => {
       // 重跑时清除旧标记；无 git 环境也不能把上次构建的 hash 留在新入口中。
       const clean = body.replace(/<meta\b[^>]*>\s*/gi, (tag) =>
-        /\bname\s*=\s*(["'])nuwax-build-(?:git-hash|version)\1/i.test(tag)
+        /\bname\s*=\s*(["'])nuwax-build-(?:git-hash|version|at)\1/i.test(tag)
           ? ''
           : tag,
       );
@@ -36,6 +36,13 @@ const withBuildMetadata = (html, payload) => {
         `<meta name="nuwax-build-version" content="${escapeAttribute(
           payload.version,
         )}">`,
+        ...(payload.buildAt
+          ? [
+              `<meta name="nuwax-build-at" content="${escapeAttribute(
+                payload.buildAt,
+              )}">`,
+            ]
+          : []),
         ...(payload.gitHash
           ? [
               `<meta name="nuwax-build-git-hash" content="${escapeAttribute(

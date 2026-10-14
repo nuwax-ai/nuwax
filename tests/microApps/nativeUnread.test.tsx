@@ -29,8 +29,7 @@ const snapshot = (
   total: number,
   revision = 1,
   sessionGeneration = 1,
-  dndTotal = 0,
-): HostImUnreadSnapshot => ({ total, revision, sessionGeneration, dndTotal });
+): HostImUnreadSnapshot => ({ total, revision, sessionGeneration });
 const menu = {
   code: 'message',
   path: '/instant-message',
@@ -99,10 +98,13 @@ describe('商业壳菜单未读', () => {
     act(() => h.emit(snapshot(0, 3)));
     expect(view.container.querySelector('[data-show="true"]')).toBeNull();
     expect(imUnreadState.getSnapshot()).toBe(0);
-    act(() => h.emit(snapshot(3, 4, 1, 2)));
-    expect(view.getByTitle('5')).toHaveAttribute('data-show', 'true');
+    // 旧客户端仍会附带 dndTotal；角标只认服务端 total（不含免打扰）。
+    act(() =>
+      h.emit({ ...snapshot(3, 4), dndTotal: 2 } as HostImUnreadSnapshot),
+    );
+    expect(view.getByTitle('3')).toHaveAttribute('data-show', 'true');
     act(() => h.emit(snapshot(1, 1)));
-    expect(imUnreadState.getSnapshot()).toBe(5);
+    expect(imUnreadState.getSnapshot()).toBe(3);
   });
 
   it('新账号代次优先；旧代次、非法计数不覆盖当前值', async () => {

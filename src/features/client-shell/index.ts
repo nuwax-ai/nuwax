@@ -4,7 +4,7 @@
  * 聚合原则：nuwax PC web 中「仅因客户端宿主存在才需要」的适配（构建版本上报、
  * 标题栏拖拽热区、客户端更新徽标等）统一收敛在本模块——单一初始化入口 +
  * 组件/服务同址，通用业务代码（app.tsx / 布局）只留最小挂载点。
- * 浏览器端全部 no-op/自隐藏（各子模块内部已做宿主 feature-detect）。
+ * 宿主专属适配在浏览器中 no-op；网页更新入口由浏览器和 direct 宿主共同使用。
  */
 import { APP_VERSION } from '@/constants/version';
 import { subscribeNativeImUnread } from '@/services/imEventBridge';

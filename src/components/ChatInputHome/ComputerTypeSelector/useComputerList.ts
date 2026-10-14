@@ -9,6 +9,8 @@ import {
   subscribeHostVisibility,
 } from '@/services/hostVisibility';
 import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
+import { EventTypeEnum } from '@/types/enums/event';
+import eventBus from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComputerOption } from './types';
@@ -68,7 +70,7 @@ export function useComputerList(waitForLocalComputer = true) {
       if (disposed || !visible || !waiting()) return;
       timer = setTimeout(() => {
         timer = undefined;
-        if (waiting()) requestRefresh();
+        if (waiting()) refreshRef.current?.();
       }, Math.min(RETRY_INTERVAL_MS, deadline - Date.now()));
     };
 
@@ -146,6 +148,9 @@ export function useComputerList(waitForLocalComputer = true) {
     };
 
     refreshRef.current = () => void requestRefresh();
+    // PC Web 与客户端统一消费后端上线事件；请求途中到达时排队补拉。
+    const handleSandboxOnline = () => void requestRefresh();
+    eventBus.on(EventTypeEnum.SandboxOnline, handleSandboxOnline);
     const unsubscribeService =
       subscribeComputerServiceState(handleServiceState);
     const unsubscribeVisibility = subscribeHostVisibility(
@@ -158,6 +163,7 @@ export function useComputerList(waitForLocalComputer = true) {
       disposed = true;
       clearTimer();
       refreshRef.current = null;
+      eventBus.off(EventTypeEnum.SandboxOnline, handleSandboxOnline);
       unsubscribeService();
       unsubscribeVisibility();
       document.removeEventListener('visibilitychange', synchronizeVisibility);

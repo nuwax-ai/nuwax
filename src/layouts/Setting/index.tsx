@@ -1,4 +1,5 @@
 import { SETTING_ACTIONS } from '@/constants/menus.constants';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAuthIdpLoginList, apiUserIdentityList } from '@/services/authIdp';
 import { dict } from '@/services/i18nRuntime';
 import { getTenantThemeConfig } from '@/services/tenant';
@@ -34,6 +35,9 @@ const Setting: React.FC = () => {
   const [loading, setLoading] = useState(false);
   // 账号绑定入口：租户配置了三方登录或用户已有绑定时才显示（桌面客户端本期不接）
   const [showAccountBind, setShowAccountBind] = useState(false);
+  // 左侧菜单 / 右侧内容区滚动条「仅滚动时显示」
+  const menuScrollShowRef = useScrollbarScrollShow<HTMLUListElement>();
+  const contentScrollShowRef = useScrollbarScrollShow<HTMLDivElement>();
 
   // 三方绑定整页跳转回来（?setting=account-bind[&idpError=]）：打开弹窗并定位到账号绑定
   useEffect(() => {
@@ -186,7 +190,7 @@ const Setting: React.FC = () => {
         >
           <div className={cx(styles.left)}>
             <h3>{dict('PC.Pages.Setting.profileTitle')}</h3>
-            <ul>
+            <ul ref={menuScrollShowRef}>
               {SETTING_ACTIONS.filter((item) => {
                 if (item.type === SettingActionEnum.Developer_Profile) {
                   return isEnableSubscription;
@@ -214,7 +218,10 @@ const Setting: React.FC = () => {
             icon={<CloseOutlined />}
             onClick={() => setOpenSetting(false)}
           />
-          <div className={cx('flex-1', 'overflow-hide', styles.right)}>
+          <div
+            ref={contentScrollShowRef}
+            className={cx('flex-1', 'overflow-hide', styles.right)}
+          >
             {renderContent()}
           </div>
         </div>

@@ -125,6 +125,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           maxAgentCount: result.maxAgentCount ?? -1,
           maxPageAppCount: result.maxPageAppCount ?? -1,
           maxUserAppCount: result.maxUserAppCount ?? -1,
+          userAppIdleTimeoutSeconds: result.userAppIdleTimeoutSeconds ?? -1,
           maxKnowledgeCount: result.maxKnowledgeCount ?? -1,
           knowledgeStorageLimitGb: result.knowledgeStorageLimitGb ?? -1,
           maxDataTableCount: result.maxDataTableCount ?? -1,
@@ -211,6 +212,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         maxAgentCount: -1,
         maxPageAppCount: -1,
         maxUserAppCount: -1,
+        userAppIdleTimeoutSeconds: -1,
         maxKnowledgeCount: -1,
         knowledgeStorageLimitGb: -1,
         maxDataTableCount: -1,
@@ -498,6 +500,23 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       icon: <InfoCircleOutlined />,
                       title: dict(
                         'PC.Pages.UserManage.DataPermissionModal.maxUserAppCountTooltip',
+                      ),
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.userAppIdleTimeoutSeconds',
+                    )}
+                    name="userAppIdleTimeoutSeconds"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.userAppIdleTimeoutSecondsTooltip',
                       ),
                     }}
                   >

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   messageScopedStyles,
   scopeSelector,
@@ -18,12 +18,54 @@ import {
   updateMessageRuntime,
 } from './overlay/src/hostRuntime';
 
+let previousHost: Window['NuwaxHost'];
+beforeEach(() => {
+  previousHost = window.NuwaxHost;
+  delete window.NuwaxHost;
+});
+
 afterEach(() => {
   endMessageRuntime();
+  if (previousHost) window.NuwaxHost = previousHost;
+  else delete window.NuwaxHost;
   document.body.innerHTML = '';
 });
 
 describe('消息宿主运行时边界', () => {
+  it('适配层将乾坤能力暴露给业务，路径更新保留入口，卸载时清理', () => {
+    const host = { navigate: vi.fn(() => true) };
+    beginMessageRuntime(document.createElement('div'), { host }, true);
+    expect(window.NuwaxHost).toBe(host);
+    expect(window.NuwaxHost?.navigate('/agent/123', { replace: true })).toBe(
+      true,
+    );
+    expect(host.navigate).toHaveBeenCalledWith('/agent/123', { replace: true });
+
+    updateMessageRuntime({ path: '/instant-message?convId=4' });
+    expect(window.NuwaxHost).toBe(host);
+    const nextHost = { navigate: vi.fn(() => false) };
+    updateMessageRuntime({ host: nextHost });
+    expect(window.NuwaxHost).toBe(nextHost);
+    endMessageRuntime();
+    expect(window.NuwaxHost).toBeUndefined();
+  });
+
+  it('独立运行时无需乾坤能力，也不向业务暴露传入的宿主对象', () => {
+    const host = { navigate: vi.fn(() => true) };
+    beginMessageRuntime(document.createElement('div'), { host }, false);
+    expect(window.NuwaxHost?.navigate('/agent/123') ?? false).toBe(false);
+    expect(host.navigate).not.toHaveBeenCalled();
+  });
+
+  it('旧实例清理只删除自己暴露的对象，保留后来替换的入口', () => {
+    const host = { navigate: vi.fn(() => true) };
+    beginMessageRuntime(document.createElement('div'), { host }, true);
+    const replacement = { navigate: vi.fn(() => false) };
+    window.NuwaxHost = replacement;
+    endMessageRuntime();
+    expect(window.NuwaxHost).toBe(replacement);
+  });
+
   it('接受本应用深链，拒绝其它模块和折叠逃逸路径', () => {
     expect(normalizeMessagePath('/instant-message?chat=4#message')).toBe(
       '/instant-message?chat=4#message',

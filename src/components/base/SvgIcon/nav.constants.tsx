@@ -16,6 +16,7 @@ import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
 import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
 import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
 import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
+import { ReactComponent as MessageSvgFile } from '@/assets/icons/nav/message.svg';
 import { ReactComponent as RecommendManageSvgFile } from '@/assets/icons/nav/recommend_manage.svg';
 // 新会话图标
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
@@ -85,6 +86,7 @@ const HistoryConversationSvg = wrapSvg(HistoryConversationSvgFile);
 const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const RobotSvg = wrapSvg(RobotSvgFile);
+const MessageSvg = wrapSvg(MessageSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
 const BackwardSvg = wrapSvg(BackwardSvgFile);
@@ -94,7 +96,8 @@ const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ConnectorSvg = wrapSvg(ConnectorSvgFile);
 const ExpertSkillConnectorSvg = wrapSvg(ExpertSkillConnectorSvgFile);
-const ModelSvg = wrapSvg(ModelSvgFile);
+// 源图为 20x20 画布且图形偏右下（外接框 1.67~19.36），viewBox 取 0.5 起点使图形居中
+const ModelSvg = wrapSvg(ModelSvgFile, { viewBox: '0.5 0.5 20 20' });
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
 const PricingSvg = wrapSvg(PricingSvgFile);
@@ -145,6 +148,7 @@ export default {
   'icons-nav-connector': ConnectorSvg,
   'icons-nav-expert-skill-connector': ExpertSkillConnectorSvg,
   'icons-nav-robot': RobotSvg,
+  'icons-nav-message': MessageSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
   'icons-nav-computer-star': IconComputerStarSvgFile,

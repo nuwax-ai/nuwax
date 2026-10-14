@@ -1,5 +1,10 @@
-import { hostBridge } from '@/utils/hostBridge';
-import { getPageBuildInfo, normalizeGitHash } from './pageBuildInfo';
+import { hasHostBridge, hostBridge } from '@/utils/hostBridge';
+import {
+  getPageBuildInfo,
+  normalizeBuildAt,
+  normalizeGitHash,
+  type PageBuildInfo,
+} from './pageBuildInfo';
 
 const POLL_INTERVAL_MS = 5 * 60_000;
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -7,11 +12,17 @@ type Listener = (available: boolean) => void;
 type CheckRun = { owners: number; dispose: () => void };
 
 let updateAvailable = false;
+let latestWebBuildInfo: PageBuildInfo | undefined;
 let activeRun: CheckRun | null = null;
 const listeners = new Set<Listener>();
 
-function publish(available: boolean): void {
-  if (updateAvailable === available) return;
+function publish(available: boolean, latestInfo?: PageBuildInfo): void {
+  const infoChanged =
+    latestWebBuildInfo?.gitHash !== latestInfo?.gitHash ||
+    latestWebBuildInfo?.appVersion !== latestInfo?.appVersion ||
+    latestWebBuildInfo?.buildAt !== latestInfo?.buildAt;
+  latestWebBuildInfo = latestInfo;
+  if (updateAvailable === available && (!available || !infoChanged)) return;
   updateAvailable = available;
   listeners.forEach((listener) => listener(available));
 }
@@ -28,10 +39,15 @@ export function getWebUpdateAvailable(): boolean {
   return updateAvailable;
 }
 
-/** 仅 direct 商业宿主检查；与客户端安装包 updater 桥无关。 */
+export function getLatestWebBuildInfo(): PageBuildInfo | undefined {
+  return latestWebBuildInfo;
+}
+
+/** 浏览器与 direct 商业宿主检查；与客户端安装包 updater 桥无关。 */
 export function initWebUpdateCheck(): () => void {
   const currentHash = getPageBuildInfo().gitHash;
-  if (!currentHash || hostBridge.host.getProduct() !== 'nuwax') {
+  const hosted = hasHostBridge();
+  if (!currentHash || (hosted && hostBridge.host.getProduct() !== 'nuwax')) {
     return () => {};
   }
 
@@ -67,12 +83,15 @@ export function initWebUpdateCheck(): () => void {
       );
       requestTimeout = timeout;
       const request = Promise.resolve()
-        .then(() =>
-          fetch('/version.json', {
+        .then(() => {
+          if (requestController.signal.aborted) {
+            throw new Error('Version request aborted');
+          }
+          return fetch('/version.json', {
             cache: 'no-store',
             signal: requestController.signal,
-          }),
-        )
+          });
+        })
         .then(async (response) => {
           if (
             !response.ok ||
@@ -81,13 +100,30 @@ export function initWebUpdateCheck(): () => void {
             return undefined;
           }
           const info: unknown = await response.json();
-          return info && typeof info === 'object'
-            ? normalizeGitHash((info as { gitHash?: unknown }).gitHash)
-            : undefined;
+          if (!info || typeof info !== 'object' || Array.isArray(info)) {
+            return undefined;
+          }
+          const payload = info as {
+            gitHash?: unknown;
+            version?: unknown;
+            buildAt?: unknown;
+          };
+          const gitHash = normalizeGitHash(payload.gitHash);
+          if (!gitHash) return undefined;
+          return Object.freeze({
+            gitHash,
+            appVersion:
+              typeof payload.version === 'string'
+                ? payload.version.trim() || undefined
+                : undefined,
+            buildAt: normalizeBuildAt(payload.buildAt),
+          });
         });
       inFlight = Promise.race([request, aborted])
-        .then((latestHash) => {
-          if (!disposed && latestHash) publish(latestHash !== currentHash);
+        .then((latestInfo) => {
+          if (!disposed && latestInfo) {
+            publish(latestInfo.gitHash !== currentHash, latestInfo);
+          }
         })
         .catch(() => {
           // 离线、旧服务端或非法响应不误报；已有更新提示可以保留。
@@ -123,16 +159,23 @@ export function initWebUpdateCheck(): () => void {
       },
     };
     activeRun = run;
-    // 旧宿主没有 auth.getContext 时安全隐藏；迟到响应不得重建已清理的轮询。
-    void hostBridge.auth
-      .getContext()
-      .then((context) => {
-        if (disposed || context?.loadMode !== 'direct') return;
-        enabled = true;
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        void refresh();
-      })
-      .catch(() => {});
+    const enable = () => {
+      if (disposed) return;
+      enabled = true;
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      void refresh();
+    };
+    if (!hosted) {
+      enable();
+    } else {
+      // 旧宿主没有 auth.getContext 时安全隐藏；迟到响应不得重建已清理的轮询。
+      void hostBridge.auth
+        .getContext()
+        .then((context) => {
+          if (context?.loadMode === 'direct') enable();
+        })
+        .catch(() => {});
+    }
   }
 
   const run = activeRun;

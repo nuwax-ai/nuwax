@@ -2,12 +2,21 @@
 export type PageBuildInfo = Readonly<{
   appVersion?: string;
   gitHash?: string;
+  buildAt?: string;
 }>;
 
 export function normalizeGitHash(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const hash = value.trim().toLowerCase();
   return /^[a-f0-9]{7,64}$/.test(hash) ? hash : undefined;
+}
+
+export function normalizeBuildAt(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const timestamp = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(timestamp)) return undefined;
+  const date = new Date(timestamp);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
 }
 
 export function readPageBuildInfo(doc: Document): PageBuildInfo {
@@ -20,7 +29,14 @@ export function readPageBuildInfo(doc: Document): PageBuildInfo {
       .querySelector('meta[name="nuwax-build-git-hash"]')
       ?.getAttribute('content'),
   );
-  return Object.freeze({ appVersion: appVersion || undefined, gitHash });
+  const buildAt = normalizeBuildAt(
+    doc.querySelector('meta[name="nuwax-build-at"]')?.getAttribute('content'),
+  );
+  return Object.freeze({
+    appVersion: appVersion || undefined,
+    gitHash,
+    ...(buildAt ? { buildAt } : {}),
+  });
 }
 
 // 固定初始文档版本，路由切换、后续轮询或 DOM 变更均不能改变比较基准。

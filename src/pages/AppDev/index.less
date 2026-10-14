@@ -5,6 +5,27 @@
   // AppDev 页面根容器样式
   min-height: 600px;
   min-width: 1200px;
+
+  // 单栏侧栏占用窗口宽度后，按分栏实际需要兜底，常见笔记本无需横滚。
+  &.responsiveLayout {
+    min-height: 0;
+    // 会话 320px + 预览工具栏 540px + section 两侧间距、边框。
+    min-width: calc(
+      320px + 540px + @marginSm + @marginSm + @lineWidth + @lineWidth
+    );
+
+    .leftPanel {
+      width: clamp(320px, 30%, 380px);
+      min-width: 0;
+    }
+
+    &.codeLayout {
+      // 文件树 280px + 编辑器 360px；更窄窗口继续由外层容器横滚兜底。
+      min-width: calc(
+        320px + 280px + 360px + @marginSm + @marginSm + @lineWidth + @lineWidth
+      );
+    }
+  }
 }
 
 .container {
@@ -68,6 +89,7 @@
   display: flex;
   flex-direction: row;
   height: 100%;
+  min-width: 0;
 }
 
 // 左侧AI助手面板
@@ -105,6 +127,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 // 工具栏

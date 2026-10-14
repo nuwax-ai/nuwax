@@ -2,7 +2,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
 import { dict } from '@/services/i18nRuntime';
-import { CloseCircleOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -112,13 +111,6 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
         >
           {title}
         </span>
-        {group.status === 'failed' && (
-          <CloseCircleOutlined
-            className={cx(styles['tool-group-status'])}
-            style={{ color: token.colorTextTertiary }}
-            aria-hidden="true"
-          />
-        )}
         <span
           className={cx(styles['tool-group-chevron'], {
             [styles['tool-group-chevron-open']]: expanded,

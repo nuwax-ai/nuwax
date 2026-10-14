@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/scrollbar.less';
 
 .modal-container {
   // 按视口收敛（bug 2439「弹窗太大」）：商业客户端最小窗口 1200×720。两轮定尺：
@@ -26,11 +27,15 @@
   }
 
   .left {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
     width: 240px;
     padding: 24px 0;
     background-color: @colorBgLayout;
 
     h3 {
+      flex-shrink: 0;
       margin-bottom: 50px;
       padding-left: 20px;
       font-size: 16px;
@@ -38,8 +43,15 @@
       color: @colorText;
     }
 
+    // 小屏高度不足时菜单项在列表内上下滚动，标题固定；
+    // 滑块仅滚动时显示（data-is-scrolling 由 useScrollbarScrollShow 维护）
     ul {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
       padding: 0 10px;
+      .scrollbar-scroll-show();
 
       .item {
         line-height: 38px;
@@ -65,6 +77,8 @@
     // 压过 utility 类 overflow-hide（本规则选择器特异度更高）。
     overflow-x: hidden;
     overflow-y: auto;
+    // 滑块仅滚动时显示（data-is-scrolling 由 useScrollbarScrollShow 维护）
+    .scrollbar-scroll-show();
   }
 
   .close {

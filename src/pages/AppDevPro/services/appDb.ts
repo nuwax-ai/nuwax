@@ -1,5 +1,9 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import {
+  UserAppContainerReadiness,
+  UserAppReadinessStatusEnum,
+} from './appDevPro';
 
 /** 环境：dev 开发环境；prod 发布环境 */
 export enum UserAppDbEnvEnum {
@@ -89,7 +93,13 @@ export interface UserAppDbReadiness {
   /** 就绪原因 */
   reason_code: string;
   /** 就绪状态 */
-  status: string;
+  /** 顶层业务状态：not_deployed / starting / stopping / stopped / ready / degraded / failed / unknown / unsupported */
+  status: UserAppReadinessStatusEnum;
+  /**
+   * 计算容器状态。与业务 ready/status 独立。
+   * 旧回包没有此字段时视为 unknown，不是未部署。
+   */
+  container?: UserAppContainerReadiness;
 }
 
 /** dbx 数据库就绪探测 */

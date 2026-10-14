@@ -6,8 +6,17 @@ export interface MessageHostProps {
   path?: string;
   navigationRevision?: number;
   active?: boolean;
+  host?: {
+    navigate: (path: string, options?: { replace?: boolean }) => boolean;
+  };
   onNavigate?: (path: string, replace: boolean) => void;
   onAuthExpired?: (target: string) => void;
+}
+
+declare global {
+  interface Window {
+    NuwaxHost?: MessageHostProps['host'];
+  }
 }
 
 interface MessageHostSnapshot {
@@ -24,10 +33,18 @@ let snapshot: MessageHostSnapshot = {
 let root: HTMLElement | null = null;
 let embedded = false;
 let onAuthExpired: MessageHostProps['onAuthExpired'];
+let host: MessageHostProps['host'];
 let disposeFocus: (() => void) | null = null;
 let restoreStandaloneBody: (() => void) | null = null;
 let requestGeneration = 0;
 let requestsDisposed = false;
+
+/** 主站适配层接收乾坤 props；IM 业务仅消费可选全局接口。 */
+function exposeHost(next: MessageHostProps['host']): void {
+  if (host && window.NuwaxHost === host) delete window.NuwaxHost;
+  host = next;
+  if (embedded && host) window.NuwaxHost = host;
+}
 
 interface NativeImNotifications {
   setNotificationEnabled?: (enabled: boolean) => Promise<void>;
@@ -94,6 +111,7 @@ export function beginMessageRuntime(
   requestsDisposed = false;
   root = appRoot;
   embedded = isEmbedded;
+  exposeHost(props.host);
   onAuthExpired = props.onAuthExpired;
   snapshot = {
     navigationRevision: props.navigationRevision ?? 0,
@@ -138,6 +156,7 @@ export function beginMessageRuntime(
 }
 
 export function updateMessageRuntime(props: MessageHostProps): void {
+  if (props.host !== undefined) exposeHost(props.host);
   if (props.onAuthExpired !== undefined) onAuthExpired = props.onAuthExpired;
   const active = props.active ?? snapshot.active;
   snapshot = {
@@ -189,6 +208,7 @@ export function redirectMessageAuth(target: string): void {
 }
 
 export function endMessageRuntime(): void {
+  exposeHost(undefined);
   invalidateMessageRequests();
   disposeFocus?.();
   disposeFocus = null;

@@ -26,6 +26,10 @@ type TitlebarDragRegion = import('./interfaces/hostBridge').TitlebarDragRegion;
 type ClientUpdateState = import('./interfaces/hostBridge').ClientUpdateState;
 
 interface Window {
+  /** 宿主通过乾坤 props.host 下发，IM 生命周期暴露；无需跨仓库 import。 */
+  NuwaxHost?: {
+    navigate: (path: string, options?: { replace?: boolean }) => boolean;
+  };
   Global: typeof Global;
   /** 同页消息微应用安装；实例挂载完成后可订阅。 */
   __im?: import('./interfaces/im').ImWindowBridge;

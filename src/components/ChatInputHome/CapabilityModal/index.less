@@ -3,6 +3,7 @@
  * 颜色全部走 token.less（--xagi-* 主题变量），随亮/暗主题自动切换。
  */
 @import '@/styles/token';
+@import '@/styles/nav-item-state';
 
 @capability-accent: @colorPrimary;
 @capability-text: @colorText;
@@ -47,7 +48,8 @@
   width: 220px;
   flex-shrink: 0;
   padding: 22px 12px 20px;
-  background: @colorBgContainer;
+  // 灰底画布：与主导航一致，选中白卡才可辨
+  background: @colorFillSecondary;
   border-right: 1px solid @capability-border;
 }
 
@@ -74,17 +76,32 @@
   // 双写提权压过 antd Menu 默认样式（cssinjs 运行时注入在后）
   &.menu {
     flex: 1;
-    border-inline-end: none;
     background: transparent;
   }
 
-  &.menu :global(.ant-menu-item-selected) {
-    background: color-mix(in srgb, @colorPrimary 12%, @colorBgContainer);
-    color: @colorPrimary;
+  // antd 竖向浅色菜单自带 border-inline-end（特异性 0-3-0，压过上面的双写）；
+  // 用 antd 同类链再提权去掉，否则与侧栏右边框并成两条竖线
+  &.menu:global(.ant-menu-root.ant-menu-vertical) {
+    border-inline-end: none;
+  }
 
-    :global(.anticon) {
-      color: @colorPrimary;
-    }
+  // hover / 选中对齐主导航菜单（nav-item-state.less 统一交互态）：hover 灰底；
+  // 选中为容器白卡 + 阴影、文字近黑字重 500、仅图标取主色——底色不随主题色变
+  // （antd 默认选中底对近黑自定义色会算成深灰）
+  &.menu :global(.ant-menu-item) {
+    .nav-row-hover();
+  }
+
+  &.menu :global(.ant-menu-item-selected),
+  &.menu :global(.ant-menu-item-selected):hover {
+    .nav-row-selected();
+
+    color: @colorText;
+    font-weight: 500;
+  }
+
+  &.menu :global(.ant-menu-item-selected .ant-menu-item-icon) {
+    color: @colorPrimary;
   }
 
   // Tab 停靠菜单项的键盘聚焦态：主色内缩描边对齐全弹窗停靠控件
