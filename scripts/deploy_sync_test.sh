@@ -75,7 +75,7 @@ return_to_start() {
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$FEATURE_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
   if git checkout "$FEATURE_BRANCH" >/dev/null 2>&1; then
-    git submodule update --init --recursive >/dev/null 2>&1 || true
+    update_submodules_soft >/dev/null 2>&1
     echo "↩ 已自动切回起跑分支 ${FEATURE_BRANCH}（处理完问题后直接重跑本脚本即可续跑）" >&2
   fi
 }
@@ -297,8 +297,7 @@ enter_worktree_if_needed() {
   fi
   # worktree 不会带子模块内容，而步骤 7 的 upgrade:micro-apps 强制要求子模块已初始化且
   # HEAD==pin（2026-09-30 首战实证：未 init 时 build 前置校验拦死）；按 gitlink 对齐初始化
-  (cd "$WT_DIR" && git submodule update --init --recursive) ||
-    die "worktree 子模块初始化失败（网络/子模块远端问题），重跑本脚本重试"
+  (cd "$WT_DIR" && update_submodules_soft)
   cd "$WT_DIR"
   FEATURE_BRANCH="$DEPLOY_BRANCH"
   log "已切换已登记提测专用 worktree（起跑区零接触）：${WT_DIR}"
@@ -327,7 +326,7 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" != "$FEATURE_BRANCH" ]; then
     log "当前分支不是 ${FEATURE_BRANCH}（上次失败残留？），工作区干净，自动切换过去"
     run git checkout "$FEATURE_BRANCH"
     # 子模块不随 checkout 切换：不对齐会被下方干净检查误判为未提交改动
-    retry_git 3 submodule update --init --recursive
+    update_submodules_soft
   else
     die "当前分支不是 ${FEATURE_BRANCH} 且工作区有未提交改动：请先手工处理并切回 ${FEATURE_BRANCH} 再运行本脚本（或检查 FEATURE_BRANCH 配置）"
   fi
@@ -494,7 +493,7 @@ git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" HEAD || die "本轮个人�
 run_combined_source_gate "$TEST_BRANCH" "$DEV_BRANCH" "$TEST_GATE_RECORD" "步骤 7.1"
 TEST_VERIFIED_HEAD="$(git rev-parse HEAD)"
 # 子模块对齐 test 的 gitlink：否则构建后的残留改动检查会把指针差异当成未提交改动
-retry_git 3 submodule update --init --recursive
+update_submodules_soft
 CURRENT_STEP="${TEST_BRANCH} 完整生产构建"
 # DIST_RETENTION=1：构建链路保留上一版 dist 的旧哈希资源（保 3 代，DIST_RETAIN_GENERATIONS 可调），
 # 发版后持有旧页面的用户懒加载旧 chunk 不再 404（详见 scripts/deploy-asset-retention.mjs）
@@ -532,7 +531,7 @@ done
 CURRENT_STEP="收尾"
 log "步骤 8/8：切回 ${REAL_FEATURE}"
 run git checkout "$FEATURE_BRANCH"
-retry_git 3 submodule update --init --recursive
+update_submodules_soft
 if [ -n "$WT_DIR" ]; then
   log "worktree 模式提示：本次链路在 ${WT_DIR} 完成（本地临时分支 ${FEATURE_BRANCH}）；主区分支未动，下次重跑自动复用该 worktree"
 fi
