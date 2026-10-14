@@ -75,7 +75,17 @@
     justify-content: space-between;
     padding: @paddingXxs;
 
+    // 会话栏收缩时优先省略模型名，附件和发送按钮保持可用。
+    > :first-child {
+      flex-shrink: 0;
+    }
+
+    > :last-child {
+      min-width: 0;
+    }
+
     .model-selector {
+      min-width: 0;
       color: @colorTextSecondary;
       padding: 6px @paddingXs;
       border-radius: @borderRadius;
@@ -87,9 +97,11 @@
 
       .model-name {
         max-width: 120px;
+        min-width: 0;
       }
 
       .model-arrow {
+        flex-shrink: 0;
         font-size: 12px;
         color: @colorTextDescription;
       }
@@ -145,6 +157,7 @@
       }
 
       &.send-box {
+        flex-shrink: 0;
         font-size: @fontSizeSm;
         transition: color ease-in-out 0.2s;
         color: @colorWhite;

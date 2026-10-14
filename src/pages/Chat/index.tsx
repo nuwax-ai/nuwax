@@ -11,6 +11,12 @@ import { selectProgressCapsule } from '@/components/business-component/UnifiedCh
 import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { splitLocalToolFilePath } from '@/features/client-shell/localFilePaths';
+import {
+  getLocalFileReference,
+  getLocalFilesWorkspaceRoot,
+  useLocalFilesContext,
+} from '@/features/client-shell/localFileService';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
@@ -504,6 +510,19 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       Boolean(message?.id),
     ),
   });
+
+  useLocalFilesContext(
+    active && id && conversationInfo?.id === id
+      ? {
+          cId: id,
+          sandboxId: String(finalSelectedId),
+          workspacePath: conversationInfo.workspacePath,
+          projectId: conversationInfo.devTargetId,
+          serviceType: conversationInfo.devTargetType,
+          userId: conversationInfo.userId,
+        }
+      : null,
+  );
 
   /** 文件树预览区底部终端是否显示 */
   const [terminalConsoleVisible, setTerminalConsoleVisible] =
@@ -2219,6 +2238,29 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       return;
     }
     const currentId = id?.toString() || '';
+    const localFile = getLocalFileReference(
+      resource.target,
+      currentId,
+      resource.target,
+    );
+    // 本机会话直接读取当前工作区相对路径或 Win/POSIX 绝对路径。
+    if (localFile) {
+      const { targetDir, relativePath } = splitLocalToolFilePath(
+        resource.target,
+        getLocalFilesWorkspaceRoot(currentId),
+      );
+      if (targetDir && relativePath) {
+        openPreviewView(currentId);
+        toolResourceSelectRef.current = '';
+        setTaskAgentSelectedFileId('');
+        setExternalPreviewFile({
+          cId: Number(currentId),
+          targetDir,
+          relativePath,
+        });
+        return;
+      }
+    }
     const decision = resolveSandboxFileOpen(resource.target, currentId);
     if (decision.type === 'reject') {
       antdMessage.error(

@@ -10,6 +10,7 @@
  */
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
+import type { HostLocalFilesBridge } from '@/types/interfaces/hostBridge';
 import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
 import {
   getDesktopShellPreviewPlatform,
@@ -25,6 +26,11 @@ type NuwaClawBridgeLike = NonNullable<Window['NuwaClawBridge']>;
 
 function getBridge(): NuwaClawBridgeLike | undefined {
   return typeof window !== 'undefined' ? window.NuwaClawBridge : undefined;
+}
+
+/** 原生截图/录屏能力应在点击时取得，兼容旧宿主和普通浏览器。 */
+export function getCaptureBridge(): NuwaClawBridgeLike['capture'] {
+  return getBridge()?.capture;
 }
 
 /**
@@ -624,8 +630,16 @@ export const host = {
   },
 };
 
+/** 本机文件能力只接受真实商业宿主，不消费浏览器的桌面样式预览。 */
+export const localFiles = {
+  getApi(): Partial<HostLocalFilesBridge> | undefined {
+    return host.getProduct() === 'nuwax' ? getBridge()?.localFiles : undefined;
+  },
+};
+
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
 export const hostBridge = {
+  getCaptureBridge,
   hasHostBridge,
   isDesktopHost,
   isShellWindow,
@@ -648,6 +662,7 @@ export const hostBridge = {
   meta,
   updater,
   host,
+  localFiles,
 };
 
 export default hostBridge;

@@ -16,7 +16,7 @@
   }
 
   .action-box {
-    gap: 12px;
+    gap: 8px;
     position: absolute;
     left: 16px;
     right: 16px;
@@ -27,8 +27,28 @@
     z-index: -1;
     background-color: #fff;
 
+    .action-btn {
+      flex: 1;
+      min-width: 0;
+      padding-inline: 8px;
+      overflow: hidden;
+
+      // antd Button 文字在内层 span，需单独截断才能出现省略号
+      > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      :global(.ant-btn-icon) {
+        flex-shrink: 0;
+      }
+    }
+
     .star-box {
       display: flex;
+      flex-shrink: 0;
       align-items: center;
       justify-content: center;
       width: 32px;

@@ -5,6 +5,7 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import useAgentPaymentIntercept from '@/hooks/useAgentPaymentIntercept';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
+import { isAppTabLimitReached } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import { apiPublishOffShelf } from '@/services/publish';
 import {
@@ -14,6 +15,7 @@ import {
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -22,7 +24,7 @@ import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Segmented, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel, useParams, useRequest, useSearchParams } from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
 import { ICON_MORE } from '@/constants/images.constants';
 import { getSpaceSquareTabs } from '@/constants/space.constants';
@@ -76,6 +78,7 @@ const SpaceSection: React.FC = () => {
   } = useSpaceSquare();
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { openApp, openedAppTabs } = useModel('openedAppTabs');
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
@@ -327,9 +330,28 @@ const SpaceSection: React.FC = () => {
     return squareComponentList.map((item, index) => {
       if (type === SquareAgentTypeEnum.Agent) {
         const title = getTitle(item);
-        // 付费未订阅的智能体先原地拦截弹统一专家卡订阅/付费
-        const handleAgentCardClick = () =>
-          interceptAgentClick(item, () =>
+        const handleAgentCardClick = () => {
+          // 网页应用与系统广场一致：登记应用标签并进入智能体首页。
+          // agent/list 的旧回包使用 agentType，兼容 targetSubType 缺失的情况。
+          if (
+            item.targetType === SquareAgentTypeEnum.Agent &&
+            (item.targetSubType ?? item.agentType) ===
+              AgentComponentTypeEnum.PageApp
+          ) {
+            const routePath = `/agent/${item.targetId}`;
+            if (!isAppTabLimitReached(openedAppTabs, routePath)) {
+              openApp({
+                targetId: item.targetId,
+                name: item.name,
+                icon: item.icon,
+                routePath,
+              });
+            }
+            history.push(routePath);
+            return;
+          }
+          // 付费未订阅的智能体先原地拦截弹统一专家卡订阅/付费
+          return interceptAgentClick(item, () =>
             handleClick(
               item.targetId,
               item.targetType,
@@ -338,6 +360,7 @@ const SpaceSection: React.FC = () => {
               { name: item.name, icon: item.icon },
             ),
           );
+        };
         return (
           <SingleAgent
             key={index}

@@ -11,6 +11,11 @@ import {
   ICON_TS,
   ICON_TSX,
 } from '@/constants/fileTreeImages.constants';
+import {
+  assertLocalFileReferenceCurrent,
+  isAbsoluteFileUrl,
+  saveLocalFile,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
@@ -259,6 +264,9 @@ export const downloadFileByUrl = async (
   const fileName = targetNode.name || 'download';
 
   try {
+    // 即使正文已缓存，旧本机身份也不得转交 PDF 或浏览器下载链。
+    if (targetNode.localFile)
+      assertLocalFileReferenceCurrent(targetNode.localFile);
     // 如果是 Markdown 文件且需要导出为 PDF，直接使用 content 属性
     if (exportAsPdf && isMarkdownFile(fileName)) {
       const markdownContent = targetNode.content || '';
@@ -297,12 +305,16 @@ export const downloadFileByUrl = async (
       return;
     }
 
+    if (targetNode.localFile) {
+      await saveLocalFile(targetNode.localFile, fileName);
+      return;
+    }
     // 其他文件类型需要通过 URL 下载
     const fileProxyUrl = targetNode.fileProxyUrl;
     if (!fileProxyUrl) return;
 
     // 构建完整的 URL
-    const fullUrl = fileProxyUrl.startsWith('http')
+    const fullUrl = isAbsoluteFileUrl(fileProxyUrl)
       ? fileProxyUrl
       : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
 

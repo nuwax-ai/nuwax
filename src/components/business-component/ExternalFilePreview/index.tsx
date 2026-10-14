@@ -2,9 +2,14 @@ import CopyIconButton from '@/components/base/CopyIconButton';
 import SvgIcon from '@/components/base/SvgIcon';
 import FilePreview from '@/components/business-component/FilePreview';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import {
+  getLocalFileReference,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import LocalFileActions from '../FilePreview/LocalFileActions';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,7 +28,10 @@ export interface ExternalFilePreviewProps {
 
 /** 拆出末段文件名与其上级相对目录（relativePath 形如 Desktop/sub/a.md） */
 const splitRelativePath = (relativePath: string) => {
-  const slashIndex = relativePath.lastIndexOf('/');
+  const slashIndex = Math.max(
+    relativePath.lastIndexOf('/'),
+    relativePath.lastIndexOf('\\'),
+  );
   return slashIndex === -1
     ? { fileName: relativePath, parentDir: '' }
     : {
@@ -50,17 +58,33 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
   className,
 }) => {
   // 沙箱内绝对路径（头部完整展示 + 一键复制）
-  const absolutePath = `/${targetDir}/${relativePath}`.replace(/\/{2,}/g, '/');
+  const normalizedTargetDir = /^[a-z]:$/i.test(targetDir)
+    ? `${targetDir}\\`
+    : targetDir;
+  const separator = /^[a-z]:[\\/]|^\\\\/i.test(normalizedTargetDir)
+    ? '\\'
+    : '/';
+  const root =
+    separator === '/' && !normalizedTargetDir.startsWith('/')
+      ? `/${normalizedTargetDir}`
+      : normalizedTargetDir;
+  const absolutePath = `${root.replace(/[\\/]+$/, '')}${separator}${relativePath
+    .replace(/^[\\/]+/, '')
+    .replace(/[\\/]/g, separator)}`;
 
   // 静态代理直连：customTargetDir 锚定文件所在父目录，URL 段只带文件名；
   // t 为防缓存时间戳，随挂载生成（重拉缓存由 FilePreview 刷新按钮同 URL 复现）
   const fileProxyUrl = useMemo(() => {
     const { fileName, parentDir } = splitRelativePath(relativePath);
-    const dir = parentDir ? `${targetDir}/${parentDir}` : targetDir;
+    const dir = parentDir
+      ? `${normalizedTargetDir}/${parentDir}`
+      : normalizedTargetDir;
     return `/api/computer/static/${cId}/${encodeURIComponent(
       fileName,
     )}?t=${Date.now()}&customTargetDir=${encodeURIComponent(dir)}`;
-  }, [cId, targetDir, relativePath]);
+  }, [cId, normalizedTargetDir, relativePath]);
+  useLocalFilesRevision();
+  const localFile = getLocalFileReference(fileProxyUrl, cId, absolutePath);
 
   return (
     <div className={cx(styles['external-file-preview'], className)}>
@@ -85,9 +109,15 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
           {absolutePath}
         </span>
         <CopyIconButton text={absolutePath} buttonSize="small" />
+        <LocalFileActions reference={localFile} />
       </div>
       <div className={cx(styles['external-file-body'])}>
-        <FilePreview src={fileProxyUrl} showRefresh height="100%" />
+        <FilePreview
+          src={fileProxyUrl}
+          localFile={localFile}
+          showRefresh
+          height="100%"
+        />
       </div>
     </div>
   );

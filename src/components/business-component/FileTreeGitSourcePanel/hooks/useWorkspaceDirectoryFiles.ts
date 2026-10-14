@@ -1,4 +1,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  getLocalFilesContextKey,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -29,6 +33,9 @@ export function useWorkspaceDirectoryFiles(
     enabled?: boolean;
   },
 ) {
+  useLocalFilesRevision();
+  const localContextKey = getLocalFilesContextKey(conversationId);
+  const contextEpochRef = useRef(0);
   const enabled = options?.enabled !== false;
   const [currentPath, setCurrentPath] = useState('');
   const [files, setFiles] = useState<WorkspaceStaticFile[]>([]);
@@ -62,6 +69,7 @@ export function useWorkspaceDirectoryFiles(
 
   // 树形懒加载始终从根目录开始；切换会话时清空上一会话的节点缓存。
   useEffect(() => {
+    contextEpochRef.current += 1;
     conversationIdRef.current = conversationId;
     directoryRequestTokensRef.current.clear();
     prefetchedDirectoryPathsRef.current.clear();
@@ -74,7 +82,7 @@ export function useWorkspaceDirectoryFiles(
     setLoading(false);
     setFileListLoaded(false);
     setLoadingDirectoryPaths(new Set());
-  }, [conversationId]);
+  }, [conversationId, localContextKey]);
 
   /**
    * 拉取 path 及其下一层（depth: 2），并合并进已有列表。
@@ -84,6 +92,7 @@ export function useWorkspaceDirectoryFiles(
   const loadDirectory = useCallback(
     async (path: string, loadOptions?: { silent?: boolean }) => {
       if (!conversationId) return;
+      const contextEpoch = contextEpochRef.current;
       const silent = loadOptions?.silent === true;
       // 工作区相对路径，去掉首尾斜杠；根目录是空字符串
       const requestPath = path.replace(/^\/+|\/+$/g, '');
@@ -118,6 +127,7 @@ export function useWorkspaceDirectoryFiles(
         // 会话已切换，或同目录有更新的请求：不再写入，避免串数据
         if (
           conversationIdRef.current !== conversationId ||
+          contextEpochRef.current !== contextEpoch ||
           directoryRequestTokensRef.current.get(requestPath) !== token
         ) {
           return;
@@ -194,7 +204,10 @@ export function useWorkspaceDirectoryFiles(
           return next;
         });
       } catch (error) {
-        if (conversationIdRef.current === conversationId) {
+        if (
+          conversationIdRef.current === conversationId &&
+          contextEpochRef.current === contextEpoch
+        ) {
           message.error(
             error instanceof Error && error.message
               ? error.message
@@ -202,39 +215,41 @@ export function useWorkspaceDirectoryFiles(
           );
         }
       } finally {
-        // 会话已切换时，计数和在途标记已清空，不能再改新会话的状态
-        if (conversationIdRef.current !== conversationId) {
-          return;
+        // 只结束当前代次的加载状态；清理不能覆盖请求原本的返回或异常。
+        if (
+          conversationIdRef.current === conversationId &&
+          contextEpochRef.current === contextEpoch
+        ) {
+          if (silent) {
+            // 静默补层不占 loading，只释放当前目录的在途标记。
+            inflightDirectoryRequestsRef.current.delete(requestPath);
+          } else {
+            const loadingCount = Math.max(
+              0,
+              (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
+            );
+            if (loadingCount > 0) {
+              directoryLoadingCountRef.current.set(requestPath, loadingCount);
+            } else {
+              directoryLoadingCountRef.current.delete(requestPath);
+              inflightDirectoryRequestsRef.current.delete(requestPath);
+              setLoadingDirectoryPaths((previous) => {
+                if (!previous.has(requestPath)) return previous;
+                const next = new Set(previous);
+                next.delete(requestPath);
+                return next;
+              });
+            }
+            activeRequestCountRef.current = Math.max(
+              0,
+              activeRequestCountRef.current - 1,
+            );
+            setLoading(activeRequestCountRef.current > 0);
+          }
         }
-        // 静默补层不占用 loading，只清掉在途标记，避免同一目录再也刷不了
-        if (silent) {
-          inflightDirectoryRequestsRef.current.delete(requestPath);
-          return;
-        }
-        const loadingCount = Math.max(
-          0,
-          (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
-        );
-        if (loadingCount > 0) {
-          directoryLoadingCountRef.current.set(requestPath, loadingCount);
-        } else {
-          directoryLoadingCountRef.current.delete(requestPath);
-          inflightDirectoryRequestsRef.current.delete(requestPath);
-          setLoadingDirectoryPaths((previous) => {
-            if (!previous.has(requestPath)) return previous;
-            const next = new Set(previous);
-            next.delete(requestPath);
-            return next;
-          });
-        }
-        activeRequestCountRef.current = Math.max(
-          0,
-          activeRequestCountRef.current - 1,
-        );
-        setLoading(activeRequestCountRef.current > 0);
       }
     },
-    [conversationId],
+    [conversationId, localContextKey],
   );
 
   const refresh = useCallback(

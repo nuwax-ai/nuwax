@@ -11,6 +11,7 @@ import { subscribeNativeImUnread } from '@/services/imEventBridge';
 import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
 import { initImNotificationPreference } from './imNotificationPreference';
+import { initLocalFilesLifecycle } from './localFileService';
 import { getPageBuildInfo } from './pageBuildInfo';
 import { initWebUpdateCheck } from './webUpdateService';
 
@@ -20,6 +21,7 @@ import { initWebUpdateCheck } from './webUpdateService';
  */
 export function initClientShell(): () => void {
   // IM 尚未打开时也恢复保存的原生通知开关，等待文档握手后同步。
+  const disposeLocalFiles = initLocalFilesLifecycle();
   const disposeImPreference = initImNotificationPreference();
   const disposeImUnread = subscribeNativeImUnread();
   // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）。
@@ -35,6 +37,7 @@ export function initClientShell(): () => void {
   const disposeDragGesture = initTitlebarDragGesture();
 
   return () => {
+    disposeLocalFiles();
     disposeWebUpdateCheck();
     disposeDragGesture();
     disposeImPreference();

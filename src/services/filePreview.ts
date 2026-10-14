@@ -1,3 +1,4 @@
+import { isLocalPreviewUrl } from '@/features/client-shell/localFileService';
 import { getBusinessFileRequestAuth } from '@/utils/businessAuth';
 
 export interface FilePreviewLoadOptions {
@@ -157,7 +158,9 @@ export async function loadFilePreviewBuffer(
     return buffer;
   }
 
-  const auth = getBusinessFileRequestAuth(src);
+  const auth = isLocalPreviewUrl(src)
+    ? { credentials: 'omit' as const, headers: {} }
+    : getBusinessFileRequestAuth(src);
   throwIfAborted(signal);
   const response = await waitWithAbort(
     fetch(src, {

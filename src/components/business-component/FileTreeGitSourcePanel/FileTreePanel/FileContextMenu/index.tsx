@@ -1,3 +1,9 @@
+import {
+  getLocalFileReference,
+  openLocalFile,
+  revealLocalFile,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { dict } from '@/services/i18nRuntime';
 import { isMarkdownFile } from '@/utils/common';
 import {
@@ -11,9 +17,10 @@ import {
   ImportOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import styles from './index.less';
-import type { FileContextMenuProps } from './types';
+import type { ContextMenuItem, FileContextMenuProps } from './types';
 
 /**
  * FileContextMenu 组件
@@ -37,6 +44,8 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   disabledDelete = false,
   useRelativePosition = false,
 }) => {
+  useLocalFilesRevision();
+  const localFile = targetNode ? getLocalFileReference(targetNode) : undefined;
   /**
    * 处理菜单项点击
    */
@@ -47,6 +56,14 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     },
     [onClose],
   );
+  const localAction = (operation: typeof openLocalFile) => {
+    if (!localFile) return;
+    handleMenuItemClick(() => {
+      void operation(localFile).catch((error) =>
+        message.error(error instanceof Error ? error.message : String(error)),
+      );
+    });
+  };
 
   /**
    * 处理删除操作
@@ -134,12 +151,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
    * 处理下载文件操作
    */
   const handleDownload = useCallback(() => {
-    if (!targetNode || !targetNode.fileProxyUrl) return;
+    if (!targetNode || (!targetNode.fileProxyUrl && !localFile)) return;
 
     handleMenuItemClick(() => {
       onDownloadFileByUrl?.(targetNode);
     });
-  }, [targetNode, handleMenuItemClick]);
+  }, [targetNode, handleMenuItemClick, localFile, onDownloadFileByUrl]);
 
   /**
    * 处理导出为 PDF 操作（仅 Markdown 文件）
@@ -312,7 +329,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             disabled: !onRename,
           },
           // 只有当 fileProxyUrl 存在且不为空时才显示下载选项
-          ...(targetNode?.fileProxyUrl
+          ...(targetNode?.fileProxyUrl || localFile
             ? [
                 {
                   key: 'download',
@@ -420,15 +437,36 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       ];
 
   // 如果对于SKILL.md文件禁用删除功能和重命名功能，过滤掉删除菜单项、重命名菜单项和相关 divider
-  const menuItems = disabledDelete
-    ? allMenuItems.filter(
-        (item) =>
-          item.key !== 'delete' &&
-          item.key !== 'rename' &&
-          item.key !== 'divider' &&
-          item.key !== 'divider2',
-      )
-    : allMenuItems;
+  const localMenuItems: Partial<ContextMenuItem & { type: 'divider' }>[] =
+    localFile
+      ? [
+          {
+            key: 'open-system',
+            label: dict('PC.Components.FilePreview.openInSystem'),
+            icon: <FolderOpenOutlined />,
+            onClick: () => localAction(openLocalFile),
+          },
+          {
+            key: 'reveal-folder',
+            label: dict('PC.Components.FilePreview.revealInFolder'),
+            icon: <FolderOpenOutlined />,
+            onClick: () => localAction(revealLocalFile),
+          },
+          { key: 'local-divider', type: 'divider' as const },
+        ]
+      : [];
+  const menuItems = [
+    ...localMenuItems,
+    ...(disabledDelete
+      ? allMenuItems.filter(
+          (item) =>
+            item.key !== 'delete' &&
+            item.key !== 'rename' &&
+            item.key !== 'divider' &&
+            item.key !== 'divider2',
+        )
+      : allMenuItems),
+  ];
 
   return (
     <div
