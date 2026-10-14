@@ -157,7 +157,7 @@ dist/
 
 `/m/` 继续由移动端占用。消息和资料库的静态 entry 分别是 `/micro-apps/message/index.html`、`/micro-apps/repo/index.html`；用户访问的 `/instant-message`、`/repo` 仍由主站打开侧栏并挂载子应用。静态目录不存在的文件返回 404，业务深链刷新回到主站入口。
 
-`npm run build:prod` 合入两个微应用，`npm run build:prod:m gitlab` 进一步下载移动端 H5 到 `dist/m/`。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
+`npm run build:prod` 合入两个微应用，`npm run build:prod:m` 进一步下载移动端 H5 到 `dist/m/`（来源用环境变量 `MOBILE_BUILD_SOURCE` 指定，默认内网 gitlab）。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
 
 产物生成过程目前不同：移动端从独立仓库下载已提交的 `unpackage/dist/build/web/`，消息/资料库则由主站构建固定 main 的源码并应用适配层。如果后续要独立发布两个子应用，可让子仓产出包含 qiankun 生命周期的版本包，再由主站按固定版本拉取合并；仍保持上述静态目录契约。
 
