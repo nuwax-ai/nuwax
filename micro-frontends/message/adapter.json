@@ -4,7 +4,7 @@
   "sourceDir": "submodules/nuwax-im",
   "projectDir": "nuwax-im-web",
   "branch": "main",
-  "pin": "cd1d7ee3562dd982047dd18708a50d38c8c908c4",
+  "pin": "bcfc45561831403eb7fcc429096d91ce37683c9d",
   "patch": "adapter.patch",
   "overlay": "overlay",
   "entry": "/micro-apps/message/index.html",
