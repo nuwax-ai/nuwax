@@ -4,7 +4,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
-const source = args.includes('gitlab') ? 'gitlab' : 'github';
+// 默认走内网 gitlab（deploy_test.sh / deploy_sync_test.sh 提测链的真实意图）；
+// 显式传 'github' 可切镜像。勿依赖位置参数传 gitlab——npm run 附加参数只落复合链尾，到不了本脚本
+const source = args.includes('github') ? 'github' : 'gitlab';
 // const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
 const BRANCH =
   args.find((a) => a !== 'gitlab' && a !== 'github') ||
