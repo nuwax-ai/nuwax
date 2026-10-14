@@ -9,11 +9,12 @@ import {
 } from '@/constants/images.constants';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -43,7 +44,10 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     description,
     statistics,
     collect,
+    targetType,
   } = publishedItemInfo;
+  /** 网站应用、三方应用不是智能体详情页，不提供「进入独立页面」。 */
+  const canEnterAgentPage = targetType === AgentComponentTypeEnum.Agent;
   // 智能体收藏
   const { run: runCollectAgent } = useRequest((id: number) => collectApi(id), {
     manual: true,
@@ -78,7 +82,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   return (
     <CardWrapper
       className={cx(styles['card-wrapper'])}
-      // 智能体 tab 卡片图标裁圆（技能 tab 复用本组件时保持方形默认）
+      // 智能体 tab 卡片图标裁圆（网页应用 tab 保持方形）
       iconShape={iconShape}
       title={title || name}
       avatar={publishUser?.avatar || defaultAvatar}
@@ -118,15 +122,26 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
           <div className={cx(styles['action-box'], 'flex', 'items-center')}>
             <Button
               type="primary"
-              block
+              className={cx(styles['action-btn'])}
               icon={<ICON_MESSAGE />}
               onClick={(e) => {
                 e.stopPropagation();
                 onStartUse?.(e);
               }}
             >
-              {dict('PC.Pages.Square.SingleAgent.startUsing')}
+              {dict('PC.Pages.Square.SingleAgent.summon')}
             </Button>
+            {canEnterAgentPage ? (
+              <Button
+                className={cx(styles['action-btn'])}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  history.push(`/agent/${targetId}`);
+                }}
+              >
+                {dict('PC.Pages.Square.SingleAgent.enterStandalone')}
+              </Button>
+            ) : null}
             <span
               className={cx(styles['star-box'])}
               onClick={handleToggleCollect}
