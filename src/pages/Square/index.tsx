@@ -17,9 +17,7 @@ import {
   apiPublishedAppList,
   apiPublishedAppRecentlyUsedAdd,
   apiPublishedPluginList,
-  apiPublishedSkillCollect,
   apiPublishedSkillList,
-  apiPublishedSkillUnCollect,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
   APP_LIST_TARGET_SUBTYPES,
@@ -47,6 +45,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
+import SingleSkill from './SingleSkill';
 import SquareComponentInfo from './SquareComponentInfo';
 import TemplateItem from './TemplateItem';
 const cx = classNames.bind(styles);
@@ -695,15 +694,13 @@ const Square: React.FC = () => {
                     categoryTypeRef.current === SquareAgentTypeEnum.Skill
                   ) {
                     return (
-                      <SingleAgent
+                      <SingleSkill
                         showUserCount={false}
                         showConvCount={false}
                         key={index}
                         extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
-                        collectApi={apiPublishedSkillCollect}
-                        unCollectApi={apiPublishedSkillUnCollect}
                         onClick={() => handleClickSkillCard(item)}
                         onStartUse={() => handleClickSkill(item)}
                       />
