@@ -3,6 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import {
@@ -129,6 +130,22 @@ export function useConversationAgentChatSession(
   );
 
   const devConversationId = agentConfigInfo?.devConversationId;
+  useLocalFilesContext(
+    devConversationId && conversationInfo?.id === devConversationId
+      ? {
+          cId: devConversationId,
+          sandboxId: resolveEffectiveSandboxId({
+            selectedComputerId,
+            agentSandboxId: conversationInfo.agent?.sandboxId,
+            sandboxServerId: conversationInfo.sandboxServerId,
+          }),
+          workspacePath: conversationInfo.workspacePath,
+          projectId: conversationInfo.devTargetId,
+          serviceType: conversationInfo.devTargetType,
+          userId: conversationInfo.userId,
+        }
+      : null,
+  );
 
   const handleSendMessage = useCallback(
     (

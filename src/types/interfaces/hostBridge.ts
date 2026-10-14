@@ -183,6 +183,11 @@ export interface CaptureFailure {
 
 export type CaptureResult = CaptureSuccess | CaptureFailure;
 
+/** 截图复制位图；录屏（含 GIF）复制原始文件，不返回本地路径。 */
+export type CaptureCopyResult =
+  | { success: true; kind: 'image' | 'file' }
+  | CaptureFailure;
+
 export type CaptureState =
   | "idle"
   | "selecting"
@@ -203,10 +208,137 @@ export interface CaptureBridge {
     length: number,
   ): Promise<ArrayBuffer | null>;
   release(resultId: string): Promise<void>;
+  /** 增量能力，旧客户端可缺失；成功复制后可 release 原结果。 */
+  copy?(resultId: string): Promise<CaptureCopyResult>;
 }
 
 /** 当前 preload 暴露的完整能力；IM 仅在商业宿主受信顶层页面提供。 */
+/** 本机文件访问：可选宿主能力，旧客户端和浏览器保持原路线。 */
+export type LocalFilesErrorCode =
+  | 'untrusted'
+  | 'unavailable'
+  | 'not-local'
+  | 'invalid-argument'
+  | 'context-unresolved'
+  | 'expired'
+  | 'not-found'
+  | 'permission-denied'
+  | 'file-service-unavailable'
+  | 'canceled'
+  | 'failed';
+export type LocalFilesResult<T> =
+  | { success: true; data: T }
+  | { success: false; code: LocalFilesErrorCode; error?: string };
+export interface LocalFilesCapabilities {
+  apiVersion: number;
+  available: boolean;
+  sandboxId?: string;
+}
+export interface LocalFilesContextInput {
+  cId: string | number;
+  sandboxId: string;
+  workspacePath?: string;
+  projectId?: string | number;
+  serviceType?: string;
+  userId?: string | number;
+}
+export interface LocalFilesContext {
+  contextId: string;
+  cId: string;
+  sandboxId: string;
+  root: string;
+}
+export interface LocalFileTarget {
+  contextId: string;
+  path: string;
+}
+export interface LocalFilesListOptions {
+  relativePath?: string;
+  recursive?: boolean;
+  depth?: number;
+  type?: 'file' | 'dir' | 'all';
+  limit?: number;
+  customTargetDir?: string;
+}
+export interface LocalFilesSearchOptions extends LocalFilesListOptions {
+  kw: string;
+  maxVisit?: number;
+  timeoutMs?: number;
+}
+export interface LocalFileEntry {
+  name: string;
+  isDir: boolean;
+  isLink?: boolean;
+  fileProxyUrl?: string | null;
+  binary?: boolean;
+  contents?: string;
+  sizeExceeded?: boolean;
+  size?: number;
+}
+export interface LocalFilesList {
+  files: LocalFileEntry[];
+  recursive?: boolean;
+  truncated?: boolean;
+  visited?: number;
+}
+export interface LocalFileMetadata {
+  path: string;
+  size: number;
+  mime: string;
+  isDir: boolean;
+  mtimeMs: number;
+}
+export interface LocalFilePreview {
+  grantId: string;
+  url: string;
+  baseUrl: string;
+  mime: string;
+  bytes: number;
+}
+export interface LocalFileSaveOptions {
+  fileName?: string;
+  operationId?: string;
+}
+export interface LocalFileSaved {
+  canceled: boolean;
+  path?: string;
+}
+export interface HostLocalFilesBridge {
+  pickDirectory(): Promise<{ canceled: boolean; paths: string[] }>;
+  getCapabilities(): Promise<LocalFilesCapabilities>;
+  resolveContext(
+    input: LocalFilesContextInput,
+  ): Promise<LocalFilesResult<LocalFilesContext>>;
+  releaseContext(contextId: string): Promise<void>;
+  listFiles(
+    contextId: string,
+    options?: LocalFilesListOptions,
+  ): Promise<LocalFilesResult<LocalFilesList>>;
+  searchFiles(
+    contextId: string,
+    options: LocalFilesSearchOptions,
+  ): Promise<LocalFilesResult<LocalFilesList>>;
+  stat(target: LocalFileTarget): Promise<LocalFilesResult<LocalFileMetadata>>;
+  preparePreview(
+    target: LocalFileTarget,
+  ): Promise<LocalFilesResult<LocalFilePreview>>;
+  releasePreview(grantId: string): Promise<void>;
+  openPath(target: LocalFileTarget): Promise<LocalFilesResult<void>>;
+  revealInFolder(target: LocalFileTarget): Promise<LocalFilesResult<void>>;
+  saveFile(
+    target: LocalFileTarget,
+    options?: LocalFileSaveOptions,
+  ): Promise<LocalFilesResult<LocalFileSaved>>;
+  exportWorkspace(
+    contextId: string,
+    options?: LocalFileSaveOptions,
+  ): Promise<LocalFilesResult<LocalFileSaved>>;
+  cancel(operationId: string): Promise<void>;
+}
+
 export interface HostBridgeContract {
+  /** 无副作用的异步探测；未知能力、未受信页面、未启用功能返回 false。 */
+  canUse?(capability: string): Promise<boolean>;
   perf: {
     enabled(): boolean;
     mark(stage: string, payload?: Record<string, unknown>): void;
@@ -246,9 +378,7 @@ export interface HostBridgeContract {
     openWindow(path: string): Promise<{ success: boolean; error?: string }>;
     openClientSettings(): Promise<{ success: boolean; error?: string }>;
   };
-  localFiles: {
-    pickDirectory(): Promise<{ canceled: boolean; paths: string[] }>;
-  };
+  localFiles: HostLocalFilesBridge;
   updater: {
     getState(): Promise<ClientUpdateState | null>;
     check(): Promise<ClientUpdateCheckResult | null>;
@@ -279,7 +409,18 @@ export interface HostBridgeContract {
 
 /** 浏览器没有桥；旧宿主可以只提供部分命名空间及方法，消费方按能力探测。 */
 export type CompatibleHostBridge = {
-  [Namespace in keyof HostBridgeContract]?: Partial<
-    NonNullable<HostBridgeContract[Namespace]>
-  >;
+  [Namespace in keyof HostBridgeContract]?: NonNullable<HostBridgeContract[Namespace]> extends (...args: never[]) => unknown
+    ? NonNullable<HostBridgeContract[Namespace]>
+    : Partial<NonNullable<HostBridgeContract[Namespace]>>;
 };
+
+type HostNamespaces = Omit<HostBridgeContract, 'canUse'>;
+/** 能力名区分大小写；命名空间表示至少有一个成员可用。 */
+export type HostCapability = Exclude<
+  keyof HostNamespaces | {
+    [K in keyof HostNamespaces]-?: `${K}.${Extract<keyof NonNullable<HostNamespaces[K]>, string>}`
+  }[keyof HostNamespaces],
+  'auth.getToken' | 'auth.persistToken'
+> | 'capture.screenshot.png' | 'capture.screenshot.jpeg' | 'capture.screenshot.webp'
+  | 'capture.record.mp4' | 'capture.record.webm' | 'capture.record.gif'
+  | 'capture.copy.image' | 'capture.copy.file';

@@ -1,3 +1,4 @@
+import { saveLocalFile } from '@/features/client-shell/localFileService';
 import { apiTemplateExport } from '@/services/agentDev';
 import { apiExportExcel } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
@@ -184,6 +185,8 @@ export const exportFileViaBrowserDownload = async (
   linkUrl: string,
   fileName?: string,
 ) => {
+  const localSaved = await saveLocalFile(linkUrl, fileName);
+  if (localSaved !== undefined) return localSaved;
   const saved = await saveWithDesktopHost(linkUrl, fileName || 'export.zip');
   if (saved !== undefined) return saved;
   // 浏览器只能确认触发，不能据此提示文件保存成功。

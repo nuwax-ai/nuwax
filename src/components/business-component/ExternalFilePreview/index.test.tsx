@@ -11,6 +11,13 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const local = vi.hoisted(() => ({ reference: vi.fn() }));
+vi.mock('@/features/client-shell/localFileService', () => ({
+  getLocalFileReference: local.reference,
+  useLocalFilesRevision: () => 0,
+  openLocalFile: vi.fn(),
+  revealLocalFile: vi.fn(),
+}));
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string) => key,
 }));
@@ -20,8 +27,18 @@ vi.mock('./index.less', () => ({
 }));
 
 vi.mock('@/components/business-component/FilePreview', () => ({
-  default: ({ src }: { src: string }) => (
-    <div data-testid="file-preview" data-src={src} />
+  default: ({
+    src,
+    localFile,
+  }: {
+    src: string;
+    localFile?: { path: string };
+  }) => (
+    <div
+      data-testid="file-preview"
+      data-src={src}
+      data-local-path={localFile?.path}
+    />
   ),
 }));
 
@@ -44,6 +61,7 @@ import ExternalFilePreview from './index';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  local.reference.mockReset();
 });
 
 const renderPreview = (
@@ -59,6 +77,43 @@ const renderPreview = (
   );
 
 describe('ExternalFilePreview', () => {
+  it.each(['C:', 'C:\\', 'C:/'])(
+    '盘符根目录 %s 保留正确本机路径和代理父目录',
+    (targetDir) => {
+      local.reference.mockImplementation((_url, _id, path) => ({
+        contextId: 'live',
+        cId: '100',
+        path,
+      }));
+      renderPreview({ targetDir, relativePath: 'readme.md' });
+      expect(screen.getByTestId('file-preview').dataset.localPath).toBe(
+        'C:\\readme.md',
+      );
+      const url = new URL(
+        screen.getByTestId('file-preview').dataset.src!,
+        'https://test.invalid',
+      );
+      expect(url.searchParams.get('customTargetDir')).toMatch(/^C:[\\/]+$/);
+    },
+  );
+
+  it('Windows绝对路径保持盘符，不强加POSIX根斜杠', () => {
+    renderPreview({
+      targetDir: 'C:\\Users\\alice',
+      relativePath: 'Desktop\\note.md',
+    });
+    expect(
+      screen.getByText('C:\\Users\\alice\\Desktop\\note.md'),
+    ).toBeInTheDocument();
+    const parsed = new URL(
+      screen.getByTestId('file-preview').dataset.src!,
+      'https://test.invalid',
+    );
+    expect(parsed.pathname).toBe('/api/computer/static/100/note.md');
+    expect(parsed.searchParams.get('customTargetDir')).toBe(
+      'C:\\Users\\alice/Desktop',
+    );
+  });
   it('直连静态代理地址：customTargetDir=文件父目录，URL 段只带文件名', () => {
     renderPreview();
 
