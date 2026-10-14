@@ -516,7 +516,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     onSuccess: (result: AgentDetailDto) => {
       onResultSuccess(result);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setDetailError(error ?? new Error());
       setLoading(false);
       setAppAgentDetailLoading(false);
