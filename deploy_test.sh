@@ -39,6 +39,7 @@ return_to_start() {
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$START_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
   if git checkout -q "$START_BRANCH" 2>/dev/null; then
+    git submodule update --init --recursive >/dev/null 2>&1 || true
     echo "↩ 已切回起跑分支 ${START_BRANCH}（处理完问题后直接重跑本脚本即可）" >&2
   fi
 }
@@ -186,6 +187,7 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   done
   CURRENT_STEP="收尾"
   rgit checkout -q "$START_BRANCH"
+  retry_git 3 submodule update --init --recursive
   log "✅ 快速通道提测完成：gitlab/${TEST_BRANCH} 已更新（M 端源 ${MOBILE_BUILD_SOURCE}）"
 }
 

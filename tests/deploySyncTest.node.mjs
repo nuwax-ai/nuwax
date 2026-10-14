@@ -876,3 +876,61 @@ test('source conflict lists the conflicted files before rolling back', async (t)
   assert.match(failure.stderr, /源码冲突文件[^\n]*\n\s+source\.txt/);
   assert.equal(await git(state.root, 'ls-files', '-u'), '');
 });
+
+test('keeps running the startup copy after checkout swaps the script on disk', async (t) => {
+  const state = await fixture(t);
+  await instrumentTools(state);
+  // 个人分支上的脚本副本与启动分支不同：切过去后若继续从磁盘按偏移读，会读到这些行。
+  await fs.writeFile(
+    path.join(state.root, 'scripts/deploy_sync_test.sh'),
+    'exit 42\n'.repeat(8000),
+  );
+  await git(state.root, 'commit', '-am', 'feature carries another script copy');
+  await git(state.root, 'checkout', 'dev');
+  const result = await deploy(state);
+  assert.match(result.stdout, /同步测试流程完成/);
+  assert.equal(await git(state.root, 'branch', '--show-current'), feature);
+});
+
+test('submodules follow every branch the chain builds on or hands back', async (t) => {
+  const state = await fixture(t);
+  await instrumentTools(state);
+  const fileProtocol = {
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'protocol.file.allow',
+    GIT_CONFIG_VALUE_0: 'always',
+  };
+  const upstream = path.join(state.temporary, 'micro-app');
+  await fs.mkdir(upstream);
+  await git(upstream, 'init', '-b', 'main');
+  await git(upstream, 'config', 'user.name', 'Fixture');
+  await git(upstream, 'config', 'user.email', 'fixture@example.invalid');
+  await fs.writeFile(path.join(upstream, 'app.txt'), 'v1\n');
+  await git(upstream, 'add', '.');
+  await git(upstream, 'commit', '-m', 'v1');
+  await fs.writeFile(path.join(upstream, 'app.txt'), 'v2\n');
+  await git(upstream, 'commit', '-am', 'v2');
+  const [v2, v1] = (await git(upstream, 'rev-list', 'main')).split('\n');
+
+  // 个人分支登记 v1，dev 登记 v2；从 dev 起跑（子模块停在 v2）。
+  await run(
+    state.root,
+    'git',
+    ['submodule', 'add', upstream, 'submodules/app'],
+    fileProtocol,
+  );
+  await git(path.join(state.root, 'submodules/app'), 'checkout', '-q', v1);
+  await git(state.root, 'add', '.gitmodules', 'submodules/app');
+  await git(state.root, 'commit', '-m', 'register app v1');
+  await git(state.root, 'checkout', '-q', 'dev');
+  await git(state.root, 'merge', '-q', feature);
+  await git(path.join(state.root, 'submodules/app'), 'checkout', '-q', v2);
+  await git(state.root, 'add', 'submodules/app');
+  await git(state.root, 'commit', '-m', 'dev moves app to v2');
+
+  const result = await deploy(state, state.root, fileProtocol);
+  assert.match(result.stdout, /同步测试流程完成/);
+  assert.equal(await git(state.root, 'branch', '--show-current'), feature);
+  assert.equal(await git(state.root, 'status', '--porcelain'), '');
+  assert.equal(await git(state.root, 'rev-parse', 'origin/test:submodules/app'), v2);
+});
