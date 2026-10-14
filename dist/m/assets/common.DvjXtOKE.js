@@ -1,0 +1,1 @@
+import"./index-bC8lHG4j.js";class s{constructor(){this.url="",this.name="",this.type="",this.size=0}}class t{constructor(){this.size=10,this.pageIndex=1,this.keyword="",this.type=""}}export{t as L,s as U};
