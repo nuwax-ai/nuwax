@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- DEV-405：第三方 CDN 语音/视频 Referer 防盗链——audio/video 不支持元素级
+         referrerpolicy，页面级 same-origin（同源发完整、跨域不发）随上游同步；
+         取 no-referrer 会剥掉同源 /api/** Referer（见上游 index.html 纪律注释）。 -->
+    <meta name="referrer" content="same-origin" />
     <title>Nuwax IM</title>
     <style>
       /* 启动骨架仅属于消息根，不改宿主的 html/body 或同名 root。 */
