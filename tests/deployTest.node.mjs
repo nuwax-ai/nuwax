@@ -233,6 +233,22 @@ test('a missing gitlab remote is auto-configured and the delivery still succeeds
   );
 });
 
+test('a clone without the local test branch gets it rebuilt from the remote', async (t) => {
+  const state = await fixture(t);
+  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'single-branch clone\n');
+  // 同事克隆常见单分支检出：本地只有 dev，test 分支不存在
+  await git(state.root, 'branch', '-D', 'test');
+  const result = await deploy(state);
+  assert.match(result.stdout, /已自动补建本地分支 test ← gitlab\/test/);
+  const origin = await remoteHead(state, 'origin', 'test');
+  assert.equal(await remoteHead(state, 'gitlab', 'test'), origin);
+  assert.equal(
+    await remoteShow(state, 'gitlab', 'test:dist/index.html'),
+    'artifact from single-branch clone',
+  );
+  assert.equal(await git(state.root, 'branch', '--show-current'), start);
+});
+
 test('source pushed directly to gitlab dev reaches the delivered test', async (t) => {
   const state = await fixture(t);
   const direct = await remoteCommit(

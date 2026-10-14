@@ -166,8 +166,15 @@ ensure_gitlab_remote
 # pin 配对修复，不能仅靠 run() 包装保证只读；演练只核对缓存引用并打印执行顺序。
 if [ "$DRY_RUN" = "1" ]; then
   log "只读演练：不 fetch、不修改 refs/index/文件、不创建或删除 worktree；远端引用以本地缓存为准"
-  for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
-    git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在：请检查分支名或配置"
+  git show-ref --verify --quiet "refs/heads/${FEATURE_BRANCH}" ||
+    die "本地分支 ${FEATURE_BRANCH} 不存在：请检查分支名或配置"
+  for b in "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
+    git show-ref --verify --quiet "refs/heads/${b}" && continue
+    # 共享分支克隆未检出属常态：真实执行会从远端补建，演练只提示（以本地远端缓存为准）
+    git show-ref --verify --quiet "refs/remotes/origin/${b}" ||
+      git show-ref --verify --quiet "refs/remotes/gitlab/${b}" ||
+      die "本地分支 ${b} 不存在，且本地远端缓存里没有 ${b}；请先 fetch 或核对分支名"
+    log "真实执行时会自动补建本地分支 ${b}（当前克隆未检出该分支）"
   done
   log "步骤 1/8：校验分支与干净状态；有并行现场时创建或复用本脚本登记的独立 worktree"
   run git fetch --all --prune
@@ -343,15 +350,17 @@ if [ -n "$WT_DIR" ] && ! git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" "
   fi
 fi
 
-# 分支角色存在性校验（fetch 后做，确保远端引用是最新的）：覆写拼错时在这里干净地拦下
-for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
-  git show-ref --verify --quiet "refs/heads/${b}" ||
-    die "本地分支 ${b} 不存在：请检查分支名或配置"
-done
+# 分支角色存在性校验（fetch 后做，确保远端引用是最新的）：覆写拼错时在这里干净地拦下。
+# 个人分支是本轮交付输入必须本地存在；版本/dev/test 属共享分支，克隆未检出时从远端补建。
+git show-ref --verify --quiet "refs/heads/${FEATURE_BRANCH}" ||
+  die "本地分支 ${FEATURE_BRANCH} 不存在：请检查分支名或配置"
 for r in "origin/${VERSION_BRANCH}" "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
   git show-ref --verify --quiet "refs/remotes/${r}" ||
     die "远端引用 ${r} 不存在：请检查分支名或配置"
 done
+ensure_local_branch "$VERSION_BRANCH" "origin/${VERSION_BRANCH}"
+ensure_local_branch "$DEV_BRANCH" "gitlab/${DEV_BRANCH}"
+ensure_local_branch "$TEST_BRANCH" "gitlab/${TEST_BRANCH}"
 
 PIPELINE_STARTED=1
 CURRENT_STEP="合并版本开发分支"
