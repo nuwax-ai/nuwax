@@ -4765,6 +4765,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.publishedAt": "Published on {0}",
   "PC.Pages.Square.SingleAgent.paid": "Paid",
   "PC.Pages.Square.SingleAgent.startUsing": "Start Using",
+  "PC.Pages.Square.SingleAgent.summon": "Summon",
+  "PC.Pages.Square.SingleAgent.enterStandalone": "Open standalone page",
   "PC.Pages.Square.SingleAgent.subscribed": "Subscribed",
   "PC.Pages.Square.SkillDetail.copyTemplate": "Copy Template",
   "PC.Pages.Square.SkillDetail.downloadExport": "Download Export",

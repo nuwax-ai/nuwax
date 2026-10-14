@@ -4505,6 +4505,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.collectSuccess": "收藏成功",
   "PC.Pages.Square.PluginHeader.publishedAt": "釋出於{0}",
   "PC.Pages.Square.SingleAgent.startUsing": "開始使用",
+  "PC.Pages.Square.SingleAgent.summon": "召喚",
+  "PC.Pages.Square.SingleAgent.enterStandalone": "進入獨立頁面",
   "PC.Pages.Square.SingleAgent.paid": "付費",
   "PC.Pages.Square.SingleAgent.subscribed": "已訂閱",
   "PC.Pages.Square.SkillDetail.copyTemplate": "複製模板",
