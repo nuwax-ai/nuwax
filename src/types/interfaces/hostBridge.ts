@@ -183,6 +183,11 @@ export interface CaptureFailure {
 
 export type CaptureResult = CaptureSuccess | CaptureFailure;
 
+/** 截图复制位图；录屏（含 GIF）复制原始文件，不返回本地路径。 */
+export type CaptureCopyResult =
+  | { success: true; kind: 'image' | 'file' }
+  | CaptureFailure;
+
 export type CaptureState =
   | "idle"
   | "selecting"
@@ -203,6 +208,8 @@ export interface CaptureBridge {
     length: number,
   ): Promise<ArrayBuffer | null>;
   release(resultId: string): Promise<void>;
+  /** 增量能力，旧客户端可缺失；成功复制后可 release 原结果。 */
+  copy?(resultId: string): Promise<CaptureCopyResult>;
 }
 
 /** 当前 preload 暴露的完整能力；IM 仅在商业宿主受信顶层页面提供。 */
@@ -330,6 +337,8 @@ export interface HostLocalFilesBridge {
 }
 
 export interface HostBridgeContract {
+  /** 无副作用的异步探测；未知能力、未受信页面、未启用功能返回 false。 */
+  canUse?(capability: string): Promise<boolean>;
   perf: {
     enabled(): boolean;
     mark(stage: string, payload?: Record<string, unknown>): void;
@@ -400,7 +409,18 @@ export interface HostBridgeContract {
 
 /** 浏览器没有桥；旧宿主可以只提供部分命名空间及方法，消费方按能力探测。 */
 export type CompatibleHostBridge = {
-  [Namespace in keyof HostBridgeContract]?: Partial<
-    NonNullable<HostBridgeContract[Namespace]>
-  >;
+  [Namespace in keyof HostBridgeContract]?: NonNullable<HostBridgeContract[Namespace]> extends (...args: never[]) => unknown
+    ? NonNullable<HostBridgeContract[Namespace]>
+    : Partial<NonNullable<HostBridgeContract[Namespace]>>;
 };
+
+type HostNamespaces = Omit<HostBridgeContract, 'canUse'>;
+/** 能力名区分大小写；命名空间表示至少有一个成员可用。 */
+export type HostCapability = Exclude<
+  keyof HostNamespaces | {
+    [K in keyof HostNamespaces]-?: `${K}.${Extract<keyof NonNullable<HostNamespaces[K]>, string>}`
+  }[keyof HostNamespaces],
+  'auth.getToken' | 'auth.persistToken'
+> | 'capture.screenshot.png' | 'capture.screenshot.jpeg' | 'capture.screenshot.webp'
+  | 'capture.record.mp4' | 'capture.record.webm' | 'capture.record.gif'
+  | 'capture.copy.image' | 'capture.copy.file';
