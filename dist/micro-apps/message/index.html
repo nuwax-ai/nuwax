@@ -1,6 +1,10 @@
 <!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- DEV-405：第三方 CDN 语音/视频 Referer 防盗链——audio/video 不支持元素级
+         referrerpolicy，页面级 same-origin（同源发完整、跨域不发）随上游同步；
+         取 no-referrer 会剥掉同源 /api/** Referer（见上游 index.html 纪律注释）。 -->
+    <meta name="referrer" content="same-origin">
     <title>Nuwax IM</title>
     <style>
       /* 启动骨架仅属于消息根，不改宿主的 html/body 或同名 root。 */
@@ -53,7 +57,7 @@
       }
     </script>
     <script crossorigin="">
-      import('' + '/micro-apps/message/assets/index-BQVPh3F4.js').then(() => {
+      import('' + '/micro-apps/message/assets/index-XDvIdsv3.js').then(() => {
         if (!window.__POWERED_BY_QIANKUN__) return;
         const hooks = window[`qiankunLifeCycles_nuwax-im-web`];
         if (hooks) {
@@ -67,7 +71,7 @@
         console.error(error);
         if (!window.__POWERED_BY_QIANKUN__) return;
         if (error.name === 'TypeError' && error.message && error.message.startsWith('Failed to fetch dynamically imported module:')) {
-          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-BQVPh3F4.js', error } }));
+          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-XDvIdsv3.js', error } }));
         } else {
           window.dispatchEvent(new CustomEvent('qiankun:runtimeError', { detail: { error } }));
         }
@@ -89,7 +93,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" crossorigin="" href="/micro-apps/message/assets/index-Dfk8AP6X.css">
+    <link rel="stylesheet" crossorigin="" href="/micro-apps/message/assets/index-fj1R5oqj.css">
   </head>
   <body>
     <div id="root" data-message-app-scope="">
