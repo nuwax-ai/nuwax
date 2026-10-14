@@ -159,6 +159,9 @@ if [ "${INIT_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
+# 同事克隆可能没配 gitlab 远端：缺失时自动补配（内网测试环境落点），否则链中 fetch gitlab 即挂
+ensure_gitlab_remote
+
 # 演练在进入任何恢复/隔离逻辑前退出。下面的真实流程包含 Git 清理、子模块升级和
 # pin 配对修复，不能仅靠 run() 包装保证只读；演练只核对缓存引用并打印执行顺序。
 if [ "$DRY_RUN" = "1" ]; then
