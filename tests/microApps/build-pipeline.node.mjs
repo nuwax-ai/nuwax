@@ -256,6 +256,34 @@ test('子应用构建失败向上抛出并删除旧产物，不能发布半成�
   );
 });
 
+test('开源社区版（子模块未初始化）跳过微应用构建，主包不失败且旧产物被清掉', async (t) => {
+  const f = await fixture(t);
+  // 模拟社区克隆：submodules/child 是空目录（git checkout 留下的占位），没有任何 git 信息
+  await fs.rm(f.source, { recursive: true, force: true });
+  await fs.mkdir(f.source, { recursive: true });
+  const manifests = await syncMicroApps({
+    root: f.root,
+    execute: fakeBuild(),
+  });
+  assert.deepEqual(manifests, []);
+  await assert.rejects(fs.access(f.destination));
+  await assert.rejects(fs.access(path.join(f.root, 'dist/micro-apps')));
+  await assert.rejects(
+    fs.access(path.join(f.root, '.cache/micro-apps/.sync.lock')),
+  );
+});
+
+test('MICRO_APP_REQUIRED=1 时子模块未初始化直接失败，内部部署链不降级', async (t) => {
+  const f = await fixture(t);
+  await fs.rm(f.source, { recursive: true, force: true });
+  await fs.mkdir(f.source, { recursive: true });
+  await assert.rejects(
+    syncMicroApps({ root: f.root, execute: fakeBuild(), required: true }),
+    /MICRO_APP_REQUIRED=1 已禁止跳过/,
+  );
+  await assert.rejects(fs.access(f.destination));
+});
+
 test('adapter pin 与 gitlink 不一致时在 install 前失败并清旧产物', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(

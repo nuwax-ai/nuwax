@@ -95,7 +95,7 @@ async function fixture(t) {
     path.join(tools, 'npm'),
     [
       '#!/bin/sh',
-      'printf "%s\\n" "${MOBILE_BUILD_SOURCE:-unset}" >> "$FIXTURE_BUILD_LOG"',
+      'printf "%s\\n" "${MOBILE_BUILD_REPO:-local-origin}" >> "$FIXTURE_BUILD_LOG"',
       'mkdir -p dist',
       'printf "artifact from %s\\n" "$(cat source.txt)" > dist/index.html',
       '[ -z "${FIXTURE_BUILD_DIRTY:-}" ] || printf "generated\\n" >> source.txt',
@@ -182,7 +182,7 @@ async function snapshot(root) {
   };
 }
 
-test('delivers dev to both test remotes with an artifact built from the gitlab mobile source', async (t) => {
+test('delivers dev to both test remotes without injecting a mobile source', async (t) => {
   const state = await fixture(t);
   await remoteCommit(state, 'origin', 'dev', 'source.txt', 'dev feature\n');
   const result = await deploy(state);
@@ -193,9 +193,19 @@ test('delivers dev to both test remotes with an artifact built from the gitlab m
     await remoteShow(state, 'gitlab', 'test:dist/index.html'),
     'artifact from dev feature',
   );
-  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), ['gitlab']);
+  // 脚本不再注入 MOBILE_BUILD_SOURCE，M 端源交给下载脚本读本地 nuwax-mobile 的 origin
+  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), ['local-origin']);
   assert.equal(await git(state.root, 'branch', '--show-current'), start);
   assert.equal(await git(state.root, 'status', '--porcelain'), '');
+});
+
+test('MOBILE_BUILD_REPO set by the caller reaches the build unchanged', async (t) => {
+  const state = await fixture(t);
+  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'repo override\n');
+  await deploy(state, { MOBILE_BUILD_REPO: 'https://fixture.invalid/m.git' });
+  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), [
+    'https://fixture.invalid/m.git',
+  ]);
 });
 
 test('source pushed directly to gitlab dev reaches the delivered test', async (t) => {

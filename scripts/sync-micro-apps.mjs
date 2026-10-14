@@ -430,10 +430,26 @@ export async function acquireMicroAppLock(cache) {
   return () => fs.rm(lock, { recursive: true, force: true });
 }
 
+/**
+ * 子模块工作区是否已初始化。开源社区版克隆没有子模块仓库的访问权，
+ * submodules/ 只剩空目录——据此识别社区环境并跳过微应用，而不是让主包构建失败。
+ * 注意不能用 `git rev-parse --git-dir`：它会向上爬到宿主仓库，空目录也会误判为已初始化；
+ * 初始化过的子模块目录下必有 .git（gitfile 或目录），纯 fs 检查即可。
+ */
+export async function isSubmoduleInitialized(app) {
+  try {
+    await fs.access(path.join(app.source, '.git'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function syncMicroApps({
   root: inputRoot = scriptRoot,
   execute = runCommand,
   keepBuild = process.env.MICRO_APP_KEEP_BUILD === '1',
+  required = process.env.MICRO_APP_REQUIRED === '1',
 } = {}) {
   const root = path.resolve(inputRoot);
   const cache = path.join(root, '.cache/micro-apps');
@@ -458,6 +474,26 @@ export async function syncMicroApps({
         throw new Error(`${name} 必须精确固定为 ${expected}，当前为 ${actual}`);
     }
     const apps = await readMicroAppRegistry(root);
+    // 开源社区版没有子模块仓库（无权限拉取，submodules/ 为空目录）：跳过对应微应用，
+    // 主包继续构建（资料库/消息等子应用功能缺失）。内网部署链 export MICRO_APP_REQUIRED=1
+    // 禁止跳过，防止内部产物无声缺功能；内网手动构建遇跳过提示请先初始化子模块。
+    const uninitialized = [];
+    for (const app of apps) {
+      if (!(await isSubmoduleInitialized(app))) uninitialized.push(app.id);
+    }
+    if (uninitialized.length) {
+      const message =
+        `子模块未初始化：${uninitialized.join(' / ')}。开源社区版无对应仓库属预期，` +
+        '跳过微应用构建（资料库/消息等子应用功能将缺失）；内网请先 git submodule update --init --recursive';
+      if (required) {
+        throw new Error(
+          `[micro-apps] ${message}（MICRO_APP_REQUIRED=1 已禁止跳过）`,
+        );
+      }
+      console.warn(`[micro-apps] ⚠️ ${message}`);
+    }
+    const buildable = apps.filter((app) => !uninitialized.includes(app.id));
+    if (!buildable.length) return [];
     scratch = await fs.mkdtemp(path.join(cache, 'build-'));
     const publish = path.join(scratch, 'publish');
     await fs.mkdir(publish);
@@ -466,7 +502,7 @@ export async function syncMicroApps({
       execute('corepack', [packages.packageManager, ...args], options);
     const pnpmVersion = await pnpm(['--version'], { cwd: root, capture: true });
     const manifests = [];
-    for (const app of apps) {
+    for (const app of buildable) {
       const source = await getPinnedSource(root, app, execute);
       // 冻结适配输入；构建期间其它任务继续编辑适配层也不会使 manifest 与资产错配。
       const { snapshot, fingerprint: adapter } = await snapshotAdapter(
