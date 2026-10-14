@@ -402,8 +402,10 @@ describe('首次部署 CSS 历史回填', () => {
       'rev-parse',
       `${priorBuild}:dist/Home.aaaa0002.chunk.css`,
     ]);
+    // CI git 可能将对象写入 pack 而非松散文件；对象不可达时「不可读」前置已满足
     fs.rmSync(
       path.join(repo, '.git', 'objects', blob.slice(0, 2), blob.slice(2)),
+      { force: true },
     );
     const snap = path.join(repo, 'snapshot');
     expect(() =>

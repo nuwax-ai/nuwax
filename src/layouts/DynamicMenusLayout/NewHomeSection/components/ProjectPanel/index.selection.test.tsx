@@ -86,6 +86,7 @@ vi.mock('@/hooks/useHomePinnedProjectHandoff', () => ({
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
 }));
 
 // vitest 下 plain .less 非 CSS Modules、默认导出 undefined（仓内既有坑）；
