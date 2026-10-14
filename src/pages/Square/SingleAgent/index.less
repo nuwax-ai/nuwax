@@ -16,7 +16,7 @@
   }
 
   .action-box {
-    gap: 12px;
+    gap: 8px;
     position: absolute;
     left: 16px;
     right: 16px;
@@ -27,8 +27,15 @@
     z-index: -1;
     background-color: #fff;
 
+    .action-btn {
+      flex: 1;
+      min-width: 0;
+      padding-inline: 8px;
+    }
+
     .star-box {
       display: flex;
+      flex-shrink: 0;
       align-items: center;
       justify-content: center;
       width: 32px;
