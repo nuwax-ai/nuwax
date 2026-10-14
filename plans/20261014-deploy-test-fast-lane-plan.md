@@ -109,19 +109,21 @@
 2. **新增 `abort_merge_die`，修复全链脚本源码冲突清单为空的问题。** 原因：全链脚本 5 处冲突出口都是先 `git merge --abort` 再打印清单，回滚后清单永远是空的。现在先记下清单再回滚。新增回归用例「source conflict lists the conflicted files before rolling back」（旧脚本失败、新脚本通过）。
 3. **抽出 `detect_microapp_upgrades`。** 原因：快速通道的「子模块领先提醒」和全链步骤 2.5 的升级检测是同一段逻辑，合成一份。全链行为不变。
 4. **两个脚本开头加「sh 调用时切回 bash」。** 原因：用户习惯 `sh deploy_test.sh`，而 macOS 的 `/bin/sh` 是 POSIX 模式 bash 3.2，不支持公共库里的进程替换，会直接报语法错误。新增用例「invoking through sh…」。
-5. **`deploy_test.sh` 整体包进 `main()` 函数。** 原因：脚本运行中会 checkout dev/test，若这些分支上的本文件内容不同，bash 逐行读取会错读；包进函数后先完整读入再执行。
+5. **`deploy_test.sh` 整体包进 `main()` 函数。** 原以为脚本运行中 checkout 会让 bash 读到别的分支上的本文件；真实验证（全链用例「keeps running the startup copy…」在旧代码上也通过）证明不会：git checkout 是删除旧文件再新建，bash 持有的仍是启动时那份内容。`main()` 保留（无害、可读），但不是必要修复。
 6. **`download-mobile-build.js` 被 require 时不再执行下载。** 原因：旧版在模块顶层直接调用下载，测试一 require 就真的拉了一次 M 端产物写进 `dist/m`（已清理）。同时改用 `execFileSync` 传参，分支名不再拼进 shell 命令。
 7. **`DRY_RUN=1` 在任何 fetch 之前打印执行顺序后退出。** 与全链脚本一致，保证演练完全只读。
 8. 额外更新 `docs/micro-frontend-qiankun.md` 里 `build:prod:m gitlab` 的旧写法。
+9. **（真实运行发现）切分支后同步更新子模块。** 首次真实跑全链：从 dev 启动，自动切到个人分支后子模块仍停在 dev 登记的版本，被干净检查判为「未提交改动」而停下（远端无改动）。现在全链在自动切换、构建前、收尾切回时，快速通道在切回起跑分支时，都执行 `git submodule update --init --recursive`。新增两个带真实子模块的用例（旧脚本均失败）。
 
 ## 验证结果（2026-10-14）
 
-- `npm run test:deploy`：36/36 通过（全链 20、快速通道 11、M 端来源 5）。
+- `npm run test:deploy`：39/39 通过（全链 22、快速通道 12、M 端来源 5）。
 - `npm run test:micro-app-build`：60/60 通过。
 - 测试先行：快速通道 10 个用例在旧脚本上 0/10（只推 origin、源码冲突被 `-X ours` 静默吞掉），新脚本全过；全链冲突清单用例旧失败新通过；M 端解析用例实现前 0/5。
 - 真实下载：`node scripts/download-mobile-build.js` 拉到 gitlab `feat/nuwa-zhuoda-2026.09.30@c9974ee`，`index.html` 哈希 f15e650，与 test@cdbb5e3 一致；`MOBILE_BUILD_SOURCE=gitee` 报错退出。
 - 真实仓库只读演练：`DRY_RUN=1 sh deploy_test.sh`、`DRY_RUN=1 sh scripts/deploy_sync_test.sh` 均正常走完。
-- 未做：真实推送 test（由用户触发首次提测确认）。
+- 真实快速通道（2026-10-14 15:46，用户授权）：`sh deploy_test.sh` 从 dev 执行成功，origin/test 与 gitlab/test 同为 7eb58bf38，M 端为 gitlab c9974ee，质量门通过。
+- 真实全链：首跑在预检因子模块未对齐停下（见偏离 9），修复后重跑，结果记录在下方。
 
 ## 第二期（另出计划）
 

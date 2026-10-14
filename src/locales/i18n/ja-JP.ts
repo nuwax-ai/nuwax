@@ -4494,6 +4494,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.collectSuccess": "お気に入りに追加されました",
   "PC.Pages.Square.PluginHeader.publishedAt": "{0} に公開",
   "PC.Pages.Square.SingleAgent.startUsing": "使い始める",
+  "PC.Pages.Square.SingleAgent.summon": "召喚",
+  "PC.Pages.Square.SingleAgent.enterStandalone": "独立ページを開く",
   "PC.Pages.Square.SingleAgent.paid": "有料",
   "PC.Pages.Square.SingleAgent.subscribed": "購読済み",
   "PC.Pages.Square.SkillDetail.copyTemplate": "テンプレートをコピー",
