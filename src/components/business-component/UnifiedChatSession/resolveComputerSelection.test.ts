@@ -77,7 +77,7 @@ describe('历史会话选择器状态', () => {
     });
   });
 
-  it('会话未绑定电脑时，即使有历史消息也允许选择', () => {
+  it('会话详情尚未回填电脑时，已有消息仍锁定当前选择（BUG-2674）', () => {
     expect(
       resolveComputerSelection({
         ...base,
@@ -87,6 +87,38 @@ describe('历史会话选择器状态', () => {
       }),
     ).toEqual({
       agentSandboxId: '366',
+      fixedSelection: true,
+      isPersonalComputer: true,
+    });
+  });
+
+  it.each([
+    { hasUserSentMessage: true, hasPersistedMessage: false },
+    { hasUserSentMessage: false, hasPersistedMessage: true },
+  ])('首条消息发起或结束后不依赖详情回填锁定云端：%j', (progress) => {
+    expect(
+      resolveComputerSelection({
+        ...base,
+        ...progress,
+        conversationInfo: { id: 1694776, sandboxServerId: '' },
+      }),
+    ).toEqual({
+      agentSandboxId: '-1',
+      fixedSelection: true,
+      isPersonalComputer: false,
+    });
+  });
+
+  it('详情没有电脑记录的空会话仍允许首条消息前改选', () => {
+    expect(
+      resolveComputerSelection({
+        ...base,
+        hasUserSentMessage: false,
+        hasPersistedMessage: false,
+        conversationInfo: { id: 1694776, sandboxServerId: '' },
+      }),
+    ).toEqual({
+      agentSandboxId: '-1',
       fixedSelection: false,
       isPersonalComputer: false,
     });
