@@ -3638,7 +3638,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.PublishedManage.searchNamePlaceholder": "請輸入插件工作流或智能體名稱",
   "PC.Pages.PublishedManage.type": "類型",
   "PC.Pages.PublishedManage.typeAgent": "智能體",
-  "PC.Pages.PublishedManage.typeNormalProject": "常規項目",
   "PC.Pages.PublishedManage.typePlugin": "插件",
   "PC.Pages.PublishedManage.typeSkill": "技能",
   "PC.Pages.PublishedManage.typeThirdApp": "三方應用",

@@ -3666,7 +3666,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.PublishedManage.searchNamePlaceholder": "請輸入套件工作流或智慧體名稱",
   "PC.Pages.PublishedManage.type": "型別",
   "PC.Pages.PublishedManage.typeAgent": "智慧體",
-  "PC.Pages.PublishedManage.typeNormalProject": "常規項目",
   "PC.Pages.PublishedManage.typePlugin": "套件",
   "PC.Pages.PublishedManage.typeSkill": "技能",
   "PC.Pages.PublishedManage.typeThirdApp": "三方應用",

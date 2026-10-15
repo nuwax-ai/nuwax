@@ -3847,7 +3847,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.PublishedManage.searchNamePlaceholder": "Enter plugin, workflow or agent name",
   "PC.Pages.PublishedManage.type": "Type",
   "PC.Pages.PublishedManage.typeAgent": "Agent",
-  "PC.Pages.PublishedManage.typeNormalProject": "Normal Project",
   "PC.Pages.PublishedManage.typePlugin": "Plugin",
   "PC.Pages.PublishedManage.typeSkill": "Skill",
   "PC.Pages.PublishedManage.typeThirdApp": "Third-party App",

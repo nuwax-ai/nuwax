@@ -3646,7 +3646,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.PublishedManage.searchNamePlaceholder": "プラグイン、ワークフロー、またはエージェント名を入力してください",
   "PC.Pages.PublishedManage.type": "タイプ",
   "PC.Pages.PublishedManage.typeAgent": "エージェント",
-  "PC.Pages.PublishedManage.typeNormalProject": "通常プロジェクト",
   "PC.Pages.PublishedManage.typePlugin": "プラグイン",
   "PC.Pages.PublishedManage.typeSkill": "スキル",
   "PC.Pages.PublishedManage.typeThirdApp": "サードパーティアプリ",
