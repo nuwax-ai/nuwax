@@ -62,7 +62,7 @@ npm run sync:micro-apps                       # 验证构建（资料库类型�
 git commit -m "chore(micro-apps): <id> 子模块升级 <旧>-><新>——<上游变更摘要>"
 ```
 
-成功只暂存 `submodules/<repo>` 的 gitlink 与 `adapter.json`。失败会恢复 HEAD/pin/index，并在 `.cache/micro-apps/upgrades/` 留恢复记录。全链提测脚本步骤 2.5 会自动调用本工具（`UPGRADE_MICRO_APPS=0` 关闭）；快速通道只提醒不升级。
+成功只暂存 `submodules/<repo>` 的 gitlink 与 `adapter.json`。失败会恢复 HEAD/pin/index，并在 `.cache/micro-apps/upgrades/` 留恢复记录。全链提测脚本步骤 2.5 会自动调用本工具（`UPGRADE_MICRO_APPS=0` 关闭）；快速通道也会在汇合 test 后自动调用并提交，通过质量门后再构建。快速通道允许起跑时只有未暂存的子模块版本偏差，自动对齐后升级；子仓文件改动和已暂存输入仍会保留并报错。
 
 ### 4.2 预检报「adapter patch 与候选 main 冲突」（适配负责人）
 
