@@ -4,9 +4,11 @@
  * 首页链 create 携带的沙箱 id 历史上经 `Number(personalComputerId ?? -1)` 转换：
  * 非数字形态（新沙箱）id 被转成 NaN（JSON 序列化为 null），会话被后端静默按
  * 「未选沙箱」创建，随后 chat 携带原始字符串又被后端 Long 字段拒（400）。
- * 本用例锁定归一语义：数字形态转 number、非数字透传字符串、云端哨兵兜底 -1。
+ * 本用例锁定归一语义：数字形态转 number、非数字透传字符串，未选容器不传。
  */
 import useConversation from '@/hooks/useConversation';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { buildHomeSendPlan } from '@/utils/homeSendPlan';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -53,7 +55,20 @@ describe('useConversation.handleCreateConversation sandboxId 归一（bug2443）
     return mockCreate.mock.calls[0][0] as Record<string, unknown>;
   };
 
-  it('未选电脑：携带云电脑哨兵 -1（number）', async () => {
+  it('未选容器：请求不带 sandboxId 或工作目录', async () => {
+    const payload = await create({
+      message: 'hi',
+      workspacePath: '/tmp/stale',
+    });
+    expect(payload).not.toHaveProperty('sandboxId');
+    expect(payload).not.toHaveProperty('workspacePath');
+  });
+
+  it('不带 attach 的空会话：请求不补 sandboxId', async () => {
+    expect(await create()).not.toHaveProperty('sandboxId');
+  });
+
+  it('选中云端电脑：携带云电脑哨兵 -1（number）', async () => {
     const payload = await create({ message: 'hi', selectedComputerId: '-1' });
     expect(payload.sandboxId).toBe(-1);
     expect(payload.workspacePath).toBeUndefined();
@@ -89,5 +104,35 @@ describe('useConversation.handleCreateConversation sandboxId 归一（bug2443）
     });
     expect(payload.projectId).toBe(100);
     expect(payload.sandboxId).toBe('sb-a1b2c3');
+  });
+
+  it('全栈项目上框未开放容器选择：创建请求绑定项目，不带项目原有沙箱', async () => {
+    const plan = buildHomeSendPlan({
+      currentAgentId: 3091,
+      message: 'hi',
+      pinnedProject: {
+        projectId: 261,
+        spaceId: 8,
+        projectType: AgentComponentTypeEnum.UserApp,
+        name: 'xxxx',
+        sandboxId: 333,
+      },
+      selectedComputerId: '377',
+      workspacePath: '/tmp/stale',
+    });
+    expect(plan.kind).toBe('createConversation');
+    if (plan.kind !== 'createConversation') return;
+    const payload = await create({ ...plan.attach });
+    expect(payload).toMatchObject({
+      projectId: 261,
+      projectType: 'UserApp',
+      devAgentId: 3091,
+    });
+    expect(payload).not.toHaveProperty('sandboxId');
+    expect(payload).not.toHaveProperty('workspacePath');
+    expect(mockHistoryPush).toHaveBeenCalledWith(
+      '/space/8/app-pro/261/9527',
+      expect.not.objectContaining({ selectedComputerId: expect.anything() }),
+    );
   });
 });

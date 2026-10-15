@@ -22,8 +22,10 @@ let chat: any;
 let runtime: any;
 let notifications: any;
 let bridge: any;
+let reconcile: any;
 const sockets: any[] = [];
 const me = vi.fn();
+const unreadTotal = vi.fn();
 const register = vi.fn();
 const unregister = vi.fn();
 const originalBridge = (window as any).NuwaClawBridge;
@@ -38,6 +40,13 @@ function deferred<T>() {
 
 async function settle() {
   for (let i = 0; i < 6; i += 1) await Promise.resolve();
+}
+
+function setVisibility(value: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    value,
+  });
 }
 
 beforeAll(async () => {
@@ -66,6 +75,10 @@ beforeAll(async () => {
     path.join(adapterDir, 'overlay/src/hostRuntime.ts'),
     path.join(fixture, 'nuwax-im-web/src/hostRuntime.ts'),
   );
+  cpSync(
+    path.join(adapterDir, 'overlay/src/unreadReconcile.ts'),
+    path.join(fixture, 'nuwax-im-web/src/unreadReconcile.ts'),
+  );
   source = path.join(fixture, 'nuwax-im-web/src');
 
   vi.doMock(path.join(source, 'authMode.ts'), () => ({
@@ -80,7 +93,7 @@ beforeAll(async () => {
     msgApi: {},
     readApi: {},
     stickerApi: {},
-    syncApi: { unreadTotal: vi.fn().mockResolvedValue({ total: 0 }) },
+    syncApi: { unreadTotal },
   }));
   vi.doMock(path.join(source, 'api/client.ts'), () => ({
     ApiError: class ApiError extends Error {},
@@ -120,6 +133,9 @@ beforeAll(async () => {
   notifications = await import(
     /* @vite-ignore */ path.join(source, 'lib/notify.ts')
   );
+  reconcile = await import(
+    /* @vite-ignore */ path.join(source, 'unreadReconcile.ts')
+  );
 });
 
 beforeEach(() => {
@@ -129,6 +145,7 @@ beforeEach(() => {
   localStorage.clear();
   register.mockResolvedValue(undefined);
   unregister.mockResolvedValue(undefined);
+  unreadTotal.mockResolvedValue({ total: 0 });
   me.mockResolvedValue({ userId: '101', userName: '用户一' });
   chat.beginImEmbeddedSession();
   runtime.beginMessageRuntime(document.createElement('div'), {}, true);
@@ -141,6 +158,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  setVisibility('visible');
   localStorage.clear();
   (window as any).NuwaClawBridge = originalBridge;
 });
@@ -322,6 +340,61 @@ describe('消息 main store 的正式适配生命周期', () => {
     expect(chat.useChatStore.getState().unreadTotal).toBe(0);
     vi.advanceTimersByTime(500);
     expect(socket.sendReadReport).toHaveBeenCalledWith('7', 2);
+  });
+
+  it('IM 隐藏保活时周期对账仍刷新未读总数，未满间隔不请求', async () => {
+    expect(await chat.useChatStore.getState().probePlatformSession()).toBe(
+      true,
+    );
+    chat.useChatStore.setState({ unreadTotal: 2 });
+    runtime.updateMessageRuntime({ active: false, path: '/repo/doc/7' });
+    unreadTotal.mockClear();
+    unreadTotal.mockResolvedValue({ total: 5 });
+    const stop = reconcile.startUnreadReconcile();
+    vi.advanceTimersByTime(reconcile.UNREAD_RECONCILE_INTERVAL_MS - 1);
+    await settle();
+    expect(unreadTotal).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    await settle();
+    expect(unreadTotal).toHaveBeenCalledOnce();
+    expect(chat.useChatStore.getState().unreadTotal).toBe(5);
+    stop();
+  });
+
+  it('未登录或页面不可见时周期对账不请求', async () => {
+    const stop = reconcile.startUnreadReconcile();
+    vi.advanceTimersByTime(reconcile.UNREAD_RECONCILE_INTERVAL_MS);
+    await settle();
+    expect(unreadTotal).not.toHaveBeenCalled();
+    expect(await chat.useChatStore.getState().probePlatformSession()).toBe(
+      true,
+    );
+    unreadTotal.mockClear();
+    setVisibility('hidden');
+    vi.advanceTimersByTime(reconcile.UNREAD_RECONCILE_INTERVAL_MS);
+    await settle();
+    expect(unreadTotal).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('回到前台立即对账；停止后定时器与监听都被清理', async () => {
+    expect(await chat.useChatStore.getState().probePlatformSession()).toBe(
+      true,
+    );
+    unreadTotal.mockClear();
+    unreadTotal.mockResolvedValue({ total: 7 });
+    const timersBefore = vi.getTimerCount();
+    const stop = reconcile.startUnreadReconcile();
+    expect(vi.getTimerCount()).toBe(timersBefore + 1);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(chat.useChatStore.getState().unreadTotal).toBe(7);
+    stop();
+    expect(vi.getTimerCount()).toBe(timersBefore);
+    unreadTotal.mockClear();
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(unreadTotal).not.toHaveBeenCalled();
   });
 
   it('卸载清理心跳、已读窗口、焦点重试、缓存写定时器，保留磁盘数据', async () => {

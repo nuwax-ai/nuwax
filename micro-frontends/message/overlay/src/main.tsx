@@ -31,9 +31,11 @@ import {
   useChatStore,
 } from './store/chat';
 import './styles.css';
+import { startUnreadReconcile } from './unreadReconcile';
 
 let root: Root | null = null;
 let queryClient: QueryClient | null = null;
+let stopUnreadReconcile: (() => void) | null = null;
 
 function render(props: MessageHostProps = {}, embedded = false): void {
   if (root !== null) throw new Error('消息实例尚未卸载，拒绝重复挂载');
@@ -44,6 +46,7 @@ function render(props: MessageHostProps = {}, embedded = false): void {
     throw new Error('消息入口缺少应用内 #root 容器');
   beginMessageRuntime(element, props, embedded);
   beginImEmbeddedSession();
+  stopUnreadReconcile = startUnreadReconcile();
   resetTitleBase();
   queryClient = new QueryClient({
     defaultOptions: {
@@ -100,6 +103,8 @@ exportQiankunLifeCycles({
     if (isMessageActive()) useChatStore.getState().flushPendingRead();
   },
   unmount: async () => {
+    stopUnreadReconcile?.();
+    stopUnreadReconcile = null;
     invalidateMessageRequests();
     try {
       root?.unmount();

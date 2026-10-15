@@ -3,6 +3,8 @@
 > **本文定位**：V2（runtime 数据线 + V2 渲染器）默认化之后的**对齐状态快照**——逐功能域横向对比 V1（旧线）行为与 V2 现行为，标注对齐状态，并收录 09-16~09-19 的对齐工作。逐条业务行为的**验收底稿**在 [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md)（本文引用其 ID），验收走查请用那份。
 >
 > 术语口径：**V1=旧线**（legacy 数据 + V1 渲染，ChatView + MarkdownRenderer，已冻结）/ **V2=新线**（runtime 数据 + V2 渲染，默认）。两轴正交：`?conversationRuntime=0` 回旧数据线、`?conversationRenderer=v1` 回旧渲染器，可组合成 2×2。
+>
+> 容器选择更新（2026-10-15）：本文“会话创建未选默认 `-1`”保留为当时的实现快照。当前工作区首页隐藏选择器时创建不传 `sandboxId`，会话发送等入口仍有不同规则，详见 [Agent 容器选择与 sandboxId 传参逻辑](./agent-sandbox-selection-rules.md)；首页修复在本次整理时尚未部署。
 
 **对齐状态图例**
 
