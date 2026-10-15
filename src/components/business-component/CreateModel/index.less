@@ -6,7 +6,7 @@
   border-radius: 10px !important;
 
   &.container-wide {
-    width: 780px;
+    width: 660px;
   }
 
   .body {
@@ -70,12 +70,34 @@
 }
 
 .apiInfoUseProxy {
-  flex: 0 0 168px;
-  min-width: 168px;
+  flex: 0 0 60px;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
   margin-bottom: 0 !important;
+  align-self: flex-end;
 
   :global(.ant-form-item-label) {
     white-space: nowrap;
+    text-align: center;
+
+    > label {
+      height: 22px;
+      justify-content: center;
+    }
+
+    :global(.hover-box) {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  :global(.ant-form-item-control-input),
+  :global(.ant-form-item-control-input-content) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
   }
 }
 

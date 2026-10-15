@@ -239,18 +239,23 @@ const CreateModel: React.FC<CreateModelProps> = ({
   /**
    * 仅展示代理开关时写入 useProxy。
    * 其他入口保持原来的接口配置字段，不补这个新字段。
+   * 参数写成接口配置的实际字段，避免只约束 useProxy 时 url/key/weight 被当成多余属性。
    */
   const attachUseProxy = useCallback(
-    <T extends { useProxy?: number | null }>(
-      row: T,
-      useProxy?: number | null,
-    ): T => {
+    (
+      row: {
+        url?: string;
+        key?: string;
+        weight: number;
+      },
+      currentUseProxy?: number | null,
+    ) => {
       if (!showUseProxy) {
         return row;
       }
       return {
         ...row,
-        useProxy: useProxy === 0 ? 0 : 1,
+        useProxy: currentUseProxy === 0 ? 0 : 1,
       };
     },
     [showUseProxy],
