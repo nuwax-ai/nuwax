@@ -18,6 +18,13 @@ import { useComputerList } from './useComputerList';
 
 const cx = classNames.bind(styles);
 
+/** 电脑 ID 尚未从跳转或会话详情回填时，保持等待状态。 */
+const PENDING_COMPUTER_OPTION: ComputerOption = {
+  id: '',
+  name: dict('PC.Components.ComputerTypeSelector.selectComputer'),
+  description: '',
+};
+
 /**
  * 无可用电脑选项
  */
@@ -191,6 +198,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     if (unavailable) {
       return UNAVAILABLE_OPTION;
     }
+    // 锁定状态可能早于电脑 ID 到达；缺少 ID 不能据候选列表判定电脑不可用。
+    if (fixedSelection && !value) {
+      return PENDING_COMPUTER_OPTION;
+    }
 
     // 查找选中的电脑
     if (value) {
@@ -228,11 +239,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       return computerList[0];
     }
     // 未初始化时显示默认文本
-    return {
-      id: '',
-      name: dict('PC.Components.ComputerTypeSelector.selectComputer'),
-      description: '',
-    };
+    return PENDING_COMPUTER_OPTION;
   }, [
     value,
     computerList,
@@ -362,7 +369,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     selectedOption === UNAVAILABLE_OPTION ||
     selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
 
-  const isShow = initialized;
+  const isShow = initialized && selectedOption !== PENDING_COMPUTER_OPTION;
 
   return (
     <div

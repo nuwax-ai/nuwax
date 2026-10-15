@@ -35,7 +35,7 @@ export function resolveComputerSelection({
 
   if (hasCurrentConversationInfo) {
     const savedId = String(conversationInfo.sandboxServerId ?? '').trim();
-    // 新建会话在首条消息前也会写入 sandboxServerId；此时仍允许选电脑。
+    // 首条消息前允许改选；发送后即使详情的 sandboxServerId 尚未回填也必须锁定。
     const selectionStarted = hasUserSentMessage || hasPersistedMessage;
     const isAgentSandboxBound = isRealAgentSandboxBinding(agentSandboxId);
     const canUseCurrentSelection =
@@ -48,10 +48,9 @@ export function resolveComputerSelection({
     return {
       agentSandboxId: activeId,
       fixedSelection:
-        Boolean(savedId) &&
-        (selectionStarted || isSelectionLocked || isAgentSandboxBound),
+        selectionStarted || isSelectionLocked || isAgentSandboxBound,
       isPersonalComputer:
-        Boolean(savedId) &&
+        Boolean(activeId) &&
         activeId !== CLOUD_SANDBOX_ID &&
         (selectionStarted || isAgentSandboxBound),
     };
