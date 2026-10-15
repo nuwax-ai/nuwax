@@ -77,8 +77,9 @@ export const useInitProjectMetadata = ({
       return;
     }
 
-    // 全栈应用不看 PUSH，用当前路由里的提示词；其它页面只用进页第一帧记下的提示词。
-    const prompt = requirePushAction ? entryPromptRef.current : visiblePrompt;
+    // 全栈应用不看 PUSH，用当前路由里的提示词；目标 id 晚到、当前帧 state 已清空时回退进页记忆。
+    // 其它页面只用进页第一帧记下的提示词。
+    const prompt = requirePushAction ? entryPromptRef.current : (visiblePrompt || entryPromptRef.current);
     if (!prompt || (requirePushAction && entryActionRef.current !== 'PUSH')) {
       return;
     }
