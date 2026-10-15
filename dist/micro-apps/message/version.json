@@ -16,7 +16,7 @@
     "VITE_IM_AUTH_MODE": "platform"
   },
   "adapter": {
-    "sha256": "59cbbd46cc506573d318aecd282bfa04ebbe86625817c1580d732373972d4ec7",
+    "sha256": "da54859dad56e5d31a5698c68d6285f08a5e6c554038a63d8ec0202845cd4d5c",
     "files": [
       "adapter.json",
       "adapter.patch",
@@ -27,14 +27,19 @@
       "overlay/src/hostRuntime.ts",
       "overlay/src/main.tsx",
       "overlay/src/qiankun-setup.ts",
+      "overlay/src/unreadReconcile.ts",
       "overlay/vite.config.ts"
     ]
   },
   "toolchain": {
-    "node": "v22.23.2",
+    "node": "v24.18.0",
     "pnpm": "10.27.0",
     "qiankun": "2.10.17-beta.0",
     "@tiny-codes/vite-plugin-qiankun": "2.4.0"
   },
-  "builtAt": "2026-10-15T06:18:34.392Z"
+  "builtAt": "2026-10-15T06:27:57.919Z",
+  "cache": {
+    "key": "34b5e7a7aca3fd74ed4cd3db1fcab6b8b28f45c65fda846ec6bced00a32f682a",
+    "hit": false
+  }
 }
