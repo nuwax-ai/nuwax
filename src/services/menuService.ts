@@ -16,21 +16,28 @@ import { request } from 'umi';
  */
 const MENU_ICON_MAP: Record<string, string> = {
   // 一级菜单
-  new_conversation: 'icons-nav-new_chat',
-  // 主页
-  homepage: 'icons-nav-home',
+  new_conversation: 'icons-nav-default-new-chat',
+  // 新建任务（主页入口）
+  homepage: 'icons-nav-default-new-chat',
+  // 伙伴
+  message: 'icons-nav-default-message',
+  // 资料库（兼容旧菜单 code）
+  repo: 'icons-nav-default-repo',
+  ziliaoku: 'icons-nav-default-repo',
   // 工作空间
-  workspace: 'icons-nav-workspace',
+  workspace: 'icons-nav-default-workspace',
   // 系统广场
   system_square: 'icons-nav-square',
   // 生态市场
-  eco_market: 'icons-nav-ecosystem',
+  eco_market: 'icons-nav-default-ecosystem',
   // 系统管理
-  system_manage: 'icons-nav-settings',
+  system_manage: 'icons-nav-default-settings',
   // 专家·技能·连接器（三合一资源聚合页）
-  zhuanjia_jineng_lianjieqi: 'icons-nav-expert-skill-connector',
+  expert_skill_connector: 'icons-nav-default-expert-skill-connector',
+  zhuanjia_jineng_lianjieqi: 'icons-nav-default-expert-skill-connector',
   // 女娲应用
-  nvwayingyong: 'icons-nav-nvwayingyong',
+  nuwa_app: 'icons-nav-default-nuwa-apps',
+  nvwayingyong: 'icons-nav-default-nuwa-apps',
 
   // 用户操作区域
   documents: 'icons-nav-doc',
@@ -161,7 +168,7 @@ function mapSysMenuToMenuItem(sysMenus: any[]): MenuItemDto[] {
      */
     icon: isAiosCommercialMenu(item)
       ? MENU_ICON_MAP.xiangmu_yingyong
-      : item.icon || MENU_ICON_MAP[item.code],
+      : item.icon || MENU_ICON_MAP[item.code?.trim()],
     children: item.children ? mapSysMenuToMenuItem(item.children) : [],
   }));
 }
