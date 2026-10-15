@@ -1,5 +1,4 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -62,7 +61,7 @@ const useConversation = () => {
         agentMode?: AgentMode;
         /**
          * 首页项目上框：直接建会话绑定已有项目（不走隐式建项目），
-         * 携带 projectId/devAgentId/sandboxId（契约先行，2026-09-10 后端未 ready）。
+         * 携带 projectId/devAgentId；仅开放容器选择时另带 sandboxId。
          */
         projectId?: number;
         /**
@@ -72,7 +71,7 @@ const useConversation = () => {
         projectType?: AgentComponentTypeEnum;
         /** 项目绑定的调试智能体 ID（全栈项目上框携带） */
         devAgentId?: number;
-        /** 项目沙箱（创建者上框=项目绑定沙箱；参与者自选=云端 -1/个人电脑 id）。
+        /** 项目会话通过运行容器选择器选中的沙箱（云端 -1/个人电脑 id）。
          *  id 可能是非数字形态（新沙箱），经 normalizeSandboxIdValue 归一透传，
          *  勿用 Number() 转 NaN（bug2443：会话被静默建到未绑定沙箱） */
         sandboxId?: number | string;
@@ -84,6 +83,9 @@ const useConversation = () => {
       },
     ) => {
       const variableParams = attach?.variableParams;
+      const selectedSandboxId = normalizeSandboxIdValue(
+        attach?.selectedComputerId,
+      );
       // wiki #17：选择个人电脑时把沙箱与工作目录记录到会话上
       const personalComputerId =
         attach?.selectedComputerId && attach.selectedComputerId !== '-1'
@@ -102,7 +104,7 @@ const useConversation = () => {
         variables: variableParams,
         // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspacePath；
         // 参与者自选个人电脑沙箱例外，工作目录随会话记录）；
-        // 否则统一携带 sandboxId：个人电脑传其 id（附 workspacePath），云端/未选传云电脑哨兵 -1
+        // 仅选中容器时携带 sandboxId；没有选择入口时不补云端哨兵。
         ...(attach?.projectId
           ? {
               projectId: attach.projectId,
@@ -118,10 +120,9 @@ const useConversation = () => {
           : {
               // 类型归一（bug2443）：数字形态转 number 对齐后端契约，非数字 id
               // 原样透传（历史 Number() 会转 NaN→null，会话静默失去所选沙箱）
-              sandboxId:
-                normalizeSandboxIdValue(
-                  personalComputerId ?? CLOUD_SANDBOX_ID,
-                ) ?? Number(CLOUD_SANDBOX_ID),
+              ...(selectedSandboxId !== undefined
+                ? { sandboxId: selectedSandboxId }
+                : {}),
               ...(personalComputerId
                 ? { workspacePath: attach?.workspacePath || undefined }
                 : {}),

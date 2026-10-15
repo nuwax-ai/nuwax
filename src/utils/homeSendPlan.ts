@@ -21,7 +21,7 @@ import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
  *
  * 分支优先级：
  * 1. 项目上框（pinnedProject）→ 直接创建会话并绑定项目（带
- *    projectId/devAgentId/sandboxId，全栈另带 redirectUrl 直接跳 IDE），
+ *    projectId/devAgentId，全栈另带 redirectUrl 直接跳 IDE），
  *    不走 /api/project/create；常规项目（pinnedProjectSandboxSelection）
  *    改带自选沙箱（云端/个人电脑+工作目录）；
  * 2. 项目类推荐（functionType 映射出项目类型）→ 建项目分支 payload；
@@ -128,7 +128,7 @@ export interface HomeConversationAttach {
   projectType?: AgentComponentTypeEnum;
   /** 上框项目为全栈时携带（= 当前选中的全栈类智能体） */
   devAgentId?: number;
-  /** 上框项目沙箱（常规项目自选=云端 -1/个人电脑 id；其他项目沿用项目绑定）。
+  /** 通过运行容器选择器选中的沙箱（云端 -1/个人电脑 id；未开放选择时不传）。
    *  个人电脑 id 可能是非数字形态（新沙箱），数字归一/字符串透传（bug2443 勿 Number 转 NaN） */
   sandboxId?: number | string;
   /** 创建成功后的跳转 URL 前缀（拼接会话 id；全栈跳 app-pro 用） */
@@ -206,26 +206,19 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
       pinnedProject.projectType === AgentComponentTypeEnum.UserApp;
     // 常规项目使用当前选择的电脑；云端显式传哨兵，避免回落项目原有沙箱。
     // 个人电脑另带工作目录，selectedComputerId 随 route state 衔接首条消息。
-    const sandboxAttach = pinnedProjectSandboxSelection
-      ? {
-          selectedComputerId,
-          // 类型归一（bug2443）：数字形态转 number，非数字沙箱 id 透传字符串
-          sandboxId:
-            normalizeSandboxIdValue(
-              selectedComputerId && selectedComputerId !== CLOUD_SANDBOX_ID
-                ? selectedComputerId
-                : CLOUD_SANDBOX_ID,
-            ) ?? Number(CLOUD_SANDBOX_ID),
-          workspacePath: resolvePersonalWorkspacePath(
+    // 选择器隐藏时由后端按项目绑定解析容器，不能把项目沙箱当成用户选择。
+    const sandboxAttach =
+      pinnedProjectSandboxSelection && selectedComputerId
+        ? {
             selectedComputerId,
-            workspacePath,
-          ),
-        }
-      : {
-          ...(pinnedProject.sandboxId
-            ? { sandboxId: pinnedProject.sandboxId }
-            : {}),
-        };
+            // 类型归一（bug2443）：数字形态转 number，非数字沙箱 id 透传字符串
+            sandboxId: normalizeSandboxIdValue(selectedComputerId),
+            workspacePath: resolvePersonalWorkspacePath(
+              selectedComputerId,
+              workspacePath,
+            ),
+          }
+        : {};
     return {
       kind: 'createConversation',
       agentId: currentAgentId,

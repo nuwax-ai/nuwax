@@ -5,6 +5,7 @@
 ```text
 docs/conversation/
 ├── README.md                           ← 本入口
+├── agent-sandbox-selection-rules.md     ← Agent 类型 × 页面状态的容器选择与 sandboxId 传参逻辑
 ├── dual-track/                         ← 双轨重构相关
 │   ├── conversation-dual-track-plan.md         双轨切换方案（R1-R6 实施与 flag）
 │   ├── conversation-business-logic-checklist.md 业务逻辑验收清单（105+ 条 ID）
@@ -37,6 +38,7 @@ docs/conversation/
 | --- | --- |
 | 术语口径（V1=旧线 / V2=新线）与渲染 V2 契约 | [renderer-v2.md](./renderer-v2.md)（术语与接入）；分组、折叠和可见性规则统一见 [rendering-rules.md](./rendering-rules.md) |
 | 业务逻辑逐条验收 | [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md) |
+| 容器选择 / sandboxId：按 Agent 类型、首页与会话状态查规则 | [agent-sandbox-selection-rules.md](./agent-sandbox-selection-rules.md)（展示、切换、传参与入口差异） |
 | 测试回归跑什么 | [dual-track/conversation-regression-test-plan.md](./dual-track/conversation-regression-test-plan.md) |
 | 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
 | Mock 故障注入验收（/mock-chat） | [mock-testing-plan.md](./mock-testing-plan.md)（含实施现状与热重载坑） |
@@ -66,6 +68,7 @@ isSessionActive = isConversationActive（连接生命周期）
 
 ## 变更记录
 
+- 2026-10-15 新增 Agent 容器选择与 sandboxId 传参逻辑，按 Agent 类型和平台首页、Agent 首页、会话首页、已有会话整理，并列出项目覆盖规则及尚未统一的入口。
 - 2026-08-27 新增手动验收清单（渲染线 + ux-m1 全功能分步走查）；e2e 文案语言钉死（?lang=zh-CN，dev server 需带正确 BASE_URL 重启）
 - 2026-08-26 新增 runtime 桥接死循环 + 终态 text 覆盖修复留存（审查处置轮，配套 file-preview 缓存版本 bump 见 docs 根）
 - 2026-08-25 新增会话渲染调研与升级开发计划（含已完成功能演示回归补齐：e2e 渲染探针）
