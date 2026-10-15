@@ -37,6 +37,11 @@
 /** apiInfoList 单行：URL 加宽、操作列收窄 */
 .apiInfoRow {
   width: 100%;
+
+  // Space 默认按文字基线对齐，开关没有文字会偏上。这一列按输入框高度居中。
+  :global(.ant-space-item):has(> .apiInfoUseProxy) {
+    align-self: center;
+  }
 }
 
 .apiInfoUrl {
@@ -75,14 +80,12 @@
   min-width: 60px;
   max-width: 60px;
   margin-bottom: 0 !important;
-  align-self: flex-end;
 
   :global(.ant-form-item-label) {
     white-space: nowrap;
     text-align: center;
 
     > label {
-      height: 22px;
       justify-content: center;
     }
 
@@ -92,12 +95,11 @@
     }
   }
 
-  :global(.ant-form-item-control-input),
   :global(.ant-form-item-control-input-content) {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 32px;
+    line-height: 1;
   }
 }
 
