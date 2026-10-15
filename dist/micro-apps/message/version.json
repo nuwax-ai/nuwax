@@ -40,6 +40,7 @@
   "builtAt": "2026-10-15T11:56:29.522Z",
   "cache": {
     "key": "d8df78232776f7ba45b09c304ff45bf2ece046258c233226c2f34482e46e5fb1",
-    "hit": false
+    "hit": true,
+    "reusedAt": "2026-10-15T12:17:03.183Z"
   }
 }
