@@ -343,6 +343,8 @@ test('真实 main 类型基线允许行号移动，新增类型诊断仍中止�
   await assert.rejects(
     syncMicroApps({
       root: f.root,
+      // 同一输入下模拟编译器输出变化，必须绕过产物缓存才能走到类型门
+      useCache: false,
       execute: fakeBuild({
         upstreamTypes,
         adapterTypes: `${adapterTypes}src/adapter.ts(1,1): error TS2304: Cannot find name 'broken'.\n`,
@@ -436,4 +438,102 @@ test('子仓自身 workspace 保留本地依赖补丁上下文，与宿主 works
     execute: fakeBuild({ ownWorkspace: true }),
   });
   assert.equal(manifest.workspaceMode, 'project-workspace');
+});
+
+function countingBuild(counter, options) {
+  const build = fakeBuild(options);
+  return async (command, args, runOptions) => {
+    if (command === 'corepack' && args.includes('build')) counter.builds += 1;
+    return build(command, args, runOptions);
+  };
+}
+
+test('输入不变时第二次构建命中产物缓存，不再 install/build，产物与 manifest 一致', async (t) => {
+  const f = await fixture(t);
+  const counter = { builds: 0 };
+  const [first] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+  });
+  assert.equal(first.cache.hit, false);
+  const [second] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+  });
+  assert.equal(counter.builds, 1);
+  assert.equal(second.cache.hit, true);
+  assert.equal(second.cache.key, first.cache.key);
+  assert.equal(second.source.commit, f.pin);
+  assert.equal(second.adapter.sha256, first.adapter.sha256);
+  assert.equal(second.builtAt, first.builtAt);
+  assert.match(
+    await fs.readFile(path.join(f.destination, 'repo/assets/main.js'), 'utf8'),
+    /artifact/,
+  );
+  const written = JSON.parse(
+    await fs.readFile(path.join(f.destination, 'repo/version.json'), 'utf8'),
+  );
+  assert.equal(written.cache.hit, true);
+});
+
+test('适配 overlay 变化或显式关闭缓存时重新构建', async (t) => {
+  const f = await fixture(t);
+  const counter = { builds: 0 };
+  await syncMicroApps({ root: f.root, execute: countingBuild(counter) });
+  await fs.writeFile(
+    path.join(f.adapterRoot, 'overlay/marker.txt'),
+    'adapter overlay v2\n',
+  );
+  const [changed] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+  });
+  assert.equal(counter.builds, 2);
+  assert.equal(changed.cache.hit, false);
+  const [forced] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+    useCache: false,
+  });
+  assert.equal(counter.builds, 3);
+  assert.equal(forced.cache.hit, false);
+});
+
+test('shell 中的 VITE_* 变量参与缓存键，变化即重建', async (t) => {
+  const f = await fixture(t);
+  const counter = { builds: 0 };
+  await syncMicroApps({ root: f.root, execute: countingBuild(counter) });
+  process.env.VITE_CACHE_FIXTURE = 'changed';
+  t.after(() => delete process.env.VITE_CACHE_FIXTURE);
+  await syncMicroApps({ root: f.root, execute: countingBuild(counter) });
+  assert.equal(counter.builds, 2);
+});
+
+test('缓存每个应用只保留最近 N 份', async (t) => {
+  const f = await fixture(t);
+  for (const version of ['a', 'b', 'c']) {
+    await fs.writeFile(
+      path.join(f.adapterRoot, 'overlay/marker.txt'),
+      `overlay ${version}\n`,
+    );
+    await syncMicroApps({ root: f.root, execute: fakeBuild(), cacheKeep: 2 });
+  }
+  const entries = await fs.readdir(
+    path.join(f.root, '.cache/micro-apps/artifacts/repo'),
+  );
+  assert.equal(entries.length, 2);
+});
+
+test('adapter.patch 混入 .rej/.orig 合并残留时拒绝构建', async (t) => {
+  const f = await fixture(t);
+  const patch = path.join(f.adapterRoot, 'adapter.patch');
+  await fs.appendFile(
+    patch,
+    'diff --git a/source.txt.rej b/source.txt.rej\nnew file mode 100644\n--- /dev/null\n+++ b/source.txt.rej\n@@ -0,0 +1 @@\n+leftover\n',
+  );
+  await assert.rejects(
+    syncMicroApps({ root: f.root, execute: fakeBuild() }),
+    /合并残留文件[\s\S]*source\.txt\.rej/,
+  );
+  await assert.rejects(fs.access(f.destination));
 });

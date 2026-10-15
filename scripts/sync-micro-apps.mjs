@@ -407,6 +407,123 @@ async function compareTypeBaseline({
   return report;
 }
 
+/** 合并失败留下的 *.rej / *.orig 一旦写进 patch 就会作为新文件随构建发布，必须拒绝。 */
+export function assertPatchHygiene(app, patchText) {
+  const leftovers = [...patchText.matchAll(/^diff --git a\/(\S+) b\/\S+$/gm)]
+    .map((match) => match[1])
+    .filter((file) => /\.(rej|orig)$/.test(file));
+  if (leftovers.length)
+    throw new Error(
+      `${app.id} adapter.patch 混入合并残留文件：\n${leftovers.join(
+        '\n',
+      )}\n请删除这些 diff 段后重新提交（它们不是适配内容）`,
+    );
+}
+
+async function installedVersion(root, name) {
+  try {
+    return (
+      await readJson(path.join(root, 'node_modules', name, 'package.json'))
+    ).version;
+  } catch {
+    return 'missing';
+  }
+}
+
+/**
+ * 产物缓存键：覆盖决定构建结果的全部输入——固定提交、适配指纹（adapter.json/patch/overlay）、
+ * 工具链、宿主 qiankun 插件实装版本、shell 中的 VITE_* 变量，以及本脚本自身内容。
+ * 任一输入变化即视为未命中，宁可重建也不复用。
+ */
+export async function microAppCacheKey({
+  root,
+  app,
+  source,
+  adapter,
+  pnpmVersion,
+  env,
+}) {
+  const viteEnvironment = Object.fromEntries(
+    Object.entries(env)
+      .filter(([key]) => key.startsWith('VITE_'))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  );
+  const hostPackages = {};
+  for (const name of Object.keys(expectedPackages))
+    hostPackages[name] = await installedVersion(root, name);
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        schemaVersion: 1,
+        id: app.id,
+        commit: source.commit,
+        adapter: adapter.sha256,
+        node: process.version,
+        pnpm: pnpmVersion,
+        expectedPackages,
+        hostPackages,
+        viteEnvironment,
+        script: createHash('sha256')
+          .update(await fs.readFile(fileURLToPath(import.meta.url)))
+          .digest('hex'),
+      }),
+    )
+    .digest('hex');
+}
+
+const cacheEntry = (cache, id, key) => path.join(cache, 'artifacts', id, key);
+
+export async function readCachedBuild(cache, id, key) {
+  const entry = cacheEntry(cache, id, key);
+  try {
+    const manifest = await readJson(path.join(entry, 'manifest.json'));
+    await fs.access(path.join(entry, 'dist/index.html'));
+    const now = new Date();
+    await fs.utimes(entry, now, now);
+    return { dist: path.join(entry, 'dist'), manifest };
+  } catch {
+    return undefined;
+  }
+}
+
+/** 缓存写入是锦上添花：失败只告警，绝不影响本次发布。 */
+async function storeCachedBuild(cache, id, key, dist, manifest, keep) {
+  const entry = cacheEntry(cache, id, key);
+  const temporary = `${entry}.tmp-${process.pid}`;
+  try {
+    await fs.rm(temporary, { recursive: true, force: true });
+    await fs.mkdir(temporary, { recursive: true });
+    await fs.cp(dist, path.join(temporary, 'dist'), { recursive: true });
+    await fs.writeFile(
+      path.join(temporary, 'manifest.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`,
+    );
+    await fs.rm(entry, { recursive: true, force: true });
+    await fs.rename(temporary, entry);
+    const parent = path.dirname(entry);
+    const entries = [];
+    for (const name of await fs.readdir(parent)) {
+      if (name.includes('.tmp-')) continue;
+      entries.push({
+        name,
+        mtime: (await fs.stat(path.join(parent, name))).mtimeMs,
+      });
+    }
+    for (const stale of entries
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(Math.max(keep, 1)))
+      await fs.rm(path.join(parent, stale.name), {
+        recursive: true,
+        force: true,
+      });
+  } catch (error) {
+    await fs.rm(temporary, { recursive: true, force: true }).catch(() => {});
+    console.warn(
+      `[micro-apps] ${id}: 产物缓存写入失败（不影响本次构建）：${error.message}`,
+    );
+  }
+}
+
 export async function acquireMicroAppLock(cache) {
   const lock = path.join(cache, '.sync.lock');
   await fs.mkdir(cache, { recursive: true });
@@ -450,6 +567,8 @@ export async function syncMicroApps({
   execute = runCommand,
   keepBuild = process.env.MICRO_APP_KEEP_BUILD === '1',
   required = process.env.MICRO_APP_REQUIRED === '1',
+  useCache = process.env.MICRO_APP_CACHE !== '0',
+  cacheKeep = Number(process.env.MICRO_APP_CACHE_KEEP ?? 3),
 } = {}) {
   const root = path.resolve(inputRoot);
   const cache = path.join(root, '.cache/micro-apps');
@@ -483,7 +602,9 @@ export async function syncMicroApps({
     }
     if (uninitialized.length) {
       const message =
-        `子模块未初始化：${uninitialized.join(' / ')}。开源社区版无对应仓库属预期，` +
+        `子模块未初始化：${uninitialized.join(
+          ' / ',
+        )}。开源社区版无对应仓库属预期，` +
         '跳过微应用构建（资料库/消息等子应用功能将缺失）；内网请先 git submodule update --init --recursive';
       if (required) {
         throw new Error(
@@ -509,6 +630,46 @@ export async function syncMicroApps({
         app,
         path.join(scratch, 'adapters', app.id),
       );
+      assertPatchHygiene(app, await fs.readFile(snapshot.patch, 'utf8'));
+      const cacheKey = await microAppCacheKey({
+        root,
+        app,
+        source,
+        adapter,
+        pnpmVersion,
+        env: process.env,
+      });
+      const cached = useCache
+        ? await readCachedBuild(cache, app.id, cacheKey)
+        : undefined;
+      if (cached) {
+        const output = path.join(publish, app.id);
+        await fs.cp(cached.dist, output, { recursive: true });
+        await validateBuild(output, app);
+        const manifest = {
+          ...cached.manifest,
+          cache: {
+            key: cacheKey,
+            hit: true,
+            reusedAt: new Date().toISOString(),
+          },
+        };
+        await fs.writeFile(
+          path.join(output, 'version.json'),
+          `${JSON.stringify(manifest, null, 2)}\n`,
+        );
+        manifests.push(manifest);
+        console.info(
+          `[micro-apps] ${app.id}: 命中产物缓存 main@${source.commit.slice(
+            0,
+            12,
+          )} adapter@${adapter.sha256.slice(
+            0,
+            12,
+          )}（MICRO_APP_CACHE=0 可强制重建）`,
+        );
+        continue;
+      }
       const working = path.join(scratch, app.id);
       const archive = path.join(scratch, `${app.id}.tar`);
       await fs.mkdir(working);
@@ -593,6 +754,16 @@ export async function syncMicroApps({
         },
         builtAt: new Date().toISOString(),
       };
+      if (useCache)
+        await storeCachedBuild(
+          cache,
+          app.id,
+          cacheKey,
+          path.join(project, 'dist'),
+          manifest,
+          cacheKeep,
+        );
+      manifest.cache = { key: cacheKey, hit: false };
       const output = path.join(publish, app.id);
       await fs.cp(path.join(project, 'dist'), output, { recursive: true });
       await fs.writeFile(
