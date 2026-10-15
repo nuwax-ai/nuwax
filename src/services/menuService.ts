@@ -17,8 +17,8 @@ import { request } from 'umi';
 const MENU_ICON_MAP: Record<string, string> = {
   // 一级菜单
   new_conversation: 'icons-nav-default-new-chat',
-  // 新建任务（主页入口）
-  homepage: 'icons-nav-default-new-chat',
+  // 主页
+  homepage: 'icons-nav-home',
   // 伙伴
   message: 'icons-nav-default-message',
   // 资料库（兼容旧菜单 code）
