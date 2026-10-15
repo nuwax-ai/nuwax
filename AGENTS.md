@@ -4,8 +4,8 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## 常用命令
 
-- 开发:`npm run dev`(max dev);构建:`build:prod` / `build:dev`
-- 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式)
+- 开发:`npm run dev`(max dev;predev 跑 `doctor --quick` 提醒微应用产物/子模块问题,不拦截);构建:`build:prod` / `build:dev`;环境体检:`npm run doctor`(只读,子模块/pin/产物/工具链)
+- 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式);脚本层测试(提测/微应用构建升级/doctor/类型门,不联网):`npm run test:scripts`
 - 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`e2e:conversation`(需 dev server + ego-browser 登录态)、`e2e:mock-chat`(mock 场景走查);组合 `verify:conversation`
 - 分层依赖检查:`npm run lint:arch`(depcruise;存量豁免基线 `.dependency-cruiser-known-violations.json`)
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
@@ -29,6 +29,10 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## 关键文档
 
+- [docs/getting-started.md](./docs/getting-started.md) —— 新同事上手(环境/子模块/日常循环)
+- [docs/architecture/overview.md](./docs/architecture/overview.md) —— 架构总览(目录职责/分层/已知问题);[docs/architecture/optimization-roadmap.md](./docs/architecture/optimization-roadmap.md) —— 架构优化排查表(持续维护,改代码前先看红线与分级门)
+- [docs/micro-apps-runbook.md](./docs/micro-apps-runbook.md) —— 微应用子模块操作手册(初始化/升级/patch 重制/排障);[scripts/README.md](./scripts/README.md) —— 脚本索引
+- [docs/testing-strategy.md](./docs/testing-strategy.md) —— 测试分层与「改什么跑什么」
 - [docs/conversation/README.md](./docs/conversation/README.md) —— 会话域总入口(ADR / 维护指南 / 验收清单 / 回归方案 / 行为细节)
 - [docs/engineering-conventions.md](./docs/engineering-conventions.md) —— 命名 / 分层 / I18n
 - `docs/ch/` —— 专项指南(SSE 实现、Markdown 渲染器、AgentFlow 设计等)

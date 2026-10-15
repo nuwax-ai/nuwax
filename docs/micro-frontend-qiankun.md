@@ -11,7 +11,7 @@
 | 资料库 | `nuwax-repo-web` | `submodules/nuwax-repo-web` | 仓库根 | `/repo/*` | `/repo-entry` | `/micro-apps/repo/index.html` |
 | 消息 | `nuwax-im-web` | `submodules/nuwax-im` | `nuwax-im-web/` | `/instant-message/*` | `/message-entry` | `/micro-apps/message/index.html` |
 
-- 资料库 gitlink：`1d9f19162d3991ca693e5e79758b3bc6943e6e7e`；消息 gitlink：`f7fd703688aba50573621f9ee8e32ecf0ef9f75c`。
+- 当前固定提交以各自 `micro-frontends/<id>/adapter.json` 的 `pin`（与主仓 gitlink 一致）为唯一事实源，本文不再抄写具体 SHA；`git submodule status` 或 `npm run doctor` 可直接查看。日常操作（初始化、升级、patch 冲突重制）见 [微应用子模块操作手册](./micro-apps-runbook.md)。
 - `.gitmodules` 的 `branch = main` 表明上游来源；`build:dev`、`build:prod` 与 `sync:micro-apps` 从主仓 index 读取固定 gitlink，并与 `adapter.json.pin` 交叉校验，不会 fetch、checkout 或升级子仓。升级通过显式 `upgrade:micro-apps` 入口进行。
 - `micro-frontends/apps.json` 登记已确认的应用，每项指向独立 `adapter.json`。消息使用用户确认的 `nuwax-im` 仓库中的 PC 前端目录，后端不参与构建和适配。
 - 资源目录 `/micro-apps/<id>/` 与业务路由分开。访问业务深链必须先进入主站布局；静态 entry 仅供 qiankun 加载。
@@ -69,7 +69,7 @@ npm run build:prod
 
 1. 加独占构建锁，删除旧 `public/micro-apps/`，验证固定版本和应用地址契约。
 2. 校验 gitlink/adapter pin、`.gitmodules` main 和本地 `origin/main` 祖先关系。
-3. 冻结适配文件快照并校验其 SHA256，`git archive` 固定 SHA 到 `.cache/micro-apps/` 的独立目录，在该目录初始化隔离 Git 上下文，`git apply --check` 后应用 checked patch。
+3. 冻结适配文件快照并校验其 SHA256，拒绝混入 `*.rej` / `*.orig` 合并残留的 patch。按「固定提交 + 适配指纹 + 工具链 + 宿主 qiankun 插件版本 + shell 中 `VITE_*` 变量 + 本脚本内容」计算产物缓存键，命中 `.cache/micro-apps/artifacts/<id>/<key>/` 时直接复用并重新校验入口，跳过 4–6 步（版本 manifest 的 `cache.hit` 记录是否复用；`MICRO_APP_CACHE=0` 强制重建，`MICRO_APP_CACHE_KEEP` 调整每应用保留份数，默认 3）。未命中时 `git archive` 固定 SHA 到 `.cache/micro-apps/` 的独立目录，在该目录初始化隔离 Git 上下文，`git apply --check` 后应用 checked patch。
 4. 复制 overlay。monorepo 仅在 `projectDir` 指定的前端目录执行命令。
 5. 用显式 `corepack pnpm@10.27.0 install --frozen-lockfile` 安装，防止无 packageManager 的子目录误用其它全局 pnpm。子应用自身有 workspace 时保留其依赖补丁；没有时加 `--ignore-workspace`，防止 monorepo 前端目录向上继承宿主 `packages/*`。
 6. 完成类型/资产构建，验证 qiankun 2.x 入口转换、应用名、资源前缀和 JavaScript 产物。
@@ -111,7 +111,7 @@ npm run upgrade:micro-apps -- message --ref '填入已审核的40位提交SHA'
 npm run build:prod
 ```
 
-[升级脚本](/Users/apple/workspace/nuwax/scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。单个升级不改变另一个应用的 pin；后续主站构建沿用这些固定提交。
+[升级脚本](../scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。单个升级不改变另一个应用的 pin；后续主站构建沿用这些固定提交。
 
 选中子仓、适配目录或共享登记文件已有 WIP 时，脚本中止；仅 gitlink 与 adapter pin 已成对暂存、两端一致且 adapter 没有其它字节或权限差异时，可以继续重复升级或构建。无关文件的 dirty/staged 改动保持原样。上游修改 overlay 同名文件时默认中止，需要先审查适配；明确完成审查后可手工加 `--allow-overlay-changes`。默认构建不会自动放行这类变化。现有纯 rename 保存的 Vite upstream 配置不按被覆盖文件处理。
 
@@ -157,7 +157,7 @@ dist/
 
 `/m/` 继续由移动端占用。消息和资料库的静态 entry 分别是 `/micro-apps/message/index.html`、`/micro-apps/repo/index.html`；用户访问的 `/instant-message`、`/repo` 仍由主站打开侧栏并挂载子应用。静态目录不存在的文件返回 404，业务深链刷新回到主站入口。
 
-`npm run build:prod` 合入两个微应用，`npm run build:prod:m` 进一步下载移动端 H5 到 `dist/m/`（来源用环境变量 `MOBILE_BUILD_SOURCE` 指定，默认内网 gitlab）。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
+`npm run build:prod` 合入两个微应用，`npm run build:prod:m` 进一步下载移动端 H5 到 `dist/m/`（来源默认读本地 nuwax-mobile 检出的 `origin` 远端，无检出回退 GitHub nuwax-mobile，`MOBILE_BUILD_REPO` 可临时覆写；旧变量 `MOBILE_BUILD_SOURCE` 已废弃）。现有 `deploy_test.sh` 与 `scripts/deploy_sync_test.sh` 都提交整个 `dist/`，Docker 的静态阶段也完整复制这个目录，没有对子目录进行裁剪。线上前端可以由一套静态服务托管，HTTP API 和 WebSocket 继续转发到各业务后端。
 
 产物生成过程目前不同：移动端从独立仓库下载已提交的 `unpackage/dist/build/web/`，消息/资料库则由主站构建固定 main 的源码并应用适配层。如果后续要独立发布两个子应用，可让子仓产出包含 qiankun 生命周期的版本包，再由主站按固定版本拉取合并；仍保持上述静态目录契约。
 
