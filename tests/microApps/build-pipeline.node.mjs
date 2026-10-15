@@ -509,6 +509,82 @@ test('shell 中的 VITE_* 变量参与缓存键，变化即重建', async (t) =>
   assert.equal(counter.builds, 2);
 });
 
+test('NODE_ENV 切换后重建，不能复用另一环境的产物', async (t) => {
+  const f = await fixture(t);
+  const original = process.env.NODE_ENV;
+  t.after(() => {
+    if (original === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = original;
+  });
+  const environments = [];
+  const execute = fakeBuild({
+    observe: ({ env }) => environments.push(env.NODE_ENV),
+  });
+  process.env.NODE_ENV = 'development';
+  const [first] = await syncMicroApps({ root: f.root, execute });
+  process.env.NODE_ENV = 'production';
+  const [second] = await syncMicroApps({ root: f.root, execute });
+  assert.equal(second.cache.hit, false);
+  assert.notEqual(second.cache.key, first.cache.key);
+  assert.deepEqual(environments, ['development', 'production']);
+});
+
+test('缓存缺文件、内容改变或元数据损坏时重建，修复后可再次命中', async (t) => {
+  const cases = {
+    '缺少懒加载 chunk': (entry) =>
+      fs.rm(path.join(entry, 'dist/assets/lazy.js')),
+    '懒加载 chunk 内容改变': (entry) =>
+      fs.writeFile(path.join(entry, 'dist/assets/lazy.js'), 'corrupted'),
+    '混入额外文件': (entry) =>
+      fs.writeFile(path.join(entry, 'dist/unexpected.js'), 'unexpected'),
+    'manifest 内容改变': async (entry) => {
+      const file = path.join(entry, 'manifest.json');
+      const manifest = JSON.parse(await fs.readFile(file, 'utf8'));
+      manifest.source.commit = 'f'.repeat(40);
+      await fs.writeFile(file, JSON.stringify(manifest));
+    },
+    '旧缓存没有完整性记录': (entry) =>
+      fs.rm(path.join(entry, 'integrity.json'), { force: true }),
+  };
+  for (const [name, corrupt] of Object.entries(cases)) {
+    await t.test(name, async (t) => {
+      const f = await fixture(t);
+      const counter = { builds: 0 };
+      const build = countingBuild(counter);
+      const execute = async (command, args, options) => {
+        const result = await build(command, args, options);
+        if (command === 'corepack' && args.includes('build')) {
+          await fs.writeFile(
+            path.join(options.cwd, 'dist/assets/main.js'),
+            'import("./lazy.js")',
+          );
+          await fs.writeFile(
+            path.join(options.cwd, 'dist/assets/lazy.js'),
+            'export const lazy = true;',
+          );
+        }
+        return result;
+      };
+      const [first] = await syncMicroApps({ root: f.root, execute });
+      await corrupt(
+        path.join(f.root, '.cache/micro-apps/artifacts/repo', first.cache.key),
+      );
+      const [rebuilt] = await syncMicroApps({ root: f.root, execute });
+      assert.equal(rebuilt.cache.hit, false);
+      assert.equal(counter.builds, 2);
+      assert.equal(rebuilt.source.commit, f.pin);
+      assert.equal(
+        await fs.readFile(path.join(f.destination, 'repo/assets/lazy.js'), 'utf8'),
+        'export const lazy = true;',
+      );
+      await assert.rejects(fs.access(path.join(f.destination, 'repo/unexpected.js')));
+      const [reused] = await syncMicroApps({ root: f.root, execute });
+      assert.equal(reused.cache.hit, true);
+      assert.equal(counter.builds, 2);
+    });
+  }
+});
+
 test('缓存每个应用只保留最近 N 份', async (t) => {
   const f = await fixture(t);
   for (const version of ['a', 'b', 'c']) {
