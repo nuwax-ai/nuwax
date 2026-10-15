@@ -252,6 +252,62 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+describe('首页隐藏运行容器选择器时的发送参数', () => {
+  beforeEach(() => {
+    vi.mocked(fetchChatboxCategories).mockResolvedValue([]);
+  });
+
+  it('全栈项目上框不传项目原有 sandboxId', async () => {
+    mockHitRecommend();
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (agentId: number) =>
+        ({
+          data: { agentId, type: 'TaskAgent', allowPrivateSandbox: 1 },
+        } as any),
+    );
+    handoffState.setContext('homePinnedProject', {
+      projectId: 261,
+      projectType: 'UserApp',
+      name: 'xxxx',
+      sandboxId: 333,
+      devAgentId: 88,
+    });
+    render(<Home />);
+    await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+    await act(async () => input.props.onEnter('全栈任务'));
+    const [agentId, attach] = handleCreateConversation.mock.calls[0];
+    expect(agentId).toBe(88);
+    expect(attach).toMatchObject({ projectId: 261, devAgentId: 88 });
+    expect(attach).not.toHaveProperty('sandboxId');
+    expect(attach).not.toHaveProperty('selectedComputerId');
+    expect(attach).not.toHaveProperty('workspacePath');
+  });
+
+  it.each([
+    { type: 'ChatBot', allowPrivateSandbox: 1 },
+    { type: 'TaskAgent', allowPrivateSandbox: 0 },
+  ])(
+    '$type / allowPrivateSandbox=$allowPrivateSandbox 不发送隐藏选择器的旧选择',
+    async (agent) => {
+      vi.mocked(apiDisplayRecommendList).mockResolvedValue({
+        data: { recChatBoxNav: { Agent: [] } },
+      } as any);
+      vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+        data: { agentId: 7, ...agent },
+      } as any);
+      render(<Home />);
+      await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+      act(() => input.props.onComputerSelect('377'));
+      act(() => input.props.onWorkspaceDirChange('/tmp/stale'));
+      await act(async () => input.props.onEnter('普通任务'));
+      const [, attach] = handleCreateConversation.mock.calls[0];
+      expect(attach.selectedComputerId).toBeUndefined();
+      expect(attach.workspacePath).toBeUndefined();
+      expect(attach).not.toHaveProperty('sandboxId');
+    },
+  );
+});
+
 describe('项目新建任务的电脑与工作目录', () => {
   beforeEach(() => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValue({

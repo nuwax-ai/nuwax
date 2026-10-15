@@ -38,6 +38,8 @@ src/features/conversation/
 
 ## 3. 常见维护任务
 
+电脑选择器的展示、锁定、项目继承与请求 `sandboxId` 传参，按 [Agent 容器选择与 sandboxId 传参逻辑](../agent-sandbox-selection-rules.md) 的类型和页面状态清单排查。首页创建、Agent 首页跳转与会话 chat 发送是不同阶段，不能用某一入口的默认值推断全部请求。
+
 ### 3.1 新增副作用
 
 1. `runtime/effectDispatcher.ts` → `ConversationEffect` 加成员；

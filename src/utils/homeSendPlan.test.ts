@@ -125,7 +125,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.kind).toBe('createConversation');
     if (plan.kind !== 'createConversation') return;
     expect(plan.attach.projectId).toBe(100);
-    expect(plan.attach.sandboxId).toBe(66);
+    expect(plan.attach).not.toHaveProperty('sandboxId');
     // 常规项目上框：不默认命中智能体语义 → 不带 devAgentId、不跳 IDE
     expect(plan.attach.devAgentId).toBeUndefined();
     expect(plan.attach.redirectUrl).toBeUndefined();
@@ -134,7 +134,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.attach.workspacePath).toBeUndefined();
   });
 
-  it('上框（全栈项目）：带 devAgentId + redirectUrl 前缀 + 项目沙箱', () => {
+  it('上框（全栈项目）：带 devAgentId + redirectUrl，隐藏容器选择器时不带项目沙箱', () => {
     const plan = buildHomeSendPlan({
       ...BASE_INPUT,
       pinnedProject: {
@@ -145,12 +145,16 @@ describe('buildHomeSendPlan 分支决策', () => {
         sandboxId: 88,
         devAgentId: 42,
       },
+      selectedComputerId: '9',
+      workspacePath: '/tmp/stale',
     });
     expect(plan.kind).toBe('createConversation');
     if (plan.kind !== 'createConversation') return;
     expect(plan.attach.projectId).toBe(200);
     expect(plan.attach.devAgentId).toBe(42);
-    expect(plan.attach.sandboxId).toBe(88);
+    expect(plan.attach).not.toHaveProperty('sandboxId');
+    expect(plan.attach).not.toHaveProperty('selectedComputerId');
+    expect(plan.attach).not.toHaveProperty('workspacePath');
     expect(plan.attach.redirectUrl).toBe('/space/8/app-pro/200/');
   });
 
@@ -302,18 +306,30 @@ describe('buildHomeSendPlan 上框参与者沙箱自选', () => {
     ).toBe('sb-a1b2c3');
   });
 
-  it('未开放自选时：沿用项目沙箱', () => {
+  it('未开放自选时：不带项目沙箱或上次选择', () => {
     const plan = buildHomeSendPlan({
       ...PARTICIPANT_INPUT,
       pinnedProjectSandboxSelection: undefined,
       selectedComputerId: '9',
       workspacePath: '/tmp/a',
     });
-    expect(plan.kind === 'createConversation' && plan.attach.sandboxId).toBe(
-      66,
-    );
+    expect(plan.kind).toBe('createConversation');
+    if (plan.kind !== 'createConversation') return;
+    expect(plan.attach).not.toHaveProperty('sandboxId');
+    expect(plan.attach).not.toHaveProperty('selectedComputerId');
     expect(
       plan.kind === 'createConversation' && plan.attach.workspacePath,
     ).toBeUndefined();
+  });
+
+  it('开放自选但未选中容器：不补云端哨兵或回落项目沙箱', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      workspacePath: '/tmp/stale',
+    });
+    expect(plan.kind).toBe('createConversation');
+    if (plan.kind !== 'createConversation') return;
+    expect(plan.attach).not.toHaveProperty('sandboxId');
+    expect(plan.attach).not.toHaveProperty('workspacePath');
   });
 });

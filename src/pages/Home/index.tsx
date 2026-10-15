@@ -238,6 +238,13 @@ const Home: React.FC = () => {
   const effectiveTaskAgentActive = selectedRecommend
     ? isTaskAgentFunctionType(selectedFunctionType)
     : false;
+  // 与输入框运行容器选择器的展示条件一致，隐藏时不发送默认值或旧选择。
+  const showComputerSelector =
+    (pinnedProjectSandboxSelectable ||
+      effectiveTaskAgentActive ||
+      agentDetail?.type === AgentTypeEnum.TaskAgent) &&
+    (!pinnedProject || pinnedProjectSandboxSelectable) &&
+    (pinnedProjectSandboxSelectable || !!agentDetail?.allowPrivateSandbox);
   // 上框项目自带空间（会话绑定项目），不再展示空间选择器
   const showSpaceSelector = pinnedProject
     ? false
@@ -504,8 +511,10 @@ const Home: React.FC = () => {
         agentMode,
         infos: mergedInfos,
         selectedDocs: supportsAgentCapabilities ? selectedDocs : [],
-        selectedComputerId,
-        workspacePath,
+        selectedComputerId: showComputerSelector
+          ? selectedComputerId
+          : undefined,
+        workspacePath: showComputerSelector ? workspacePath : undefined,
         selectedSpaceId,
         fallbackSpaceId: Number(getSpaceId()),
       });
