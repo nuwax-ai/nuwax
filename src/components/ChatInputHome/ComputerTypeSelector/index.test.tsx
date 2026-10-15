@@ -82,6 +82,48 @@ const click = (element: HTMLElement) =>
   });
 
 describe('电脑列表刷新与选择保护', () => {
+  it('不读取 Agent 记忆时，项目电脑离线回落云端必须同步真实选择，不保存临时值', async () => {
+    const onChange = vi.fn();
+    fetchComputerList.mockResolvedValue(response([cloud, other], { 7: '999' }));
+    render(
+      <Controlled
+        initialValue="366"
+        agentId={7}
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('selected-id')).toHaveTextContent('-1'),
+    );
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(
+      '-1',
+      expect.objectContaining({ id: '-1' }),
+    );
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
+  it('项目电脑可用时不采用其他 Agent 记忆，后续列表暂缺也不自动切换', async () => {
+    const onChange = vi.fn();
+    fetchComputerList
+      .mockResolvedValueOnce(response([cloud, local], { 7: '-1' }))
+      .mockResolvedValue(response([cloud], { 7: '-1' }));
+    render(
+      <Controlled
+        initialValue="366"
+        agentId={7}
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+    await click(await screen.findByText('我的电脑'));
+    await waitFor(() => expect(fetchComputerList).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('selected-id')).toHaveTextContent('366');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
   it('每次打开下拉重新获取候选，慢刷新期间保留当前名称', async () => {
     const later = deferred<ReturnType<typeof response>>();
     fetchComputerList
