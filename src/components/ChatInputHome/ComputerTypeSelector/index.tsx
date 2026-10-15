@@ -250,6 +250,31 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     cloudOnly,
   ]);
 
+  // 项目关闭 Agent 记忆自动选择后，仍需同步实际回落选项，避免云端携带离线电脑的目录。
+  useEffect(() => {
+    if (
+      autoSelect ||
+      fixedSelection ||
+      disabled ||
+      readonly ||
+      !initialized ||
+      !selectedOption.id ||
+      selectedOption.id === value
+    ) {
+      return;
+    }
+    onChange?.(selectedOption.id, selectedOption);
+  }, [
+    autoSelect,
+    fixedSelection,
+    disabled,
+    readonly,
+    initialized,
+    selectedOption,
+    value,
+    onChange,
+  ]);
+
   // 处理选择
   const handleSelect = useCallback(
     async (option: ComputerOption) => {

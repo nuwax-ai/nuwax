@@ -75,7 +75,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-it('详情页新建任务携带项目电脑类型和执行目录，点击不重复加载详情', async () => {
+it('详情页新建任务携带项目电脑类型和文件服务目录，点击不重复加载详情', async () => {
   render(<NormalProjectDetail />);
   await screen.findByRole('heading', { name: '常规项目' });
   fireEvent.click(screen.getByRole('button', { name: '新建任务' }));
@@ -87,7 +87,7 @@ it('详情页新建任务携带项目电脑类型和执行目录，点击不重�
       projectType: AgentComponentTypeEnum.NormalProject,
       sandboxId: 417,
       sandboxType: 'Personal',
-      workspacePath: '/work/project',
+      workspacePath: '/files/project',
       owner: true,
     }),
   );

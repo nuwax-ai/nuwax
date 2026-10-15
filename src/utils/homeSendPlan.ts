@@ -53,16 +53,10 @@ export const resolvePinnedProjectComputerId = (
     ? CLOUD_SANDBOX_ID
     : String(project.sandboxId);
 
-/** 对齐移动端项目目录：明确目录优先，其次为 agent 执行路径、文件服务路径。 */
+/** 项目自定义目录取文件服务视角；缺失表示默认目录，不回退到 agent 执行路径。 */
 export const resolveProjectWorkspacePath = (project: {
-  workspacePath?: string | null;
-  agentWorkspacePath?: string | null;
   fileWorkspacePath?: string | null;
-}): string | undefined =>
-  project.workspacePath ||
-  project.agentWorkspacePath ||
-  project.fileWorkspacePath ||
-  undefined;
+}): string | undefined => project.fileWorkspacePath || undefined;
 
 /** 常规项目上框与新建常规项目一致，允许选择电脑和工作目录，不受创建者身份限制。 */
 export const resolvePinnedSandboxSelectable = (
