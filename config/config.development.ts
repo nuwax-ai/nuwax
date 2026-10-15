@@ -34,5 +34,6 @@ export default defineConfig({
     '/repo/ws': devWebSocketProxy(testAgent),
     '/repo/internal': { target: testAgent, changeOrigin: true },
     '/instant-message/ws': devWebSocketProxy(testAgent),
+    '/computer/terminal': devWebSocketProxy(testAgent),
   },
 });

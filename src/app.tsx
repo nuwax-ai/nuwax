@@ -5,6 +5,7 @@ import { theme as antdTheme, message, Modal } from 'antd';
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { history, useAntdConfigSetter, useModel } from 'umi';
 import AppStartup from './components/business-component/AppStartup';
+import { ConversationTerminalHost } from './components/business-component/ConversationTerminalWorkspace';
 import {
   REDIRECT_LOGIN,
   SUCCESS_CODE,
@@ -417,6 +418,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         <GlobalEventPolling />
       )}
       {children}
+      <ConversationTerminalHost />
     </>
   );
 };

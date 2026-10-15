@@ -1,5 +1,4 @@
 import {
-  ConversationBottomConsole,
   CopyToSpaceComponent,
   PagePreviewIframe,
   type ConsoleLayoutMode,
@@ -18,6 +17,7 @@ import {
   useLocalFilesContext,
 } from '@/features/client-shell/localFileService';
 
+import ConversationTerminalWorkspace from '@/components/business-component/ConversationTerminalWorkspace';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
@@ -1749,7 +1749,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     [pageCacheKey],
   );
 
-  // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
+  // 隐藏页分离终端挂载点；连接及标签由应用级宿主保留，返回时重新接回。
   useLayoutEffect(() => {
     if (active) return;
     restoredWorkspaceKeyRef.current = null;
@@ -1953,7 +1953,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole =
     active && conversationInfo?.id === id && hasTerminalConsoleRendered ? (
-      <ConversationBottomConsole
+      <ConversationTerminalWorkspace
+        workspaceConversationId={id}
+        sandboxId={String(finalSelectedId)}
         key={`${id}:${finalSelectedId}`}
         className={cx(styles['terminal-console'])}
         conversationId={finalSelectedId === '-1' ? id : undefined}

@@ -173,6 +173,8 @@ export interface ConversationBottomConsoleProps {
   defaultLayoutMode?: ConsoleLayoutMode;
   /** 是否显示日志 Tab @default true */
   showLogsTab?: boolean;
+  /** 会话终端工作区注入多终端标签；不传时保持原终端入口。 */
+  terminalHeader?: React.ReactNode;
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
   logsExtra?: React.ReactNode;
   /**
@@ -218,6 +220,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   defaultActiveTab = 'terminal',
   defaultLayoutMode = 'collapsed',
   showLogsTab = true,
+  terminalHeader,
   logsExtra,
   logsPanel,
   className,
@@ -1237,15 +1240,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       {/* 头部：终端入口已合并，具体环境跟随页面 Header */}
       <div className={cx(styles['console-header'])}>
         <div className={cx(styles['console-tabs'])}>
-          <span
-            className={cx(styles['console-tab'], {
-              [styles.active]:
-                activeTab !== 'logs' && layoutMode !== 'collapsed',
-            })}
-            onClick={() => handleTabClick(tabFromEnv(env))}
-          >
-            {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
-          </span>
+          {terminalHeader ?? (
+            <span
+              className={cx(styles['console-tab'], {
+                [styles.active]:
+                  activeTab !== 'logs' && layoutMode !== 'collapsed',
+              })}
+              onClick={() => handleTabClick(tabFromEnv(env))}
+            >
+              {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
+            </span>
+          )}
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
