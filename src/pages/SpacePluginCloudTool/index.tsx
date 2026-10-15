@@ -23,8 +23,8 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Cascader, Checkbox, Input, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useModel, useParams, useRequest } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useParams, useRequest } from 'umi';
 import PluginChatSession from '../SpacePluginTool/components/PluginChatSession';
 import styles from './index.less';
 import PluginCodeHeader from './PluginCodeHeader';
@@ -125,17 +125,6 @@ const SpacePluginCloudTool: React.FC = () => {
   useEffect(() => {
     runPluginInfo(pluginId);
   }, [pluginId]);
-
-  const { isConversationActive } = useModel('conversationInfo');
-  const prevActiveRef = useRef(false);
-
-  // 每次聊天对话完毕后，主动更新最新的插件配置信息
-  useEffect(() => {
-    if (prevActiveRef.current && !isConversationActive) {
-      runPluginInfo(pluginId);
-    }
-    prevActiveRef.current = isConversationActive;
-  }, [isConversationActive, runPluginInfo, pluginId]);
 
   // Just show the latest item.
   const displayRender = (labels: string[]) => labels[labels.length - 1];
@@ -461,6 +450,7 @@ const SpacePluginCloudTool: React.FC = () => {
             <PluginChatSession
               conversationId={conversationId}
               pluginInfo={pluginInfo as PluginInfo}
+              onConversationFinished={() => runPluginInfo(pluginId)}
             />
           </div>
         )}
