@@ -5,6 +5,10 @@
   width: 600px;
   border-radius: 10px !important;
 
+  &.container-wide {
+    width: 780px;
+  }
+
   .body {
     max-height: 70vh;
     overflow-y: auto;
@@ -62,6 +66,16 @@
 
   :global(.ant-input-number) {
     width: 100%;
+  }
+}
+
+.apiInfoUseProxy {
+  flex: 0 0 168px;
+  min-width: 168px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-form-item-label) {
+    white-space: nowrap;
   }
 }
 
