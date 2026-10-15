@@ -1,7 +1,6 @@
 # 架构优化排查表（持续维护）
 
-> 建立：2026-10-15。用法：每次挑一项做，做完在「状态」列填日期与提交，数字类目标在「基线 / 目标」里更新实测值。新发现的问题按同格式追加，不另起文档。
-> 现状描述见 [架构总览](./overview.md)。
+> 建立：2026-10-15。用法：每次挑一项做，做完在「状态」列填日期与提交，数字类目标在「基线 / 目标」里更新实测值。新发现的问题按同格式追加，不另起文档。现状描述见 [架构总览](./overview.md)。
 
 ## 0. 红线：不影响线上业务
 
@@ -17,8 +16,8 @@
 
 | 级别 | 定义 | 必过的门 |
 | --- | --- | --- |
-| L0 | 文档、脚本、CI、注释；不进入产物 | `test:scripts`（改了脚本时） |
-| L1 | 进入产物但运行时零行为变化（删死代码、移动文件、类型补全） | 构建通过 + 相关 vitest + `lint:arch` |
+| L0 | 文档、环境诊断、注释；不改变构建输入、产物或发布决策 | `test:scripts`（改了脚本时） |
+| L1 | 进入产物但运行时零行为变化，或影响产物选择/生成的构建脚本、缓存与 CI | 构建通过 + 相关测试（脚本用 `test:scripts`）+ `lint:arch`；缓存还须验证命中与强制重建的产物一致 |
 | L2 | 运行时内部重构（拆文件、合并重复实现） | L1 的门 + 先补测试 + 域质量门（会话路径跑 `test:conversation` + E2E）+ 提测走查 |
 | L3 | 下线旧线、改数据流或跨模块契约 | L2 的门 + 产品确认 + 灰度或观察期 + 回切预案 |
 
@@ -26,7 +25,7 @@
 
 | 指标 | 基线（2026-10-15） | 本季目标 | 测量方式 |
 | --- | --- | --- | --- |
-| 微应用构建（输入不变） | 41.7s | ✅ 0.5s（缓存） | `time npm run sync:micro-apps` |
+| 微应用构建（输入不变） | 41.7s | ✅ 合入复验 0.73s（含完整性校验，初版 0.5s） | `time npm run sync:micro-apps` |
 | adapter.patch 总行数 | repo 1755 → 877（已清 .rej）；message 2977 | message ≤ 800 | `wc -l micro-frontends/*/adapter.patch` |
 | depcruise 存量违规 | 105（实际 97） | ≤ 60 | `.dependency-cruiser-known-violations.json` 条数 |
 | > 1000 行的非测试/非词典文件 | 48 | ≤ 38 | 见 §5 统计命令 |
@@ -38,11 +37,11 @@
 
 | ID | 问题（证据） | 方案 | 风险 | 验证 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| S1 | 每次 `build:*` 都对两个微应用完整 install + build（冷启动约 42s），提测和本地构建都要付这笔时间 | `sync-micro-apps` 加内容寻址产物缓存，缓存键覆盖全部构建输入；`MICRO_APP_CACHE=0` 可关闭 | L0 | 新增 4 个测试；实测命中 0.5s；缓存产物与强制重建产物逐文件一致（341 个文件） | ✅ 2026-10-15 |
-| S2 | repo-web 的 adapter.patch 40 段里有 19 段是 `.rej` 合并残留，补丁体积翻倍；这些残留会作为垃圾文件进入构建目录 | 删除这些段；`sync-micro-apps` 与 `doctor` 拒绝含 `*.rej` / `*.orig` 的 patch；`pull-micro-app-pins` 重算 patch 时排除它们 | L0 | 清理后的补丁贴到 pin 上，与旧补丁结果相比只少了这 19 个 .rej 文件；守卫有测试 | ✅ 2026-10-15 |
+| S1 | 每次 `build:*` 都对两个微应用完整 install + build（冷启动约 42s），提测和本地构建都要付这笔时间 | `sync-micro-apps` 加内容寻址产物缓存，有效 `NODE_ENV`/`VITE_*`、工具链与适配输入共同决定缓存键；完整性记录覆盖全部产物与 manifest，损坏或旧缓存自动重建；`MICRO_APP_CACHE=0` 可关闭 | L1 | 环境切换、chunk 缺失/改写、额外文件、元数据损坏、旧缓存与恢复失败均有回归；真实冷构建 45.4s、命中 0.73s、强制重建 45.5s，338 个业务资产一致；删除真实缓存 chunk 后自动重建并恢复一致资产 | ✅ 2026-10-15 |
+| S2 | repo-web 的 adapter.patch 40 段里有 19 段是 `.rej` 合并残留，补丁体积翻倍；这些残留会作为垃圾文件进入构建目录 | 删除这些段；`sync-micro-apps` 与 `doctor` 拒绝含 `*.rej` / `*.orig` 的 patch；`pull-micro-app-pins` 重算 patch 时排除它们 | L1 | 清理后的补丁贴到 pin 上，与旧补丁结果相比只少了这 19 个 .rej 文件；守卫有测试 | ✅ 2026-10-15 |
 | S3 | 子模块、pin、产物状态不透明，环境问题要靠人肉排查（文档里记录过 worktree 缺 `src/.umi`、pin 撕裂、产物过期等实际故障） | 新增只读 `npm run doctor`；`predev` 跑 `--quick`，只提醒不拦截 | L0 | 4 个测试；执行约 0.6s | ✅ 2026-10-15 |
-| S4 | 有两套升级工具：`upgrade-micro-apps`（严格，失败会回滚，但不会重算 patch）和 `pull-micro-app-pins`（会三方合并重算 patch，但不加锁、不回滚，失败时 pin 和子仓 HEAD 已经改了一半） | 收敛为一个入口：给 `upgrade:micro-apps` 加 `--rebase-patch`，复用 pull-pins 的三方合并逻辑，纳入锁、回滚和恢复记录；`pull:micro-app-pins` 保留一个版本作为别名并提示迁移。全链提测步骤 2.5 遇到 patch 冲突时先自动尝试重算 | L0 | 补 `upgrade-pipeline` 测试：重算成功、重算失败回滚 | 待办（需与适配负责人对齐） |
-| S5 | message 补丁中新增文件占 1740 行（ChatTasksPanel、conversationTasks*、测试、dev mock），修改只有约 240 行；新增文件也走 patch，每次重制都要搬一遍 | 新增文件整体迁到 `overlay/`，patch 只保留对上游已有文件的修改；长期把宿主接入点（生命周期入口、host props）推回上游仓库，继续缩小 patch | L1 | 迁移前后构建产物逐文件 diff 必须一致（S1 的比对方法） | 待办 |
+| S4 | 有两套升级工具：`upgrade-micro-apps`（严格，失败会回滚，但不会重算 patch）和 `pull-micro-app-pins`（会三方合并重算 patch，但不加锁、不回滚，失败时 pin 和子仓 HEAD 已经改了一半） | 收敛为一个入口：给 `upgrade:micro-apps` 加 `--rebase-patch`，复用 pull-pins 的三方合并逻辑，纳入锁、回滚和恢复记录；`pull:micro-app-pins` 保留一个版本作为别名并提示迁移。全链提测步骤 2.5 遇到 patch 冲突时先自动尝试重算 | L1 | 补 `upgrade-pipeline` 测试：重算成功、重算失败回滚 | 待办（需与适配负责人对齐） |
+| S5 | message 补丁中新增文件占 1740 行（ChatTasksPanel、conversationTasks\*、测试、dev mock），修改只有约 240 行；新增文件也走 patch，每次重制都要搬一遍 | 新增文件整体迁到 `overlay/`，patch 只保留对上游已有文件的修改；长期把宿主接入点（生命周期入口、host props）推回上游仓库，继续缩小 patch | L1 | 迁移前后构建产物逐文件 diff 必须一致（S1 的比对方法） | 待办 |
 | S6 | 微应用注册信息在三处重复：`config/config.ts` 的 qiankun.apps、`src/utils/microAppRoutes.ts`、`adapter.json` | config 从 `micro-frontends/apps.json` 和 adapter 派生 name/entry；加一致性测试，防止三处漂移 | L1 | 构建后 `.umi` 生成的 masterOptions 与改前一致 | 待办 |
 | S7 | 主站 dev 联调微应用时，每改一次子应用都要 `sync:micro-apps` 重新构建，没有 HMR | 加开发开关（如 `MICRO_APP_DEV=repo`），dev 下 entry 指向子应用 dev server（7100/7110） | L1（只影响 dev 配置） | 本地联调走查 | 待办 |
 | S8 | `scripts/deploy/lib.sh` 的机器产物冲突规则仍处理 `src/constants/version.ts` 烤哈希，但 10-08 起已不再烤哈希 | 规则保留（无害），注释改为「历史兼容」；确认两个版本周期都不再出现此冲突后删除 | L0 | `test:deploy` | 待办 |
@@ -78,7 +77,7 @@
 | C4 | 页面互引 51 条（主要源页面：SpaceResource 8、AppDevDesign 6、EditAgent 5；被引用最多的目标：AppDev、Antv-X6、SystemManagement 各 8 条） | 被跨页复用的组件或 hook 下沉到 `components/business-component` 或 `features/<域>`；纯移动 + 改 import，不改实现 | L1 | 每个 PR 只处理一个目标页面；构建 + 相关测试 | 待办 |
 | C5 | 11 条循环依赖 | 逐条拆环（抽出类型、反转依赖） | L1–L2 | `lint:arch` | 待办 |
 | C6 | 注释与实现不一致：`useConversationRuntimeSession.ts` 约第 68 行写「flag 关闭（默认）」，实际默认开启 | 修正注释 | L0 | — | 待办 |
-| C7 | 类型门只覆盖 4 个域 | 扩到 `features/client-shell`、`layouts/MicroAppHost`、`utils/hostBridge`：先 `--prune-baseline` 记下现状，再要求零新增 | L0 | `typecheck` | 待办 |
+| C7 | 类型门只覆盖 4 个域 | 扩到 `features/client-shell`、`layouts/MicroAppHost`、`utils/hostBridge`：先登记域并运行类型门，修复诊断；确需保留的存量债务逐条评审后录入基线。`--prune-baseline` 只删除已消除的债务，不能生成或接纳新增债务 | L0 | `typecheck` | 待办 |
 | C8 | 3 套 SSE 实现：`utils/fetchEventSource.ts`、`utils/fetchEventSourceConversationInfo.ts`、`pages/AppDevPro/utils/userAppTaskStream.ts`。签名大部分重复，但定时器和返回值语义不同 | ① 先给三处写合同测试，锁定超时、重连、中止、错误回调语义；② 抽出单一内核（连接 + 计时 + 中止），保留三个薄适配，对外 API 不变；③ 调用方逐个迁移 | L2（会话路径按会话门走） | `test:conversation` + E2E + AppDev / 工作流试运行走查 | 待办 |
 | C9 | 16 处原生 `fetch` 绕过请求层（如 `services/skill.ts`、`services/filePreview.ts`、Login、ChatInputHome），鉴权和错误提示可能与其他接口不一致 | 逐个评估：确属流式或二进制的保留，并集中到 `services/` 的专用封装；其余改走 `request` | L2 | 对应功能走查，失败重试路径用真实页面验证 | 待办 |
 | C10 | 两份 ChatInputHome：`components/ChatInputHome`（1381 行）与 `pages/AppDev/components/ChatArea/components/ChatInputHome`（1372 行） | 先 diff 两份差异，再抽出共用内核，差异部分用 props 注入 | L2 | 首页输入与 AppDev 输入两条路径走查 | 待办 |
@@ -103,7 +102,7 @@ git log --since=90.days --name-only --format= -- src | sort | uniq -c | sort -rn
 
 ## 6. 建议节奏
 
-- **第 1 阶段（本周，L0）**：S1–S3 ✅、D1–D6 ✅；然后做 C2、C6、S8、S9、S11。
+- **第 1 阶段（本周，L0–L1）**：S1–S3 ✅、D1–D6 ✅；然后做 C2、C6、S8、S9、S11。
 - **第 2 阶段（两周内，L1）**：S5、S6、C1、C4 先做被引用最多的 AppDev 页面、C7、D7–D12。
 - **第 3 阶段（月度，L2）**：S4、C3、C8、C10、C11（每周拆 1–2 个热点文件）。
 - **第 4 阶段（季度，L3）**：C12–C15、S10，均需产品或运维确认后才开始。

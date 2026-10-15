@@ -535,7 +535,7 @@ test('缓存缺文件、内容改变或元数据损坏时重建，修复后可�
       fs.rm(path.join(entry, 'dist/assets/lazy.js')),
     '懒加载 chunk 内容改变': (entry) =>
       fs.writeFile(path.join(entry, 'dist/assets/lazy.js'), 'corrupted'),
-    '混入额外文件': (entry) =>
+    混入额外文件: (entry) =>
       fs.writeFile(path.join(entry, 'dist/unexpected.js'), 'unexpected'),
     'manifest 内容改变': async (entry) => {
       const file = path.join(entry, 'manifest.json');
@@ -543,7 +543,7 @@ test('缓存缺文件、内容改变或元数据损坏时重建，修复后可�
       manifest.source.commit = 'f'.repeat(40);
       await fs.writeFile(file, JSON.stringify(manifest));
     },
-    '旧缓存没有完整性记录': (entry) =>
+    旧缓存没有完整性记录: (entry) =>
       fs.rm(path.join(entry, 'integrity.json'), { force: true }),
   };
   for (const [name, corrupt] of Object.entries(cases)) {
@@ -574,10 +574,15 @@ test('缓存缺文件、内容改变或元数据损坏时重建，修复后可�
       assert.equal(counter.builds, 2);
       assert.equal(rebuilt.source.commit, f.pin);
       assert.equal(
-        await fs.readFile(path.join(f.destination, 'repo/assets/lazy.js'), 'utf8'),
+        await fs.readFile(
+          path.join(f.destination, 'repo/assets/lazy.js'),
+          'utf8',
+        ),
         'export const lazy = true;',
       );
-      await assert.rejects(fs.access(path.join(f.destination, 'repo/unexpected.js')));
+      await assert.rejects(
+        fs.access(path.join(f.destination, 'repo/unexpected.js')),
+      );
       const [reused] = await syncMicroApps({ root: f.root, execute });
       assert.equal(reused.cache.hit, true);
       assert.equal(counter.builds, 2);
@@ -598,6 +603,41 @@ test('缓存每个应用只保留最近 N 份', async (t) => {
     path.join(f.root, '.cache/micro-apps/artifacts/repo'),
   );
   assert.equal(entries.length, 2);
+});
+
+test('缓存恢复失败回退重建，重建失败不能发布旧产物', async (t) => {
+  const f = await fixture(t);
+  const counter = { builds: 0 };
+  const [first] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+  });
+  const cachedDist = path.join(
+    f.root,
+    '.cache/micro-apps/artifacts/repo',
+    first.cache.key,
+    'dist',
+  );
+  const copy = fs.cp;
+  t.after(() => {
+    fs.cp = copy;
+  });
+  fs.cp = async (source, ...args) => {
+    if (source === cachedDist) throw new Error('fixture cache read failed');
+    return copy(source, ...args);
+  };
+  const [rebuilt] = await syncMicroApps({
+    root: f.root,
+    execute: countingBuild(counter),
+  });
+  assert.equal(rebuilt.cache.hit, false);
+  assert.equal(counter.builds, 2);
+  await assert.rejects(
+    syncMicroApps({ root: f.root, execute: fakeBuild({ failBuild: true }) }),
+    /child build failed/,
+  );
+  await assert.rejects(fs.access(f.destination));
+  await assert.rejects(fs.access(path.join(f.root, 'dist/micro-apps')));
 });
 
 test('adapter.patch 混入 .rej/.orig 合并残留时拒绝构建', async (t) => {

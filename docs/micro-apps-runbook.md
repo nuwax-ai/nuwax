@@ -43,10 +43,11 @@ npm run dev
 
 ## 3. 产物缓存
 
-`sync:micro-apps` 以「固定提交 + 适配指纹（adapter.json/patch/overlay）+ Node/pnpm 版本 + 宿主 qiankun 插件实装版本 + shell 中 `VITE_*` 变量 + 构建脚本自身内容」为键，把成功产物缓存在 `.cache/micro-apps/artifacts/<id>/<key>/`。
+`sync:micro-apps` 以「固定提交 + 适配指纹（adapter.json/patch/overlay）+ Node/pnpm 版本与平台/架构 + 宿主 qiankun 插件实装版本 + 有效 `NODE_ENV`/`VITE_*` 变量 + 构建脚本自身内容」为键，把成功产物缓存在 `.cache/micro-apps/artifacts/<id>/<key>/`。缓存键与 install/build 使用同一份环境，适配层配置优先于 shell 中的同名变量。
 
-- 任一输入变化即未命中，重新完整构建（含资料库类型基线门）；命中时仍重新校验入口契约。
-- 实测：冷构建 41.7s → 命中 0.5s；缓存产物与强制重建产物逐文件一致（341 个文件）。
+- 任一输入变化即未命中，重新完整构建（含资料库类型基线门）。缓存另存 `integrity.json`，核对 manifest 以及全部产物路径与内容摘要，命中后对复制出的产物再次校验摘要和入口契约。
+- 缺少完整性记录的旧缓存、缺文件、内容改变、混入额外文件或元数据损坏，均视为未命中并自动重建；缓存恢复失败也回退重建，重建失败则中止发布。
+- 2026-10-15 合入复验（本机）：冷构建 45.4s → 命中 0.73s，强制重建 45.5s；338 个业务资产逐文件一致（不比较含构建时间和缓存命中状态的 3 个版本元数据文件）。删除真实资料库缓存中的一个 JS chunk 后，仅资料库重建，消息继续命中，恢复后的资产仍一致。
 - `MICRO_APP_CACHE=0 npm run sync:micro-apps` 强制重建；`MICRO_APP_CACHE_KEEP=<n>` 调整每应用保留份数（默认 3）；删 `.cache/micro-apps/artifacts` 即全清。
 - 产物 `version.json` 的 `cache.hit` / `cache.key` 可追溯本次是否复用。
 

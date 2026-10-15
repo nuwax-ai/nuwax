@@ -432,7 +432,7 @@ async function installedVersion(root, name) {
 
 /**
  * 产物缓存键：覆盖决定构建结果的全部输入——固定提交、适配指纹（adapter.json/patch/overlay）、
- * 工具链、宿主 qiankun 插件实装版本、shell 中的 VITE_* 变量，以及本脚本自身内容。
+ * 工具链、宿主 qiankun 插件实装版本、有效 NODE_ENV/VITE_* 变量，以及本脚本自身内容。
  * 任一输入变化即视为未命中，宁可重建也不复用。
  */
 export async function microAppCacheKey({
@@ -454,11 +454,14 @@ export async function microAppCacheKey({
   return createHash('sha256')
     .update(
       JSON.stringify({
-        schemaVersion: 1,
+        schemaVersion: 2,
         id: app.id,
         commit: source.commit,
         adapter: adapter.sha256,
         node: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        nodeEnvironment: env.NODE_ENV ?? null,
         pnpm: pnpmVersion,
         expectedPackages,
         hostPackages,
@@ -473,14 +476,42 @@ export async function microAppCacheKey({
 
 const cacheEntry = (cache, id, key) => path.join(cache, 'artifacts', id, key);
 
+/** 文件路径与内容一起计入摘要，丢失、改写或混入任何文件都必须重新构建。 */
+async function buildFingerprint(dist) {
+  const files = await filesUnder(dist);
+  const hash = createHash('sha256');
+  for (const file of files) {
+    const content = createHash('sha256')
+      .update(await fs.readFile(path.join(dist, file)))
+      .digest('hex');
+    hash.update(JSON.stringify([file, content]));
+  }
+  return hash.digest('hex');
+}
+
 export async function readCachedBuild(cache, id, key) {
   const entry = cacheEntry(cache, id, key);
   try {
-    const manifest = await readJson(path.join(entry, 'manifest.json'));
+    const integrity = await readJson(path.join(entry, 'integrity.json'));
+    const manifestText = await fs.readFile(
+      path.join(entry, 'manifest.json'),
+      'utf8',
+    );
+    if (
+      integrity.schemaVersion !== 1 ||
+      integrity.id !== id ||
+      integrity.key !== key ||
+      integrity.manifestSha256 !==
+        createHash('sha256').update(manifestText).digest('hex') ||
+      integrity.distSha256 !==
+        (await buildFingerprint(path.join(entry, 'dist')))
+    )
+      return undefined;
+    const manifest = JSON.parse(manifestText);
     await fs.access(path.join(entry, 'dist/index.html'));
     const now = new Date();
     await fs.utimes(entry, now, now);
-    return { dist: path.join(entry, 'dist'), manifest };
+    return { dist: path.join(entry, 'dist'), manifest, integrity };
   } catch {
     return undefined;
   }
@@ -494,9 +525,23 @@ async function storeCachedBuild(cache, id, key, dist, manifest, keep) {
     await fs.rm(temporary, { recursive: true, force: true });
     await fs.mkdir(temporary, { recursive: true });
     await fs.cp(dist, path.join(temporary, 'dist'), { recursive: true });
+    const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
+    await fs.writeFile(path.join(temporary, 'manifest.json'), manifestText);
     await fs.writeFile(
-      path.join(temporary, 'manifest.json'),
-      `${JSON.stringify(manifest, null, 2)}\n`,
+      path.join(temporary, 'integrity.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          id,
+          key,
+          manifestSha256: createHash('sha256')
+            .update(manifestText)
+            .digest('hex'),
+          distSha256: await buildFingerprint(path.join(temporary, 'dist')),
+        },
+        null,
+        2,
+      )}\n`,
     );
     await fs.rm(entry, { recursive: true, force: true });
     await fs.rename(temporary, entry);
@@ -631,21 +676,40 @@ export async function syncMicroApps({
         path.join(scratch, 'adapters', app.id),
       );
       assertPatchHygiene(app, await fs.readFile(snapshot.patch, 'utf8'));
+      // 缓存键与后续 install/build 使用同一份环境，避免适配层覆盖变量后输入错配。
+      const env = {
+        ...process.env,
+        ...app.adapter.buildEnvironment,
+        NUWAX_MICRO_APP_HOST_ROOT: root,
+      };
       const cacheKey = await microAppCacheKey({
         root,
         app,
         source,
         adapter,
         pnpmVersion,
-        env: process.env,
+        env,
       });
-      const cached = useCache
+      let cached = useCache
         ? await readCachedBuild(cache, app.id, cacheKey)
         : undefined;
+      const output = path.join(publish, app.id);
       if (cached) {
-        const output = path.join(publish, app.id);
-        await fs.cp(cached.dist, output, { recursive: true });
-        await validateBuild(output, app);
+        try {
+          await fs.cp(cached.dist, output, { recursive: true });
+          // 校验复制后的快照，读取缓存之后发生的缺失/改写也不能进入发布目录。
+          if ((await buildFingerprint(output)) !== cached.integrity.distSha256)
+            throw new Error('复制后的缓存产物摘要不一致');
+          await validateBuild(output, app);
+        } catch (error) {
+          console.warn(
+            `[micro-apps] ${app.id}: 缓存恢复失败，重新构建：${error.message}`,
+          );
+          await fs.rm(output, { recursive: true, force: true });
+          cached = undefined;
+        }
+      }
+      if (cached) {
         const manifest = {
           ...cached.manifest,
           cache: {
@@ -693,11 +757,6 @@ export async function syncMicroApps({
         ? localPath(working, app.adapter.projectDir, 'projectDir')
         : working;
       await fs.cp(snapshot.overlay, project, { recursive: true });
-      const env = {
-        ...process.env,
-        ...app.adapter.buildEnvironment,
-        NUWAX_MICRO_APP_HOST_ROOT: root,
-      };
       const ownWorkspace = await fs
         .access(path.join(project, 'pnpm-workspace.yaml'))
         .then(
@@ -764,7 +823,6 @@ export async function syncMicroApps({
           cacheKeep,
         );
       manifest.cache = { key: cacheKey, hit: false };
-      const output = path.join(publish, app.id);
       await fs.cp(path.join(project, 'dist'), output, { recursive: true });
       await fs.writeFile(
         path.join(output, 'version.json'),

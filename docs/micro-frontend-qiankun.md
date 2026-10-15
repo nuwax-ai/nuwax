@@ -69,7 +69,7 @@ npm run build:prod
 
 1. 加独占构建锁，删除旧 `public/micro-apps/`，验证固定版本和应用地址契约。
 2. 校验 gitlink/adapter pin、`.gitmodules` main 和本地 `origin/main` 祖先关系。
-3. 冻结适配文件快照并校验其 SHA256，拒绝混入 `*.rej` / `*.orig` 合并残留的 patch。按「固定提交 + 适配指纹 + 工具链 + 宿主 qiankun 插件版本 + shell 中 `VITE_*` 变量 + 本脚本内容」计算产物缓存键，命中 `.cache/micro-apps/artifacts/<id>/<key>/` 时直接复用并重新校验入口，跳过 4–6 步（版本 manifest 的 `cache.hit` 记录是否复用；`MICRO_APP_CACHE=0` 强制重建，`MICRO_APP_CACHE_KEEP` 调整每应用保留份数，默认 3）。未命中时 `git archive` 固定 SHA 到 `.cache/micro-apps/` 的独立目录，在该目录初始化隔离 Git 上下文，`git apply --check` 后应用 checked patch。
+3. 冻结适配文件快照并校验其 SHA256，拒绝混入 `*.rej` / `*.orig` 合并残留的 patch。按「固定提交 + 适配指纹 + 工具链与平台/架构 + 宿主 qiankun 插件版本 + 有效 `NODE_ENV`/`VITE_*` 变量 + 本脚本内容」计算产物缓存键，键与 install/build 共用同一份环境。命中 `.cache/micro-apps/artifacts/<id>/<key>/` 时，先核对 `integrity.json` 中的 manifest 与全部产物摘要，复制后再核对摘要和入口契约，通过后跳过 4–6 步；旧缓存缺少完整性记录、校验失败或恢复失败均自动重建（版本 manifest 的 `cache.hit` 记录是否复用；`MICRO_APP_CACHE=0` 强制重建，`MICRO_APP_CACHE_KEEP` 调整每应用保留份数，默认 3）。未命中时 `git archive` 固定 SHA 到 `.cache/micro-apps/` 的独立目录，在该目录初始化隔离 Git 上下文，`git apply --check` 后应用 checked patch。
 4. 复制 overlay。monorepo 仅在 `projectDir` 指定的前端目录执行命令。
 5. 用显式 `corepack pnpm@10.27.0 install --frozen-lockfile` 安装，防止无 packageManager 的子目录误用其它全局 pnpm。子应用自身有 workspace 时保留其依赖补丁；没有时加 `--ignore-workspace`，防止 monorepo 前端目录向上继承宿主 `packages/*`。
 6. 完成类型/资产构建，验证 qiankun 2.x 入口转换、应用名、资源前缀和 JavaScript 产物。
