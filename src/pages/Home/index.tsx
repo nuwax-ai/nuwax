@@ -703,8 +703,21 @@ const Home: React.FC = () => {
           onComputerSelect={(id) => {
             if (pinnedProjectConfigLoading) return;
             setSelectedComputerId(id);
-            // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
-            if (id !== selectedComputerId) setWorkspaceDir('');
+            if (id !== selectedComputerId) {
+              // 项目目录只属于项目原个人电脑；切回时恢复，其他电脑从默认目录开始。
+              const projectWorkspacePath =
+                pinnedProjectSandboxSelectable &&
+                pinnedProject &&
+                resolvePinnedProjectComputerId(pinnedProject) === id
+                  ? pinnedProject.workspacePath
+                  : undefined;
+              setWorkspaceDir(
+                resolvePersonalWorkspacePath(
+                  id,
+                  projectWorkspacePath ?? undefined,
+                ) ?? '',
+              );
+            }
           }}
           workspacePath={workspacePath}
           onWorkspaceDirChange={

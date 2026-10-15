@@ -225,7 +225,7 @@ describe('ProjectPanel 选中关系', () => {
         projectType: AgentComponentTypeEnum.NormalProject,
         sandboxId: 366,
         sandboxType: 'Personal',
-        workspacePath: '/work/project',
+        workspacePath: '/files/project',
         owner: false,
       }),
     );
