@@ -108,8 +108,6 @@ const Home: React.FC = () => {
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
   const [workspacePath, setWorkspaceDir] = useState<string>('');
-  /** 本次项目新建任务中，各个人电脑离开前的目录；空字符串也代表用户的默认目录选择。 */
-  const projectWorkspaceSelections = useRef(new Map<string, string>());
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -346,7 +344,6 @@ const Home: React.FC = () => {
   useEffect(() => {
     const pinned = consumePinnedProject();
     if (!pinned) return;
-    projectWorkspaceSelections.current.clear();
     // 同项目再次新建任务重读电脑与目录，保留会话对象及草稿，避免默认智能体
     // 详情并发覆盖已选工具（禅道bug2394）。项目身份使用类型与 ID 的复合键。
     const isSameProject =
@@ -620,7 +617,6 @@ const Home: React.FC = () => {
   // 移除项目上框:恢复首页默认形态(全量推荐/默认门控/电脑复位)
   const handleClearPinnedProject = useCallback(() => {
     ++pinnedProjectConfigSequence.current;
-    projectWorkspaceSelections.current.clear();
     setPinnedProjectConfigLoading(false);
     setPinnedProject(undefined);
     agentMissedPromptedRef.current = undefined;
@@ -708,20 +704,7 @@ const Home: React.FC = () => {
             if (pinnedProjectConfigLoading) return;
             setSelectedComputerId(id);
             if (id !== selectedComputerId) {
-              if (
-                pinnedProjectSandboxSelectable &&
-                selectedComputerId &&
-                selectedComputerId !== '-1'
-              ) {
-                projectWorkspaceSelections.current.set(
-                  selectedComputerId,
-                  workspacePath,
-                );
-              }
-              // 先恢复本次在该电脑上选择的目录；未选择过时，仅项目原电脑继承接口目录。
-              const selectedWorkspacePath = pinnedProjectSandboxSelectable
-                ? projectWorkspaceSelections.current.get(id)
-                : undefined;
+              // 项目目录只属于项目原个人电脑；切回时恢复，其他电脑从默认目录开始。
               const projectWorkspacePath =
                 pinnedProjectSandboxSelectable &&
                 pinnedProject &&
@@ -731,7 +714,7 @@ const Home: React.FC = () => {
               setWorkspaceDir(
                 resolvePersonalWorkspacePath(
                   id,
-                  selectedWorkspacePath ?? projectWorkspacePath ?? undefined,
+                  projectWorkspacePath ?? undefined,
                 ) ?? '',
               );
             }

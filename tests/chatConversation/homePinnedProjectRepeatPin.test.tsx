@@ -453,61 +453,12 @@ describe('项目新建任务的电脑与工作目录', () => {
     expect(input.props.workspacePath).toBe('');
   });
 
-  it.each(['/host/selected', ''])(
-    '切云后选回项目个人容器，恢复本次手选目录 %j（空值为手选默认目录）',
-    async (selectedPath) => {
-      vi.mocked(apiNormalProjectGetById).mockResolvedValue({
-        code: '0000',
-        data: {
-          sandboxId: 294,
-          sandboxType: 'Personal',
-          fileWorkspacePath: '/host/project',
-        },
-      } as any);
-      pinNormalProject();
-      render(<Home />);
-      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
-      act(() => input.props.onWorkspaceDirChange(selectedPath));
-      // 与真实输入框一致：切云回调后还会用同一帧的回调清空目录。
-      const clearWorkspace = input.props.onWorkspaceDirChange;
-      act(() => {
-        input.props.onComputerSelect('-1');
-        clearWorkspace('');
-      });
-      expect(input.props.workspacePath).toBe('');
-      act(() => input.props.onComputerSelect('294'));
-      expect(input.props.workspacePath).toBe(selectedPath);
-      await act(async () => input.props.onEnter('恢复本次已选目录'));
-      expect(handleCreateConversation).toHaveBeenLastCalledWith(
-        7,
-        expect.objectContaining({
-          sandboxId: 294,
-          workspacePath: selectedPath || undefined,
-        }),
-      );
-    },
-  );
-
-  it('其他个人容器手选过的目录也按 sandboxId 恢复，不与项目目录串用', async () => {
-    pinNormalProject();
-    render(<Home />);
-    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
-    act(() => input.props.onComputerSelect('407'));
-    expect(input.props.workspacePath).toBe('');
-    act(() => input.props.onWorkspaceDirChange('/other/selected'));
-    act(() => input.props.onComputerSelect('366'));
-    expect(input.props.workspacePath).toBe('/work/project');
-    act(() => input.props.onComputerSelect('407'));
-    expect(input.props.workspacePath).toBe('/other/selected');
-  });
-
   it('再次点击同项目新建任务恢复默认配置，保留智能体；切换项目继承新配置', async () => {
     pinNormalProject();
     const { rerender } = render(<Home />);
     await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
     act(() => input.props.onComputerSelect('777'));
     act(() => input.props.onWorkspaceDirChange('/other/draft'));
-    act(() => input.props.onComputerSelect('888'));
     const requestCount = vi.mocked(apiPublishedAgentInfo).mock.calls.length;
 
     pinNormalProject({ name: '常规项目 B 改名', workspacePath: '/work/new' });
@@ -520,8 +471,6 @@ describe('项目新建任务的电脑与工作目录', () => {
       requestCount,
     );
     expect(apiNormalProjectGetById).toHaveBeenCalledTimes(2);
-    act(() => input.props.onComputerSelect('777'));
-    expect(input.props.workspacePath).toBe('');
 
     pinNormalProject({
       projectId: 8,
