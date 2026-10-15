@@ -34,8 +34,6 @@ const getPublishedManageTargetTypeText = (targetType?: string): string => {
       return dict('PC.Pages.PublishedManage.typeUserApp');
     case SquareAgentTypeEnum.ThirdApp:
       return dict('PC.Pages.PublishedManage.typeThirdApp');
-    case SquareAgentTypeEnum.NormalProject:
-      return dict('PC.Pages.PublishedManage.typeNormalProject');
     case SquareAgentTypeEnum.Plugin:
       return dict('PC.Pages.PublishedManage.typePlugin');
     case SquareAgentTypeEnum.Workflow:
@@ -102,8 +100,6 @@ const PublishedManage: React.FC = () => {
       url = `/space/${record.spaceId}/app-project-detail/${record.targetId}`;
     } else if (record.targetType === SquareAgentTypeEnum.ThirdApp) {
       url = `/space/${record.spaceId}/third-app-detail/${record.targetId}`;
-    } else if (record.targetType === SquareAgentTypeEnum.NormalProject) {
-      url = `/space/${record.spaceId}/normal-project-detail/${record.targetId}`;
     }
 
     if (url) {
@@ -158,11 +154,6 @@ const PublishedManage: React.FC = () => {
         },
         [SquareAgentTypeEnum.ThirdApp]: {
           text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.ThirdApp),
-        },
-        [SquareAgentTypeEnum.NormalProject]: {
-          text: getPublishedManageTargetTypeText(
-            SquareAgentTypeEnum.NormalProject,
-          ),
         },
         [SquareAgentTypeEnum.Plugin]: {
           text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.Plugin),

@@ -158,6 +158,35 @@ describe('useInitProjectMetadata 常驻页面路由隔离', () => {
     expect(applyMetadata).not.toHaveBeenCalled();
   });
 
+  it('目标 id 晚到且导航已不是 PUSH 时，仍使用进页时记下的 prompt', async () => {
+    mockHistory.action = 'PUSH';
+    mockHistory.location.state = { message: '首页创建 prompt' };
+    mockUseLocation.mockReturnValue({
+      state: { message: '首页创建 prompt' },
+    });
+    const applyMetadata = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ targetId }: { targetId: number }) =>
+        useInitProjectMetadata({
+          targetType: AgentComponentTypeEnum.Skill,
+          targetId,
+          requirePushAction: false,
+          applyMetadata,
+        }),
+      { initialProps: { targetId: 0 } },
+    );
+
+    expect(mockFetchGeneratedMetadata).not.toHaveBeenCalled();
+
+    mockHistory.action = 'POP';
+    mockHistory.location.state = undefined;
+    mockUseLocation.mockReturnValue({ state: undefined });
+    rerender({ targetId: 92 });
+
+    await waitFor(() => expect(applyMetadata).toHaveBeenCalledTimes(1));
+    expect(mockFetchGeneratedMetadata).toHaveBeenCalledWith('首页创建 prompt');
+  });
+
   it('shouldInit 为 false 时即使不要求 PUSH 也不生成', () => {
     const applyMetadata = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
