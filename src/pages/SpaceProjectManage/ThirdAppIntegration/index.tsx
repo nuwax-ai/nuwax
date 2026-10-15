@@ -8,8 +8,9 @@ import type {
   UserProjectItem,
   UserProjectPageResult,
 } from '@/types/interfaces/userProject';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, Modal } from 'antd';
+import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
@@ -163,19 +164,16 @@ const ThirdAppIntegration: React.FC = () => {
   /** 删除第三方应用前二次确认 */
   const handleDelete = useCallback(
     (item: UserProjectItem) => {
-      Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
-        okButtonProps: { danger: true },
-        okText: dict('PC.Common.Global.delete'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: async () => {
+      modalConfirm(
+        dict('PC.Pages.SpaceProjectManage.deleteThirdAppConfirmTitle'),
+        item.name,
+        async () => {
           const response = await apiThirdAppOauth2Delete(item.id);
           if (response?.code === SUCCESS_CODE) {
             runQuery(keyword, 1);
           }
         },
-      });
+      );
     },
     [keyword, runQuery],
   );

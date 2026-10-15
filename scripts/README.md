@@ -32,7 +32,7 @@
 | `deploy-asset-retention.mjs` | `prebuild:prod` 的 snapshot / `build:prod:m` 的 merge | `DIST_RETENTION=1` 时把上一版 dist 的旧哈希资源保留 N 代（默认 3），防发版后旧页面懒加载 404；本地构建不设变量零影响 |
 | `download-mobile-build.js` | `npm run build:m`；`build:prod:m` 尾段 | 下载 M 端产物到 `dist/m/`；来源优先本地 nuwax-mobile 检出的 origin，无检出回退 GitHub，`MOBILE_BUILD_REPO` 覆写 |
 | `deploy_sync_test.sh` | `bash scripts/deploy_sync_test.sh` | 全链提测：个人分支 → 版本分支 → dev → test → 构建 → 推 gitlab/test。见 [runbook](../docs/deploy-sync-test-runbook.md) |
-| `../deploy_test.sh` | `bash deploy_test.sh` | 快速提测：dev → test → 构建 → 推双远端 |
+| `../deploy_test.sh` | `bash deploy_test.sh` | 快速提测：dev → test → 子模块自动升级到最新 main（适配预检）→ 质量门 → 构建 → 推双远端；起跑时仅子模块版本偏差不拦截 |
 | `deploy/lib.sh` | 被上面两个脚本 source | 共用函数：重试、机器产物冲突消化、pin 撕裂修复、质量门、push/pull 自愈 |
 
 ## 质量门与检查

@@ -5,6 +5,10 @@
   width: 600px;
   border-radius: 10px !important;
 
+  &.container-wide {
+    width: 660px;
+  }
+
   .body {
     max-height: 70vh;
     overflow-y: auto;
@@ -33,6 +37,11 @@
 /** apiInfoList 单行：URL 加宽、操作列收窄 */
 .apiInfoRow {
   width: 100%;
+
+  // Space 默认按文字基线对齐，开关没有文字会偏上。这一列按输入框高度居中。
+  :global(.ant-space-item):has(> .apiInfoUseProxy) {
+    align-self: center;
+  }
 }
 
 .apiInfoUrl {
@@ -62,6 +71,35 @@
 
   :global(.ant-input-number) {
     width: 100%;
+  }
+}
+
+.apiInfoUseProxy {
+  flex: 0 0 60px;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-form-item-label) {
+    white-space: nowrap;
+    text-align: center;
+
+    > label {
+      justify-content: center;
+    }
+
+    :global(.hover-box) {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  :global(.ant-form-item-control-input-content) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
 }
 

@@ -899,7 +899,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 网站应用：详情已返回且 nameDefined 不为 true 时 generate-info 并回写名称。
-   * 不依赖 PUSH（等 get/:id 回来时 action 往往已不是 PUSH）；其它页面仍走默认 PUSH 门。
+   * 不依赖 PUSH（等 get/:id 回来时 action 往往已不是 PUSH），由 nameDefined 决定是否生成。
    */
   const applyUserAppMetadata = useCallback(
     async (meta: GeneratedMetadata) => {
