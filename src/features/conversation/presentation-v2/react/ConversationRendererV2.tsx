@@ -236,6 +236,17 @@ const TurnRowInner: React.FC<TurnRowProps> = ({
   </>
 );
 
+/**
+ * 转行组件：用户消息 + 整轮工作轨迹 + 最终回答
+ *
+ * 对比前后两个 props，如果其中任何一个不相等，则需要重新渲染。
+ *
+ * 对比前后两个 turn，如果其中任何一个不相等，则需要重新渲染。
+ * prevProps: 上一次的 props
+ * nextProps: 这一次的 props
+ * return true;  // 返回 true  → props 相等 → 跳过渲染（不更新）
+ * return false; // 返回 false → props 不等 → 重新渲染
+ */
 const TurnRow = React.memo(TurnRowInner, (previous, next) => {
   if (
     previous.conversationId !== next.conversationId ||
@@ -247,7 +258,7 @@ const TurnRow = React.memo(TurnRowInner, (previous, next) => {
     previous.onOpenToolResource !== next.onOpenToolResource ||
     previous.onOpenOpenUiSidecar !== next.onOpenOpenUiSidecar
   ) {
-    return false;
+    return false; // 不相等 → 需要重新渲染
   }
 
   const before = previous.turn;
