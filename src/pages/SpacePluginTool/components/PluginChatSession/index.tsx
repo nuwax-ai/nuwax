@@ -11,11 +11,13 @@ import { history, useLocation, useModel } from 'umi';
 export interface PluginChatSessionProps {
   conversationId?: number;
   pluginInfo?: PluginInfo | null;
+  onConversationFinished?: () => void;
 }
 
 const PluginChatSession: React.FC<PluginChatSessionProps> = ({
   conversationId,
   pluginInfo,
+  onConversationFinished,
 }) => {
   const location = useLocation();
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
@@ -104,6 +106,31 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     effectsResources: {}, // plugin 入口无 chat model 资源；页面预览类 effect 静默忽略
   });
   const runtimeSession = runtimeLine?.session;
+  const effectiveIsActive =
+    runtimeLine?.effectiveIsActive ??
+    (isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING);
+  const previousConversationRef = useRef({
+    conversationId,
+    isActive: false,
+  });
+
+  // 与聊天面板使用同一条会话状态线，后台执行结束后再刷新插件配置。
+  useEffect(() => {
+    const previous = previousConversationRef.current;
+    previousConversationRef.current = {
+      conversationId,
+      isActive: effectiveIsActive,
+    };
+    if (
+      conversationId &&
+      previous.conversationId === conversationId &&
+      previous.isActive &&
+      !effectiveIsActive
+    ) {
+      onConversationFinished?.();
+    }
+  }, [conversationId, effectiveIsActive, onConversationFinished]);
 
   // 3. 进入页面携带首条消息自动触发发送会话
   useEffect(() => {
@@ -241,10 +268,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       isLoading={loadingAsync}
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
-      isConversationActive={
-        isConversationActive ||
-        conversationInfo?.taskStatus === TaskStatus.EXECUTING
-      }
+      isConversationActive={effectiveIsActive}
       isLocallyStreaming={isConversationActive}
       isAwaitingChatTerminal={isAwaitingChatTerminal}
       messageBottomMode="chat"
