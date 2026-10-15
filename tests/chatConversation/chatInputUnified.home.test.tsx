@@ -395,6 +395,30 @@ function ControlledHomeComputer({
 }
 
 describe('首页私人智能体绑定电脑', () => {
+  it('项目个人电脑离线回落云端时清除自定义目录，界面与所选电脑一致', async () => {
+    computer.useRealSelector = true;
+    computerApi.list.mockResolvedValue({
+      code: '0000',
+      data: {
+        sandboxes: [{ sandboxId: '-1', name: '云端电脑' }],
+        agentSelected: {},
+      },
+    });
+    const onComputerSelect = vi.fn();
+    const onWorkspaceDirChange = vi.fn();
+    render(
+      <ControlledHomeComputer
+        projectTask
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={onWorkspaceDirChange}
+      />,
+    );
+    await waitFor(() => expect(onComputerSelect).toHaveBeenCalledWith('-1'));
+    expect(screen.getByText('云端电脑')).toBeInTheDocument();
+    expect(screen.queryByText('/work/project')).not.toBeInTheDocument();
+    expect(computerApi.save).not.toHaveBeenCalled();
+  });
+
   it('项目任务保留项目配置，不恢复智能体记忆，仍可修改电脑和目录', async () => {
     computer.useRealSelector = true;
     const onComputerSelect = vi.fn();

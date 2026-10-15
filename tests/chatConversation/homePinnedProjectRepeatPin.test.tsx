@@ -252,6 +252,62 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+describe('首页隐藏运行容器选择器时的发送参数', () => {
+  beforeEach(() => {
+    vi.mocked(fetchChatboxCategories).mockResolvedValue([]);
+  });
+
+  it('全栈项目上框不传项目原有 sandboxId', async () => {
+    mockHitRecommend();
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (agentId: number) =>
+        ({
+          data: { agentId, type: 'TaskAgent', allowPrivateSandbox: 1 },
+        } as any),
+    );
+    handoffState.setContext('homePinnedProject', {
+      projectId: 261,
+      projectType: 'UserApp',
+      name: 'xxxx',
+      sandboxId: 333,
+      devAgentId: 88,
+    });
+    render(<Home />);
+    await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+    await act(async () => input.props.onEnter('全栈任务'));
+    const [agentId, attach] = handleCreateConversation.mock.calls[0];
+    expect(agentId).toBe(88);
+    expect(attach).toMatchObject({ projectId: 261, devAgentId: 88 });
+    expect(attach).not.toHaveProperty('sandboxId');
+    expect(attach).not.toHaveProperty('selectedComputerId');
+    expect(attach).not.toHaveProperty('workspacePath');
+  });
+
+  it.each([
+    { type: 'ChatBot', allowPrivateSandbox: 1 },
+    { type: 'TaskAgent', allowPrivateSandbox: 0 },
+  ])(
+    '$type / allowPrivateSandbox=$allowPrivateSandbox 不发送隐藏选择器的旧选择',
+    async (agent) => {
+      vi.mocked(apiDisplayRecommendList).mockResolvedValue({
+        data: { recChatBoxNav: { Agent: [] } },
+      } as any);
+      vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+        data: { agentId: 7, ...agent },
+      } as any);
+      render(<Home />);
+      await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+      act(() => input.props.onComputerSelect('377'));
+      act(() => input.props.onWorkspaceDirChange('/tmp/stale'));
+      await act(async () => input.props.onEnter('普通任务'));
+      const [, attach] = handleCreateConversation.mock.calls[0];
+      expect(attach.selectedComputerId).toBeUndefined();
+      expect(attach.workspacePath).toBeUndefined();
+      expect(attach).not.toHaveProperty('sandboxId');
+    },
+  );
+});
+
 describe('项目新建任务的电脑与工作目录', () => {
   beforeEach(() => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValue({
@@ -355,6 +411,48 @@ describe('项目新建任务的电脑与工作目录', () => {
     );
   });
 
+  it('只有选回项目同一台个人电脑才恢复文件服务目录，其他电脑不继承', async () => {
+    vi.mocked(apiNormalProjectGetById).mockResolvedValue({
+      code: '0000',
+      data: {
+        sandboxId: 417,
+        sandboxType: 'Personal',
+        fileWorkspacePath: '/host/project',
+        agentWorkspacePath: '/container/project',
+      },
+    } as any);
+    pinNormalProject();
+    render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.workspacePath).toBe('/host/project');
+
+    act(() => input.props.onComputerSelect('777'));
+    expect(input.props.workspacePath).toBe('');
+    await act(async () => input.props.onEnter('其他个人电脑'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({ sandboxId: 777, workspacePath: undefined }),
+    );
+
+    act(() => input.props.onComputerSelect('-1'));
+    expect(input.props.workspacePath).toBe('');
+    act(() => input.props.onComputerSelect('417'));
+    expect(input.props.workspacePath).toBe('/host/project');
+    await act(async () => input.props.onEnter('项目原电脑'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        sandboxId: 417,
+        workspacePath: '/host/project',
+      }),
+    );
+
+    // 已在项目原电脑时，重复点击不能覆盖用户主动选的默认目录。
+    act(() => input.props.onWorkspaceDirChange(''));
+    act(() => input.props.onComputerSelect('417'));
+    expect(input.props.workspacePath).toBe('');
+  });
+
   it('再次点击同项目新建任务恢复默认配置，保留智能体；切换项目继承新配置', async () => {
     pinNormalProject();
     const { rerender } = render(<Home />);
@@ -438,15 +536,17 @@ describe('项目新建任务的电脑与工作目录', () => {
       workspacePath: '/explicit',
       agentWorkspacePath: '/agent',
       fileWorkspacePath: '/files',
-      expected: '/explicit',
+      expected: '/files',
     },
     {
       workspacePath: null,
       agentWorkspacePath: '/agent',
       fileWorkspacePath: '/files',
-      expected: '/agent',
+      expected: '/files',
     },
     { fileWorkspacePath: '/files', expected: '/files' },
+    { agentWorkspacePath: '/agent', expected: '' },
+    { workspacePath: '/explicit', fileWorkspacePath: '', expected: '' },
     {
       workspacePath: null,
       agentWorkspacePath: null,
@@ -454,7 +554,7 @@ describe('项目新建任务的电脑与工作目录', () => {
       expected: '',
     },
   ])(
-    '读取一次最新详情并按移动端字段优先级继承 $expected',
+    '读取一次最新详情，仅回显文件服务目录 $expected',
     async ({ expected, ...paths }) => {
       vi.mocked(apiNormalProjectGetById).mockResolvedValue({
         code: '0000',
@@ -475,7 +575,7 @@ describe('项目新建任务的电脑与工作目录', () => {
       data: {
         sandboxId: 333,
         sandboxType: 'Cloud',
-        agentWorkspacePath: '/container/project',
+        fileWorkspacePath: '/container/project',
       },
     } as any);
     pinNormalProject({ sandboxId: 333, sandboxType: 'Cloud' });
@@ -531,20 +631,20 @@ describe('项目新建任务的电脑与工作目录', () => {
     await act(async () =>
       finishes[0]({
         code: '0000',
-        data: { sandboxId: 111, agentWorkspacePath: '/old/a' },
+        data: { sandboxId: 111, fileWorkspacePath: '/old/a' },
       }),
     );
     expect(input.props.wholeDisabled).toBe(true);
     await act(async () =>
       finishes[2]({
         code: '0000',
-        data: { sandboxId: 417, agentWorkspacePath: '/new/a' },
+        data: { sandboxId: 417, fileWorkspacePath: '/new/a' },
       }),
     );
     await act(async () =>
       finishes[1]({
         code: '0000',
-        data: { sandboxId: 222, agentWorkspacePath: '/old/b' },
+        data: { sandboxId: 222, fileWorkspacePath: '/old/b' },
       }),
     );
     expect(input.props.selectedComputerId).toBe('417');
@@ -566,7 +666,7 @@ describe('项目新建任务的电脑与工作目录', () => {
     await act(async () =>
       finish({
         code: '0000',
-        data: { sandboxId: 417, agentWorkspacePath: '/old' },
+        data: { sandboxId: 417, fileWorkspacePath: '/old' },
       }),
     );
     expect(input.props.pinnedProject).toBeUndefined();
@@ -607,7 +707,7 @@ describe('项目新建任务的电脑与工作目录', () => {
     await act(async () =>
       finish({
         code: '0000',
-        data: { sandboxId: 417, agentWorkspacePath: '/work/project' },
+        data: { sandboxId: 417, fileWorkspacePath: '/work/project' },
       }),
     );
     expect(input.props.selectedComputerId).toBe('417');

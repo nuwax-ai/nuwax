@@ -12,7 +12,16 @@ const script = fileURLToPath(new URL('../deploy_test.sh', import.meta.url));
 const library = fileURLToPath(
   new URL('../scripts/deploy/lib.sh', import.meta.url),
 );
+const upgradeModule = new URL(
+  '../scripts/upgrade-micro-apps.mjs',
+  import.meta.url,
+);
 const start = 'fixture-start';
+const fileProtocol = {
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: 'protocol.file.allow',
+  GIT_CONFIG_VALUE_0: 'always',
+};
 
 // 每个场景使用独立 Git 仓库和本地 bare 远端（origin/gitlab），不读取用户配置或调用真实构建。
 function environment(extra = {}) {
@@ -22,7 +31,13 @@ function environment(extra = {}) {
       key.startsWith('GIT_') ||
       key.startsWith('DEPLOY_') ||
       key.startsWith('MOBILE_BUILD_') ||
-      ['GATE', 'DRY_RUN', 'DEV_BRANCH', 'TEST_BRANCH', 'GITLAB_REMOTE_URL'].includes(key)
+      [
+        'GATE',
+        'DRY_RUN',
+        'DEV_BRANCH',
+        'TEST_BRANCH',
+        'GITLAB_REMOTE_URL',
+      ].includes(key)
     )
       delete env[key];
   }
@@ -69,7 +84,10 @@ async function fixture(t, { skipGitlabRemote = false } = {}) {
   }
   await fs.copyFile(script, path.join(root, 'deploy_test.sh'));
   await fs.copyFile(library, path.join(root, 'scripts/deploy/lib.sh'));
-  await fs.writeFile(path.join(root, '.gitignore'), '/dist\n/node_modules\n');
+  await fs.writeFile(
+    path.join(root, '.gitignore'),
+    '/dist\n/node_modules\n/.cache\n',
+  );
   await fs.writeFile(
     path.join(root, 'src/constants/version.ts'),
     'stable version\n',
@@ -97,12 +115,25 @@ async function fixture(t, { skipGitlabRemote = false } = {}) {
     { mode: 0o755 },
   );
   await fs.writeFile(
+    path.join(tools, 'upgrade.mjs'),
+    [
+      `import { upgradeMicroApps } from ${JSON.stringify(upgradeModule.href)};`,
+      "import { readFileSync } from 'node:fs';",
+      // 普通提测场景不登记微应用；专项用真实升级工具验证本地子模块与适配补丁。
+      "if (JSON.parse(readFileSync('micro-frontends/apps.json', 'utf8')).length) {",
+      "  await upgradeMicroApps({ root: process.cwd(), target: 'all' });",
+      '}',
+    ].join('\n'),
+  );
+  await fs.writeFile(
     path.join(tools, 'npm'),
     [
       '#!/bin/sh',
+      'if [ "$2" = "upgrade:micro-apps" ]; then exec node "$FIXTURE_UPGRADE_RUNNER"; fi',
       'printf "%s\\n" "${MOBILE_BUILD_REPO:-local-origin}" >> "$FIXTURE_BUILD_LOG"',
       'mkdir -p dist',
       'printf "artifact from %s\\n" "$(cat source.txt)" > dist/index.html',
+      'if [ -n "${FIXTURE_SUBMODULE_DIR:-}" ]; then git -C "$FIXTURE_SUBMODULE_DIR" rev-parse HEAD > dist/app-pin.txt; fi',
       '[ -z "${FIXTURE_BUILD_DIRTY:-}" ] || printf "generated\\n" >> source.txt',
       'exit 0',
       '',
@@ -116,8 +147,84 @@ async function fixture(t, { skipGitlabRemote = false } = {}) {
       PATH: `${tools}:${process.env.PATH}`,
       FIXTURE_GATE_LOG: path.join(temporary, 'gates.log'),
       FIXTURE_BUILD_LOG: path.join(temporary, 'builds.log'),
+      FIXTURE_UPGRADE_RUNNER: path.join(tools, 'upgrade.mjs'),
     },
   };
+}
+
+async function microAppFixture(t, { conflictingPatch = false } = {}) {
+  const state = await fixture(t);
+  const upstream = path.join(state.temporary, 'micro-app');
+  const sourceDir = 'submodules/app';
+  const source = path.join(state.root, sourceDir);
+  const adapterPath = 'micro-frontends/repo/adapter.json';
+  await fs.mkdir(upstream);
+  await git(upstream, 'init', '-b', 'main');
+  await git(upstream, 'config', 'user.name', 'Fixture');
+  await git(upstream, 'config', 'user.email', 'fixture@example.invalid');
+  await fs.writeFile(path.join(upstream, 'app.txt'), 'original\n');
+  await git(upstream, 'add', '.');
+  await git(upstream, 'commit', '-m', 'v1');
+  const v1 = await git(upstream, 'rev-parse', 'HEAD');
+  await run(
+    state.root,
+    'git',
+    ['submodule', 'add', '-b', 'main', upstream, sourceDir],
+    fileProtocol,
+  );
+  await fs.mkdir(path.join(state.root, 'micro-frontends/repo/overlay'), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(state.root, adapterPath),
+    JSON.stringify(
+      {
+        name: 'fixture-repo',
+        appName: 'fixture-repo',
+        sourceDir,
+        branch: 'main',
+        pin: v1,
+        patch: 'adapter.patch',
+        overlay: 'overlay',
+        entry: '/micro-apps/repo/index.html',
+        assetBase: '/micro-apps/repo/',
+        businessBase: '/repo',
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  await fs.writeFile(
+    path.join(state.root, 'micro-frontends/repo/adapter.patch'),
+    'diff --git a/app.txt b/app.txt\n--- a/app.txt\n+++ b/app.txt\n@@ -1 +1 @@\n-original\n+adapted\n',
+  );
+  await fs.writeFile(
+    path.join(state.root, 'micro-frontends/repo/overlay/host.txt'),
+    'host overlay\n',
+  );
+  await fs.writeFile(
+    path.join(state.root, 'micro-frontends/apps.json'),
+    JSON.stringify([{ id: 'repo', adapter: adapterPath }]) + '\n',
+  );
+  await git(state.root, 'add', '.');
+  await git(state.root, 'commit', '-m', 'register micro-app v1');
+  for (const branch of ['dev', 'test']) {
+    await git(state.root, 'branch', '-f', branch, start);
+    for (const remote of ['origin', 'gitlab'])
+      await git(state.root, 'push', remote, branch);
+  }
+  await fs.writeFile(path.join(upstream, 'feature.txt'), 'v2\n');
+  await git(upstream, 'add', '.');
+  await git(upstream, 'commit', '-m', 'v2');
+  const v2 = await git(upstream, 'rev-parse', 'HEAD');
+  await fs.writeFile(
+    path.join(upstream, conflictingPatch ? 'app.txt' : 'feature.txt'),
+    'v3\n',
+  );
+  await git(upstream, 'commit', '-am', 'v3');
+  const v3 = await git(upstream, 'rev-parse', 'HEAD');
+  await git(source, 'fetch', 'origin', 'main');
+  return { ...state, upstream, source, sourceDir, adapterPath, v1, v2, v3 };
 }
 
 // 以独立 worktree 模拟同事直接推送到某个远端分支。
@@ -127,7 +234,14 @@ async function remoteCommit(state, remote, branch, file, contents) {
     `${remote}-${branch}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   );
   await git(state.root, 'fetch', remote);
-  await git(state.root, 'worktree', 'add', '--detach', writer, `${remote}/${branch}`);
+  await git(
+    state.root,
+    'worktree',
+    'add',
+    '--detach',
+    writer,
+    `${remote}/${branch}`,
+  );
   await fs.mkdir(path.dirname(path.join(writer, file)), { recursive: true });
   await fs.writeFile(path.join(writer, file), contents);
   await git(writer, 'add', '-f', file);
@@ -199,7 +313,9 @@ test('delivers dev to both test remotes without injecting a mobile source', asyn
     'artifact from dev feature',
   );
   // 脚本不再注入 MOBILE_BUILD_SOURCE，M 端源交给下载脚本读本地 nuwax-mobile 的 origin
-  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), ['local-origin']);
+  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), [
+    'local-origin',
+  ]);
   assert.equal(await git(state.root, 'branch', '--show-current'), start);
   assert.equal(await git(state.root, 'status', '--porcelain'), '');
 });
@@ -235,7 +351,13 @@ test('a missing gitlab remote is auto-configured and the delivery still succeeds
 
 test('a clone without the local test branch gets it rebuilt from the remote', async (t) => {
   const state = await fixture(t);
-  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'single-branch clone\n');
+  await remoteCommit(
+    state,
+    'origin',
+    'dev',
+    'source.txt',
+    'single-branch clone\n',
+  );
   // 同事克隆常见单分支检出：本地只有 dev，test 分支不存在
   await git(state.root, 'branch', '-D', 'test');
   const result = await deploy(state);
@@ -361,8 +483,111 @@ test('dry-run prints the plan without touching refs, index or files', async (t) 
   const result = await deploy(state, { DRY_RUN: '1' });
   assert.match(result.stdout, /只读演练/);
   assert.match(result.stdout, /push gitlab test/);
+  assert.match(result.stdout, /npm run upgrade:micro-apps -- all/);
   assert.deepEqual(await snapshot(state.root), before);
   assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), []);
+});
+
+test('a mismatched submodule is upgraded to latest main before the quality gate and build', async (t) => {
+  const state = await microAppFixture(t);
+  await git(state.source, 'checkout', '-q', state.v2);
+  const devBefore = await git(state.root, 'rev-parse', 'dev');
+  const result = await deploy(state, {
+    ...fileProtocol,
+    FIXTURE_SUBMODULE_DIR: state.sourceDir,
+  });
+  assert.match(result.stdout, /快速通道提测完成/);
+  for (const remote of ['origin', 'gitlab']) {
+    const head = await remoteHead(state, remote, 'test');
+    assert.equal(
+      await git(state.root, 'rev-parse', `${head}:${state.sourceDir}`),
+      state.v3,
+    );
+    assert.equal(
+      JSON.parse(await remoteShow(state, remote, `test:${state.adapterPath}`))
+        .pin,
+      state.v3,
+    );
+    assert.equal(
+      await remoteShow(state, remote, 'test:dist/app-pin.txt'),
+      state.v3,
+    );
+    assert.equal(await remoteHead(state, remote, 'dev'), devBefore);
+  }
+  const gates = await logLines(state.env.FIXTURE_GATE_LOG);
+  assert.equal(gates.length, 1);
+  assert.equal(
+    await git(state.root, 'rev-parse', `${gates[0]}:${state.sourceDir}`),
+    state.v3,
+  );
+  assert.equal(await git(state.root, 'branch', '--show-current'), start);
+  assert.equal(await git(state.source, 'rev-parse', 'HEAD'), state.v1);
+  assert.equal(await git(state.root, 'status', '--porcelain'), '');
+  await deploy(state, fileProtocol);
+  assert.equal(
+    (await logLines(state.env.FIXTURE_GATE_LOG)).length,
+    1,
+    '已部署相同版本不重跑门',
+  );
+});
+
+test('submodule drift in dry-run preserves its HEAD and the parent index', async (t) => {
+  const state = await microAppFixture(t);
+  await git(state.source, 'checkout', '-q', state.v2);
+  const before = await snapshot(state.root);
+  await deploy(state, { ...fileProtocol, DRY_RUN: '1' });
+  assert.deepEqual(await snapshot(state.root), before);
+  assert.equal(await git(state.source, 'rev-parse', 'HEAD'), state.v2);
+});
+
+test('submodule file edits stop deployment without replacing the checkout or pushing', async (t) => {
+  const state = await microAppFixture(t);
+  await git(state.source, 'checkout', '-q', state.v2);
+  await fs.writeFile(path.join(state.source, 'app.txt'), 'local WIP\n');
+  const before = await snapshot(state.root);
+  await assert.rejects(deploy(state, fileProtocol), (error) => {
+    assert.match(error.stderr, /子模块.*未提交/);
+    return true;
+  });
+  assert.deepEqual(await snapshot(state.root), before);
+  assert.equal(await git(state.source, 'rev-parse', 'HEAD'), state.v2);
+  assert.equal(
+    await fs.readFile(path.join(state.source, 'app.txt'), 'utf8'),
+    'local WIP\n',
+  );
+  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), []);
+});
+
+test('staged submodule pointers are preserved instead of silently replaced', async (t) => {
+  const state = await microAppFixture(t);
+  await git(state.source, 'checkout', '-q', state.v2);
+  await git(state.root, 'add', state.sourceDir);
+  const before = await snapshot(state.root);
+  await assert.rejects(deploy(state, fileProtocol), /未提交改动/);
+  assert.deepEqual(await snapshot(state.root), before);
+  assert.equal(await git(state.source, 'rev-parse', 'HEAD'), state.v2);
+});
+
+test('an incompatible latest submodule patch stops before the gate, build or either push', async (t) => {
+  const state = await microAppFixture(t, { conflictingPatch: true });
+  const before = await remoteHead(state, 'gitlab', 'test');
+  await assert.rejects(deploy(state, fileProtocol), (error) => {
+    assert.match(error.stderr, /adapter patch.*冲突/);
+    return true;
+  });
+  for (const remote of ['origin', 'gitlab']) {
+    assert.equal(await remoteHead(state, remote, 'test'), before);
+  }
+  assert.deepEqual(await logLines(state.env.FIXTURE_GATE_LOG), []);
+  assert.deepEqual(await logLines(state.env.FIXTURE_BUILD_LOG), []);
+  assert.equal(await git(state.root, 'status', '--porcelain'), '');
+  assert.equal(await git(state.source, 'rev-parse', 'HEAD'), state.v1);
+  assert.equal(
+    JSON.parse(
+      await fs.readFile(path.join(state.root, state.adapterPath), 'utf8'),
+    ).pin,
+    state.v1,
+  );
 });
 
 test('uncommitted source left by the build stops the push', async (t) => {
@@ -432,12 +657,7 @@ test('submodules are aligned for the build and again when handing back the start
   await git(state.root, 'commit', '-m', 'dev moves app to v2');
   await git(state.root, 'push', '-q', 'origin', 'dev');
   await git(state.root, 'checkout', '-q', start);
-  await run(
-    state.root,
-    'git',
-    ['submodule', 'update', '--init'],
-    fileProtocol,
-  );
+  await run(state.root, 'git', ['submodule', 'update', '--init'], fileProtocol);
 
   const result = await deploy(state, fileProtocol);
   assert.match(result.stdout, /快速通道提测完成/);

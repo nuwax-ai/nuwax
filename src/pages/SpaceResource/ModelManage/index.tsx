@@ -229,6 +229,7 @@ const SpaceModelManage: React.FC = () => {
           }
           spaceId={spaceId}
           id={modelComponentInfo?.id}
+          showUseProxy
           open={openModel}
           onCancel={() => setOpenModel(false)}
           onConfirm={handleConfirmModel}

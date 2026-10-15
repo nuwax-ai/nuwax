@@ -8,6 +8,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from '@testing-library/react';
 import { useState } from 'react';
@@ -81,6 +82,48 @@ const click = (element: HTMLElement) =>
   });
 
 describe('电脑列表刷新与选择保护', () => {
+  it('不读取 Agent 记忆时，项目电脑离线回落云端必须同步真实选择，不保存临时值', async () => {
+    const onChange = vi.fn();
+    fetchComputerList.mockResolvedValue(response([cloud, other], { 7: '999' }));
+    render(
+      <Controlled
+        initialValue="366"
+        agentId={7}
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('selected-id')).toHaveTextContent('-1'),
+    );
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(
+      '-1',
+      expect.objectContaining({ id: '-1' }),
+    );
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
+  it('项目电脑可用时不采用其他 Agent 记忆，后续列表暂缺也不自动切换', async () => {
+    const onChange = vi.fn();
+    fetchComputerList
+      .mockResolvedValueOnce(response([cloud, local], { 7: '-1' }))
+      .mockResolvedValue(response([cloud], { 7: '-1' }));
+    render(
+      <Controlled
+        initialValue="366"
+        agentId={7}
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+    await click(await screen.findByText('我的电脑'));
+    await waitFor(() => expect(fetchComputerList).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('selected-id')).toHaveTextContent('366');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
   it('每次打开下拉重新获取候选，慢刷新期间保留当前名称', async () => {
     const later = deferred<ReturnType<typeof response>>();
     fetchComputerList
@@ -425,7 +468,52 @@ describe('电脑列表刷新与选择保护', () => {
 });
 
 describe('历史会话电脑展示', () => {
-  it('会话绑定的电脑仍在列表中时显示名称', async () => {
+  it('跳转时电脑 ID 尚未回填，列表先返回也不误报不可用', async () => {
+    const onChange = vi.fn();
+    fetchComputerList.mockResolvedValue(response([cloud, local]));
+    const { rerender } = render(
+      <ComputerTypeSelector
+        value=""
+        fixedSelection
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+
+    await waitFor(() => expect(fetchComputerList).toHaveBeenCalledTimes(1));
+    expect(
+      screen.queryByText(
+        'PC.Components.ComputerTypeSelector.computerUnavailable',
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('PC.Components.ComputerTypeSelector.selectComputer'),
+    ).toBeInTheDocument();
+
+    rerender(
+      <ComputerTypeSelector
+        value="-1"
+        fixedSelection
+        autoSelect={false}
+        onChange={onChange}
+      />,
+    );
+    expect(await screen.findByText('云端电脑')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
+  it('明确标记不可用时仍显示真实错误，不用等待态覆盖', async () => {
+    fetchComputerList.mockResolvedValue(response([cloud]));
+    render(<ComputerTypeSelector value="" fixedSelection unavailable />);
+    expect(
+      await screen.findByText(
+        'PC.Components.ComputerTypeSelector.computerUnavailable',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('会话锁定后仍展示完整电脑列表，但不能切换或保存选择', async () => {
     const onChange = vi.fn();
     fetchComputerList.mockResolvedValue({
       code: '0000',
@@ -433,6 +521,7 @@ describe('历史会话电脑展示', () => {
         sandboxes: [
           { sandboxId: '-1', name: '云端电脑', description: '' },
           { sandboxId: '366', name: '我的电脑', description: '' },
+          { sandboxId: '999', name: '其他电脑', description: '' },
         ],
         agentSelected: {},
       },
@@ -450,8 +539,19 @@ describe('历史会话电脑展示', () => {
 
     const selected = await screen.findByText('我的电脑');
     await click(selected);
-    await click(await screen.findByText('云端电脑'));
+    const menu = await screen.findByRole('menu');
+    const cloudItem = within(menu).getByRole('menuitem', { name: '云端电脑' });
+    const otherItem = within(menu).getByRole('menuitem', { name: '其他电脑' });
+    const selectedItem = within(menu).getByRole('menuitem', {
+      name: /我的电脑/,
+    });
+    expect(cloudItem).toHaveAttribute('aria-disabled', 'true');
+    expect(otherItem).toHaveAttribute('aria-disabled', 'true');
+    await click(cloudItem);
+    await click(otherItem);
+    await click(selectedItem);
     expect(onChange).not.toHaveBeenCalled();
+    expect(saveSelection).not.toHaveBeenCalled();
   });
 
   it('会话绑定的个人电脑已不在列表中时显示不可用', async () => {

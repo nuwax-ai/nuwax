@@ -4,13 +4,13 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## 常用命令
 
-- 开发:`npm run dev`(max dev);构建:`build:prod` / `build:dev`
-- 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式)
+- 开发:`npm run dev`(max dev;predev 跑 `doctor --quick` 提醒微应用产物/子模块问题,不拦截);构建:`build:prod` / `build:dev`;环境体检:`npm run doctor`(只读,子模块/pin/产物/工具链)
+- 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式);脚本层测试(提测/微应用构建升级/doctor/类型门,不联网):`npm run test:scripts`
 - 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`e2e:conversation`(需 dev server + ego-browser 登录态)、`e2e:mock-chat`(mock 场景走查);组合 `verify:conversation`
 - 分层依赖检查:`npm run lint:arch`(depcruise;存量豁免基线 `.dependency-cruiser-known-violations.json`)
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
 - 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支 → 版本分支(如 feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `scripts/deploy_sync_test.env.example`,`FEATURE_BRANCH`/`VERSION_BRANCH` 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
-- 快速提测:`bash deploy_test.sh` —— 代码已在 dev 时用:本地汇合 origin/dev+gitlab/dev → test → 构建 → 推 origin/test+gitlab/test;两条通道共用 `scripts/deploy/lib.sh`,测试 `npm run test:deploy`。快速通道决策(2026-10-14):① test:conversation 门**默认跑**(约 20 秒,源码与 gitlab/test 相同则跳过,`GATE=0` 紧急绕过)② **不自动升级子模块**,只提醒,升级单独 `npm run upgrade:micro-apps -- all` 提交 ③ **不推远端 dev**。M 端产物源不再配置/指定(2026-10-14 起脚本不写死 GitLab/GitHub 地址,M 端后续默认同步 GitLab):下载脚本优先读本地 nuwax-mobile 检出的 `origin` 远端,本地无检出(普通用户打本包常态)回退 GitHub nuwax-mobile,`MOBILE_BUILD_REPO` 可临时覆写;勿再写 `build:prod:m gitlab`(npm 位置参数传不到下载脚本)。打包链子模块兼容(2026-10-14):开源社区版无子模块仓库权限,`sync:micro-apps` 检测到未初始化子模块时警告并跳过对应微应用(资料库/消息等功能缺失,主包照常构建);内部部署链已 `export MICRO_APP_REQUIRED=1` 禁止跳过。同事克隆缺 gitlab 远端时脚本自动补配(`GITLAB_REMOTE_URL` 覆写);单分支检出缺 dev/test(及版本分支)本地分支时从远端自动补建,个人分支(提测输入)除外。两条通道对照见 [docs/deploy-sync-test-runbook.md](./docs/deploy-sync-test-runbook.md)
+- 快速提测:`bash deploy_test.sh` —— 代码已在 dev 时用:本地汇合 origin/dev+gitlab/dev → test → 构建 → 推 origin/test+gitlab/test;两条通道共用 `scripts/deploy/lib.sh`,测试 `npm run test:deploy`。快速通道决策(2026-10-15 更新):① test:conversation 门**默认跑**(约 20 秒,源码与 gitlab/test 相同则跳过,`GATE=0` 紧急绕过)② **自动升级子模块到远端 main 最新**,检出版本偏差自动对齐,汇合 test 后走 `upgrade:micro-apps -- all` 适配预检并提交 gitlink/pin;子仓文件改动、已暂存输入或升级失败仍停止 ③ **不推远端 dev**。M 端产物源不再配置/指定(2026-10-14 起脚本不写死 GitLab/GitHub 地址,M 端后续默认同步 GitLab):下载脚本优先读本地 nuwax-mobile 检出的 `origin` 远端,本地无检出(普通用户打本包常态)回退 GitHub nuwax-mobile,`MOBILE_BUILD_REPO` 可临时覆写;勿再写 `build:prod:m gitlab`(npm 位置参数传不到下载脚本)。打包链子模块兼容(2026-10-14):开源社区版无子模块仓库权限,`sync:micro-apps` 检测到未初始化子模块时警告并跳过对应微应用(资料库/消息等功能缺失,主包照常构建);内部部署链已 `export MICRO_APP_REQUIRED=1` 禁止跳过。同事克隆缺 gitlab 远端时脚本自动补配(`GITLAB_REMOTE_URL` 覆写);单分支检出缺 dev/test(及版本分支)本地分支时从远端自动补建,个人分支(提测输入)除外。两条通道对照见 [docs/deploy-sync-test-runbook.md](./docs/deploy-sync-test-runbook.md)
 - 提测提速三约定(2026-09-30):① 主区不干净时脚本自动转入 `.deploy-worktree` 隔离跑全链(主区/并行开发零互抢,`USE_WORKTREE=0/1` 控制)② 网络抖动(SSL 瞬断/fetch 断)脚本自动退避重试,勿手工重启整链;提测前**不再本地预跑质量门**(脚本步骤 4 即门,断点续跑免重付)
 - 产物哈希稳定性(2026-10-08):① `src/constants/version.ts` 不再烤 git 哈希(只含 APP_VERSION/APP_NAME,随 standard-version 发版变);gitHash 由 `dist/version.json` 运行时读取,勿再向源码烤提交哈希 ② deploy 构建 `DIST_RETENTION=1` 自动保留上一版 dist 的旧哈希资源(默认 3 代,`DIST_RETAIN_GENERATIONS` 可调,机制见 `scripts/deploy-asset-retention.mjs`),防发版后旧页面 chunk 404 弹「资源加载失败」;本地构建不设该变量零影响 ③ webpack runtime 已抽 `runtimeChunk: 'single'`,增量发版未改动页面的缓存仍可命中
 
@@ -29,6 +29,10 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## 关键文档
 
+- [docs/getting-started.md](./docs/getting-started.md) —— 新同事上手(环境/子模块/日常循环)
+- [docs/architecture/overview.md](./docs/architecture/overview.md) —— 架构总览(目录职责/分层/已知问题);[docs/architecture/optimization-roadmap.md](./docs/architecture/optimization-roadmap.md) —— 架构优化排查表(持续维护,改代码前先看红线与分级门)
+- [docs/micro-apps-runbook.md](./docs/micro-apps-runbook.md) —— 微应用子模块操作手册(初始化/升级/patch 重制/排障);[scripts/README.md](./scripts/README.md) —— 脚本索引
+- [docs/testing-strategy.md](./docs/testing-strategy.md) —— 测试分层与「改什么跑什么」
 - [docs/conversation/README.md](./docs/conversation/README.md) —— 会话域总入口(ADR / 维护指南 / 验收清单 / 回归方案 / 行为细节)
 - [docs/engineering-conventions.md](./docs/engineering-conventions.md) —— 命名 / 分层 / I18n
 - `docs/ch/` —— 专项指南(SSE 实现、Markdown 渲染器、AgentFlow 设计等)
