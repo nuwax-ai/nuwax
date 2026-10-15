@@ -339,7 +339,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
           onClick={onNewTask}
         >
           <span className={cx(styles['action-icon'])}>
-            <SvgIcon name="icons-nav-new_chat" />
+            <SvgIcon name="icons-nav-default-new-chat" />
           </span>
           <span className={cx(styles['action-label'])}>
             {dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask')}
