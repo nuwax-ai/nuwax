@@ -132,6 +132,11 @@ export interface CreateModelProps {
   onConfirm: (info: ModelSaveParams) => void;
   /** 是否展示标签/标签颜色/倍率管理字段(仅系统-公共模型管理开启,空间侧模型不涉及) */
   showTagFields?: boolean;
+  /**
+   * 是否展示「是否走服务端代理」开关。
+   * 仅工作空间下的模型管理页传入；其他入口不展示，也不提交该字段。
+   */
+  showUseProxy?: boolean;
 }
 
 // 内网模型组件

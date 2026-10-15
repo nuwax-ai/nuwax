@@ -50,6 +50,7 @@ import {
   Radio,
   Select,
   Space,
+  Switch,
 } from 'antd';
 import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
@@ -143,6 +144,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   open,
   action = apiModelSave,
   showTagFields = false,
+  showUseProxy = false,
   onCancel,
   onConfirm,
 }) => {
@@ -234,6 +236,31 @@ const CreateModel: React.FC<CreateModelProps> = ({
     }
   }, [open, runModelProviders]);
 
+  /**
+   * 仅展示代理开关时写入 useProxy。
+   * 其他入口保持原来的接口配置字段，不补这个新字段。
+   * 参数写成接口配置的实际字段，避免只约束 useProxy 时 url/key/weight 被当成多余属性。
+   */
+  const attachUseProxy = useCallback(
+    (
+      row: {
+        url?: string;
+        key?: string;
+        weight: number;
+      },
+      currentUseProxy?: number | null,
+    ) => {
+      if (!showUseProxy) {
+        return row;
+      }
+      return {
+        ...row,
+        useProxy: currentUseProxy === 0 ? 0 : 1,
+      };
+    },
+    [showUseProxy],
+  );
+
   useEffect(() => {
     if (!open) {
       return;
@@ -241,10 +268,13 @@ const CreateModel: React.FC<CreateModelProps> = ({
     if (id !== undefined && id !== null) {
       runQuery(String(id));
     } else {
-      form.setFieldsValue(CREATE_MODEL_DEFAULT_VALUES);
+      form.setFieldsValue({
+        ...CREATE_MODEL_DEFAULT_VALUES,
+        apiInfoList: [attachUseProxy({ weight: 1 })],
+      });
       setModelTypes([...CREATE_MODEL_DEFAULT_VALUES.types]);
     }
-  }, [open, id, runQuery, form]);
+  }, [open, id, runQuery, form, attachUseProxy]);
 
   // 在空间中添加或更新模型配置接口
   const { run } = useRequest(action, {
@@ -265,17 +295,46 @@ const CreateModel: React.FC<CreateModelProps> = ({
     },
   });
 
+  /**
+   * 展示代理开关时，空值按开启写成 1。
+   * 未展示时从提交数据里去掉 useProxy，兼容以前没有该字段的模型。
+   */
+  const normalizeApiInfoUseProxy = (
+    apiInfoList?: ModelSaveParams['apiInfoList'],
+  ) => {
+    if (!apiInfoList) {
+      return apiInfoList;
+    }
+    if (!showUseProxy) {
+      return apiInfoList.map((row) => {
+        const next = { ...row };
+        delete next.useProxy;
+        return next;
+      });
+    }
+    return apiInfoList.map((row) => ({
+      ...row,
+      useProxy: row.useProxy === 0 ? 0 : 1,
+    }));
+  };
+
   const onFinish: FormProps<ModelFormData>['onFinish'] = (values) => {
     setLoading(true);
+    const formValues = values as ModelFormData &
+      Pick<ModelSaveParams, 'apiInfoList'>;
+    const payload = {
+      ...formValues,
+      apiInfoList: normalizeApiInfoUseProxy(formValues.apiInfoList),
+    };
     if (mode === CreateUpdateModeEnum.Create) {
       run({
-        ...values,
+        ...payload,
         spaceId,
       });
     } else {
       // 更新模型
       run({
-        ...values,
+        ...payload,
         id,
         spaceId,
       });
@@ -386,18 +445,21 @@ const CreateModel: React.FC<CreateModelProps> = ({
       const row = form.getFieldValue('apiInfoList')?.[0];
       form.setFieldsValue({
         apiInfoList: [
-          {
-            url,
-            key: row?.key ?? '',
-            weight:
-              typeof row?.weight === 'number' && !Number.isNaN(row.weight)
-                ? row.weight
-                : 1,
-          },
+          attachUseProxy(
+            {
+              url,
+              key: row?.key ?? '',
+              weight:
+                typeof row?.weight === 'number' && !Number.isNaN(row.weight)
+                  ? row.weight
+                  : 1,
+            },
+            row?.useProxy,
+          ),
         ],
       });
     },
-    [form, modelProviderList],
+    [attachUseProxy, form, modelProviderList],
   );
 
   /** 全部供应商：label 为名称，value 为 pid */
@@ -504,16 +566,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
         name: undefined,
         description: undefined,
         apiProtocol: ModelApiProtocolEnum.OpenAI,
-        apiInfoList: [{ weight: 1 }],
+        apiInfoList: [attachUseProxy({ weight: 1 })],
       };
       const d = provider ? supplierDefaultProtocolAndUrl(provider) : null;
       if (d) {
         next.apiProtocol = d.protocol;
-        next.apiInfoList = [{ url: d.url, key: '', weight: 1 }];
+        next.apiInfoList = [attachUseProxy({ url: d.url, key: '', weight: 1 })];
       }
       form.setFieldsValue(next);
     },
-    [form, modelProviderList],
+    [attachUseProxy, form, modelProviderList],
   );
 
   const clearPidLinkedFields = useCallback(() => {
@@ -528,9 +590,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
       description: undefined,
       types: [],
       apiProtocol: ModelApiProtocolEnum.OpenAI,
-      apiInfoList: [{ weight: 1 }],
+      apiInfoList: [attachUseProxy({ weight: 1 })],
     });
-  }, [form]);
+  }, [attachUseProxy, form]);
 
   /** 从下拉选供应商模型：回显模型元数据（自行输入不回填） */
   const applySupplierModelLinkageOnDropdownPick = useCallback(
@@ -574,10 +636,12 @@ const CreateModel: React.FC<CreateModelProps> = ({
   // 检测模型连通性
   const handlerCheckConnection = () => {
     setLoadingTestConnection(true);
-    const values = form.getFieldsValue();
+    const values = form.getFieldsValue() as ModelFormData &
+      Pick<ModelSaveParams, 'apiInfoList'>;
 
     runTestConnectivity({
       ...values,
+      apiInfoList: normalizeApiInfoUseProxy(values.apiInfoList),
       id,
       spaceId,
     });
@@ -594,7 +658,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
       maskClosable={false}
       keyboard={false}
       classNames={{
-        content: cx(styles.container),
+        content: cx(styles.container, showUseProxy && styles['container-wide']),
         body: cx(styles.body),
       }}
       destroyOnHidden
@@ -1089,6 +1153,41 @@ const CreateModel: React.FC<CreateModelProps> = ({
                       )}
                     />
                   </Form.Item>
+                  {showUseProxy ? (
+                    <Form.Item
+                      {...restField}
+                      label={
+                        key === 0 ? (
+                          <div className={cx('flex', 'items-center')}>
+                            <span>
+                              {dict(
+                                'PC.Pages.SpaceLibrary.CreateModel.useProxy',
+                              )}
+                            </span>
+                            <TooltipIcon
+                              title={dict(
+                                'PC.Pages.SpaceLibrary.CreateModel.useProxyTooltip',
+                              )}
+                              icon={<InfoCircleOutlined />}
+                            />
+                          </div>
+                        ) : (
+                          ''
+                        )
+                      }
+                      name={[name, 'useProxy']}
+                      className={cx(styles.apiInfoUseProxy)}
+                      valuePropName="checked"
+                      getValueProps={(value: number | null | undefined) => ({
+                        checked: value !== 0,
+                      })}
+                      getValueFromEvent={(checked: boolean) =>
+                        checked ? 1 : 0
+                      }
+                    >
+                      <Switch />
+                    </Form.Item>
+                  ) : null}
                   <Form.Item
                     className={cx(styles.apiInfoActions)}
                     label={
@@ -1099,11 +1198,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
                               | ModelSaveParams['apiInfoList']
                               | undefined;
                             const url = rows?.[0]?.url;
-                            add({
-                              url: typeof url === 'string' ? url : '',
-                              key: '',
-                              weight: 1,
-                            });
+                            add(
+                              attachUseProxy(
+                                {
+                                  url: typeof url === 'string' ? url : '',
+                                  key: '',
+                                  weight: 1,
+                                },
+                                rows?.[0]?.useProxy,
+                              ),
+                            );
                           }}
                         />
                       ) : (

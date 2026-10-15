@@ -97,6 +97,11 @@ export interface ModelSaveParams extends ModelFormData {
     key: string;
     // 权重
     weight: number;
+    /**
+     * 是否走服务端代理：0 关闭，1 开启。
+     * 空值按开启处理，仅工作空间模型管理页可编辑。
+     */
+    useProxy?: number | null;
   }[];
   // 向量维度
   dimension: string;
