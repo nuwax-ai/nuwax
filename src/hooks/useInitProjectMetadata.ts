@@ -18,8 +18,8 @@ interface UseInitProjectMetadataProps {
   /** 为 false 时跳过 generate-info；默认 true */
   shouldInit?: boolean;
   /**
-   * 为 false 时不要求导航 action 为 PUSH（AppDevPro：以 nameDefined 为准）。
-   * 默认 true，其它页面保持「仅创建 PUSH 跳转才生成」。
+   * 默认 true：只认进页第一帧的 PUSH。首页 push 之后动作变掉仍可生成，刷新第一帧是 POP 则不生成。
+   * 全栈应用传 false：等详情返回再决定，此时 action 往往已不是 PUSH，改由 nameDefined 控制是否生成。
    */
   requirePushAction?: boolean;
   /** 常驻页面的入页路由；传入后绝不读取其它页面的全局路由状态。 */
@@ -45,6 +45,27 @@ export const useInitProjectMetadata = ({
   const location = useLocation();
   const currentRouteState = routeSnapshot ? undefined : location.state;
   const hasInitRef = useRef(false);
+  // 默认页面只认进页第一帧。刷新是 POP；首页 push 后动作变掉也不影响这一次。
+  const entryActionRef = useRef<string | null>(null);
+  if (entryActionRef.current === null) {
+    entryActionRef.current = routeSnapshot
+      ? routeSnapshot.action
+      : history.action;
+  }
+  const entryPromptRef = useRef('');
+  const visibleState = (
+    routeSnapshot
+      ? routeSnapshot.state
+      : currentRouteState || history.location.state
+  ) as { message?: string } | undefined;
+  const visiblePrompt = visibleState?.message?.trim() || '';
+  if (
+    visiblePrompt &&
+    !entryPromptRef.current &&
+    (!requirePushAction || entryActionRef.current === 'PUSH')
+  ) {
+    entryPromptRef.current = visiblePrompt;
+  }
 
   useEffect(() => {
     if (!targetId || hasInitRef.current || !ready) {
@@ -56,15 +77,9 @@ export const useInitProjectMetadata = ({
       return;
     }
 
-    const state = (
-      routeSnapshot
-        ? routeSnapshot.state
-        : currentRouteState || history.location.state
-    ) as { message?: string } | undefined;
-    const prompt = state?.message?.trim();
-
-    const action = routeSnapshot ? routeSnapshot.action : history.action;
-    if (!prompt || (requirePushAction && action !== 'PUSH')) {
+    // 全栈应用不看 PUSH，用当前路由里的提示词；其它页面只用进页第一帧记下的提示词。
+    const prompt = requirePushAction ? entryPromptRef.current : visiblePrompt;
+    if (!prompt || (requirePushAction && entryActionRef.current !== 'PUSH')) {
       return;
     }
 

@@ -10,12 +10,13 @@ import type {
   UserProjectItem,
   UserProjectPageResult,
 } from '@/types/interfaces/userProject';
+import { modalConfirm } from '@/utils/ant-custom';
 import {
   applyProjectChangedToList,
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, Modal } from 'antd';
+import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
@@ -59,13 +60,9 @@ const NormalProject: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   /** 收藏过滤值 */
   // 筛选条 UI 注释态（随头部重构暂缓接线），先以默认值参与查询过滤
-  const [collectedFilter] = useState<CollectedFilter>(
-    DEFAULT_COLLECTED_FILTER,
-  );
+  const [collectedFilter] = useState<CollectedFilter>(DEFAULT_COLLECTED_FILTER);
   /** 归档过滤值 */
-  const [archivedFilter] = useState<ArchivedFilter>(
-    DEFAULT_ARCHIVED_FILTER,
-  );
+  const [archivedFilter] = useState<ArchivedFilter>(DEFAULT_ARCHIVED_FILTER);
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -180,13 +177,10 @@ const NormalProject: React.FC = () => {
 
   const openDeleteConfirm = useCallback(
     (item: UserProjectItem) => {
-      Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
-        okButtonProps: { danger: true },
-        okText: dict('PC.Common.Global.delete'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: async () => {
+      modalConfirm(
+        dict('PC.Pages.SpaceProjectManage.deleteNormalProjectConfirmTitle'),
+        item.name,
+        async () => {
           const res = await apiNormalProjectDelete(item.id);
           if (res?.code === SUCCESS_CODE) {
             emitProjectChanged({
@@ -202,7 +196,7 @@ const NormalProject: React.FC = () => {
             run(keyword, 1);
           }
         },
-      });
+      );
     },
     [keyword, run, spaceId],
   );
