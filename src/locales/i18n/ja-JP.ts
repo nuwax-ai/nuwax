@@ -3908,6 +3908,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.tagColorPresets": "プリセットカラー",
   "PC.Pages.SpaceLibrary.CreateModel.tagPlaceholder": "タグを入力してください",
   "PC.Pages.SpaceLibrary.CreateModel.updateModel": "モデルの更新",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxy": "プロキシ",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxyTooltip": "サーバープロキシをオフにすると、モデル呼び出しログを追跡できません。",
   "PC.Pages.SpaceLibrary.CreateModel.vectorDimension": "ベクトル次元",
   "PC.Pages.SpaceLibrary.CreateModel.weight": "重さ",
   "PC.Pages.SpaceLibrary.CreateModel.yes": "はい",

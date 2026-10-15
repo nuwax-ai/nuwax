@@ -4181,6 +4181,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.tagColorPresets": "Preset Colors",
   "PC.Pages.SpaceLibrary.CreateModel.tagPlaceholder": "Enter a tag",
   "PC.Pages.SpaceLibrary.CreateModel.updateModel": "Update Model",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxy": "Proxy",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxyTooltip": "Model call logs cannot be traced when the server proxy is off.",
   "PC.Pages.SpaceLibrary.CreateModel.vectorDimension": "Vector Dimension",
   "PC.Pages.SpaceLibrary.CreateModel.weight": "Weight",
   "PC.Pages.SpaceLibrary.CreateModel.yes": "Yes",
