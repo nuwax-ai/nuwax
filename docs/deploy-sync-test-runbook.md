@@ -11,20 +11,20 @@
 | 推送 | origin/test + gitlab/test | 个人分支、版本分支（origin）+ origin/test + gitlab/test |
 | 远端 dev | **不推**，两个远端 dev 互不包含时打印提醒 | 不推 |
 | test:conversation 质量门 | **默认跑**；源码与已部署的 gitlab/test 相同则跳过；同一提交成功过不重跑；`GATE=0` 紧急绕过 | 默认跑（个人分支 + 组合 dev / test 各一道，同样有跳过与缓存） |
-| 子模块（repo-web / im） | **不自动升级**，按登记版本构建；远端 main 领先时打印提醒；子模块缺失直接失败（内部链 `MICRO_APP_REQUIRED=1`，只有社区版本地构建才会跳过微应用） | 步骤 2.5 自动升级到远端 main（`UPGRADE_MICRO_APPS=0` 关闭） |
+| 子模块（repo-web / im） | **自动升级到远端 main 最新**，适配预检通过后提交 gitlink/pin，再过门和构建；子模块缺失或升级失败即停止（内部链 `MICRO_APP_REQUIRED=1`） | 步骤 2.5 自动升级到远端 main（`UPGRADE_MICRO_APPS=0` 关闭） |
 | M 端产物（dist/m） | 本地 nuwax-mobile 检出的 origin 远端（`MOBILE_BUILD_REPO` 可覆写） | 同左 |
 | 源码冲突 | 打印冲突清单 → 回滚 → 退出，不构建不推送 | 同左 |
-| 工作区不干净 | 直接拒绝（需要隔离请走全链） | 自动转入独立 worktree |
+| 工作区不干净 | 仅子模块检出版本与登记不同自动对齐并继续；主仓/子仓文件改动或已暂存输入仍拒绝（需要隔离请走全链） | 自动转入独立 worktree |
 | 演练 | `DRY_RUN=1` | `DRY_RUN=1` |
 
 两条通道共用 `scripts/deploy/lib.sh` 里的合并、冲突消化、推送自愈和质量门函数，规则只维护一份。同事克隆的三类常见差异都会自愈：没配 `gitlab` 远端时自动补配（内网测试环境落点，`GITLAB_REMOTE_URL` 可覆写地址）；单分支检出缺本地 `dev`/`test`（全链含版本分支）时从远端自动补建，个人分支（提测输入）仍要求本地存在；M 端产物源见下节。2026-10-14 前缺 gitlab 远端会在第一步 fetch 被当网络错误空耗重试后中止。
 
-### 快速通道的三条决策（2026-10-14）
+### 快速通道的三条决策（2026-10-15 更新）
 
-详细背景与证据见 [plans/20261014-deploy-test-fast-lane-plan.md](../plans/20261014-deploy-test-fast-lane-plan.md)。
+初版背景与证据见 [plans/20261014-deploy-test-fast-lane-plan.md](../plans/20261014-deploy-test-fast-lane-plan.md)，子模块规则调整见 [自动更新计划](../plans/20261015-fast-deploy-submodule-update-plan.md)。
 
 1. **质量门默认开启。** 实测 `test:conversation` 约 20 秒，构建要 3 到 4 分钟，门的成本可以忽略。同事直接推到 gitlab/dev 的提交从没过门，快速通道是它们进测试环境前的最后一道检查。紧急情况用 `GATE=0`，脚本会大字提示本次未经门禁。
-2. **不自动升级子模块。** 提测时自动升级，相当于把没审查过的上游代码混进这次提测；适配 patch 一冲突还会卡住提测。升级请单独执行 `npm run upgrade:micro-apps -- all`，提交后再提测。
+2. **自动更新子模块到最新。** 2026-10-15 按用户要求替代原来的「只提醒不升级」规则。起跑时只要子仓没有文件改动，未暂存的提交指针偏差就自动对齐；汇合到 test 后执行 `npm run upgrade:micro-apps -- all`，通过快进及 patch/overlay 预检后提交 gitlink 与 adapter.pin，再过质量门和构建。实际文件改动、已暂存输入、网络失败或适配冲突仍停止并保留现场，不静默退回旧版本发布。
 3. **不推远端 dev。** 推共享分支属于对外动作，超出提测范围；test 产物已经包含两边 dev 的代码，追溯不受影响。dev 以哪个远端为准留待后续统一。
 
 ### M 端产物源：跟着本地 nuwax-mobile 的 origin 走
@@ -52,7 +52,8 @@ bash scripts/deploy_sync_test.sh
 | 场景 | 脚本行为 |
 | --- | --- |
 | 主区有未提交代码（并行开发/构建现场） | 自动转入 `.nuwax-deploy-worktree` 隔离跑全链，主区零接触 |
-| 子模块（nuwax-im / repo-web）远端 main 领先 | 全链：步骤 2.5 自动走 `upgrade:micro-apps` 正规通道升级并随链提交；快速通道：只提醒不升级 |
+| 子模块（nuwax-im / repo-web）远端 main 领先 | 两条通道均走 `upgrade:micro-apps` 正规通道，适配预检通过后升级并提交；快速通道在组合 test 过门前执行 |
+| 快速通道起跑时子模块检出版本偏离登记 | 无文件改动时自动对齐后继续；子仓文件改动或已暂存输入仍保护并报错 |
 | 网络抖动（SSL 瞬断 / fetch 断） | 自动退避重试（10s/20s × 3），不要手工重启 |
 | dist 构建产物冲突 / version.ts 烤哈希冲突 | 机器产物自动消化（dist 清空重建 / version.ts 取本地侧） |
 | test 远端分叉 pull 撞冲突 | 自动按机器产物自愈提交合并 |

@@ -6,17 +6,18 @@
 # 个人分支 → 版本分支 → dev → test 的全链提测走 scripts/deploy_sync_test.sh。
 #
 # 流程：
-#   1. 预检：工作区干净、无未解决冲突；fetch origin + gitlab
+#   1. 预检：主仓/子仓无文件改动、无未解决冲突；子模块版本偏差自动对齐；fetch 双远端
 #   2. 本地 dev 汇合 origin/dev 与 gitlab/dev（只在本地，不推远端 dev）
 #   3. 本地 test 汇合 gitlab/test 与 origin/test，再合入 dev
 #      机器产物（dist/、version.ts、adapter.patch）冲突自动消化；源码冲突打印清单后回滚退出
+#      子模块升级到远端 main 最新，预检适配后同步并提交 gitlink/adapter.pin
 #   4. test:conversation 质量门：源码与已部署的 gitlab/test 相同则跳过；同一提交成功过不重跑
 #   5. 生产构建（M 端产物取本地 nuwax-mobile 检出的 origin 远端）→ 提交 dist
 #   6. 推 origin/test + gitlab/test，打印两处落点
 #
-# 决策（2026-10-14，见 plans/20261014-deploy-test-fast-lane-plan.md）：
+# 决策（2026-10-14；子模块规则于 2026-10-15 按用户要求调整）：
 #   - 质量门默认开启（实测约 20 秒，相对 3-4 分钟构建可忽略），GATE=0 紧急绕过
-#   - 不自动升级子模块，只按登记版本构建；远端领先时打印提醒
+#   - 自动升级子模块到远端最新；仅检出版本偏差不拦提测，源码改动与适配冲突仍停止
 #   - 不推远端 dev；两个远端 dev 互不包含时打印提醒
 #
 # 用法：
@@ -83,7 +84,8 @@ main() {
         die "本地分支 ${b} 不存在，且本地远端缓存里没有 ${b}；请先 fetch 或核对分支名"
       log "真实执行时会自动补建本地分支 ${b}（当前克隆未检出该分支）"
     done
-    log "步骤 1/6：预检工作区，fetch 双远端"
+    log "步骤 1/6：预检主仓/子仓文件改动，对齐子模块版本，fetch 双远端"
+    update_submodules_soft
     run git fetch origin --prune
     run git fetch gitlab --prune
     log "步骤 2/6：本地 ${DEV_BRANCH} 汇合双远端（不推送）"
@@ -96,6 +98,9 @@ main() {
     run git merge "origin/${TEST_BRANCH}" --no-verify
     run git merge "$DEV_BRANCH" --no-verify
     update_submodules_soft
+    log "步骤 3/6：子模块升级到最新 main，适配预检通过后提交 gitlink/pin"
+    run npm run upgrade:micro-apps -- all
+    run git commit --no-verify -m "chore(micro-apps): 快速提测升级子模块到最新 main"
     log "步骤 4/6：质量门（源码与 gitlab/${TEST_BRANCH} 相同则跳过）"
     if [ "$GATE" = "0" ]; then log "GATE=0：跳过质量门"; else run_test_gate; fi
     log "步骤 5/6：构建并提交产物"
@@ -113,9 +118,20 @@ main() {
   if git ls-files -u | grep -q .; then
     die "存在未解决的合并冲突，请先处理（git status 查看）"
   fi
-  [ -z "$(git status --porcelain -uno)" ] ||
+  # 未暂存的 gitlink 偏差只是检出版本不同，允许后续自动对齐；已暂存输入不可覆盖。
+  [ -z "$(git status --porcelain -uno --ignore-submodules=all)" ] && git diff --cached --quiet --ignore-submodules=none ||
     die "工作区有未提交改动，快速通道会切换分支，请先提交或 stash（需要隔离并行现场请用 scripts/deploy_sync_test.sh）：
 $(git status --porcelain -uno | sed 's/^/    /')"
+  # 忽略 gitlink 时也会隐藏子仓源码改动，必须在任何 checkout/update 前递归保护。
+  # 未跟踪文件也保留，防止切到新提交时与其同名的上游文件发生覆盖冲突。
+  git submodule foreach --quiet --recursive '
+    if [ -n "$(git status --porcelain --ignore-submodules=all)" ] || ! git diff --cached --quiet --ignore-submodules=none; then
+      echo "子模块 ${displaypath} 有未提交文件改动，请先提交或 stash：" >&2
+      git status --short >&2
+      exit 1
+    fi
+  ' || die "子模块存在未提交文件改动，已保留现场，尚未对齐版本或切换分支"
+  update_submodules_soft
   retry_git 3 fetch origin --prune
   retry_git 3 fetch gitlab --prune
   for r in "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
@@ -146,11 +162,13 @@ $(git status --porcelain -uno | sed 's/^/    /')"
   merge_or_die "$DEV_BRANCH" "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（快速通道提测）"
   verify_microapp_pins
   update_submodules_soft
-  local upgrades
-  upgrades="$(detect_microapp_upgrades)"
-  if [ -n "$upgrades" ]; then
-    log "提示：子模块远端已领先登记版本：${upgrades}"
-    log "      本次按登记版本构建，不自动升级；需要升级请单独执行 npm run upgrade:micro-apps -- all 并提交"
+
+  CURRENT_STEP="微应用子模块升级"
+  log "步骤 3/6：子模块升级到最新 main（快进检查 + 适配预检）"
+  run npm run upgrade:micro-apps -- all ||
+    die "微应用子模块升级失败，未构建也未推送（见上方适配/网络错误，处理后重跑）"
+  if ! git diff --cached --quiet; then
+    rgit commit --no-verify --quiet -m "chore(micro-apps): 快速提测升级子模块到最新 main"
   fi
 
   CURRENT_STEP="test:conversation 质量门"
