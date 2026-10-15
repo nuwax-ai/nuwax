@@ -193,7 +193,12 @@ const rebasePatch = (id, source, commit, patchFile) => {
           `\n${error instanceof Error ? error.message : ''}`,
       );
     }
-    run('git', ['add', '-A'], { cwd: work });
+    // 合并残留（*.rej / *.orig）不是适配内容，进了 patch 会被 sync-micro-apps 拒绝构建
+    run(
+      'git',
+      ['add', '-A', '--', '.', ':(exclude)*.rej', ':(exclude)*.orig'],
+      { cwd: work },
+    );
     const diff = run(
       'git',
       ['diff', '--cached', '--binary', '--find-renames'],
