@@ -34,7 +34,7 @@
   4. 智能体选中(当前会话路由)→ 自动展开
 - **展开内容**:该智能体最近 3 条会话;超过 3 条显示「查看更多 (N)」展开全部,可再点「收起」;点击条目跳 `/home/chat/:conversationId/:agentId`
 - 组头点击:有会话=切换展开;无会话=进入智能体(原行为)
-- 行为已由合同测试锁死:`tests/recentAgentItemGroup.test.tsx`(8 用例)
+- 分组展开和展示通过页面走查，数据与请求回归按 [测试策略](testing-strategy.md) 选择。
 
 ### F3 「项目」tab mock(交互验证版)
 
@@ -96,7 +96,6 @@ apiUserUsedAgentList (/api/user/agent/used/list/{size})
 | `src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/` | 项目 tab mock(分组折叠+子项状态点+操作菜单) |
 | `src/pages/Home/components/HomeCategoryTabs/` | 内容分类 Segmented(数据驱动) |
 | `src/pages/Home/index.tsx` | 分类数据适配层、hero 副标题、foot-tip |
-| `tests/recentAgentItemGroup.test.tsx` | 分组展开合同测试(8 用例) |
 
 ## 五、质量与验收
 

@@ -27,7 +27,8 @@
 定向复现命令：
 
 ```sh
-pnpm exec vitest run tests/deploy-asset-retention.test.mjs tests/write-dist-version.test.mjs src/features/client-shell/pageBuildInfo.test.ts src/features/client-shell/webUpdateService.test.ts src/features/client-shell/WebVersionBadge.test.tsx src/features/client-shell/index.test.ts src/features/client-shell/clientUpdateService.test.ts src/features/client-shell/ClientVersionBadge.test.tsx tests/sidebarNavHeaderNewTask.test.tsx tests/sidebarNavHeaderAppTabActions.test.tsx tests/chatConversation/newTaskNavigation.test.tsx
+pnpm run test:conversation
+pnpm exec vitest run tests/deploy-asset-retention.test.mjs tests/write-dist-version.test.mjs src/features/client-shell
 ```
 
 ## A/B 产物验收

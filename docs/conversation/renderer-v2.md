@@ -58,8 +58,8 @@ UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRe
 ## 测试入口
 
 - 纯函数：`tests/conversationPresentationRenderer.test.ts`、`tests/conversationRendererPreference.test.ts`、`tests/conversation/traceItems.test.ts`、`tests/conversation/toolNodeDetail.test.ts`。
-- 组件：`tests/conversationRendererComponent.test.tsx`、`tests/conversation/toolNodeDetailComponent.test.tsx`。
-- 选择器/四组合：`tests/unifiedChatSessionRendererSelection.test.tsx`（3）、 `tests/conversationRendererDualLine.test.tsx`（5）。
+- 组件：`tests/conversationRendererComponent.test.tsx`。
+- 选择器/四组合：`tests/conversationRendererDualLine.test.tsx`。
 - e2e：`npm run e2e:mock-chat`（`E2E_RENDERER=v1|v2|both`，默认 both；断言型场景跑满 2 数据线 × 2 渲染线；交互型按用例声明——dock/输入区驱动类双渲染， V1 DOM 探针类仅 v1，V2 轨迹探针 `RENDERER_SHOWCASE` 仅 v2）。
 - 场景：`mock/conversationScenarios.ts` 的 `V2_GROUPED_TOOL_TRACE` 专门覆盖两段工具组、重复动作、运行/失败、单工具和真实 `kind=execute/read/edit` 载荷；`TRACE_HAIRLINE`、`TOOL_RENDERING_TYPED` 继续独立回归。
 

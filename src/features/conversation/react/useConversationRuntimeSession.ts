@@ -64,9 +64,9 @@ const storeAsDispatch = (
   }) as never;
 
 /**
- * 新线（runtime session）的 React 绑定（双线方案 R4 完整片）。
+ * runtime session 的 React 绑定。
  *
- * flag 关闭（默认）时不创建 session、返回 null —— 入口回落旧线，零开销零影响。
+ * 默认开启 runtime；显式关闭 flag 时不创建 session、返回 null，入口回落旧线。
  * flag 开启时创建 session 并产出「与旧线 chatSessionProps 会话面同形状」的 props：
  * 入口以对象展开覆盖旧线字段（flag off 时无覆盖，原路径原值）。
  *
