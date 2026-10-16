@@ -33,6 +33,7 @@ import {
   hasOpenThinkBlock,
 } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
+import { OpenCloseEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -158,8 +159,7 @@ export function useConversationRuntimeSession(
   /** 会话是否开启建议（对齐旧线 isSuggest：agent.openSuggest === Open） */
   const isSuggestEnabledRef = useRef(false);
   isSuggestEnabledRef.current =
-    (conversationInfo as never as { agent?: { openSuggest?: number } })?.agent
-      ?.openSuggest === 1;
+    conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open;
 
   /** 入口当前生效的电脑 sandboxId 取值器（render 期同步最新闭包，发送时求值） */
   const getSandboxIdRef = useRef(options.getSandboxId);
