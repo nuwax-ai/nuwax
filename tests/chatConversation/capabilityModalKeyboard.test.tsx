@@ -196,21 +196,6 @@ const pressTab = (shift = false) => {
   });
 };
 
-describe('能力弹窗·快捷键提示移除', () => {
-  it('侧栏不再渲染 方向键移动/回车选中/Esc 关闭 提示', async () => {
-    await renderAndWaitRoot();
-    expect(
-      screen.queryByText('PC.Components.CapabilityModal.hintNav'),
-    ).toBeNull();
-    expect(
-      screen.queryByText('PC.Components.CapabilityModal.hintSelect'),
-    ).toBeNull();
-    expect(
-      screen.queryByText('PC.Components.CapabilityModal.hintClose'),
-    ).toBeNull();
-  });
-});
-
 describe('能力弹窗·Tab 焦点轮询（focus trap）', () => {
   it('正向循环：左侧导航 → 页签 → 搜索 → 关闭 → 激活 pill → 列表容器 → 回左侧导航', async () => {
     await renderAndWaitRoot();

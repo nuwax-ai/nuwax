@@ -122,7 +122,7 @@ const message = {
 
 ## 3. 关联交付：预览缓存版本号
 
-同轮审查的 P2「file-preview 缓存版本号未 bump」处置与操作项单独立档：[docs/file-preview-cache-version-bump.md](../../file-preview-cache-version-bump.md)（提交 `d50c5119e`；gitlab/test 需带新 `?v=` 重发一次 dist，否则缓存命中者持续拿到去后缀坏版）。
+静态预览脚本不走构建哈希，修改时须同步更新 `public/static/file-preview.html` 中的 `?v=` 版本并重新生成产物；历史处置见 Git 提交 `d50c5119e`。
 
 ---
 

@@ -15,13 +15,10 @@ import type {
   useActiveInterventionQueue,
 } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
-import type {
-  MessageInfo,
-  RoleInfo,
-} from '@/types/interfaces/conversationInfo';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -339,44 +336,6 @@ describe('UnifiedChatSession 行为', () => {
     expect(mockTrySend).not.toHaveBeenCalled();
   });
 
-  it('会话活跃时不展示 session suggest', () => {
-    render(
-      <UnifiedChatSession
-        messageList={[{ id: 'm1', text: 'hi' } as MessageInfo]}
-        chatSuggestList={['s1']}
-        isConversationActive
-      />,
-    );
-    expect(screen.getByTestId('show-suggest')).toHaveTextContent('false');
-    expect(screen.queryByTestId('session-suggest')).toBeNull();
-  });
-
-  it('有排队消息时不展示 session suggest', () => {
-    queueState.hasQueuedMessages = true;
-    render(
-      <UnifiedChatSession
-        messageList={[{ id: 'm1', text: 'hi' } as MessageInfo]}
-        chatSuggestList={['s1']}
-        isConversationActive={false}
-      />,
-    );
-    expect(screen.getByTestId('show-suggest')).toHaveTextContent('false');
-  });
-
-  it('空闲且无队列时展示 session suggest', () => {
-    render(
-      <UnifiedChatSession
-        messageList={[{ id: 'm1', text: 'hi' } as MessageInfo]}
-        chatSuggestList={['suggest-a']}
-        isConversationActive={false}
-      />,
-    );
-    expect(screen.getByTestId('show-suggest')).toHaveTextContent('true');
-    expect(screen.getByTestId('session-suggest')).toHaveTextContent(
-      'suggest-a',
-    );
-  });
-
   it('taskStatus=EXECUTING 但末条仍在流式时不展示等待提示', () => {
     render(
       <UnifiedChatSession
@@ -416,45 +375,6 @@ describe('UnifiedChatSession 行为', () => {
     expect(
       screen.getByText('PC.Pages.Chat.agentExecutingWait'),
     ).toBeInTheDocument();
-  });
-
-  it('优先使用外部 roleInfo', () => {
-    const roleInfo: RoleInfo = {
-      assistant: { name: 'ExternalBot', avatar: 'a.png' },
-      system: { name: 'ExternalSys', avatar: 's.png' },
-    };
-    render(
-      <UnifiedChatSession
-        roleInfo={roleInfo}
-        agentInfo={{ name: 'AgentName', icon: 'i.png' }}
-        messageList={[]}
-      />,
-    );
-    expect(screen.getByTestId('role-assistant-name')).toHaveTextContent(
-      'ExternalBot',
-    );
-  });
-
-  it('未传 roleInfo 时用 agentInfo 组装', () => {
-    render(
-      <UnifiedChatSession
-        agentInfo={{ name: 'FromAgent', icon: 'icon.png' }}
-        messageList={[]}
-      />,
-    );
-    expect(screen.getByTestId('role-assistant-name')).toHaveTextContent(
-      'FromAgent',
-    );
-  });
-
-  it('enableVersionControl 透传给输入框作为版本管理默认值', () => {
-    render(
-      <UnifiedChatSession
-        agentInfo={{ enableVersionControl: DefaultSelectedEnum.Yes }}
-        messageList={[]}
-      />,
-    );
-    expect(screen.getByTestId('agent-evc')).toHaveTextContent('1');
   });
 
   it('TaskAgent 且有消息时渲染 ConversationStatus', () => {

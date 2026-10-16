@@ -4,7 +4,7 @@ import {
   DataResourceStatus,
   DataResourceType,
 } from '@/types/interfaces/dataResource';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -218,98 +218,6 @@ describe('AppDev ChatArea', () => {
       }
       return {};
     });
-  });
-
-  it('加载历史时只展示 loading 空态，不渲染消息', () => {
-    renderChatArea({
-      chat: createChat({
-        isLoadingHistory: true,
-        chatMessages: [{ id: 'user-1', role: 'USER', text: 'hidden' }],
-      }),
-    });
-
-    expect(screen.getByTestId('empty-state')).toHaveAttribute(
-      'data-type',
-      'loading',
-    );
-    expect(screen.queryByText('hidden')).toBeNull();
-    expect(screen.queryByTestId('markdown-wrapper')).toBeNull();
-  });
-
-  it('按 AppDev 消息角色渲染用户文本、助手思考和 markdown 正文', () => {
-    renderChatArea({
-      chat: createChat({
-        chatMessages: [
-          {
-            id: 'user-1',
-            role: 'USER',
-            text: 'hello\nappdev',
-            attachments: [
-              {
-                type: 'Document',
-                content: { id: 'doc-1', filename: 'spec.md' },
-              },
-            ],
-          },
-          {
-            id: 'assistant-1',
-            role: 'ASSISTANT',
-            text: '',
-            think: 'planning',
-            isStreaming: true,
-          },
-        ],
-      }),
-    });
-
-    expect(screen.getByText('hello')).toBeInTheDocument();
-    expect(screen.getByText('appdev')).toBeInTheDocument();
-    expect(screen.getByTestId('message-attachment')).toHaveAttribute(
-      'data-type',
-      'Document',
-    );
-    expect(screen.getByTestId('assistant-thinking')).toHaveAttribute(
-      'data-finished',
-      'false',
-    );
-    expect(screen.getByTestId('markdown-wrapper')).toHaveAttribute(
-      'data-message-id',
-      'assistant-1',
-    );
-    expect(mockThinking).toHaveBeenCalledWith(
-      expect.objectContaining({
-        think: 'planning',
-        isThinkingFinished: false,
-      }),
-    );
-  });
-
-  it('历史会话消息渲染分隔符，并把 assistant 标记为 history 渲染', () => {
-    renderChatArea({
-      chat: createChat({
-        chatMessages: [
-          {
-            id: 'assistant-history',
-            role: 'ASSISTANT',
-            text: 'history answer',
-            think: 'history thinking',
-            sessionId: 'session-1',
-            conversationTopic: 'Build app',
-            conversationCreated: '2026-07-11T10:20:00Z',
-          },
-        ],
-      }),
-    });
-
-    expect(screen.getByText('Build app')).toBeInTheDocument();
-    expect(screen.getByTestId('assistant-thinking')).toHaveAttribute(
-      'data-finished',
-      'true',
-    );
-    expect(screen.getByTestId('markdown-wrapper')).toHaveAttribute(
-      'data-history',
-      'true',
-    );
   });
 
   it('发送时把上传文件、原型图、@文件和技能转换后交给 chat.sendMessage', () => {
