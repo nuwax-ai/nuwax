@@ -52,4 +52,4 @@ CI 有两处共用入口：前端 `.github/workflows/typecheck.yml` 和外层 nu
 
 全部原生产目录与 `tests/workflow` / `tests/unifiedChatSession` 前缀保持。两个被撤销功能的已删除测试引用作明确迁移：节点域的 `tests/agentFlowCanvas.registration.test.tsx` 改为现存 `src/pages/EditAgent/AgentArrangeConfig/agentFlow/__tests__/arrangePolicy.test.ts`；工作台域的 `tests/appDevWorkspace.test.tsx` 改为现存 `tests/appDevUiPolling.lifecycle.test.tsx` 与 `tests/useAppDevChat.lifecycle.test.tsx`。原生产目录的实际文件均继续入编译，不复活撤销功能来满足不存在测试路径。
 
-`test:typecheck` 继续以 `node --test` 执行检查器自测，完整 Vitest 门排除这一个 node:test 文件以避免错误 runner 重复收集。恢复后的实际检查为 318 文件（节点 136、会话 117、工作台 62、契约 3），四域均为零诊断；域外 284 条继续独立报告，不计入零诊断结论。详细范围与验收见 [恢复计划](../plans/20261007-frontend-source-gates-plan.md)。
+`test:typecheck` 继续以 `node --test` 执行检查器自测，完整 Vitest 门排除这一个 node:test 文件以避免错误 runner 重复收集。覆盖域以 `typecheck-domains.json` 为准，文件数和诊断数以本次检查输出为准；不在本文维护历史计数。

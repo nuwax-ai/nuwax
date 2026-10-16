@@ -13,7 +13,7 @@
 - suggest 过期响应防护（generation 守卫）只有 conversationAgent 有，conversationInfo 没有——快速切会话时旧建议可能覆盖新会话（[回归对齐文档](../agent-session-runtime-regression.md) §10.6）；
 - onClose 兜底终态查询，conversationInfo 用 `.catch().finally()` 保护，conversationAgent 是裸 `await`——接口 reject 时等终态标志不释放（[收尾闪烁 QA 报告](../chat-terminal-polling-flash-qa-report.md) §7.1 遗留）。
 
-**P3 同一业务事实多处推导**：「能否发送 / 能否停止 / 能否轮询 / 能否入队」在 model、UnifiedChatSession、MessageQueue、Resume Hook 各自重新实现。判定不一致就是线上缺陷——历史缺陷的共同根因：停止按钮卡死（[错误终态修复](../conversation-error-taskstatus-stuck-fix.md)：消息层已报错、会话层仍 EXECUTING）、轮询误订阅冲掉乐观消息（[轮询竞态修复](../poll-send-race-stale-snapshot-fix.md)）、队列不消费。
+**P3 同一业务事实多处推导**：「能否发送 / 能否停止 / 能否轮询 / 能否入队」在 model、UnifiedChatSession、MessageQueue、Resume Hook 各自重新实现。判定不一致就是线上缺陷——历史缺陷的共同根因：停止按钮卡死（[错误终态修复](../fixes/conversation-error-taskstatus-stuck-fix.md)：消息层已报错、会话层仍 EXECUTING）、轮询误订阅冲掉乐观消息（[轮询竞态修复](../dual-track/conversation-maintenance-guide.md)）、队列不消费。
 
 **P4 副作用与事件归并耦合**：事件归并代码里直接操作页面（开文件树、开远程桌面、写卡片），既不可单测，隔离入口（预览 Tab）想要子集行为只能再抄一份——P2 的复制正是这样产生的。
 

@@ -1,9 +1,9 @@
 /**
- * 会话双线切换 flag（docs/conversation/conversation-dual-track-plan.md §3.3）。
+ * 会话双线切换：优先级与回退语义见下。
  *
  * 优先级：URL param > localStorage > 构建常量默认。
  * 大版本起默认 runtime V2；仍可用 URL/localStorage 显式回退 legacy。
- * 运行时整体切换：改 URL `?conversationRuntime=1` 或 localStorage，无需发版。
+ * 通过 URL 或 localStorage 覆盖默认值，重新挂载会话后生效，无需发版。
  */
 
 /** 发布默认值：大版本默认走 runtime V2 */

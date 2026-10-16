@@ -2,6 +2,7 @@ import { useConversationRuntimeSession } from '@/features/conversation/react/use
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
+  MessageModeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -197,4 +198,112 @@ describe('runtime 会话问题建议', () => {
       }
     },
   );
+
+  it.each([
+    [OpenCloseEnum.Open, TaskStatus.COMPLETE, true],
+    [OpenCloseEnum.Close, TaskStatus.COMPLETE, false],
+    [OpenCloseEnum.Open, TaskStatus.EXECUTING, false],
+  ])(
+    '重新进入历史会话 openSuggest=%s、status=%s：是否补拉建议=%s',
+    async (flag, status, enabled) => {
+      mockLoad.mockResolvedValue({
+        data: {
+          ...conversation(1001, flag),
+          taskStatus: status,
+          messageList: [
+            {
+              id: 'history-user',
+              role: AssistantRoleEnum.USER,
+              type: MessageModeEnum.CHAT,
+            },
+            {
+              id: 'history-answer',
+              role: AssistantRoleEnum.ASSISTANT,
+              type: MessageModeEnum.CHAT,
+            },
+          ],
+        },
+      });
+      const { result } = renderHook(() =>
+        useConversationRuntimeSession({ conversationId: 1001 }),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      expect(mockSuggest).toHaveBeenCalledTimes(enabled ? 1 : 0);
+      expect(mockOpenLive).not.toHaveBeenCalled();
+      if (enabled) {
+        expect(result.current?.conversationProps.chatSuggestList).toEqual([
+          '下一个问题',
+        ]);
+        // 后台刷新历史消息不应重复生成建议。
+        await act(async () => {
+          await (
+            result.current?.conversationProps
+              .onReloadConversationHistoryAsync as (
+              id: number,
+            ) => Promise<unknown>
+          )(1001);
+          await vi.advanceTimersByTimeAsync(300);
+        });
+        expect(mockSuggest).toHaveBeenCalledTimes(1);
+      }
+    },
+  );
+
+  it('历史 QUESTION 已带建议时直接恢复，不重新调用生成接口', async () => {
+    mockLoad.mockResolvedValue({
+      data: {
+        ...conversation(1001, OpenCloseEnum.Open),
+        messageList: [
+          {
+            id: 'history-user',
+            role: AssistantRoleEnum.USER,
+            type: MessageModeEnum.CHAT,
+          },
+          {
+            id: 'history-answer',
+            role: AssistantRoleEnum.ASSISTANT,
+            type: MessageModeEnum.CHAT,
+          },
+          {
+            id: 'history-suggest',
+            role: AssistantRoleEnum.ASSISTANT,
+            type: MessageModeEnum.QUESTION,
+            ext: [{ content: '已保存的建议' }],
+          },
+        ],
+      },
+    });
+    const { result } = renderHook(() =>
+      useConversationRuntimeSession({ conversationId: 1001 }),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(result.current?.conversationProps.chatSuggestList).toEqual([
+      '已保存的建议',
+    ]);
+    expect(mockSuggest).not.toHaveBeenCalled();
+  });
+
+  it('只有开场白、尚未开始问答时不生成建议', async () => {
+    mockLoad.mockResolvedValue({
+      data: {
+        ...conversation(1001, OpenCloseEnum.Open),
+        messageList: [
+          {
+            id: 'opening',
+            role: AssistantRoleEnum.ASSISTANT,
+            type: MessageModeEnum.CHAT,
+          },
+        ],
+      },
+    });
+    renderHook(() => useConversationRuntimeSession({ conversationId: 1001 }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(mockSuggest).not.toHaveBeenCalled();
+  });
 });
