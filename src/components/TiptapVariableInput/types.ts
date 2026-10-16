@@ -1,11 +1,3 @@
-/*
- * Tiptap Variable Input Component Types
- * Tiptap 变量输入组件类型定义
- */
-
-/**
- * 变量类型枚举
- */
 export enum VariableType {
   String = 'string',
   Integer = 'integer',
@@ -20,9 +12,6 @@ export enum VariableType {
   ArrayObject = 'array_object',
 }
 
-/**
- * 变量定义接口
- */
 export interface PromptVariable {
   /** 变量标识符 */
   key: string;
@@ -42,9 +31,6 @@ export interface PromptVariable {
   systemVariable?: boolean;
 }
 
-/**
- * 变量树节点接口
- */
 export interface VariableTreeNode {
   key: string;
   label: string;
@@ -54,9 +40,6 @@ export interface VariableTreeNode {
   isLeaf?: boolean;
 }
 
-/**
- * Mentions 项数据结构
- */
 export interface MentionItem {
   /** 唯一标识符 */
   id: string;
@@ -68,9 +51,6 @@ export interface MentionItem {
   data?: any;
 }
 
-/**
- * Tiptap Variable Input 组件 Props
- */
 export interface TiptapVariableInputProps {
   /** 可用变量列表 */
   variables?: PromptVariable[];
@@ -112,9 +92,6 @@ export interface TiptapVariableInputProps {
   imeSafe?: boolean;
 }
 
-/**
- * Suggestion 命令参数
- */
 export interface SuggestionCommandProps {
   editor: any;
   range: { from: number; to: number };

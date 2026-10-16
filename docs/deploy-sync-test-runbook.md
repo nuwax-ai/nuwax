@@ -21,7 +21,7 @@
 
 ### 快速通道的三条决策（2026-10-15 更新）
 
-初版背景与证据见 [plans/20261014-deploy-test-fast-lane-plan.md](../plans/20261014-deploy-test-fast-lane-plan.md)，子模块规则调整见 [自动更新计划](../plans/20261015-fast-deploy-submodule-update-plan.md)。
+本节维护当前规则；初版方案中的未完成后续项见 [快速通道计划](../plans/20261014-deploy-test-fast-lane-plan.md)，已完成的调整过程通过 Git 查询。
 
 1. **质量门默认开启。** 实测 `test:conversation` 约 20 秒，构建要 3 到 4 分钟，门的成本可以忽略。同事直接推到 gitlab/dev 的提交从没过门，快速通道是它们进测试环境前的最后一道检查。紧急情况用 `GATE=0`，脚本会大字提示本次未经门禁。
 2. **自动更新子模块到最新。** 2026-10-15 按用户要求替代原来的「只提醒不升级」规则。起跑时只要子仓没有文件改动，未暂存的提交指针偏差就自动对齐；汇合到 test 后执行 `npm run upgrade:micro-apps -- all`，通过快进及 patch/overlay 预检后提交 gitlink 与 adapter.pin，再过质量门和构建。实际文件改动、已暂存输入、网络失败或适配冲突仍停止并保留现场，不静默退回旧版本发布。
@@ -102,10 +102,12 @@ gitlab/test → xxx
 ## 约定（写进 AGENTS.md 的三条）
 
 1. 主区不干净自动进 worktree，不要手工清场
-2. `src/constants/version.ts` 烤哈希只随 dist 前置提交，feat 线源码提交不携带
+2. `src/constants/version.ts` 只存 APP_VERSION / APP_NAME；提交哈希运行时读取 `dist/version.json`，不烤入源码
 3. 网络抖动等脚本自愈，勿手工重启整链
 
 ## 遗留告警（知悉即可，不阻塞）
 
 - `gitlab/dev 存在 N 个独有提交`：gitlab 侧集成分支有本链路外的提交（信息性告警，设计内）
 - `构建产物无变更，跳过提交`：本轮无代码变化，推送为 no-op，正常
+
+社区打包遇到未初始化的私有子模块会警告并跳过相应微应用；内部提测链设置 `MICRO_APP_REQUIRED=1`，缺失时停止。

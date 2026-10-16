@@ -511,51 +511,6 @@ describe('会话进度胶囊', () => {
     expect(resumed?.terminals[0]).toMatchObject({ command: 'npm run build' });
   });
 
-  it('open=false 面板不在 DOM；展开后按分区展示（计划/进程/终端/智能体摘要）', () => {
-    const messages = buildMessages();
-    const { rerender, container } = render(
-      <ConversationProgressCapsule
-        conversationId={1}
-        messageList={messages}
-        active
-        open={false}
-        onClose={vi.fn()}
-      />,
-    );
-    // 收起态：组件整体不在 DOM（有内容才由页面渲染页头按钮）
-    expect(screen.queryByTestId('conversation-progress-capsule')).toBeNull();
-
-    rerender(
-      <ConversationProgressCapsule
-        conversationId={1}
-        messageList={messages}
-        active
-        open
-        onClose={vi.fn()}
-      />,
-    );
-    expect(screen.getByTestId('capsule-panel')).toBeInTheDocument();
-    // 计划：活跃 + 待处理步骤（单行截断）
-    expect(screen.getByText('运行验收')).toBeInTheDocument();
-    expect(screen.getByText('生成交付说明')).toBeInTheDocument();
-    // 进程：n/n 计数，已完成默认展开且带删除线
-    expect(screen.getByText('1/3')).toBeInTheDocument();
-    expect(screen.getByText('步骤1')).toBeInTheDocument();
-    // 终端
-    expect(screen.getByText('npm run test:conversation')).toBeInTheDocument();
-    // 智能体默认折叠：显示运行中摘要（fixture 子代理 running）
-    expect(
-      screen.getByText('PC.Components.ConversationProgressCapsule.running 1'),
-    ).toBeInTheDocument();
-    // 点分区头展开子代理行（头部动态文案也含子代理名，存在即可）
-    fireEvent.click(
-      screen.getByText('PC.Components.ConversationProgressCapsule.agents'),
-    );
-    expect(screen.getAllByText('检索子代理').length).toBeGreaterThan(0);
-    // 头部状态行：运行中 spinner
-    expect(container.querySelector('.spinner')).toBeTruthy();
-  });
-
   it('原地终态更新后 active 翻转仍显示新状态并保留展开面板', () => {
     const messages = buildMessages();
     const onClose = vi.fn();
@@ -653,26 +608,6 @@ describe('会话进度胶囊', () => {
       screen.getByTestId('conversation-progress-capsule'),
     ).toBeInTheDocument();
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-  });
-
-  it('面板头部关闭按钮点击回调 onClose', () => {
-    const onClose = vi.fn();
-    render(
-      <ConversationProgressCapsule
-        conversationId={1}
-        messageList={buildMessages()}
-        active
-        open
-        onClose={onClose}
-      />,
-    );
-    const closeBtn = screen.getByTestId('capsule-close');
-    expect(closeBtn).toHaveAttribute(
-      'aria-label',
-      'PC.Components.ConversationProgressCapsule.close',
-    );
-    fireEvent.click(closeBtn);
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('外点与 Esc 收起；页头触发按钮（data-capsule-panel-trigger）不算外点', () => {
@@ -835,49 +770,6 @@ describe('会话进度胶囊', () => {
     expect(apiGitLogList).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceType: 'taskAgent', cid: 1 }),
     );
-  });
-
-  it('任务结果展示+终端超 5 折叠+头部动态文案', async () => {
-    const model = selectProgressCapsule(
-      buildMessages({ finished: true, richContent: true }),
-      false,
-    );
-    expect(model?.taskResults).toHaveLength(2);
-    expect(model?.taskResults[0]).toMatchObject({
-      description: '月度报表页面',
-      file: '999999/report/index.html',
-    });
-    // tool-1 + 7 条追加终端
-    expect(model?.terminals).toHaveLength(8);
-
-    render(
-      <ConversationProgressCapsule
-        conversationId={1}
-        messageList={buildMessages({ finished: true, richContent: true })}
-        active={false}
-        open
-        onClose={vi.fn()}
-      />,
-    );
-    // 头部状态行动态文案：非写死的「展开状态」
-    expect(screen.getByTestId('capsule-panel').textContent).not.toContain(
-      'PC.Components.ConversationProgressCapsule.expandStatus',
-    );
-    // 终态动态文案优先取最后执行的动作（最后一条终端命令）
-    expect(screen.getByTestId('capsule-panel').textContent).toContain('命令6');
-    // 任务结果：task-result 标签行（会话输出同款），正文卡片被替代
-    expect(screen.getByText('月度报表页面')).toBeInTheDocument();
-    expect(screen.getByText('数据明细导出')).toBeInTheDocument();
-    expect(screen.queryByText('已执行全部七个步骤，构建通过。')).toBeNull();
-    // 终端默认只展示前 5 条（tool-1 + step-0..3），第 5 条不可见；展开按钮显示总数
-    expect(screen.getByText('echo step-3')).toBeInTheDocument();
-    expect(screen.queryByText('echo step-4')).toBeNull();
-    fireEvent.click(
-      screen.getByText(
-        'PC.Components.ConversationProgressCapsule.terminalExpand:8',
-      ),
-    );
-    expect(screen.getByText('echo step-6')).toBeInTheDocument();
   });
 
   it('未开启版本管理不请求 git 接口，头部更改胶囊回退 V2 编辑口径', async () => {

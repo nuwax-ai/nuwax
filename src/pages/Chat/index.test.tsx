@@ -17,7 +17,7 @@ import {
   DefaultSelectedEnum,
   TaskStatus,
 } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import { CONVERSATION_RENDERER_EVENT } from '@/utils/conversationRendererPreference';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -1091,55 +1091,64 @@ describe('ChatCore / ChatPage', () => {
     ).toHaveAttribute('data-renderer', 'v2');
   });
 
-  it('runtime 开启时首条自动发送直接进入 runtime session', async () => {
-    const legacySend = vi.fn();
-    modelOverrides.current = { onMessageSend: legacySend };
-    const loadedConversation = {
-      id: 100,
-      messageList: [],
-      agent: { name: 'ConvAgent', id: 200, openSuggest: 1 },
-    };
-    mockRunAsync.mockResolvedValue({ data: loadedConversation });
-    mockUseConversationRuntimeSession.mockReturnValue({
-      session: { send: mockRuntimeSend },
-      conversationProps: {},
-    });
+  it.each([
+    [OpenCloseEnum.Open, true],
+    [OpenCloseEnum.Close, false],
+    [undefined, false],
+  ])(
+    'runtime 首条自动发送：openSuggest=%s 时建议开关=%s',
+    async (openSuggest, isSuggestEnabled) => {
+      const legacySend = vi.fn();
+      modelOverrides.current = { onMessageSend: legacySend };
+      const loadedConversation = {
+        id: 100,
+        messageList: [],
+        agent: { name: 'ConvAgent', id: 200, openSuggest },
+      };
+      mockRunAsync.mockResolvedValue({ data: loadedConversation });
+      mockUseConversationRuntimeSession.mockReturnValue({
+        session: { send: mockRuntimeSend },
+        conversationProps: {},
+      });
 
-    render(
-      <ChatCore
-        id={100}
-        agentId={200}
-        locationState={{
-          message: '首条消息',
-          files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
-          infos: [{ id: 9, type: 'Plugin' }],
-          variableParams: { city: '杭州' },
-          skillIds: [11],
-          selectedDocs: [{ id: 12, name: '资料' }],
-          modelId: 456,
-          agentMode: 'ask',
-        }}
-      />,
-    );
+      render(
+        <ChatCore
+          id={100}
+          agentId={200}
+          locationState={{
+            message: '首条消息',
+            files: [
+              { key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' },
+            ],
+            infos: [{ id: 9, type: 'Plugin' }],
+            variableParams: { city: '杭州' },
+            skillIds: [11],
+            selectedDocs: [{ id: 12, name: '资料' }],
+            modelId: 456,
+            agentMode: 'ask',
+          }}
+        />,
+      );
 
-    await waitFor(() => expect(mockRuntimeSend).toHaveBeenCalledTimes(1));
-    expect(mockRuntimeSend).toHaveBeenCalledWith({
-      conversationId: 100,
-      message: '首条消息',
-      files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
-      infos: [{ id: 9, type: 'Plugin' }],
-      variableParams: { city: '杭州' },
-      // 未选电脑时首条自动发送兜底云电脑哨兵 -1
-      sandboxId: '-1',
-      currentInfo: loadedConversation,
-      isSuggestEnabled: true,
-      skillIds: [11],
-      selectedDocs: [{ id: 12, name: '资料' }],
-      modelId: 456,
-      agentMode: 'ask',
-    });
-    expect(legacySend).not.toHaveBeenCalled();
-  });
+      await waitFor(() => expect(mockRuntimeSend).toHaveBeenCalledTimes(1));
+      expect(mockRuntimeSend).toHaveBeenCalledWith({
+        conversationId: 100,
+        message: '首条消息',
+        files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
+        infos: [{ id: 9, type: 'Plugin' }],
+        variableParams: { city: '杭州' },
+        // 未选电脑时首条自动发送兜底云电脑哨兵 -1
+        sandboxId: '-1',
+        currentInfo: loadedConversation,
+        isSuggestEnabled,
+        skillIds: [11],
+        selectedDocs: [{ id: 12, name: '资料' }],
+        modelId: 456,
+        agentMode: 'ask',
+      });
+      expect(legacySend).not.toHaveBeenCalled();
+    },
+  );
 
   it('loadingConversation=true 时展示 Loading，不渲染 LeftContent', () => {
     mockUseModel.mockImplementation((name: string) => {

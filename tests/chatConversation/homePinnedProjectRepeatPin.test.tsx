@@ -273,7 +273,11 @@ describe('首页隐藏运行容器选择器时的发送参数', () => {
       devAgentId: 88,
     });
     render(<Home />);
-    await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+    await waitFor(() => {
+      expect(input.props.agentId).toBe(88);
+      expect(input.props.agentTypeLoading).toBe(false);
+      expect(input.props.wholeDisabled).toBe(false);
+    });
     await act(async () => input.props.onEnter('全栈任务'));
     const [agentId, attach] = handleCreateConversation.mock.calls[0];
     expect(agentId).toBe(88);

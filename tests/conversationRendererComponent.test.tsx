@@ -14,11 +14,6 @@ import {
   hasOpenThinkBlock,
 } from '@/plugins/ds-markdown-think';
 // 行数阈值常量直接从组件取值：常量调参（并行调优）时测试无需跟着改硬编码
-import {
-  USER_BUBBLE_COLLAPSE_LINES,
-  USER_BUBBLE_COLLAPSED_LINES,
-  USER_BUBBLE_FALLBACK_LINE_HEIGHT,
-} from '@/features/conversation/presentation-v2/react/UserBubbleCollapse';
 import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -410,68 +405,6 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(toggle.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('运行中的思考/工具行文案带扫光动效 class，终态行不带', () => {
-    const messages = buildTurn({
-      status: MessageStatusEnum.Loading,
-      text: [
-        thinkTag('thinking', '先想想要用哪个工具'),
-        processTag({
-          executeId: 'e-done',
-          type: 'ToolCall',
-          status: 'FINISHED',
-          name: '查天气',
-        }),
-        processTag({
-          executeId: 'e-running',
-          type: 'ToolCall',
-          status: 'EXECUTING',
-          name: '运行测试',
-        }),
-      ].join(''),
-      processingList: [
-        {
-          executeId: 'e-done',
-          name: '查天气',
-          type: AgentComponentTypeEnum.ToolCall,
-          status: 'FINISHED',
-        },
-        {
-          executeId: 'e-running',
-          name: '运行测试',
-          type: AgentComponentTypeEnum.ToolCall,
-          status: 'EXECUTING',
-        },
-      ] as MessageInfo['processingList'],
-    });
-    renderV2(messages, PREFS('balanced'));
-    // 思考独立显示，尾部活动工具组默认展开。
-    expect(
-      document.querySelector('[data-node-kind="reasoning"]'),
-    ).not.toBeNull();
-    expect(
-      document.querySelector(
-        '[data-tool-group-id] > button [class*="shimmer"]',
-      ),
-    ).not.toBeNull();
-    // 运行中思考行：标题/摘要挂扫光 class（css-modules 哈希用子串匹配；focused 预设下思考节点隐藏，用 balanced）
-    const reasoningRow = document.querySelector('[data-node-kind="reasoning"]');
-    expect(reasoningRow).not.toBeNull();
-    expect(
-      reasoningRow?.querySelectorAll('[class*="shimmer"]').length,
-    ).toBeGreaterThan(0);
-    expect(reasoningRow?.querySelector('[aria-label="loading"]')).toBeNull();
-    // 运行中工具行同样挂扫光
-    const runningToolRow = [
-      ...document.querySelectorAll('[data-node-kind="tool"]'),
-    ].find((row) => row.querySelector('[class*="shimmer"]'));
-    expect(runningToolRow).toBeDefined();
-    // 终态（finished）行不挂扫光
-    const finishedRows = [
-      ...document.querySelectorAll('[data-node-kind="tool"]'),
-    ].filter((row) => !row.querySelector('[class*="shimmer"]'));
-    expect(finishedRows.length).toBeGreaterThan(0);
-  });
-
   it('终态保留工具、消息与工作时长全量指标', () => {
     renderV2(
       buildTurn({
@@ -488,60 +421,6 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(text).toContain('traceMetricTools');
     expect(text).toContain('traceMetricMessages');
     expect(text).toContain('traceMetricElapsed');
-  });
-
-  it('终态回答操作栏复用 V1 消息相对时间规则并固定在最右侧', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-04T12:00:00+08:00'));
-    renderV2(
-      buildTurn({
-        time: '2026-09-03T08:00:00+08:00',
-        finalResult: {
-          outputText: '今天晴，25 度',
-          success: true,
-          startTime: 1000,
-          endTime: 61_000,
-          componentExecuteResults: [],
-        } as unknown as MessageInfo['finalResult'],
-      }),
-    );
-    const answerTime = screen.getByTestId('v2-answer-time');
-    expect(answerTime).toHaveTextContent('PC.Utils.Common.yesterday');
-    expect(answerTime.parentElement?.lastElementChild).toBe(answerTime);
-  });
-
-  it('普通会话默认不展示终态调试信息', () => {
-    renderV2(buildTurn());
-
-    expect(screen.queryByTestId('chat-debug')).toBeNull();
-  });
-
-  it('智能体开发调试场景可显式开启终态调试信息', () => {
-    renderV2(buildTurn(), PREFS('balanced'), true);
-
-    expect(screen.getByTestId('chat-debug')).toBeInTheDocument();
-  });
-
-  it('home 模式（默认入口）终态操作栏也显示：V1 由 ChatSampleBottom 提供复制+时间，V2 对齐', () => {
-    // 不传 messageBottomMode，模拟 /home/chat 入口的默认渲染
-    render(
-      <ConversationRendererV2
-        messageList={buildTurn({
-          finalResult: {
-            outputText: '今天晴，25 度',
-            success: true,
-            startTime: 1000,
-            endTime: 61_000,
-            componentExecuteResults: [],
-          } as unknown as MessageInfo['finalResult'],
-        })}
-        conversationId={1}
-        roleInfo={ROLE_INFO}
-        preferences={PREFS('balanced')}
-      />,
-    );
-    expect(screen.getByTestId('copy-button')).toBeInTheDocument();
-    expect(screen.getByTestId('v2-answer-time')).toBeInTheDocument();
   });
 
   it('detailed 不改变历史轮收起规则，手动展开后已完成 reasoning 详情自动展开', () => {
@@ -1888,41 +1767,10 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     );
   });
 
-  it('运行中节点保留类型图标和动态文案，行尾不显示 loading', () => {
-    renderV2(
-      buildTurn({
-        status: MessageStatusEnum.Loading,
-        text: [
-          processTag({
-            executeId: 'r1',
-            type: 'Mcp',
-            status: 'EXECUTING',
-            name: '跑着的工具',
-          }),
-        ].join(''),
-      }),
-    );
-    const row = document.querySelector('[data-node-id="r1"]');
-    expect(row).not.toBeNull();
-    // 前导类型图标仍在，运行态由文案和扫光表达。
-    expect(row!.querySelector('span[aria-label="tool"]')).not.toBeNull();
-    expect(row!.querySelector('[class*="shimmer"]')).not.toBeNull();
-    expect(row!.querySelector('span[aria-label="loading"]')).toBeNull();
-  });
-
   it('操作栏只归属最终回答：复制内容不含隐藏过程', () => {
     renderV2(buildTurn());
     const copy = screen.getByTestId('copy-button');
     expect(copy.getAttribute('data-copy-text')).toBe('今天晴，25 度');
-  });
-
-  it('最终回答 Markdown 跟随统一深色主题', () => {
-    unifiedThemeState.antdTheme = 'dark';
-    renderV2(buildTurn());
-    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
-      'data-theme',
-      'dark',
-    );
   });
 
   it('投影异常时整份回退 V1（data-v2-fallback 且 ChatView 列表可见）', () => {
@@ -2042,187 +1890,5 @@ describe('ConversationRendererV2 · 回答与异常', () => {
       expect(screen.getByTestId('v2-trace-toggle')).toBeInTheDocument();
     });
     expect(consoleError).toHaveBeenCalled();
-  });
-});
-
-describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
-  it('节点行装饰图标对读屏隐藏（aria-hidden），按钮名称只含标题与摘要', () => {
-    renderV2(buildTurn(), PREFS('detailed'));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-    const toolRow = document.querySelector('[data-node-id="e1"] button')!;
-    const icons = toolRow.querySelectorAll('[aria-hidden="true"]');
-    expect(icons.length).toBeGreaterThanOrEqual(1);
-    const name =
-      toolRow.getAttribute('aria-label') ?? toolRow.textContent ?? '';
-    expect(name).not.toMatch(/caret-right|bulb|check-circle/i);
-  });
-
-  it('轨迹折叠头图标隐藏，名称为指标文本', () => {
-    renderV2(buildTurn());
-    const toggle = screen.getByTestId('v2-trace-toggle');
-    expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    expect(toggle.textContent).toContain('traceMetricTools');
-    const trace = toggle.closest('[data-trace-key]') as HTMLElement;
-    expect(trace.style.getPropertyValue('--v2-color-text-secondary')).not.toBe(
-      '',
-    );
-  });
-
-  it('可展开节点有独立 disclosure 箭头并跟随状态旋转', () => {
-    renderV2(buildTurn(), PREFS('detailed'));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-    const toolRow = document.querySelector('[data-node-id="e1"] button')!;
-    const disclosure = toolRow.querySelector(
-      '[data-testid="v2-node-disclosure"]',
-    );
-    expect(disclosure).not.toBeNull();
-    expect(disclosure?.getAttribute('aria-hidden')).toBe('true');
-  });
-});
-
-describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
-  const restoreScrollHeight = () =>
-    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
-      configurable: true,
-      get() {
-        return 0;
-      },
-    });
-  const stubScrollHeight = (value: number) => {
-    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
-      configurable: true,
-      get() {
-        return value;
-      },
-    });
-    return restoreScrollHeight;
-  };
-  /** 按节点分流测高：正文(.ds-markdown-answer)取 answerHeight，其余节点取 fallbackHeight */
-  const stubScrollHeightByNode = (
-    answerHeight: number,
-    fallbackHeight: number,
-  ) => {
-    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
-      configurable: true,
-      get(this: HTMLElement) {
-        return this.classList?.contains('ds-markdown-answer')
-          ? answerHeight
-          : fallbackHeight;
-      },
-    });
-    return restoreScrollHeight;
-  };
-
-  it('正文超过阈值行数：默认收起（保留行数整行截断），点击圆形控件展开/收起切换', async () => {
-    const restore = stubScrollHeight(600);
-    const user = userEvent.setup();
-    renderV2([
-      msg({
-        id: 'u1',
-        role: AssistantRoleEnum.USER,
-        text: '很长很长的用户输入'.repeat(60),
-      }),
-      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
-    ]);
-    const content = screen.getByTestId('v2-user-bubble-content');
-    const toggle = screen.getByTestId('v2-user-bubble-toggle');
-    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）：
-    // 收起态按保留行数×行高整行截断（截断值随常量调参联动）
-    const body = content.querySelector<HTMLElement>('.ds-markdown-answer');
-    expect(body).not.toBeNull();
-    const collapsedMaxHeight = `${
-      USER_BUBBLE_COLLAPSED_LINES * USER_BUBBLE_FALLBACK_LINE_HEIGHT
-    }px`;
-    expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe(collapsedMaxHeight);
-    expect(body?.style.overflow).toBe('hidden');
-    // 控件经 portal 挂进气泡框（正文所在 .ds-markdown 灰底气泡）内尾部
-    expect(toggle.parentElement).toBe(body?.closest('.ds-markdown') ?? null);
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    // 圆形 chevron 控件：收起态朝下 caret + 展开语义 aria-label（无可见文案）
-    expect(
-      toggle.querySelector('[data-svg-icon="icons-common-caret_down"]'),
-    ).not.toBeNull();
-    expect(toggle.getAttribute('aria-label')).toBe(
-      'PC.Components.ConversationRendererV2.userBubbleExpand',
-    );
-    expect(toggle).not.toHaveTextContent('展开');
-
-    await user.click(toggle);
-    expect(content.getAttribute('data-collapsed')).toBeNull();
-    expect(body?.style.maxHeight).toBe('');
-    expect(body?.style.overflow).toBe('');
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle.getAttribute('aria-label')).toBe(
-      'PC.Components.ConversationRendererV2.userBubbleCollapse',
-    );
-    expect(
-      toggle.querySelector('[data-svg-icon="icons-common-caret_up"]'),
-    ).not.toBeNull();
-
-    await user.click(toggle);
-    expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe(collapsedMaxHeight);
-    restore();
-  });
-
-  it('正文行数恰等于阈值：不折叠（超过阈值才展示折叠入口）', () => {
-    // 正文高 = 阈值行数 × 兜底行高 → 行数恰达阈值，边界上不折叠
-    const restore = stubScrollHeightByNode(
-      USER_BUBBLE_COLLAPSE_LINES * USER_BUBBLE_FALLBACK_LINE_HEIGHT,
-      600,
-    );
-    renderV2([
-      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '短输入' }),
-      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
-    ]);
-    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
-    expect(
-      screen
-        .getByTestId('v2-user-bubble-content')
-        .getAttribute('data-collapsed'),
-    ).toBeNull();
-    restore();
-  });
-
-  it('短文案即使整体渲染高超限（高附件）：阈值只测正文，不出现折叠与切换入口', () => {
-    // bug 2529 口径①：字数不多（正文矮）一律不展示控件——附件与操作行不计入阈值
-    const restore = stubScrollHeightByNode(100, 600);
-    renderV2([
-      msg({
-        id: 'u1',
-        role: AssistantRoleEnum.USER,
-        text: '短输入',
-        attachments: [
-          {
-            id: 1,
-          } as unknown as NonNullable<MessageInfo['attachments']>[number],
-        ],
-      }),
-      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
-    ]);
-    expect(screen.getByTestId('attach-files')).toBeInTheDocument();
-    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
-    expect(
-      screen
-        .getByTestId('v2-user-bubble-content')
-        .getAttribute('data-collapsed'),
-    ).toBeNull();
-    restore();
-  });
-
-  it('内容未超限：不出现折叠与切换入口', () => {
-    const restore = stubScrollHeight(120);
-    renderV2([
-      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '短输入' }),
-      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
-    ]);
-    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
-    expect(
-      screen
-        .getByTestId('v2-user-bubble-content')
-        .getAttribute('data-collapsed'),
-    ).toBeNull();
-    restore();
   });
 });

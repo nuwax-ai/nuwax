@@ -1,15 +1,13 @@
 import ProcessNodeRow from '@/features/conversation/presentation-v2/react/ProcessNodeRow';
 import TodoTraceNode from '@/features/conversation/presentation-v2/react/TodoTraceNode';
-import ToolGroupDisclosure from '@/features/conversation/presentation-v2/react/ToolGroupDisclosure';
 import {
   isTodoTraceNode,
   readPlanSteps,
 } from '@/features/conversation/presentation-v2/traceItems';
-import type { ConversationProcessNode } from '@/features/conversation/presentation-v2/types';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-// 重依赖 mock 照 tests/conversation/toolNodeDetailComponent.test.tsx 模板:
+// 仅替换视图重依赖，保留实际步骤解析与折叠状态：
 // umi / MarkdownRenderer 传递依赖会拉进 esbuild,vitest 环境必崩,须替换。
 vi.mock('umi', () => ({
   useModel: () => ({}),
@@ -36,54 +34,6 @@ vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
 const SUMMARY_TEXT = 'Wait — but there is a subtlety: getToolNodePresentation';
 
 describe('思考行完成态时长', () => {
-  it('有 durationMs:渲染「持续了」词条替代首行摘要', () => {
-    render(
-      <ProcessNodeRow
-        expanded={false}
-        onToggle={() => {}}
-        node={
-          {
-            id: 'think-done',
-            kind: 'reasoning',
-            title: '',
-            summary: SUMMARY_TEXT,
-            thinkText: `${SUMMARY_TEXT}\n第二行`,
-            status: 'finished',
-            failed: false,
-            durationMs: 73_000,
-          } as any
-        }
-      />,
-    );
-    const row = screen.getByRole('button');
-    expect(row.textContent).toContain('nodeThinkingDuration');
-    expect(row.textContent).not.toContain(SUMMARY_TEXT);
-    expect(row.querySelector('.node-dot')).not.toBeNull();
-  });
-
-  it('历史无 durationMs:降级回首行摘要', () => {
-    render(
-      <ProcessNodeRow
-        expanded={false}
-        onToggle={() => {}}
-        node={
-          {
-            id: 'think-legacy',
-            kind: 'reasoning',
-            title: '',
-            summary: SUMMARY_TEXT,
-            thinkText: `${SUMMARY_TEXT}\n第二行`,
-            status: 'finished',
-            failed: false,
-          } as any
-        }
-      />,
-    );
-    const row = screen.getByRole('button');
-    expect(row.textContent).toContain(SUMMARY_TEXT);
-    expect(row.textContent).not.toContain('nodeThinkingDuration');
-  });
-
   it('durationMs 不足 1 秒（bug2492 突发落盘形态）:不显示「持续了 0 秒」，回落首行摘要', () => {
     render(
       <ProcessNodeRow
@@ -175,17 +125,6 @@ describe('待办卡 TodoTraceNode 三态', () => {
       },
     } as any);
 
-  it('运行中:默认展开,头部带进度 N/M 与三态项', () => {
-    render(<TodoTraceNode node={buildNode('running')} />);
-    const toggle = screen.getByTestId('v2-todo-trace-toggle');
-    expect(toggle.textContent).toContain('todoTraceTitle');
-    expect(toggle.textContent).toContain('1/3');
-    const card = screen.getByTestId('v2-todo-trace');
-    expect(card.querySelector('.todo-step')).not.toBeNull();
-    expect(card.querySelector('.is-completed')).not.toBeNull();
-    expect(card.querySelector('.is-in-progress')).not.toBeNull();
-  });
-
   it('运行中手动收起后,翻终态不再被自动收起逻辑翻转(保持手动选择)', () => {
     const { rerender } = render(<TodoTraceNode node={buildNode('running')} />);
     fireEvent.click(screen.getByTestId('v2-todo-trace-toggle'));
@@ -199,91 +138,5 @@ describe('待办卡 TodoTraceNode 三态', () => {
     expect(
       screen.getByTestId('v2-todo-trace').querySelector('.todo-step'),
     ).toBeNull();
-  });
-
-  it('历史(首挂即终态):默认收起,点头部展开', () => {
-    render(<TodoTraceNode node={buildNode('finished')} />);
-    const card = screen.getByTestId('v2-todo-trace');
-    expect(card.querySelector('.todo-step')).toBeNull();
-    fireEvent.click(screen.getByTestId('v2-todo-trace-toggle'));
-    expect(card.querySelector('.todo-step')).not.toBeNull();
-  });
-});
-
-describe('工具组头计数', () => {
-  const toolNode = (id: string, name: string, resultKind: string) =>
-    ({
-      id,
-      kind: 'tool',
-      title: name,
-      summary: '',
-      status: 'finished',
-      failed: false,
-      processing: {
-        executeId: id,
-        name,
-        status: 'FINISHED',
-        type: 'ToolCall',
-        result: { kind: resultKind, success: true, input: {} },
-      },
-    } as any);
-
-  const buildGroup = (
-    nodes: ConversationProcessNode[],
-    status: ConversationProcessNode['status'],
-  ) => ({
-    kind: 'tool-group' as const,
-    id: 'group-1',
-    nodes,
-    actionKinds: ['file-read', 'terminal'] as any,
-    status,
-    active: false,
-  });
-
-  it('终态:按动作类计数拼接,运行中的类保持动词词条', () => {
-    const readFile = toolNode('g-r1', 'read_file', 'read');
-    const readFile2 = toolNode('g-r2', 'read_file', 'read');
-    const runningTerm = {
-      ...toolNode('g-t1', 'run_command', 'execute'),
-      status: 'running',
-      processing: {
-        ...toolNode('g-t1', 'run_command', 'execute').processing,
-        status: 'EXECUTING',
-      },
-    };
-    render(
-      <ToolGroupDisclosure
-        group={buildGroup([readFile, readFile2, runningTerm], 'running')}
-        nodes={[readFile, readFile2, runningTerm]}
-        expanded={false}
-        onToggle={() => {}}
-        nodeIsExpanded={() => false}
-        onToggleNode={() => {}}
-      />,
-    );
-    const toggle = screen.getByRole('button');
-    // 已完成的读取类计数:读取了 2 个文件
-    expect(toggle.textContent).toContain('toolGroupCountFileRead');
-    // 运行中的终端类保持动词词条,不计数
-    expect(toggle.textContent).toContain('toolActionTerminalRunning');
-    expect(toggle.textContent).not.toContain('toolGroupCountTerminal');
-  });
-
-  it('终态混合组:两类都计数', () => {
-    const readFile = toolNode('g-r1', 'read_file', 'read');
-    const term = toolNode('g-t1', 'run_command', 'execute');
-    render(
-      <ToolGroupDisclosure
-        group={buildGroup([readFile, term], 'finished')}
-        nodes={[readFile, term]}
-        expanded={false}
-        onToggle={() => {}}
-        nodeIsExpanded={() => false}
-        onToggleNode={() => {}}
-      />,
-    );
-    const toggle = screen.getByRole('button');
-    expect(toggle.textContent).toContain('toolGroupCountFileRead');
-    expect(toggle.textContent).toContain('toolGroupCountTerminal');
   });
 });

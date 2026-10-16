@@ -123,7 +123,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 
 ### E. 状态轮询与竞态防护
 
-核心文件:`features/conversation/react/useConversationStreamResume.ts`(编排)+ `runtime/snapshotConsistencyController.ts`。修复背景:[poll-send-race-stale-snapshot-fix.md](./poll-send-race-stale-snapshot-fix.md)。
+核心文件:`features/conversation/react/useConversationStreamResume.ts`(编排)+ `runtime/snapshotConsistencyController.ts`。修复背景:[conversation-maintenance-guide.md](conversation-maintenance-guide.md)。
 
 | ID | 业务行为 | 预期结果 | 自动验收 | 人工验收要点 | 负责人/状态 |
 | --- | --- | --- | --- | --- | --- |
@@ -276,7 +276,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 - [agent-session-runtime-regression.md](./agent-session-runtime-regression.md) — 行为细节全量对齐文档(§10 高风险点、§11 建议回归清单为本文前身)
 - [archive/conversation-stream-resume-and-intervention.md](./archive/conversation-stream-resume-and-intervention.md) — ⚠️ 2026-06-30 后未更新,轮询条件/agentMode 缓存结构/恢复节律已过时,以本文 D/E/I 域为准
 - [chat-terminal-polling-flash-qa-report.md](./chat-terminal-polling-flash-qa-report.md) — C8 收尾闪烁专项(含 §6 十项人工场景)
-- [poll-send-race-stale-snapshot-fix.md](./poll-send-race-stale-snapshot-fix.md) — E3 竞态专项
+- [conversation-maintenance-guide.md](conversation-maintenance-guide.md) — E3 竞态专项
 - [conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md) — C4 终态固化专项
 - [message-queue-design.md](./message-queue-design.md) — F 域初版设计(实现已演进,以代码为准)
 
@@ -289,4 +289,4 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 - C1 按钮公式更新:移除"近 5 条 EXECUTING processing"(架构解耦 `1f8c77bd9`)
 - 新增 C10~C15:终态统一收敛 sweep / 事件类型白名单 / 终态守卫 / 轮次边界 / 工具状态解耦 / 复制按钮
 - 新增 D13~D15:sub 终态回调 / sub 关闭占位收尾 / sub 网络错误对齐
-- 修复文档: [terminal-convergence-fix-summary.md](./terminal-convergence-fix-summary.md)
+- 修复文档: [conversation-maintenance-guide.md](conversation-maintenance-guide.md)

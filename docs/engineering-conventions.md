@@ -84,6 +84,7 @@ ComponentName/
 ├── index.less
 ├── components/     # 子组件
 ├── hooks/          # 组件专用 hooks
-├── types.ts
-└── README.md
+└── types.ts
 ```
+
+组件属性以 TypeScript 类型为准；仅在存在非显然的接入约束时补充说明，不要求每个组件新建 README。

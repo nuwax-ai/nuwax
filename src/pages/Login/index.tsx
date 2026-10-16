@@ -145,19 +145,6 @@ const Login: React.FC = () => {
     useState<boolean>(false);
   const [enterpriseError, setEnterpriseError] = useState<string>('');
 
-  /** 目标域连通性预检（no-cors 不读响应体，可达即 resolve；防切到死域后 webview 卡死） */
-  const probeDomainReachable = async (origin: string): Promise<boolean> => {
-    try {
-      await fetch(`${origin}/api/tenant/config`, {
-        mode: 'no-cors',
-        signal: AbortSignal.timeout(5000),
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const handleEnterpriseConfirm = async () => {
     const domain = enterpriseDomain.trim().replace(/\/+$/, '');
     if (!domain) {
@@ -168,11 +155,8 @@ const Login: React.FC = () => {
     setEnterpriseSwitching(true);
     setEnterpriseError('');
     try {
-      const reachable = await probeDomainReachable(origin);
-      if (!reachable) {
-        setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainUnreachable'));
-        return;
-      }
+      // HTTPS 登录页探测 HTTP 企业地址会被混合内容策略拦截，no-cors 也无法
+      // 绕过；直接调用客户端统一切域接口，由宿主校验地址并重新初始化。
       const res = await hostBridge.auth.configureServerHost(origin);
       if (!res.success) {
         setEnterpriseError(

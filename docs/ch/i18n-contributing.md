@@ -24,8 +24,10 @@
 ```bash
 node scripts/i18n-governance-report.js
 node scripts/check-hardcoded-i18n.js
-pnpm test --run
-pnpm exec tsc --noEmit
+pnpm exec vitest run src/services/i18nLangPolicy.test.ts
+pnpm run typecheck
 ```
+
+`i18n-governance-report` 汇总缺键与治理状态，`check-hardcoded-i18n` 检查硬编码；`sync-i18n-diff` 与 `backfill-i18n-gaps` 会写词典，仅在明确需要同步或补齐时按脚本说明使用。普通翻译调整不要求全量 Vitest 或全库 tsc。
 
 新增翻译时请保持产品术语一致，例如 Agent、Workflow、Plugin、Skill、Knowledge Base、Data Table 等，不要在不同页面使用不同译法。

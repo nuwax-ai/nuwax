@@ -4,21 +4,23 @@
 
 ## 1. 验证约定（必须遵守）
 
-任何会话相关路径（`src/models/conversation*`、`src/features/conversation/**`、`UnifiedChatSession/**`、`MessageQueue/**`、`src/pages/Chat/**` 等）的调整：
+会话逻辑或会话测试路径（`src/models/conversation*`、`src/features/conversation/**`、`UnifiedChatSession/**`、`MessageQueue/**`、`src/pages/Chat/**` 等）的调整：
 
 ```bash
 npm run test:conversation       # 合同网（每次改动必跑，当前规模见下文）
-npm run dev && npm run e2e:conversation   # 页面 E2E 8 场景（合入前）
+npm run e2e:conversation        # dev 已运行时验证受影响行为（合入前）
 npm run verify:conversation     # 两网一键组合
 ```
 
-2026-09-28 实测合同网为 **110 文件、1061 条用例，全绿**；规模会随新增用例变化，以当次 Vitest 输出为准。
+用例规模与耗时以本次输出为准，不在维护指南复制历史计数。
+
+纯文案、样式、注释和文档按影响范围验证；测试资产调整跑剩余全量，会话行为或保护网改变再跑相应 E2E。新增测试优先补独有的核心风险，不重复复制展示断言。
 
 `test:conversation` 的参数按 Vitest **文件路径子串**匹配，并非目录列表。例如 `tests/resume` 同时覆盖 `tests/resumeController.test.ts` 和 `tests/resumeConsistencyController.test.ts`，不能因同名目录不存在就删除参数。调整过滤器前后应对比 Vitest JSON 报告中的 `testResults[].name`，确认收集文件集合一致。
 
 **CI**：`.github/workflows/conversation-tests.yml` 在 PR/push 触及会话路径时自动跑合同网（pnpm 10.27 + Node 20 + frozen-lockfile，失败阻断合入）。E2E 需登录态不进 CI。
 
-该约定已写入根目录 `AGENTS.md`。两网全绿 = 会话功能未受影响。
+该约定已写入根目录 `AGENTS.md`。测试结果是回归证据；真实后端与客户端的未覆盖边界需单独说明。
 
 ## 2. 架构速查
 
@@ -32,8 +34,8 @@ src/features/conversation/
                  新线绑定 useConversationRuntimeSession + runtimeLineHttp、轮询编排）
 ```
 
-- **旧线**（默认）：`src/models/conversationInfo.ts` / `conversationAgent.ts` —— 基线原版，禁止随意改动。
-- **新线**（flag 开启）：`runtime/createConversationRuntimeSession.ts` 为核心。
+- **旧线**（显式回退）：`src/models/conversationInfo.ts` / `conversationAgent.ts` —— 基线原版，禁止随意改动。
+- **新线**（默认开启）：`runtime/createConversationRuntimeSession.ts` 为核心。
 - 页面层禁止直接 import `domain/runtime/adapters`（eslint `no-restricted-imports`）；只消费 `react/*`。
 
 ## 3. 常见维护任务
@@ -67,7 +69,7 @@ src/features/conversation/
 
 | 操作 | 方法 |
 | --- | --- |
-| 临时试用新线 | `?conversationRuntime=1` |
+| 显式使用新线（当前默认） | `?conversationRuntime=1` |
 | 用户级粘性 | `localStorage.conversation_runtime_enabled = '1'` / 删除回落 |
 | 强制回旧线 | `?conversationRuntime=0` |
 | **整体切默认** | `src/utils/conversationRuntimeFlag.ts` → `CONVERSATION_RUNTIME_DEFAULT = true` |
@@ -78,7 +80,17 @@ src/features/conversation/
 
 ## 5. 已知边界
 
-- **tsc 预存**：全库 ~415 个类型错误（与会话无关），验收标准是"改动路径零新增"；用 `npm run test:conversation` 做门。
+- **类型检查**：使用分域 typecheck；全库历史诊断不作门，改动路径零新增。
 - **umi 传递依赖**：`utils/common`、基线版 `constants/*` 经 i18nRuntime 拖入 umi——vitest 需 mock，纯模块避免直接依赖。
 - **E2E 可靠会话**：女娲 3994、TaskAgent 1596、预览 Tab `/space/57/agent/3994`（TaskAgent 4042 的 Slate 编辑器在 E2E 中输入不生效，人工验证正常）。
 - 诊断日志（`conversationPollingDiagnostics` / `conversationEffectsDiagnostics`）保留用于排障；effects 诊断只记摘要不记正文。
+
+## 并发与终态维护约束
+
+- 停轮询或取消定时器不能撤销已发出的 Promise。本地发送、切会话或轮次更新后，旧代际回包必须整段丢弃，不能写快照、终态或重新订阅。
+- 后端任务状态、本地流式连接和工具展示状态分别维护；历史工具的 `EXECUTING` 不应单独锁住发送按钮。
+- `FINAL_RESULT` / 明确终态 `ERROR` 经统一收尾路径清理占位消息、等待态与队列门。新轮发送恢复正常处理，旧轮终态与迟到分片不能覆盖新轮。
+- 终态快照合并保留已确认的终态；消息 DOM 身份使用稳定 ID，避免收尾重挂载造成闪烁。
+- 停止请求保留 live/sub 接收尾部，失败允许重试；不要恢复历史“点击停止立即 abort 并写 CANCEL”的做法。
+
+排障优先查 `tests/conversation/sessionSnapshotTerminalGuard.test.ts`、`tests/useConversationStreamResume.test.ts`、`tests/useConversationTerminalFinalizer.test.ts` 和 `[Conv:` 日志。修复过程与当时的验收数字通过 Git 历史查询。

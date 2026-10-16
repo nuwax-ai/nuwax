@@ -3929,6 +3929,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.tagColorPresets": "預設顏色",
   "PC.Pages.SpaceLibrary.CreateModel.tagPlaceholder": "請輸入標籤",
   "PC.Pages.SpaceLibrary.CreateModel.updateModel": "更新模型",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxy": "代理",
+  "PC.Pages.SpaceLibrary.CreateModel.useProxyTooltip": "未開啟服務端代理時無法追蹤模型調用日誌。",
   "PC.Pages.SpaceLibrary.CreateModel.vectorDimension": "向量維度",
   "PC.Pages.SpaceLibrary.CreateModel.weight": "權重",
   "PC.Pages.SpaceLibrary.CreateModel.yes": "是",
