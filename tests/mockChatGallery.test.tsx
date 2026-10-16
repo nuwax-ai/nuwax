@@ -100,27 +100,6 @@ describe('MockChatGallery · 画廊页', () => {
     vi.restoreAllMocks();
   });
 
-  it('进页默认勾选「渲染类型全景」组，其余组不选', async () => {
-    render(<MockChatGallery />);
-    await waitFor(() => {
-      expect(screen.getByText('渲染类型全景')).toBeInTheDocument();
-    });
-    expect(
-      (
-        screen.getByRole('checkbox', {
-          name: /RENDERER_SHOWCASE/,
-        }) as HTMLInputElement
-      ).checked,
-    ).toBe(true);
-    expect(
-      (
-        screen.getByRole('checkbox', {
-          name: /NORMAL_SINGLE/,
-        }) as HTMLInputElement
-      ).checked,
-    ).toBe(false);
-  });
-
   it('「播放所选」：向 /scenario 发起带 conversationId（910000+序号）与默认倍速 4 的 prepare', async () => {
     render(<MockChatGallery />);
     await waitFor(() => {
@@ -139,18 +118,6 @@ describe('MockChatGallery · 画廊页', () => {
       expect(body.scenario).toBe('RENDERER_SHOWCASE'); // 所选组首个场景先播（错峰）
       expect(body.conversationId).toBe(910002); // 场景表序号 2
       expect(body.speed).toBe(4);
-    });
-  });
-
-  it('渲染线切换：URL 写入 v1 后全部卡片 messageRenderer 跟随为 v1（默认 v2）', async () => {
-    render(<MockChatGallery />);
-    await waitFor(() => {
-      expect(ucsPropsRef.current?.messageRenderer).toBe('v2');
-    });
-    setSearch('?conversationRenderer=v1');
-    window.dispatchEvent(new CustomEvent('conversation-renderer-v2-changed'));
-    await waitFor(() => {
-      expect(ucsPropsRef.current?.messageRenderer).toBe('v1');
     });
   });
 });

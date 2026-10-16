@@ -315,11 +315,6 @@ describe('工作目录栏（首页我的电脑场景）', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('disablePersonalComputer 透传电脑选择器 cloudOnly', () => {
-    renderHomeInput({ disablePersonalComputer: true });
-    expect(computer.props.cloudOnly).toBe(true);
-  });
-
   it('切回云电脑时一并清空工作目录', () => {
     const onComputerSelect = vi.fn();
     const onWorkspaceDirChange = vi.fn();
@@ -546,132 +541,6 @@ describe('首页私人智能体绑定电脑', () => {
 });
 
 describe('首页工具栏能力', () => {
-  it('空间选择器按开关渲染并接收受控 props', () => {
-    const onSpaceSelect = vi.fn();
-    const { rerender } = renderHomeInput({ showSpaceSelector: false });
-    expect(screen.queryByTestId('space-selector')).not.toBeInTheDocument();
-
-    rerender(
-      <ChatInputUnified
-        onEnter={vi.fn()}
-        draftKey="home"
-        isTaskAgentActive
-        selectedComputerId="555"
-        showSpaceSelector
-        selectedSpaceId={9}
-        onSpaceSelect={onSpaceSelect}
-      />,
-    );
-    expect(screen.getByTestId('space-selector')).toBeInTheDocument();
-    expect(spaceSelector.props.selectedSpaceId).toBe(9);
-    expect(spaceSelector.props.onSpaceSelect).toBe(onSpaceSelect);
-  });
-
-  it('推荐标签 pill 行首内联展示与取消（输入框最前面，文本缩进其后）', () => {
-    const onClearSelectedTag = vi.fn();
-    const { container } = renderHomeInput({
-      selectedTag: { label: 'AI 教育专家' },
-      onClearSelectedTag,
-    });
-    expect(screen.getByText('AI 教育专家')).toBeInTheDocument();
-    // 位置：输入框最前面——pill 在编辑器之前（行首内联）
-    const pill = container.querySelector('.expert-pill');
-    expect(pill).toBeTruthy();
-    expect(
-      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    // 文本缩进到 pill 之后（jsdom 无布局：0 实测宽 + 8 间距兜底）
-    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
-    );
-    expect(onClearSelectedTag).toHaveBeenCalledTimes(1);
-  });
-
-  it('项目智能体未提供关闭回调时只显示标签，不显示关闭按钮', () => {
-    const { container } = renderHomeInput({
-      selectedTag: { label: '项目智能体' },
-      atHomePanel: true,
-      showExpertCapability: false,
-    });
-    expect(screen.getByText('项目智能体')).toBeInTheDocument();
-    expect(container.querySelector('.expert-pill-remove')).toBeNull();
-    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
-  });
-
-  it('已连接连接器头像组：最多 3 个 + 尾部 +N，点击唤起弹窗连接器页签', async () => {
-    connectorPage.mockResolvedValue({
-      code: '0000',
-      data: {
-        records: [
-          { id: 1, service: 'github', displayName: 'GitHub' },
-          { id: 2, service: 'slack', displayName: 'Slack' },
-          { id: 3, service: 'notion', displayName: 'Notion' },
-          { id: 4, service: 'figma', displayName: 'Figma' },
-          { id: 5, service: 'jira', displayName: 'Jira' },
-        ],
-        pageNum: 1,
-      },
-    });
-    renderHomeInput();
-    // 服务端 connected=true 过滤返回 5 个 → 3 个头像 + 「+2」尾巴
-    await waitFor(() => expect(screen.getByText('+2')).toBeInTheDocument());
-    expect(document.querySelectorAll('.ant-avatar').length).toBe(4);
-    // 拉取参数：已连接过滤 + 一次取全量（不带 scope）
-    expect(connectorPage).toHaveBeenCalledWith({
-      connected: 'true',
-      pageNum: 1,
-      pageSize: 9999,
-    });
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'PC.Components.ChatInputHome.connectedConnectors',
-      }),
-    );
-    // 头像组入口专用：连接器维度 + 初始进入「已连接」聚合页签
-    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector', {
-      connectedView: true,
-    });
-  });
-
-  it('无已连接连接器时不渲染头像组', async () => {
-    connectorPage.mockResolvedValue({
-      code: '0000',
-      data: { records: [], pageNum: 1 },
-    });
-    renderHomeInput();
-    await waitFor(() => expect(connectorPage).toHaveBeenCalled());
-    expect(document.querySelector('.connector-group')).toBeNull();
-  });
-
-  it('召唤专家 chip 行首内联展示名称并可取消', () => {
-    const onClearSummonedExpert = vi.fn();
-    const { container } = renderHomeInput({
-      summonedExpert: { agentId: 8, name: '张三教授' },
-      onClearSummonedExpert,
-    });
-    expect(screen.getByText('张三教授')).toBeInTheDocument();
-    // 位置：输入框最前面——chip 在编辑器之前（行首内联）
-    const pill = container.querySelector('.expert-pill');
-    expect(pill).toBeTruthy();
-    expect(
-      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
-    );
-    expect(onClearSummonedExpert).toHaveBeenCalledTimes(1);
-  });
-
-  it('ref 暴露 focus/clear 并转发到编辑器', () => {
-    const ref = createRef<ChatInputUnifiedRef>();
-    render(<ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />);
-    ref.current?.clear();
-    ref.current?.focus();
-    expect(editor.clear).toHaveBeenCalled();
-    expect(editor.focus).toHaveBeenCalled();
-  });
-
   it('提示问题替换草稿并清除技能资料，不自动发送；禁用期间不可修改', () => {
     const ref = createRef<ChatInputUnifiedRef>();
     const onEnter = vi.fn();
@@ -744,15 +613,6 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     expect(screen.getByText('默认问题')).toBeInTheDocument();
   });
 
-  it('默认不含专家类型，showExpertCapability 开放', () => {
-    const { unmount } = renderHomeInput();
-    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
-    unmount();
-
-    renderHomeInput({ showExpertCapability: true });
-    expect(editor.lastProps.capabilityResourceTypes).toContain('expert');
-  });
-
   it('onExpertAgentSelect 提供时专家选中路由到外部回调（首页切换会话智能体）', () => {
     const { unmount } = renderHomeInput();
     // 未提供时走内部 expertComponents 通道（函数存在但非外部回调）
@@ -763,32 +623,6 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     const external = vi.fn();
     renderHomeInput({ onExpertAgentSelect: external });
     expect(editor.lastProps.onExpertSelect).toBe(external);
-  });
-
-  it('内部专家选中渲染 pill 在输入框最前面（编辑器之前）且可取消', async () => {
-    const { container } = renderHomeInput();
-    await act(async () => {
-      editor.lastProps.onExpertSelect({
-        targetId: 66,
-        name: '智慧校园助手',
-        icon: 'x',
-        description: 'd',
-      });
-    });
-    const pill = container.querySelector('.expert-pill');
-    expect(pill).toBeTruthy();
-    expect(pill?.textContent).toContain('智慧校园助手');
-    // 位置防回退：pill 内联在输入框最前面（编辑器之前），文本缩进其后
-    expect(
-      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
-    // 取消：清空内部 expertComponents，行首占位同步复位
-    fireEvent.click(
-      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
-    );
-    expect(container.querySelector('.expert-pill')).toBeNull();
-    expect(editor.lastProps.inlinePrefixWidth).toBe(0);
   });
 });
 

@@ -1,7 +1,6 @@
 # 前端架构总览
 
-> 适用：nuwax-frontend（React 18 + TypeScript + umi max）。数字为 2026-10-15 实测，用于后续对照；规则以 [工程规范](../engineering-conventions.md) 与 `.dependency-cruiser.cjs` 为准。
-> 演进目标与待办见 [架构优化排查表](./optimization-roadmap.md)。
+> 适用：nuwax-frontend（React 18 + TypeScript + umi max）。数字为 2026-10-15 实测，用于后续对照；规则以 [工程规范](../engineering-conventions.md) 与 `.dependency-cruiser.cjs` 为准。演进目标与待办见 [架构优化排查表](./optimization-roadmap.md)。
 
 ## 1. 一张图
 
@@ -50,14 +49,14 @@
 | `pages/` | 205k / 774 文件 | 路由页面 | 大户：Antv-X6 39k（v1 根目录约 10k + `v3/` 29k）、SystemManagement 38k、AppDev 19k、AppDevPro 17k、EditAgent 13k |
 | `components/` | 114k | `base/` 通用 UI；`business-component/` 业务组件（64k） | AgentIntervention 11k、ChatInputHome 10k、UnifiedChatSession 4k |
 | `features/conversation/` | 12.6k | 会话新线（V2）：`domain` 纯模型 → `runtime` 传输/存储/续流 → `react` 页面消费入口；`presentation-v2` V2 渲染 | 五入口（Chat / ConversationAgent / EditAgent 调试 / 插件 / 技能）复用 UnifiedChatSession |
-| `features/client-shell/` | 3.4k | 桌面壳专属能力：版本徽标、直更、本地文件、IM 通知偏好 | 测试覆盖较好（9 个） |
-| `layouts/` | 20k | 侧栏壳、菜单、历史会话、`MicroAppHost`（qiankun 持久宿主） | |
+| `features/client-shell/` | 3.4k | 桌面壳专属能力：版本徽标、直更、本地文件、IM 通知偏好 | 自动化重点覆盖更新状态、授权文件与宿主生命周期 |
+| `layouts/` | 20k | 侧栏壳、菜单、历史会话、`MicroAppHost`（qiankun 持久宿主） |  |
 | `models/` | 8.8k | umi model 全局状态（`useModel` 315 处，最多：menuModel、tenantConfigInfo、layout、workflowV3） | 会话旧线模型 conversationInfo 2.3k、conversationAgent 1.3k |
 | `modelScopes/` | — | 页面级 model 实例（`ConversationPageModelProvider` + `usePageModel`），让多会话页面互不串状态 | conversationInfo 同时存在全局与页面级两种用法 |
 | `services/` | 16.7k | 接口封装（统一走 umi `request`） | 仍有 16 处直接 `fetch` |
 | `utils/` | 23.6k | 纯工具；`hostBridge/` 宿主能力唯一收口；SSE 封装 | SSE 现有 3 套实现 |
-| `hooks/` / `contexts/` / `wrappers/` | — | 通用 hook；画布/工作流上下文；路由守卫与沉浸式避让 | |
-| `locales/` | 35.7k | 5 种语言词典 | |
+| `hooks/` / `contexts/` / `wrappers/` | — | 通用 hook；画布/工作流上下文；路由守卫与沉浸式避让 |  |
+| `locales/` | 35.7k | 5 种语言词典 |  |
 | `examples/` | 12k | 组件演示页 | 目前注册在生产路由中 |
 
 ## 3. 关键机制速查

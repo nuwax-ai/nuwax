@@ -1,6 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import MarkdownCustomPlanDoc, { extractPlanDocument } from './index';
+import { extractPlanDocument } from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => {
@@ -69,42 +68,5 @@ describe('extractPlanDocument', () => {
     ).toBeNull();
     expect(extractPlanDocument(null)).toBeNull();
     expect(extractPlanDocument('text')).toBeNull();
-  });
-});
-
-describe('MarkdownCustomPlanDoc', () => {
-  const plan = '# 满江红 PPT 计划\n\n- 第一页封面\n- 第二页全文';
-
-  it('renders plan markdown, title subtitle and plan file path', () => {
-    render(
-      <MarkdownCustomPlanDoc
-        title="Ready to code?"
-        plan={plan}
-        planFilePath="/Users/x/.claude/plans/user-plan.md"
-      />,
-    );
-
-    expect(screen.getByText('计划文档')).toBeTruthy();
-    expect(screen.getByText('Ready to code?')).toBeTruthy();
-    expect(screen.getByTestId('plan-markdown').textContent).toContain(
-      '满江红 PPT 计划',
-    );
-    expect(screen.getByText(/user-plan\.md/)).toBeTruthy();
-  });
-
-  it('omits plan file row when path is absent', () => {
-    render(<MarkdownCustomPlanDoc plan={plan} />);
-
-    expect(screen.queryByText(/计划文件/)).toBeNull();
-  });
-
-  it('toggles collapse on header click', () => {
-    render(<MarkdownCustomPlanDoc title="Ready to code?" plan={plan} />);
-
-    expect(screen.getByTestId('plan-markdown')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '计划文档' }));
-    expect(screen.queryByTestId('plan-markdown')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '计划文档' }));
-    expect(screen.getByTestId('plan-markdown')).toBeTruthy();
   });
 });

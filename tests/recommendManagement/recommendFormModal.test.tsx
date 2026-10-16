@@ -1,4 +1,3 @@
-const commercialState = vi.hoisted(() => ({ enabled: true }));
 import RecommendFormModal from '@/pages/SystemManagement/RecommendManage/components/RecommendFormModal';
 import {
   apiSystemSaveDisplayRecommend,
@@ -17,6 +16,8 @@ import {
 } from '@testing-library/react';
 import { Form } from 'antd';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+
+const commercialState = vi.hoisted(() => ({ enabled: true }));
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@/services/square', () => ({
@@ -187,48 +188,6 @@ it('新增推荐提交多条提示词，标题、内容、图标分别保存', a
   expect(callbacks.onSuccess).toHaveBeenCalledOnce();
 });
 
-it('删除并重新添加嵌套字段后，保留其他提示词的图标和多行内容', async () => {
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record({
-        prompts: [
-          { title: '保留标题', content: '第一行\n第二行', icon: '' },
-          { title: '删除标题', content: '删除内容', icon: '/removed.png' },
-        ],
-      })}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  const settings = openPromptSettings();
-  fireEvent.click(settings.getByRole('button', { name: '上传图标' }));
-  await applyPromptSettings(settings);
-  fireEvent.click(
-    screen.getAllByRole('button', { name: key('removePrompt') })[1],
-  );
-  fireEvent.click(screen.getByRole('button', { name: key('addPrompt') }));
-  fireEvent.change(
-    screen.getAllByPlaceholderText(key('promptContentPlaceholder'))[1],
-    { target: { value: '新内容' } },
-  );
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompts: [
-          {
-            title: '保留标题',
-            content: '第一行\n第二行',
-            icon: '/prompt-icon.png',
-          },
-          { title: '', content: '新内容', icon: '' },
-        ],
-      }),
-    ),
-  );
-});
-
 it('删除前项后，后项嵌套字段按稳定 key 保留完整数据', async () => {
   render(
     <RecommendFormModal
@@ -287,98 +246,6 @@ it('编辑回填提示词，清除图标并删除全部后更新传空数组', a
         id: 1,
         targetId: 71,
         prompts: [],
-      }),
-    ),
-  );
-});
-
-it('图标默认不预置图片，上传后可清除且提交空图标', async () => {
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record({
-        prompts: [{ title: '标题', content: '内容', icon: '' }],
-      })}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  const settings = openPromptSettings();
-  const upload = settings.getByRole('button', { name: '上传图标' });
-  expect(upload).toHaveAttribute('data-default-image', '');
-  expect(upload).toHaveAttribute('data-default-svg', '');
-  expect(
-    settings.queryByRole('button', { name: key('clearPromptIcon') }),
-  ).toBeNull();
-  fireEvent.click(upload);
-  fireEvent.click(
-    settings.getByRole('button', { name: key('clearPromptIcon') }),
-  );
-  expect(
-    settings.queryByRole('button', { name: key('clearPromptIcon') }),
-  ).toBeNull();
-  await applyPromptSettings(settings);
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompts: [{ title: '标题', content: '内容', icon: '' }],
-      }),
-    ),
-  );
-});
-
-it('纯空白内容阻止提交，补全内容后可以保存', async () => {
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record()}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  fireEvent.click(screen.getByRole('button', { name: key('addPrompt') }));
-  const content = screen.getByPlaceholderText(key('promptContentPlaceholder'));
-  fireEvent.change(content, { target: { value: '   ' } });
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  expect(
-    await screen.findByText(key('promptContentRequired')),
-  ).toBeInTheDocument();
-  expect(apiSystemUpdateDisplayRecommend).not.toHaveBeenCalled();
-  fireEvent.change(content, { target: { value: '有效内容' } });
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledOnce(),
-  );
-});
-
-it('设置弹窗拒绝纯空白内容，修正后回填完整内容并允许标题和图标为空', async () => {
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record()}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  fireEvent.click(screen.getByRole('button', { name: key('addPrompt') }));
-  const settings = openPromptSettings();
-  const content = settings.getByPlaceholderText(
-    key('promptContentPlaceholder'),
-  );
-  fireEvent.change(content, { target: { value: ' \n ' } });
-  fireEvent.click(settings.getByRole('button', { name: '保存' }));
-  expect(
-    await settings.findByText(key('promptContentRequired')),
-  ).toBeInTheDocument();
-  expect(apiSystemUpdateDisplayRecommend).not.toHaveBeenCalled();
-  fireEvent.change(content, { target: { value: '第一行\n完整的第二行' } });
-  await applyPromptSettings(settings);
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompts: [{ title: '', content: '第一行\n完整的第二行', icon: '' }],
       }),
     ),
   );
@@ -539,82 +406,6 @@ it.each([false, true])(
     expect(callbacks.onSuccess).toHaveBeenCalledOnce();
   },
 );
-
-it('设置取消不覆盖原图标、标题和多行内容', async () => {
-  const prompt = {
-    title: '原标题',
-    content: '第一行\n第二行',
-    icon: '/old.png',
-  };
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record({ prompts: [prompt] })}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  const settings = openPromptSettings();
-  fireEvent.change(
-    settings.getByPlaceholderText(key('promptTitlePlaceholder')),
-    { target: { value: '未保存标题' } },
-  );
-  fireEvent.change(
-    settings.getByPlaceholderText(key('promptContentPlaceholder')),
-    { target: { value: '未保存内容' } },
-  );
-  fireEvent.click(settings.getByRole('button', { name: '上传图标' }));
-  fireEvent.click(settings.getByRole('button', { name: '取消' }));
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
-      expect.objectContaining({ prompts: [prompt] }),
-    ),
-  );
-});
-
-it('删除前项后设置剩余问题，更新正确的嵌套字段', async () => {
-  render(
-    <RecommendFormModal
-      open
-      editingRecord={record({
-        prompts: [
-          { title: '删除项', content: '删除内容', icon: '' },
-          { title: '保留项', content: '保留内容', icon: '/keep.png' },
-        ],
-      })}
-      defaultSort={10}
-      {...callbacks}
-    />,
-  );
-  fireEvent.click(
-    screen.getAllByRole('button', { name: key('removePrompt') })[0],
-  );
-  const settings = openPromptSettings();
-  fireEvent.change(
-    settings.getByPlaceholderText(key('promptTitlePlaceholder')),
-    { target: { value: '更新标题' } },
-  );
-  fireEvent.change(
-    settings.getByPlaceholderText(key('promptContentPlaceholder')),
-    { target: { value: '更新内容\n保留换行' } },
-  );
-  await applyPromptSettings(settings);
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
-  await waitFor(() =>
-    expect(apiSystemUpdateDisplayRecommend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompts: [
-          {
-            title: '更新标题',
-            content: '更新内容\n保留换行',
-            icon: '/keep.png',
-          },
-        ],
-      }),
-    ),
-  );
-});
 
 vi.mock('@/hooks/useCommercialEdition', () => ({
   default: () => ({

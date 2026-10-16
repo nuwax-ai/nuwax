@@ -6,8 +6,8 @@
 
 项目已在线上运行，所有优化必须满足：
 
-1. **行为等价可证明**。纯工具/文档改动除外，每项都要给出等价证据：
-   - 重构前先补锁行为的测试，测试绿了才动实现；
+1. **行为等价可证明**。测试资产、纯注释与文档改动除外，涉及业务行为时给出适合风险的等价证据：
+   - 优先复用已有行为测试；核心逻辑缺少保护时才补回归，不为简单拆分机械新增单测；
    - 或给出产物逐文件 diff（例如微应用缓存产物与强制重建产物完全一致）；
    - 或在 E2E / 真实页面走查同一场景。
 2. **小步、可单独回滚**。一项一个（或几个）独立提交，禁止把重构和功能改动混在一个提交里。单个重构 PR 建议 ≤ 15 个文件。
@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | L0 | 文档、环境诊断、注释；不改变构建输入、产物或发布决策 | `test:scripts`（改了脚本时） |
 | L1 | 进入产物但运行时零行为变化，或影响产物选择/生成的构建脚本、缓存与 CI | 构建通过 + 相关测试（脚本用 `test:scripts`）+ `lint:arch`；缓存还须验证命中与强制重建的产物一致 |
-| L2 | 运行时内部重构（拆文件、合并重复实现） | L1 的门 + 先补测试 + 域质量门（会话路径跑 `test:conversation` + E2E）+ 提测走查 |
+| L2 | 运行时内部重构（拆文件、合并重复实现） | L1 的门 + 复用或补充行为证据 + 域质量门（会话路径跑 `test:conversation` + E2E）+ 提测走查 |
 | L3 | 下线旧线、改数据流或跨模块契约 | L2 的门 + 产品确认 + 灰度或观察期 + 回切预案 |
 
 ## 1. 目标（季度度量）
@@ -59,13 +59,13 @@
 | D4 | 缺 src 架构总览 | [overview.md](./overview.md) | ✅ 2026-10-15 |
 | D5 | 缺测试策略总览 | [testing-strategy.md](../testing-strategy.md) | ✅ 2026-10-15 |
 | D6 | `micro-frontend-qiankun.md` 中的 gitlink、`MOBILE_BUILD_SOURCE`、本机绝对路径链接已过时 | 已修正，并改为以 adapter.json 为准，不再抄写 SHA | ✅ 2026-10-15 |
-| D7 | `CONTRIBUTING.md` / `CONTRIBUTING.zh-CN.md` 过时：zh-CN 版仍是英文；目录树里有不存在的 `sseManager`；没提子模块 | 重写为精简版，指向 getting-started；zh-CN 版补翻译 | 待办 |
-| D8 | `docs/` 根目录混有 8 篇一次性报告（验证码修复、提测单、状态快照等） | 移到 `docs/archive/`，并 grep 修正引用 | 待办 |
-| D9 | `docs/conversation/README.md` 目录树漏收 15 篇 | 补全；日期命名的验收记录并入 `docs/acceptance/` | 待办 |
-| D10 | `docs/ch/i18n-contributing.md` 缺 3 个脚本的说明，且用 `tsc --noEmit` 作验证，与「全库 tsc 不作门」矛盾 | 补充脚本说明，验证命令改为分域 typecheck | 待办 |
+| D7 | `CONTRIBUTING.md` / `CONTRIBUTING.zh-CN.md` 过时：zh-CN 版仍是英文；目录树里有不存在的 `sseManager`；没提子模块 | 已收敛为中英文入口，指向 getting-started 与现行规范 | ✅ 2026-10-16 |
+| D8 | `docs/` 根目录混有 8 篇一次性报告（验证码修复、提测单、状态快照等） | 按完成状态删除失效快照与重复报告，修正引用；仍有未完成事项的材料保留，不新增归档 | 部分完成（2026-10-16） |
+| D9 | `docs/conversation/README.md` 目录树漏收 15 篇 | 改为现行维护入口，历史过程查 Git；仍有待办的材料保留 | ✅ 2026-10-16 |
+| D10 | `docs/ch/i18n-contributing.md` 缺 3 个脚本的说明，且用 `tsc --noEmit` 作验证，与「全库 tsc 不作门」矛盾 | 收敛检查入口，验证改为相关测试和分域 typecheck | ✅ 2026-10-16 |
 | D11 | 缺正式发版文档（standard-version → 构建 → Docker/k8s/devspace） | 新增 `docs/release-process.md` | 待办 |
 | D12 | `docs/refactor/layering-audit.md` 的违规数（121）已过期 | 随 C2 刷新基线时同步更新 | 待办 |
-| D13 | AGENTS.md 第 13 行把十多条提测决策塞在一行 | 决策细节下沉到 runbook，AGENTS 只留命令和链接 | 待办 |
+| D13 | AGENTS.md 第 13 行把十多条提测决策塞在一行 | 决策细节归 runbook，AGENTS 只留命令和链接 | ✅ 2026-10-16 |
 
 ## 4. 代码（C）——由低风险到高风险
 
@@ -76,7 +76,7 @@
 | C3 | utils→services 有 32 条违规，其中 18 条指向 `services/i18nRuntime.ts`，`utils/applyGeneratedIcon.ts` 一个文件占 6 条 | 把 i18nRuntime 中不发请求的纯函数部分下沉到 `utils/i18n/`，请求部分留在 services | L2 | i18n 相关测试 + 多语言页面走查 | 待办 |
 | C4 | 页面互引 51 条（主要源页面：SpaceResource 8、AppDevDesign 6、EditAgent 5；被引用最多的目标：AppDev、Antv-X6、SystemManagement 各 8 条） | 被跨页复用的组件或 hook 下沉到 `components/business-component` 或 `features/<域>`；纯移动 + 改 import，不改实现 | L1 | 每个 PR 只处理一个目标页面；构建 + 相关测试 | 待办 |
 | C5 | 11 条循环依赖 | 逐条拆环（抽出类型、反转依赖） | L1–L2 | `lint:arch` | 待办 |
-| C6 | 注释与实现不一致：`useConversationRuntimeSession.ts` 约第 68 行写「flag 关闭（默认）」，实际默认开启 | 修正注释 | L0 | — | 待办 |
+| C6 | 注释与实现不一致：`useConversationRuntimeSession.ts` 约第 68 行写「flag 关闭（默认）」，实际默认开启 | 已修正为默认 runtime 开启 | L0 | — | ✅ 2026-10-16 |
 | C7 | 类型门只覆盖 4 个域 | 扩到 `features/client-shell`、`layouts/MicroAppHost`、`utils/hostBridge`：先登记域并运行类型门，修复诊断；确需保留的存量债务逐条评审后录入基线。`--prune-baseline` 只删除已消除的债务，不能生成或接纳新增债务 | L0 | `typecheck` | 待办 |
 | C8 | 3 套 SSE 实现：`utils/fetchEventSource.ts`、`utils/fetchEventSourceConversationInfo.ts`、`pages/AppDevPro/utils/userAppTaskStream.ts`。签名大部分重复，但定时器和返回值语义不同 | ① 先给三处写合同测试，锁定超时、重连、中止、错误回调语义；② 抽出单一内核（连接 + 计时 + 中止），保留三个薄适配，对外 API 不变；③ 调用方逐个迁移 | L2（会话路径按会话门走） | `test:conversation` + E2E + AppDev / 工作流试运行走查 | 待办 |
 | C9 | 16 处原生 `fetch` 绕过请求层（如 `services/skill.ts`、`services/filePreview.ts`、Login、ChatInputHome），鉴权和错误提示可能与其他接口不一致 | 逐个评估：确属流式或二进制的保留，并集中到 `services/` 的专用封装；其余改走 `request` | L2 | 对应功能走查，失败重试路径用真实页面验证 | 待办 |

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "repo",
+  "appName": "nuwax-repo-web",
+  "entry": "/micro-apps/repo/index.html",
+  "assetBase": "/micro-apps/repo/",
+  "businessBase": "/repo",
+  "source": {
+    "branch": "main",
+    "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
+    "commit": "6d232864fe045d25dda39eb50bb9206739815e5e"
+  },
+  "projectDir": ".",
+  "workspaceMode": "project-workspace",
+  "buildEnvironment": {},
+  "typecheck": {
+    "status": "matched-upstream-baseline",
+    "upstreamDiagnostics": 72,
+    "adapterDiagnostics": 72,
+    "newDiagnostics": 0,
+    "baselineSha256": "17fe10dde7fab16f72ec7e80d50621d88e216878fc1f8dbc2be3934609f5ca70",
+    "command": [
+      "exec",
+      "tsc",
+      "-b",
+      "--pretty",
+      "false",
+      "--force"
+    ]
+  },
+  "adapter": {
+    "sha256": "f2bce3bb205389461069fd909335c35572d09ce6e2f1f8cbd878ae163e056116",
+    "files": [
+      "adapter.json",
+      "adapter.patch",
+      "overlay/scope-styles.d.mts",
+      "overlay/scope-styles.mjs",
+      "overlay/src/host.css",
+      "overlay/src/HostRouter.tsx",
+      "overlay/src/hostRuntime.ts",
+      "overlay/src/lib/treeBroadcast.ts",
+      "overlay/src/main.tsx",
+      "overlay/src/qiankun-setup.ts",
+      "overlay/vite.config.ts"
+    ]
+  },
+  "toolchain": {
+    "node": "v24.18.0",
+    "pnpm": "10.27.0",
+    "qiankun": "2.10.17-beta.0",
+    "@tiny-codes/vite-plugin-qiankun": "2.4.0"
+  },
+  "builtAt": "2026-10-15T11:48:47.154Z",
+  "cache": {
+    "key": "d63a96d9a62d98712b6101560493b84e43b76da8e2b757f96e1ed9fa7500d474",
+    "hit": true,
+    "reusedAt": "2026-10-16T08:12:25.340Z"
+  }
+}

@@ -33,6 +33,11 @@ import {
   hasOpenThinkBlock,
 } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
+import {
+  AssistantRoleEnum,
+  MessageModeEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { OpenCloseEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -64,9 +69,9 @@ const storeAsDispatch = (
   }) as never;
 
 /**
- * 新线（runtime session）的 React 绑定（双线方案 R4 完整片）。
+ * runtime session 的 React 绑定。
  *
- * flag 关闭（默认）时不创建 session、返回 null —— 入口回落旧线，零开销零影响。
+ * 默认开启 runtime；显式关闭 flag 时不创建 session、返回 null，入口回落旧线。
  * flag 开启时创建 session 并产出「与旧线 chatSessionProps 会话面同形状」的 props：
  * 入口以对象展开覆盖旧线字段（flag off 时无覆盖，原路径原值）。
  *
@@ -273,6 +278,27 @@ export function useConversationRuntimeSession(
       setConversationInfo((prev) =>
         mergeConversationInfoTaskStatus(prev, data),
       );
+      const messages = data.messageList ?? [];
+      const lastMessage = messages[messages.length - 1];
+      if (
+        lastMessage?.type === MessageModeEnum.QUESTION &&
+        lastMessage.ext?.length
+      ) {
+        setChatSuggestList(lastMessage.ext.map((item) => item.content));
+      } else if (
+        data.agent?.openSuggest === OpenCloseEnum.Open &&
+        data.taskStatus === TaskStatus.COMPLETE &&
+        lastMessage?.role === AssistantRoleEnum.ASSISTANT &&
+        lastMessage.type === MessageModeEnum.CHAT &&
+        messages.some((message) => message.role === AssistantRoleEnum.USER)
+      ) {
+        // 详情未保存建议时，重新进入已完成的会话需补拉一次。
+        // 仅在显式装载时恢复，后台历史刷新不重复生成。
+        session.runtime.effects.dispatch({
+          type: 'suggest.fetch',
+          params: { conversationId } as never,
+        });
+      }
     }
     // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
     setIsMoreMessage((data?.messageList?.length ?? 0) > 0);

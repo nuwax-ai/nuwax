@@ -17,7 +17,7 @@
 - [x] 冻结消息 store 的异步生命周期诊断 3 项通过；消息上游前端 1438 项通过。
 - [x] 完整生产构建通过，资料库类型基线 72/72、新增 0，消息类型构建通过，public/dist manifest 字节一致。
 - [x] 初版修复提交后通过壳 buildFrontend 入口重建，源码 SHA 与 dist 版本印记一致，并记录产物摘要。
-- [x] 外层 CI 复核发现整包 revert 误撤既有 host/type 门，纯契约已恢复；完整 source gate 修复与验收见 [恢复计划](20261007-frontend-source-gates-plan.md)。
+- [x] 外层 CI 复核发现整包 revert 误撤既有 host/type 门，纯契约已恢复；完整 source gate 修复与验收见 [恢复计划](../docs/typecheck-domains.md)。
 - [ ] source gate 最终提交后，由外层交付流程重新构建 dist 并更新最终双 pin。
 
 初次构建失败与最终构建日志保存在 `/private/tmp/nuwax-micro-frozen-build-20261007*.log`；旧消息补丁保存在 `/private/tmp/nuwax-message-adapter-before-20261007.patch`。
