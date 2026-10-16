@@ -6,9 +6,10 @@ const { execSync } = require('child_process');
 const args = process.argv.slice(2);
 const source = args.includes('gitlab') ? 'gitlab' : 'github';
 // const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
+// 老用户 v1.1.17 专用修复，仅供本分支打包，不合入正式版本。
 const BRANCH =
   args.find((a) => a !== 'gitlab' && a !== 'github') ||
-  'fix/nuwa-zhuoda-2026.10-thinking-default-open';
+  'fix/nuwa-zhuoda-2026.10-legacy-customer-thinking-default-open';
 const TARGET_DIR = 'unpackage/dist/build/web';
 
 let REPO_URL = '';
