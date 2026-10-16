@@ -42,7 +42,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     thinkingFinished,
     collapseProcessGroups = false,
   }: MarkdownRendererProps) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
     const hasThinking = !!thinking && thinking.trim() !== '';
     // 正文与思考流可能交错到达，不能以已有正文作为思考结束依据。
     // 对旧消息（未携带 thinkingFinished）保留原有终态兼容逻辑。
