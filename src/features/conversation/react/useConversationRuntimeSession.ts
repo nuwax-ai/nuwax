@@ -33,6 +33,11 @@ import {
   hasOpenThinkBlock,
 } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
+import {
+  AssistantRoleEnum,
+  MessageModeEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { OpenCloseEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -273,6 +278,27 @@ export function useConversationRuntimeSession(
       setConversationInfo((prev) =>
         mergeConversationInfoTaskStatus(prev, data),
       );
+      const messages = data.messageList ?? [];
+      const lastMessage = messages[messages.length - 1];
+      if (
+        lastMessage?.type === MessageModeEnum.QUESTION &&
+        lastMessage.ext?.length
+      ) {
+        setChatSuggestList(lastMessage.ext.map((item) => item.content));
+      } else if (
+        data.agent?.openSuggest === OpenCloseEnum.Open &&
+        data.taskStatus === TaskStatus.COMPLETE &&
+        lastMessage?.role === AssistantRoleEnum.ASSISTANT &&
+        lastMessage.type === MessageModeEnum.CHAT &&
+        messages.some((message) => message.role === AssistantRoleEnum.USER)
+      ) {
+        // 详情未保存建议时，重新进入已完成的会话需补拉一次。
+        // 仅在显式装载时恢复，后台历史刷新不重复生成。
+        session.runtime.effects.dispatch({
+          type: 'suggest.fetch',
+          params: { conversationId } as never,
+        });
+      }
     }
     // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
     setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
