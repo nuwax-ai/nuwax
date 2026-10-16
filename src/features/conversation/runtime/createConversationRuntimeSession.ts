@@ -12,7 +12,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type {
   AttachmentFile,
   ConversationChatParams,
@@ -405,8 +405,11 @@ export function createConversationRuntimeSession(
             currentAgent?.enableVersionControl === DefaultSelectedEnum.Yes,
         });
       }
-      // 建议：会话开启时拉取
-      if (context?.isSuggestEnabled) {
+      // live 使用发送时的开关；sub 恢复没有发送上下文，读取已加载的智能体配置。
+      const isSuggestEnabled =
+        context?.isSuggestEnabled ??
+        currentAgent?.openSuggest === OpenCloseEnum.Open;
+      if (isSuggestEnabled) {
         runtime.effects.dispatch({
           type: 'suggest.fetch',
           params: { conversationId } as never,
