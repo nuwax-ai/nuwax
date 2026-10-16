@@ -334,13 +334,22 @@ describe('ExpertListView·分页', () => {
         pageOf([agent({ id: 12, targetId: 102, name: '第二页专家' })], 2, 2),
       );
     const { container } = renderView({ type: 'system' });
-    await screen.findByText('第一页专家');
-
     const scroller = container.firstElementChild as HTMLElement;
+    // 首次响应前设置布局，避免 jsdom 默认 0 尺寸误触发首屏自动补拉。
     Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
     Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    await screen.findByText('第一页专家');
+    expect(apiPublishedAgentList).toHaveBeenCalledTimes(1);
+
     fireEvent.scroll(scroller);
     await screen.findByText('第二页专家');
+    expect(apiPublishedAgentList).toHaveBeenCalledTimes(2);
+    expect(
+      apiPublishedAgentList.mock.calls.map(([params]) => params.page),
+    ).toEqual([1, 2]);
+
+    // 最后一页后继续触底，也不能再发出第三次请求。
+    fireEvent.scroll(scroller);
     expect(apiPublishedAgentList).toHaveBeenCalledTimes(2);
   });
 });
