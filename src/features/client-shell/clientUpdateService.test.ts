@@ -48,6 +48,46 @@ function makeState(
 }
 
 describe('clientUpdateService', () => {
+  it('一键更新请求仍在进行时，每两秒拉取下载/安装状态', async () => {
+    vi.useFakeTimers();
+    try {
+      getStateMock.mockResolvedValue(makeState({ installAfterDownload: true }));
+      start();
+      await vi.advanceTimersByTimeAsync(0);
+      let finish!: (value: { success: boolean }) => void;
+      downloadMock.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      );
+      const pending = download();
+      getStateMock.mockResolvedValue(
+        makeState({ status: 'installing', installAfterDownload: true }),
+      );
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(getState()?.status).toBe('installing');
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(getStateMock).toHaveBeenCalledTimes(3);
+      finish({ success: true });
+      await pending;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('桥在退出或网络中断时拒绝，不泄漏未处理的 Promise', async () => {
+    getStateMock.mockResolvedValue(makeState({ installAfterDownload: true }));
+    start();
+    await vi.waitFor(() => expect(getState()?.status).toBe('available'));
+    getStateMock.mockRejectedValue(new Error('bridge closed'));
+    downloadMock.mockRejectedValue(new Error('download failed'));
+    await expect(download()).resolves.toBe(false);
+    expect(getState()).toMatchObject({
+      status: 'error',
+      error: 'download failed',
+    });
+  });
+
   beforeEach(() => {
     __resetForTest();
     getStateMock.mockReset();

@@ -587,7 +587,7 @@ export const updater = {
       /* 忽略 */
     }
   },
-  /** 下载更新；返回宿主原始回包（success/error），宿主无能力/异常 → null。 */
+  /** 下载更新；宿主 installAfterDownload 为 true 时继续安装并重启。 */
   async download(): Promise<{ success: boolean; error?: string } | null> {
     try {
       return (await getBridge()?.updater?.download?.()) ?? null;
@@ -595,7 +595,7 @@ export const updater = {
       return null;
     }
   },
-  /** 重启并安装（仅 downloaded 状态有意义）；返回宿主原始回包（success/error），宿主无能力/异常 → null。 */
+  /** 重启并安装；一键策略会按需补齐下载，旧宿主须先下载。 */
   async install(): Promise<{ success: boolean; error?: string } | null> {
     try {
       return (await getBridge()?.updater?.install?.()) ?? null;
