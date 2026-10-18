@@ -168,10 +168,10 @@ describe('ClientVersionBadge', () => {
     expect(await screen.findByText(/42%/)).toBeInTheDocument();
     const inner = document.querySelector('.ant-progress-inner');
     expect(inner).not.toBeNull();
-    expect(inner.getAttribute('style')).toContain('width: 16px');
+    expect(inner?.getAttribute('style')).toContain('width: 16px');
     const ring = document.querySelector('svg.ant-progress-circle');
     expect(ring).not.toBeNull();
-    const strokeWidths = Array.from(ring.querySelectorAll('circle')).map((c) =>
+    const strokeWidths = Array.from(ring!.querySelectorAll('circle')).map((c) =>
       c.getAttribute('stroke-width'),
     );
     expect(strokeWidths).toContain('18');
