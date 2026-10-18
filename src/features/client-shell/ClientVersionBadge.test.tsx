@@ -2,7 +2,7 @@
  * 单元测试：ClientVersionBadge —— 各状态渲染、日志入口与明确操作。
  * mock clientUpdateService（状态源）与 i18n；hover 更新日志卡片走 available 分支抽查。
  */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ClientVersionBadge from './ClientVersionBadge';
@@ -47,30 +47,39 @@ afterEach(() => {
 });
 
 describe('ClientVersionBadge', () => {
-  it.each(['downloading', 'installing'] as const)(
-    '一键更新 %s 阶段自动显示进度对话框，不要求第二次点击',
-    async (status) => {
-      setState({
-        status,
-        installAfterDownload: true,
-        version: '1.0.7',
-        progress:
-          status === 'downloading'
-            ? { percent: 42, bytesPerSecond: 1, transferred: 42, total: 100 }
-            : undefined,
-      });
-      render(<ClientVersionBadge />);
-      expect(await screen.findByRole('dialog')).toBeInTheDocument();
-      if (status === 'downloading')
-        expect(screen.getByRole('dialog').textContent).toContain('42%');
-      else
-        expect(screen.getByRole('dialog').textContent).toContain(
-          'PC.Components.ClientUpdate.installingHint',
-        );
-      expect(serviceMock.download).not.toHaveBeenCalled();
-      expect(serviceMock.install).not.toHaveBeenCalled();
-    },
-  );
+  it('一键更新下载阶段只显示局部进度，不阻挡页面', async () => {
+    setState({
+      status: 'downloading',
+      installAfterDownload: true,
+      version: '1.0.7',
+      progress: { percent: 42, bytesPerSecond: 1, transferred: 42, total: 100 },
+    });
+    render(<ClientVersionBadge />);
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.downloading',
+      }),
+    ).toBeInTheDocument();
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(serviceMock.download).not.toHaveBeenCalled();
+    expect(serviceMock.install).not.toHaveBeenCalled();
+  });
+
+  it('安装先显示局部状态，持续 1 秒后自动展示进度弹窗', async () => {
+    setState({
+      status: 'installing',
+      installAfterDownload: true,
+      version: '1.0.7',
+    });
+    render(<ClientVersionBadge />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent('PC.Components.ClientUpdate.installingHint');
+    expect(serviceMock.download).not.toHaveBeenCalled();
+    expect(serviceMock.install).not.toHaveBeenCalled();
+  });
 
   it('一键更新从日志内发起，单次点击只调用宿主下载编排', async () => {
     setState({
@@ -191,13 +200,18 @@ describe('ClientVersionBadge', () => {
       }),
     );
     expect(serviceMock.install).toHaveBeenCalled();
-    // 全屏重启遮罩即刻出现（清理+退出空窗期的反馈）
-    expect(document.querySelector('.ant-spin')).toBeInTheDocument();
+    // 徽标立即反馈，进度弹窗延后；分步宿主无需先上报 installing。
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      screen.getByText('PC.Components.ClientUpdate.installing'),
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.installing',
+      }),
     ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent('PC.Components.ClientUpdate.installing');
     // 成功：进程即将退出，遮罩保留到窗口关闭（不回退）
-    finishInstall({ success: true });
+    await act(async () => finishInstall({ success: true }));
     await vi.waitFor(() => {
       expect(document.querySelector('.ant-spin')).toBeInTheDocument();
     });

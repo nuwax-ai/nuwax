@@ -93,7 +93,9 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     expect(h.install).toHaveBeenCalledTimes(1);
     expect(h.download).not.toHaveBeenCalled();
     await act(async () => finish({ success: true }));
-    expect(screen.getByRole('dialog')).toHaveTextContent(key('installing'));
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent(key('installing'));
   });
 
   it('下载到安装状态由宿主推进，显示进度并且不追加第二次安装', async () => {
@@ -123,15 +125,22 @@ describe('更新就绪日志入口与主进程一键策略', () => {
       });
       h.listeners.forEach((listener) => listener(h.state));
     });
-    expect(screen.getByRole('dialog')).toHaveTextContent('42%');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: key('downloading') }),
+    ).toBeInTheDocument();
     act(() => {
       state({ status: 'installing', installAfterDownload: true });
       h.listeners.forEach((listener) => listener(h.state));
     });
-    expect(screen.getByRole('dialog')).toHaveTextContent(key('installingHint'));
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent(key('installingHint'));
     await act(async () => finish(true));
     expect(h.install).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toHaveTextContent(key('installingHint'));
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent(key('installingHint'));
   });
 
   it('一键任务失败后可以从日志重试，不触发安装', async () => {
@@ -174,7 +183,9 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     await userEvent.click(
       within(card).getByRole('button', { name: key('install') }),
     );
-    expect(screen.getByRole('dialog')).toHaveTextContent(key('installingHint'));
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
+    ).toHaveTextContent(key('installingHint'));
     act(() => {
       state({
         status: 'error',
@@ -192,6 +203,26 @@ describe('更新就绪日志入口与主进程一键策略', () => {
       }),
     );
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('安装状态在延迟内结束时不残留进度弹窗', () => {
+    vi.useFakeTimers();
+    try {
+      state({ status: 'installing', installAfterDownload: true });
+      render(<ClientVersionBadge />);
+      act(() => vi.advanceTimersByTime(500));
+      act(() => {
+        state({ status: 'error', installAfterDownload: true, error: 'failed' });
+        h.listeners.forEach((listener) => listener(h.state));
+      });
+      act(() => vi.advanceTimersByTime(1_000));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: key('errorTitle') }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('键盘打开日志不会发起下载或安装', async () => {

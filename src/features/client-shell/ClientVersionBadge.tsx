@@ -2,7 +2,7 @@
  * 客户端版本徽标（logo 旁，仅桌面宿主）
  * @description 有新版本时显示「新版本就绪」；点击/悬停打开更新日志，由日志内按钮发起操作。
  * Windows 一键宿主从下载入口继续安装，renderer 只消费进度，不追加安装调用；
- * 旧宿主保留先下载、再安装的能力边界。下载中展示进度，安装中展示全屏遮罩：
+ * 旧宿主保留先下载、再安装的能力边界。下载中展示局部进度，安装持续 1 秒后展示全屏遮罩：
  * 宿主侧退出前清理链可达 10s+ 才 quitAndInstall，
  * 遮罩保留到进程退出；宿主拒绝/异常（dev 包/MSI）浮出错误。
  * 浏览器 / 旧宿主（无 updater 桥）整体不渲染。
@@ -24,6 +24,7 @@ import ReleaseNotesContent from './ReleaseNotesContent';
 const SIM_CAP_PERCENT = 90;
 const SIM_DURATION_MS = 45_000;
 const SIM_TICK_MS = 500;
+const INSTALL_DIALOG_DELAY_MS = 1_000;
 
 function useSimulatedPercent(active: boolean): number {
   const [percent, setPercent] = useState(0);
@@ -56,6 +57,22 @@ const ClientVersionBadge: React.FC = () => {
   );
   const mounted = useRef(true);
   const actionInFlight = useRef(false);
+  const [showInstallProgress, setShowInstallProgress] = useState(false);
+  const installationActive =
+    installPhase === 'running' || state?.status === 'installing';
+
+  useEffect(() => {
+    if (!installationActive) {
+      setShowInstallProgress(false);
+      return;
+    }
+    // 下载仍可继续使用页面；安装先用局部状态反馈，避免快速退出前闪现遮罩。
+    const timer = setTimeout(
+      () => setShowInstallProgress(true),
+      INSTALL_DIALOG_DELAY_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [installationActive]);
 
   useEffect(() => {
     mounted.current = true;
@@ -134,8 +151,7 @@ const ClientVersionBadge: React.FC = () => {
     setBusy(true);
     setInstallError(undefined);
     setPopoverOpen(false);
-    // 全屏遮罩即刻接管反馈：宿主侧要先跑退出前清理链（可达 10s+）才 quitAndInstall，
-    // 期间仅有 hover 卡内按钮 spinner，鼠标移开后整个界面无任何可见状态
+    // 徽标立即反馈安装状态；清理耗时较长时再显示遮罩。
     setInstallPhase('running');
     let handedOff = false;
     try {
@@ -186,8 +202,7 @@ const ClientVersionBadge: React.FC = () => {
 
   const isError = status === 'error';
   const isDownloading = status === 'downloading';
-  const isInstalling = status === 'installing';
-  const autoFlowRunning = oneClickUpdate && (isDownloading || isInstalling);
+  const isInstalling = installationActive;
   const downloadLabel = dict(
     oneClickUpdate
       ? 'PC.Components.ClientUpdate.install'
@@ -280,7 +295,7 @@ const ClientVersionBadge: React.FC = () => {
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
         trigger={['hover', 'click']}
-        mouseEnterDelay={0.3}
+        mouseEnterDelay={0.8}
         arrow={false}
         destroyOnHidden
         title={cardTitle}
@@ -349,7 +364,10 @@ const ClientVersionBadge: React.FC = () => {
       </Popover>
       {/* 重启更新遮罩：清理+退出空窗期的全局反馈；成功后保留到进程退出 */}
       <Modal
-        open={installPhase !== 'idle' || autoFlowRunning}
+        open={
+          installPhase === 'failed' ||
+          (installationActive && showInstallProgress)
+        }
         centered
         width={420}
         footer={null}
