@@ -66,19 +66,28 @@ describe('ClientVersionBadge', () => {
     expect(serviceMock.install).not.toHaveBeenCalled();
   });
 
-  it('安装先显示局部状态，持续 1 秒后自动展示进度弹窗', async () => {
-    setState({
-      status: 'installing',
-      installAfterDownload: true,
-      version: '1.0.7',
-    });
-    render(<ClientVersionBadge />);
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent('PC.Components.ClientUpdate.installingHint');
-    expect(serviceMock.download).not.toHaveBeenCalled();
-    expect(serviceMock.install).not.toHaveBeenCalled();
+  it('安装持续期间只显示局部忙碌状态，始终不展示进度弹窗', () => {
+    vi.useFakeTimers();
+    try {
+      setState({
+        status: 'installing',
+        installAfterDownload: true,
+        version: '1.0.7',
+      });
+      render(<ClientVersionBadge />);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(
+        screen.getByRole('button', {
+          name: 'PC.Components.ClientUpdate.installing',
+        }),
+      ).toBeInTheDocument();
+      expect(serviceMock.download).not.toHaveBeenCalled();
+      expect(serviceMock.install).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('一键更新从日志内发起，单次点击只调用宿主下载编排', async () => {
@@ -118,7 +127,7 @@ describe('ClientVersionBadge', () => {
     expect(serviceMock.download).not.toHaveBeenCalled();
   });
 
-  it('downloaded → 就绪胶囊打开日志，明确安装后显示遮罩', async () => {
+  it('downloaded → 明确安装后保持局部状态，不弹进度框', async () => {
     setState({ status: 'downloaded', version: '1.0.7' });
     render(<ClientVersionBadge />);
     const badge = screen.getByRole('button', {
@@ -141,24 +150,26 @@ describe('ClientVersionBadge', () => {
       }),
     );
     expect(serviceMock.install).toHaveBeenCalled();
-    // 徽标立即反馈，进度弹窗延后；分步宿主无需先上报 installing。
+    // 分步宿主无需先上报 installing，徽标也立即反馈任务已交出。
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(
       screen.getByRole('button', {
         name: 'PC.Components.ClientUpdate.installing',
       }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent('PC.Components.ClientUpdate.installing');
-    // 成功：进程即将退出，遮罩保留到窗口关闭（不回退）
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // 成功后保留局部忙碌状态到进程退出。
     await act(async () => finishInstall({ success: true }));
-    await vi.waitFor(() => {
-      expect(document.querySelector('.ant-spin')).toBeInTheDocument();
-    });
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.installing',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('downloaded → 宿主拒绝安装（dev/MSI）→ 收遮罩浮出错误，可关闭', async () => {
+  it('downloaded → 宿主拒绝安装（dev/MSI）→ 提示错误，可关闭', async () => {
     setState({ status: 'downloaded', version: '1.0.7' });
     render(<ClientVersionBadge />);
     const badge = screen.getByRole('button', {
@@ -174,7 +185,7 @@ describe('ClientVersionBadge', () => {
         name: 'PC.Components.ClientUpdate.install',
       }),
     );
-    // 遮罩切换为失败态：错误标题 + 宿主回传的错误详情
+    // 失败提示保留宿主回传的错误详情。
     expect(
       await screen.findByText('PC.Components.ClientUpdate.installFailed'),
     ).toBeInTheDocument();
