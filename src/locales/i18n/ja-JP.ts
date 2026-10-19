@@ -79,6 +79,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Common.Global.nameEmpty": "名前を空にすることはできません",
   "PC.Common.Global.no": "いいえ",
   "PC.Common.Global.noData": "データなし",
+  "PC.Common.Global.ok": "確定",
   "PC.Common.Global.operation": "操作",
   "PC.Common.Global.operationFailed": "操作に失敗しました。後でもう一度お試しください",
   "PC.Common.Global.other": "その他",
