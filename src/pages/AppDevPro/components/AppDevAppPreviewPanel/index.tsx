@@ -423,6 +423,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 启动失败但应用已经 ready 且 ready 为 true 时，跳过失败流，直接预览。
    * 已经在调 start 时不再用就绪失败盖住启动过程。
    * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
+   * 容器已 running 且文件有效时，进页会直接 start，这里不再展示未部署。
    * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
    */
   const conversationInProgress =
@@ -438,7 +439,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       readinessKind === 'stopped' ||
       (readinessKind === 'notDeployed' &&
         hasValidProjectFiles === true &&
-        !conversationInProgress) ||
+        !conversationInProgress &&
+        readinessContainerStatus !== UserAppContainerStatusEnum.Running) ||
       readinessKind === 'failed' ||
       readinessKind === 'incomplete');
   const readinessTitle = (() => {

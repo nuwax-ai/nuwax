@@ -151,6 +151,7 @@ import { isProjectNameDefined } from './utils/isProjectNameDefined';
 import {
   decideDatabaseContainerAction,
   decideProdSwitchAppAction,
+  isUserAppContainerRunning,
 } from './utils/isUserAppContainerRunning';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
@@ -1577,10 +1578,17 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   dismissPreviewLoadErrorRef.current = previewRuntime.dismissPreviewLoadError;
   const previewLoadErrorRef = useRef(previewRuntime.previewLoadError);
   previewLoadErrorRef.current = previewRuntime.previewLoadError;
+  const devActionAllowedRef = useRef(devActionAllowed);
+  devActionAllowedRef.current = devActionAllowed;
+  const activeTasksRef = useRef(activeTasks);
+  activeTasksRef.current = activeTasks;
 
   /**
    * 开发环境进页 / 打开预览：用就绪状态决定下一步。
-   * ready 直接打开；starting / stopping / stopped / 开发未完成不再额外 start。
+   * ready 直接打开；starting / provisioning / stopping / stopped / 开发未完成不再额外 start。
+   * not_deployed 且容器已 running、根目录已有有效项目文件时直接 start，避免停在未部署提示。
+   * 应用已经在启动，或服务已经起来时，不再因为未部署重复 start。
+   * 容器还没 running，或还没有有效文件时，仍不 start。
    * stopped 由状态变化时的 restart 拉起。没有探测结果时仍走原来的 start。
    * 主页首次创建进入时，调用方传入 ignoreReadiness：条件已满足就直接 start，
    * 不看 readiness，避免探测中途变成 failed 等状态把启动拦住。刷新仍走就绪判断。
@@ -1619,12 +1627,30 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         readiness?.status,
         readiness?.ready,
       );
+      // 未部署只在容器已 running、已有有效项目文件，且当前没有启动中的任务时才 start。
+      const phase = previewPhaseRef.current;
+      const appAlreadyStartingOrStarted =
+        previewRunningRef.current ||
+        previewRestartingRef.current ||
+        phase === 'starting' ||
+        phase === 'building' ||
+        !devActionAllowedRef.current ||
+        activeTasksRef.current.some(
+          (item) =>
+            item.taskType === UserAppTaskTypeEnum.DevStart ||
+            item.taskType === UserAppTaskTypeEnum.DevRestart,
+        );
+      const canStartUndeployed =
+        readinessKind === 'notDeployed' &&
+        isUserAppContainerRunning(readiness) &&
+        hasValidWorkspaceProjectFiles(fileTreeDataRef.current) &&
+        !appAlreadyStartingOrStarted;
       if (
         readinessKind === 'starting' ||
         readinessKind === 'provisioning' ||
         readinessKind === 'stopping' ||
         readinessKind === 'stopped' ||
-        readinessKind === 'notDeployed' ||
+        (readinessKind === 'notDeployed' && !canStartUndeployed) ||
         readinessKind === 'failed' ||
         readinessKind === 'incomplete'
       ) {
@@ -2499,7 +2525,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：刷新进入时允许则先看 dev 就绪结果，可访问直接 iframe，否则 start；
+   * 开发环境须等 tasks/active 首包：刷新进入时允许则先看 dev 就绪结果，可访问直接 iframe；
+   * 容器已 running 且应用未部署、有效文件已齐时直接 start，不再停在未部署提示。其它未就绪状态不额外 start；
    * 主页首次创建进入时，条件齐了直接 start，不看中途 readiness。
    * 不允许（服务已在跑）且已有预览域名时，挂起 dev 就绪探测，可访问后再 iframe，不再 start / stream。
    * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
