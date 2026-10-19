@@ -382,7 +382,21 @@ export function useHomeSectionData(options: {
         }
       }
     }
-    setLocalList((previous) => applyConversationChangedToList(previous, event));
+    setLocalList((previous) => {
+      const next = applyConversationChangedToList(previous, event);
+      // NW-044：执行中补丁没落到任何已加载行（会话刚创建、列表读接口滞后，
+      // 行还没进本页数据）时，本地补丁无处落地——运行态就此丢失，侧栏该项
+      // 状态槽为空且不再有后续事件可救（后续 topic 补丁才有重拉）。这里兜底
+      // 一次静默重拉（3s 节流与 topic 路径共用），把行连同服务端状态拉回来。
+      if (
+        next === previous &&
+        event.operation === 'updated' &&
+        event.patch?.taskStatus === TaskStatus.EXECUTING
+      ) {
+        throttledConversationReload();
+      }
+      return next;
+    });
     // 置顶/归档补丁（bug 2475）：本地补丁已即时排前/隐藏（applyConversationChangedToList），
     // 覆盖记录同本地 toggle——防随后的静默重拉读到滞后回包把刚归档的会话复活回列表
     if (event.operation === 'updated' && event.patch) {

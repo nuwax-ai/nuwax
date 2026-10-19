@@ -9,6 +9,7 @@ import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
+import { mapEngineInternalErrorText } from '@/features/conversation/domain/engineErrorFallback';
 import { formatTimeAgo } from '@/utils/common';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -54,7 +55,12 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
     const timerId = window.setInterval(updateTime, 60_000);
     return () => window.clearInterval(timerId);
   }, [messageTime]);
-  const answerText = turn.finalAnswer.text;
+  // NW-108：引擎内部错误（如 AcpEngine not initialized，可能包成代码块）不裸输出，
+  // 整段命中时换成用户态兜底文案；正常回答不受影响
+  const answerText = mapEngineInternalErrorText(
+    turn.finalAnswer.text,
+    dict('PC.Components.ConversationRendererV2.engineInternalError'),
+  );
   const answerId = `v2-answer-${turn.key}-${instanceId}`;
   const { markdownRef, messageIdRef } = useMarkdownRender({
     id: answerId,
