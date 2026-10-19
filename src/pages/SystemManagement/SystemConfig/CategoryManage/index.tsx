@@ -125,7 +125,10 @@ const CategoryManage: React.FC = () => {
     confirm({
       title: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteAskTitle'),
       icon: <ExclamationCircleOutlined />,
-      content: record.name,
+      content: t(
+        'PC.Pages.SystemConfigCategoryManage.confirmDeleteContentWithName',
+        record.name,
+      ),
       okText: t('PC.Common.Global.confirm'),
       cancelText: t('PC.Common.Global.cancel'),
       onOk: async () => {
