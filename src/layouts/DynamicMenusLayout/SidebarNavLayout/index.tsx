@@ -518,14 +518,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
               >
                 {userName}
               </span>
-              {/* 与姓名同字体的 2em 标尺不参与 flex 排列，隐藏姓名即回收间隔。 */}
+              {/* 与姓名同字体的 3em 标尺（2 字符 + 省略号）不参与 flex 排列，隐藏姓名即回收间隔。
+                  只用 2em 会在临界宽度渲染成「一个字+省略号」，故按 2 字 + 省略号起显。 */}
               <span
                 ref={nameThresholdRef}
                 className={cx(styles['sidebar-user-name'])}
                 aria-hidden="true"
                 style={{
                   position: 'absolute',
-                  width: '2em',
+                  width: '3em',
                   height: 0,
                   visibility: 'hidden',
                   pointerEvents: 'none',
