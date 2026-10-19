@@ -26,6 +26,8 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) =>
     key === 'PC.Components.ClientUpdate.update'
       ? '更新'
+      : key === 'PC.Components.ClientUpdate.ready'
+      ? '新版本就绪'
       : key === 'PC.Components.WebUpdate.refreshHint'
       ? '网页已更新，点击刷新'
       : key,
@@ -232,10 +234,10 @@ describe('WebVersionBadge', () => {
         <WebVersionBadge />
       </>,
     );
-    expect(screen.getAllByText('更新')).toHaveLength(1);
+    expect(screen.getAllByText('新版本就绪')).toHaveLength(1);
     expect(
       screen.getByRole('button', {
-        name: 'PC.Components.ClientUpdate.download',
+        name: '新版本就绪',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '更新' })).toBeNull();

@@ -1,8 +1,8 @@
 /**
- * 单元测试：ClientVersionBadge —— 各状态分支渲染与点击直连下载/安装。
+ * 单元测试：ClientVersionBadge —— 各状态渲染、日志入口与明确操作。
  * mock clientUpdateService（状态源）与 i18n；hover 更新日志卡片走 available 分支抽查。
  */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ClientVersionBadge from './ClientVersionBadge';
@@ -47,7 +47,69 @@ afterEach(() => {
 });
 
 describe('ClientVersionBadge', () => {
-  it('available → 「更新」文案胶囊（无下载图标），点击徽标直接触发下载', async () => {
+  it('一键更新下载阶段只显示局部进度，不阻挡页面', async () => {
+    setState({
+      status: 'downloading',
+      installAfterDownload: true,
+      version: '1.0.7',
+      progress: { percent: 42, bytesPerSecond: 1, transferred: 42, total: 100 },
+    });
+    render(<ClientVersionBadge />);
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.downloading',
+      }),
+    ).toBeInTheDocument();
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(serviceMock.download).not.toHaveBeenCalled();
+    expect(serviceMock.install).not.toHaveBeenCalled();
+  });
+
+  it('安装持续期间只显示局部忙碌状态，始终不展示进度弹窗', () => {
+    vi.useFakeTimers();
+    try {
+      setState({
+        status: 'installing',
+        installAfterDownload: true,
+        version: '1.0.7',
+      });
+      render(<ClientVersionBadge />);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(
+        screen.getByRole('button', {
+          name: 'PC.Components.ClientUpdate.installing',
+        }),
+      ).toBeInTheDocument();
+      expect(serviceMock.download).not.toHaveBeenCalled();
+      expect(serviceMock.install).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('一键更新从日志内发起，单次点击只调用宿主下载编排', async () => {
+    setState({
+      status: 'available',
+      installAfterDownload: true,
+      version: '1.0.7',
+    });
+    render(<ClientVersionBadge />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.ready' }),
+    );
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Components.ClientUpdate.install',
+      }),
+    );
+    expect(serviceMock.download).toHaveBeenCalledTimes(1);
+    expect(serviceMock.install).not.toHaveBeenCalled();
+  });
+
+  it('available → 就绪胶囊点击仅查看日志，无下载图标', async () => {
     setState({
       status: 'available',
       version: '1.0.7',
@@ -56,22 +118,23 @@ describe('ClientVersionBadge', () => {
     });
     render(<ClientVersionBadge />);
     const badge = screen.getByRole('button', {
-      name: 'PC.Components.ClientUpdate.download',
+      name: 'PC.Components.ClientUpdate.ready',
     });
-    expect(badge.textContent).toBe('PC.Components.ClientUpdate.update');
+    expect(badge.textContent).toBe('PC.Components.ClientUpdate.ready');
     expect(document.querySelector('.anticon-download')).toBeNull();
     await userEvent.click(badge);
-    expect(serviceMock.download).toHaveBeenCalled();
+    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
+    expect(serviceMock.download).not.toHaveBeenCalled();
   });
 
-  it('downloaded → 「重启更新」文案胶囊，点击触发 install 并进入 loading', async () => {
+  it('downloaded → 明确安装后保持局部状态，不弹进度框', async () => {
     setState({ status: 'downloaded', version: '1.0.7' });
     render(<ClientVersionBadge />);
     const badge = screen.getByRole('button', {
-      name: 'PC.Components.ClientUpdate.install',
+      name: 'PC.Components.ClientUpdate.ready',
     });
     // 图标态已收敛为文案态
-    expect(badge.textContent).toContain('PC.Components.ClientUpdate.install');
+    expect(badge.textContent).toContain('PC.Components.ClientUpdate.ready');
     expect(document.querySelector('.anticon-rocket')).toBeNull();
     let finishInstall!: (res: { success: boolean }) => void;
     serviceMock.install.mockReturnValue(
@@ -80,32 +143,49 @@ describe('ClientVersionBadge', () => {
       }),
     );
     await userEvent.click(badge);
+    expect(serviceMock.install).not.toHaveBeenCalled();
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Components.ClientUpdate.install',
+      }),
+    );
     expect(serviceMock.install).toHaveBeenCalled();
-    expect(document.querySelector('.anticon-loading')).toBeInTheDocument();
-    // 全屏重启遮罩即刻出现（清理+退出空窗期的反馈）
-    expect(document.querySelector('.ant-spin')).toBeInTheDocument();
+    // 分步宿主无需先上报 installing，徽标也立即反馈任务已交出。
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      screen.getByText('PC.Components.ClientUpdate.installing'),
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.installing',
+      }),
     ).toBeInTheDocument();
-    // 成功：进程即将退出，遮罩保留到窗口关闭（不回退）
-    finishInstall({ success: true });
-    await vi.waitFor(() => {
-      expect(document.querySelector('.ant-spin')).toBeInTheDocument();
-    });
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // 成功后保留局部忙碌状态到进程退出。
+    await act(async () => finishInstall({ success: true }));
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.installing',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('downloaded → 宿主拒绝安装（dev/MSI）→ 收遮罩浮出错误，可关闭', async () => {
+  it('downloaded → 宿主拒绝安装（dev/MSI）→ 提示错误，可关闭', async () => {
     setState({ status: 'downloaded', version: '1.0.7' });
     render(<ClientVersionBadge />);
     const badge = screen.getByRole('button', {
-      name: 'PC.Components.ClientUpdate.install',
+      name: 'PC.Components.ClientUpdate.ready',
     });
     serviceMock.install.mockResolvedValue({
       success: false,
       error: 'dev build unsupported',
     });
     await userEvent.click(badge);
-    // 遮罩切换为失败态：错误标题 + 宿主回传的错误详情
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Components.ClientUpdate.install',
+      }),
+    );
+    // 失败提示保留宿主回传的错误详情。
     expect(
       await screen.findByText('PC.Components.ClientUpdate.installFailed'),
     ).toBeInTheDocument();
@@ -118,7 +198,7 @@ describe('ClientVersionBadge', () => {
     ).toBeNull();
   });
 
-  it('error（有目标版本）→ 红色信息图标，点击重试触发 download', async () => {
+  it('error（有目标版本）→ 日志展示错误，明确重试才下载', async () => {
     setState({ status: 'error', version: '1.0.7', error: 'HTTP 500' });
     render(<ClientVersionBadge />);
     await userEvent.click(
@@ -126,6 +206,12 @@ describe('ClientVersionBadge', () => {
         name: 'PC.Components.ClientUpdate.errorTitle',
       }),
     );
-    expect(serviceMock.download).toHaveBeenCalled();
+    expect(serviceMock.download).not.toHaveBeenCalled();
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Components.ClientUpdate.retry',
+      }),
+    );
+    expect(serviceMock.download).toHaveBeenCalledTimes(1);
   });
 });
