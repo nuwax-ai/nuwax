@@ -3625,7 +3625,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.PublishAudit.statusPassed": "承認された",
   "PC.Pages.PublishAudit.statusRejected": "拒否されました",
   "PC.Pages.PublishAudit.typeAgent": "エージェント",
-  "PC.Pages.PublishAudit.typeNormalProject": "通常プロジェクト",
   "PC.Pages.PublishAudit.typePlugin": "プラグイン",
   "PC.Pages.PublishAudit.typeSkill": "スキル",
   "PC.Pages.PublishAudit.typeThirdApp": "サードパーティアプリ",

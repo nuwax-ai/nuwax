@@ -3826,7 +3826,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.PublishAudit.statusPassed": "Approved",
   "PC.Pages.PublishAudit.statusRejected": "Rejected",
   "PC.Pages.PublishAudit.typeAgent": "Agent",
-  "PC.Pages.PublishAudit.typeNormalProject": "Normal Project",
   "PC.Pages.PublishAudit.typePlugin": "Plugin",
   "PC.Pages.PublishAudit.typeSkill": "Skill",
   "PC.Pages.PublishAudit.typeThirdApp": "Third-party App",
