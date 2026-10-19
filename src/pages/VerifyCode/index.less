@@ -96,6 +96,22 @@
       }
     }
 
+    // 提交登录中的 loading 反馈 / 验证码失效引导文案（NW-124 / NW-049）
+    .status-line {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 22px;
+      margin-bottom: 6px;
+      color: @colorTextSecondary;
+
+      &.status-error {
+        color: @colorError;
+      }
+    }
+
     .count-down-container {
       width: 100%;
       text-align: right;
