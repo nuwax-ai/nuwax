@@ -42,7 +42,7 @@ const PaymentRemarkModal: React.FC<PaymentRemarkModalProps> = ({
         render: () => null,
       }}
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
       }}
     >
       <div style={{ paddingTop: 12 }}>

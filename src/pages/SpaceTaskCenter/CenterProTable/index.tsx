@@ -506,7 +506,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                 label: dict('PC.Pages.SystemTaskCenterProTable.delete'),
                 confirm: {
                   title: dict(
-                    'PC.Pages.SystemTaskCenterProTable.confirmDeleteTask',
+                    'PC.Pages.SystemTaskCenterProTable.confirmDeleteThisTask',
                   ),
                   description: (r: TaskInfo) => r.taskName,
                 },

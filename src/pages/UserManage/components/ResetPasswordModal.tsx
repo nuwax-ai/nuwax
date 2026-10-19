@@ -60,7 +60,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       }}
       width={480}
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
       }}
       onFinish={handleFinish}
     >

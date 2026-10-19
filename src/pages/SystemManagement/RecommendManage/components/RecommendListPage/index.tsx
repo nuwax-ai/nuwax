@@ -219,8 +219,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const handleDelete = useCallback(
     (record: DisplayRecommendInfo) => {
       modal.confirm({
-        title: dict('PC.Pages.SystemRecommendManage.confirmDeleteTitle'),
-        content: dict('PC.Pages.SystemRecommendManage.confirmDeleteContent'),
+        title: dict('PC.Pages.SystemRecommendManage.confirmDeleteAskTitle'),
+        content: dict(
+          'PC.Pages.SystemRecommendManage.confirmDeleteContentWithName',
+          record.label,
+        ),
         onOk: async () => {
           const res = await apiSystemDeleteDisplayRecommend(record.id);
           if (res?.code === SUCCESS_CODE) {
