@@ -129,7 +129,7 @@ const CategoryManage: React.FC = () => {
         'PC.Pages.SystemConfigCategoryManage.confirmDeleteContentWithName',
         record.name,
       ),
-      okText: t('PC.Common.Global.confirm'),
+      okText: t('PC.Common.Global.ok'),
       cancelText: t('PC.Common.Global.cancel'),
       onOk: async () => {
         try {
