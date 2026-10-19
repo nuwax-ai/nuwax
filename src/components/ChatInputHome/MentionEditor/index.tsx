@@ -338,7 +338,15 @@ const placeCaretAtEnd = (element: HTMLElement) => {
   if (!selection) return;
 
   const range = document.createRange();
-  range.selectNodeContents(element);
+  // 空编辑器（仅剩锚点 <br>）光标置于首行，避免 after-<br> 落到视觉第二行
+  if (
+    element.childNodes.length === 1 &&
+    element.firstChild?.nodeName === 'BR'
+  ) {
+    range.setStart(element, 0);
+  } else {
+    range.selectNodeContents(element);
+  }
   range.collapse(false);
   selection.removeAllRanges();
   selection.addRange(range);
@@ -754,6 +762,24 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       undoIndexRef.current = 0;
     }, []);
 
+    /**
+     * 确保空编辑器始终持有光标锚点（U-PC4）：
+     * innerHTML 为空（无任何子节点）的 contenteditable 被 autofocus/编程聚焦时，
+     * Chrome 无可附着光标的节点，不渲染光标；元素已聚焦时用户再点击也不会触发
+     * 浏览器补 <br> 的兜底——表现为首页输入框看不到闪烁光标、输入落点不可见。
+     * 补一个 <br> 作锚点：序列化时 <br> 映射为换行且整体 trim，不影响空态判定
+     * 与发送内容（Chrome 键盘删空文本后自身也保留同样的 <br>）。
+     */
+    const ensureCaretAnchor = useCallback(() => {
+      const editor = editorRef.current;
+      if (!editor || editor.childNodes.length > 0) return;
+      editor.appendChild(document.createElement('br'));
+      // 编辑器持有焦点时把光标放回锚点之前（首行），保证立刻可见
+      if (document.activeElement === editor) {
+        placeCaretAtEnd(editor);
+      }
+    }, []);
+
     /** 根据 DOM 同步 mention 选中状态（从 DOM 重建，避免与 setState 竞态） */
     const syncMentionsFromDom = useCallback(
       (pendingMention?: MentionItem) => {
@@ -958,6 +984,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         isHistoryActionRef.current = true;
         editorRef.current.innerHTML = snapshot.html;
+        // 撤销到空快照时同样补锚点，避免光标消失
+        ensureCaretAnchor();
         const previousIndex = undoIndexRef.current;
         undoIndexRef.current = targetIndex;
         editorRef.current.focus();
@@ -968,8 +996,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const caretRestored = Boolean(
           (caretSource?.caret &&
             restoreCaretSnapshot(editorRef.current, caretSource.caret)) ||
-          (snapshot.caret &&
-            restoreCaretSnapshot(editorRef.current, snapshot.caret)),
+            (snapshot.caret &&
+              restoreCaretSnapshot(editorRef.current, snapshot.caret)),
         );
         if (!caretRestored) {
           placeCaretAtEnd(editorRef.current);
@@ -1165,7 +1193,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       capabilityOpenRef.current = false;
       setCapabilityOpen(false);
       editorRef.current.innerHTML = '';
-      resetUndoStack('');
+      ensureCaretAnchor();
+      resetUndoStack(editorRef.current.innerHTML);
       setSelectedMentions([]);
       setIsEditorEmpty(true);
       lastEmittedValueRef.current = '';
@@ -1496,6 +1525,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         isHistoryActionRef.current = true;
         closeMentionPopup();
         editorRef.current.textContent = text;
+        if (!text.trim()) {
+          ensureCaretAnchor();
+        }
         resetUndoStack(editorRef.current.innerHTML);
         syncMentionsFromDom();
         setIsEditorEmpty(!text.trim());
@@ -2250,12 +2282,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const currentText = getSerializedEditorText(editorRef.current);
       if (currentText !== value) {
         editorRef.current.textContent = value;
+        if (!(value || '').trim()) {
+          ensureCaretAnchor();
+        }
         resetUndoStack(editorRef.current.innerHTML);
         syncMentionsFromDom();
       }
       setIsEditorEmpty(!(value || '').trim());
       lastEmittedValueRef.current = value;
-    }, [resetUndoStack, syncMentionsFromDom, value]);
+    }, [resetUndoStack, syncMentionsFromDom, value, ensureCaretAnchor]);
 
     /**
      * 初始化和 DOM 结构变化后的空状态同步
@@ -2263,6 +2298,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     useEffect(() => {
       syncEditorEmptyState();
     }, [syncEditorEmptyState]);
+
+    /**
+     * 挂载即补光标锚点：autofocus 的 rAF 聚焦发生在 effect 之后，
+     * 此时 <br> 已就位，聚焦后光标立即可见（U-PC4 首页输入框无光标）
+     */
+    useEffect(() => {
+      ensureCaretAnchor();
+    }, [ensureCaretAnchor]);
 
     /**
      * 根据外部属性控制是否在渲染后自动聚焦
