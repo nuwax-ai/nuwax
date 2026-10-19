@@ -220,7 +220,10 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     (record: DisplayRecommendInfo) => {
       modal.confirm({
         title: dict('PC.Pages.SystemRecommendManage.confirmDeleteTitle'),
-        content: dict('PC.Pages.SystemRecommendManage.confirmDeleteContent'),
+        content: dict(
+          'PC.Pages.SystemRecommendManage.confirmDeleteContentWithName',
+          record.label,
+        ),
         onOk: async () => {
           const res = await apiSystemDeleteDisplayRecommend(record.id);
           if (res?.code === SUCCESS_CODE) {

@@ -5602,7 +5602,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colSubType": "子類型",
   "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "上框展示名稱",
   "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "請輸入上框展示名稱",
-  "PC.Pages.SystemRecommendManage.confirmDeleteContent": "刪除後無法恢復，確定繼續嗎？",
+  "PC.Pages.SystemRecommendManage.confirmDeleteContentWithName": "刪除「{0}」後無法恢復，確定繼續嗎？",
   "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "確認刪除",
   "PC.Pages.SystemRecommendManage.editTitle": "編輯推薦",
   "PC.Pages.SystemRecommendManage.updateSuccess": "更新成功",
