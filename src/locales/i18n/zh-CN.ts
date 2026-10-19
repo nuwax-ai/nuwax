@@ -2744,6 +2744,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "成功发布成组件",
   "PC.Pages.AppDevIndex.publishFailed": "发布失败",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "发布失败,先尝试解决错误后重试",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "项目构建失败,已取消提交发布申请;请修复代码问题后重试",
   "PC.Pages.AppDevIndex.selectFile": "选择文件",
   "PC.Pages.AppDevIndex.selectFileFirst": "请先选择文件",
   "PC.Pages.AppDevIndex.selectedFile": "已选择文件",
