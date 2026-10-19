@@ -1501,6 +1501,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // starting、unknown 继续等下一次探测，不在状态未定时空重连预览或再打 restart
     while (
       readiness?.status === UserAppReadinessStatusEnum.Starting ||
+      readiness?.status === UserAppReadinessStatusEnum.Provisioning ||
       readiness?.status === UserAppReadinessStatusEnum.Unknown
     ) {
       if (switchedAway()) {
@@ -1620,6 +1621,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       );
       if (
         readinessKind === 'starting' ||
+        readinessKind === 'provisioning' ||
         readinessKind === 'stopping' ||
         readinessKind === 'stopped' ||
         readinessKind === 'notDeployed' ||
@@ -2986,6 +2988,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       // 应用已在启动，或本页正在启动/重启：不再重新编译
       if (
         initialStatus === UserAppReadinessStatusEnum.Starting ||
+        initialStatus === UserAppReadinessStatusEnum.Provisioning ||
         devCompileBusy()
       ) {
         return;
@@ -3023,6 +3026,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       if (
         stale() ||
         snapshot?.status === UserAppReadinessStatusEnum.Starting ||
+        snapshot?.status === UserAppReadinessStatusEnum.Provisioning ||
         devCompileBusy()
       ) {
         return;
@@ -3679,6 +3683,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         onDeploy={handleOpenPublish}
         readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
         readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
+        readinessContainerStatus={
+          serviceReadiness.readinessByEnv[dbEnv]?.container?.status
+        }
         holdPreview={computerRestartHoldEnv === dbEnv}
         previewAlreadyPresented={previewPresentedByEnv[dbEnv]}
         suppressReadinessStatus={previewUserStopped}

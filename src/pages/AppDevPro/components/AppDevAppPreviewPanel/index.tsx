@@ -16,6 +16,7 @@ import React, {
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import {
   getUserAppReadinessUiKind,
+  UserAppContainerStatusEnum,
   type UserAppReadinessStatusEnum,
 } from '../../services/appDevPro';
 import type {
@@ -114,6 +115,11 @@ export interface AppDevAppPreviewPanelProps {
    * status 为 ready 时，这个字段也必须为 true 才按正常访问展示。
    */
   readinessReady?: boolean | null;
+  /**
+   * readiness 回包里的容器状态。
+   * 应用为 provisioning 时，只有容器已是 running 才展示资源准备中。
+   */
+  readinessContainerStatus?: string | null;
   /**
    * 当前环境的预览是否已经正常渲染过。
    * 为 true 时不再用就绪状态提示替换正在看的页面。
@@ -324,6 +330,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   holdPreview = false,
   readinessStatus = null,
   readinessReady = null,
+  readinessContainerStatus = null,
   previewAlreadyPresented = false,
   suppressReadinessStatus = false,
   onPreviewPresented,
@@ -395,6 +402,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessReady,
   );
   /**
+   * 容器已经 running，应用还在准备资源。
+   * 容器未 running 时仍走容器启动提示，不提前说容器已启动。
+   */
+  const showProvisioning =
+    readinessKind === 'provisioning' &&
+    readinessContainerStatus === UserAppContainerStatusEnum.Running;
+  /**
    * 启动 stream 已经失败，但当前环境探测到应用真正就绪。
    * 不再停在失败日志上，直接用预览地址打开页面。
    */
@@ -419,6 +433,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     !startFailed &&
     !isStarting &&
     (readinessKind === 'starting' ||
+      showProvisioning ||
       readinessKind === 'stopping' ||
       readinessKind === 'stopped' ||
       (readinessKind === 'notDeployed' &&
@@ -428,6 +443,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       readinessKind === 'incomplete');
   const readinessTitle = (() => {
     switch (readinessKind) {
+      case 'provisioning':
+        return dict('PC.Pages.AppDevPro.readinessProvisioning');
       case 'stopping':
         return dict('PC.Pages.AppDevPro.readinessServiceStopping');
       case 'notDeployed':
@@ -507,8 +524,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  // 容器启动失败时展示失败提示
-  if (containerStatus && containerStatus !== 'running') {
+  // 容器启动失败时展示失败提示。资源准备中且容器已 running 时改走下面的就绪提示。
+  if (containerStatus && containerStatus !== 'running' && !showProvisioning) {
     return (
       <AppDevServiceStartStatus
         failed={containerStatus === 'error'}
