@@ -5214,7 +5214,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemTargetAuthModal.userGroupTab": "ユーザーグループ",
   "PC.Pages.SystemTaskCenterProTable.actions": "アクション",
   "PC.Pages.SystemTaskCenterProTable.agent": "エージェント",
-  "PC.Pages.SystemTaskCenterProTable.confirmDeleteTask": "このタスクを削除しますか?",
+  "PC.Pages.SystemTaskCenterProTable.confirmDeleteThisTask": "このタスクを削除してもよろしいですか？",
   "PC.Pages.SystemTaskCenterProTable.confirmDisableTask": "このタスクを無効にすることを確認しますか?",
   "PC.Pages.SystemTaskCenterProTable.confirmEnableTask": "このタスクを有効にすることを確認しますか?",
   "PC.Pages.SystemTaskCenterProTable.createdTime": "作成時間",

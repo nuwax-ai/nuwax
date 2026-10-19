@@ -5486,7 +5486,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemTargetAuthModal.userGroupTab": "用户组",
   "PC.Pages.SystemTaskCenterProTable.actions": "操作",
   "PC.Pages.SystemTaskCenterProTable.agent": "智能体",
-  "PC.Pages.SystemTaskCenterProTable.confirmDeleteTask": "确认删除该任务？",
+  "PC.Pages.SystemTaskCenterProTable.confirmDeleteThisTask": "确定要删除此任务吗？",
   "PC.Pages.SystemTaskCenterProTable.confirmDisableTask": "确认停用该任务？",
   "PC.Pages.SystemTaskCenterProTable.confirmEnableTask": "确认启用该任务？",
   "PC.Pages.SystemTaskCenterProTable.createdTime": "创建时间",

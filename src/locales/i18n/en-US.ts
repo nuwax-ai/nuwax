@@ -5488,7 +5488,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemTargetAuthModal.userGroupTab": "User Group",
   "PC.Pages.SystemTaskCenterProTable.actions": "Actions",
   "PC.Pages.SystemTaskCenterProTable.agent": "Agent",
-  "PC.Pages.SystemTaskCenterProTable.confirmDeleteTask": "Confirm deleting this task?",
+  "PC.Pages.SystemTaskCenterProTable.confirmDeleteThisTask": "Are you sure you want to delete this task?",
   "PC.Pages.SystemTaskCenterProTable.confirmDisableTask": "Confirm disabling this task?",
   "PC.Pages.SystemTaskCenterProTable.confirmEnableTask": "Confirm enabling this task?",
   "PC.Pages.SystemTaskCenterProTable.createdTime": "Created Time",
