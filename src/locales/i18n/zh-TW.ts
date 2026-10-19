@@ -2655,6 +2655,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "成功釋出成元件",
   "PC.Pages.AppDevIndex.publishFailed": "釋出失敗",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "釋出失敗,先嚐試解決錯誤後重試",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "專案構建失敗,已取消提交釋出申請;請修復程式碼問題後重試",
   "PC.Pages.AppDevIndex.selectedFile": "已選擇檔案",
   "PC.Pages.AppDevIndex.selectedFileWithName": "已選擇檔案: {0}",
   "PC.Pages.AppDevIndex.selectFile": "選擇檔案",
