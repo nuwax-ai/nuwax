@@ -377,11 +377,9 @@ const SandboxConfig: React.FC = () => {
                 if (!hasPermission('sandbox_config_delete')) return;
                 Modal.confirm({
                   title: t(
-                    'PC.Pages.SystemConfigSandboxConfig.deleteConfirmTitle',
-                  ),
-                  content: t(
                     'PC.Pages.SystemConfigSandboxConfig.deleteConfirmContent',
                   ),
+                  content: record.name,
                   okText: t('PC.Common.Global.confirm'),
                   cancelText: t('PC.Common.Global.cancel'),
                   onOk: async () => {

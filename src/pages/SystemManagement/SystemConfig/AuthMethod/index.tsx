@@ -268,8 +268,11 @@ const AuthMethod: React.FC = () => {
               danger: true,
               disabled: !hasPermission('auth_method_delete'),
               confirm: {
-                title: dict('PC.Common.Global.confirmDelete'),
-                description: dict('PC.Pages.SystemAuthMethod.deleteDesc'),
+                title: dict('PC.Pages.SystemAuthMethod.deleteConfirmTitle'),
+                description: dict(
+                  'PC.Pages.SystemAuthMethod.deleteDescWithName',
+                  record.name,
+                ),
               },
               onClick: handleDelete,
             },
