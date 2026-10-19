@@ -79,6 +79,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Common.Global.nameEmpty": "名稱不能為空",
   "PC.Common.Global.no": "否",
   "PC.Common.Global.noData": "暫無數據",
+  "PC.Common.Global.ok": "確定",
   "PC.Common.Global.operation": "操作",
   "PC.Common.Global.operationFailed": "操作失敗，請稍後重試",
   "PC.Common.Global.other": "其他",

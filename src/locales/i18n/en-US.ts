@@ -86,6 +86,7 @@ export const EN_US: SystemLangMap = {
   "PC.Common.Global.nameEmpty": "Name cannot be empty",
   "PC.Common.Global.no": "No",
   "PC.Common.Global.noData": "No data",
+  "PC.Common.Global.ok": "OK",
   "PC.Common.Global.operation": "Action",
   "PC.Common.Global.operationFailed": "Operation failed, please try again later",
   "PC.Common.Global.operationSuccess": "Operation successful",
