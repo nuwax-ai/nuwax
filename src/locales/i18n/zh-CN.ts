@@ -254,6 +254,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ChatInputHome.autoCommitSwitch": "变更自动提交",
   "PC.Components.ChatInputHome.approvalModeSwitch": "审批模式",
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} 上传失败",
+  "PC.Components.ChatInputHome.attachmentUploadingHint": "附件上传中，请稍候…",
   "PC.Components.ChatInputCommands.search": "搜索技能或插件",
   "PC.Components.ChatInputCommands.loadFailed": "加载失败，请关闭后重试",
   "PC.Components.ChatInputHomeManualComponentItem.keywordNetwork": "联网",

@@ -16,7 +16,10 @@
 .mention-editor {
   position: relative;
   width: 100%;
-  padding: 4px @paddingSm;
+  /* 2px/2px（原 4px/12px）：文字距输入卡左/上缘收紧（NW-070），卡片自身仍
+     有 16px 侧向 padding，正文与工具栏图标近乎对齐；改此处须同步
+     ChatInputHome 的 input-prefix-pills/selected-tag 与下方 placeholder 锚点 */
+  padding: 2px 2px;
   text-indent: var(--mention-inline-prefix-offset, 0);
   font-size: @fontSize;
   line-height: 1.75;
@@ -49,9 +52,9 @@
   &.empty::before {
     content: attr(data-placeholder);
     position: absolute;
-    top: 4px;
-    left: @paddingSm;
-    right: @paddingSm;
+    top: 2px;
+    left: 2px;
+    right: 2px;
     color: @colorTextQuaternary;
     text-indent: var(--mention-inline-prefix-offset, 0);
     pointer-events: none;
