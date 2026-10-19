@@ -5414,6 +5414,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.UserManage.Index.admin": "管理者",
   "PC.Pages.UserManage.Index.auth": "承認する",
   "PC.Pages.UserManage.Index.delete": "削除",
+  "PC.Pages.UserManage.Index.deleteConfirmTitle": "このユーザーを削除してもよろしいですか？",
   "PC.Pages.UserManage.Index.deleteSuccess": "削除しました",
   "PC.Pages.UserManage.Index.disable": "無効にする",
   "PC.Pages.UserManage.Index.disabled": "無効",

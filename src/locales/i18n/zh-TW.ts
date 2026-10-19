@@ -5428,6 +5428,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.UserManage.Index.admin": "管理員",
   "PC.Pages.UserManage.Index.auth": "授權",
   "PC.Pages.UserManage.Index.delete": "刪除",
+  "PC.Pages.UserManage.Index.deleteConfirmTitle": "確定要刪除此用戶嗎？",
   "PC.Pages.UserManage.Index.deleteSuccess": "刪除成功",
   "PC.Pages.UserManage.Index.disable": "禁用",
   "PC.Pages.UserManage.Index.disabled": "禁用",

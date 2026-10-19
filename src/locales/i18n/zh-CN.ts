@@ -5689,6 +5689,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.UserManage.Index.disableSuccess": "禁用成功",
   "PC.Pages.UserManage.Index.disabled": "禁用",
   "PC.Pages.UserManage.Index.delete": "删除",
+  "PC.Pages.UserManage.Index.deleteConfirmTitle": "确定要删除此用户吗？",
   "PC.Pages.UserManage.Index.deleteSuccess": "删除成功",
   "PC.Pages.UserManage.Index.edit": "修改",
   "PC.Pages.UserManage.Index.resetPassword": "密码重置",
