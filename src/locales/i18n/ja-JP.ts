@@ -1,6 +1,20 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "プロフィールを設定",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "ようこそ！ニックネームを設定して、みんなに自分を知ってもらいましょう。アイコンもアップロードできます。後で「個人センター」からいつでも変更できます。",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "アイコン（任意）",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "ニックネーム",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder":
+    "ニックネームを入力してください",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired":
+    "ニックネームを入力してください",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "ニックネームは50文字以内で入力してください",
+  "PC.Components.NicknameOnboardingGuide.skip": "スキップ",
+  "PC.Components.NicknameOnboardingGuide.saveFailed":
+    "保存に失敗しました。もう一度お試しください",
   "PC.Components.TimedPeriodSelector.customPeriod": "カスタム周期",
   "PC.Pages.Login.hostSessionSyncFailed": "デスクトップのログイン状態を同期できませんでした。再試行するか、クライアントを更新してください。",
   "PC.Layouts.Setting.AccountBind.loadFailed": "連携アカウント情報を読み込めません。更新して再試行してください。",

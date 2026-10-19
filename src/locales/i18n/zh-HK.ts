@@ -1,6 +1,17 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_HK: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "完善個人資料",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "歡迎！為自己設置一個暱稱，讓大家更容易認識你。也可以上傳頭像；稍後可在「個人中心」隨時修改。",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "頭像（可選）",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "暱稱",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder": "請輸入暱稱",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired": "請輸入暱稱",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "暱稱不能超過 50 個字元",
+  "PC.Components.NicknameOnboardingGuide.skip": "跳過",
+  "PC.Components.NicknameOnboardingGuide.saveFailed": "保存失敗，請重試",
   "PC.Components.TimedPeriodSelector.customPeriod": "自訂週期",
   "PC.Pages.Login.hostSessionSyncFailed": "客戶端登入工作階段同步失敗，請重試或升級客戶端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "帳號綁定資訊載入失敗，請重新整理後重試",

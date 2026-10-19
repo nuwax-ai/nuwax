@@ -5,6 +5,7 @@
  * 路由树下：单栏模式时与主站同用 page-container 容器、侧栏常驻，仅抑制二级
  * 菜单列；经典风格/移动端以 bare 形态裸渲染（维持历史全屏行为）。
  */
+import NicknameOnboardingGuide from '@/components/business-component/NicknameOnboardingGuide';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import React, { useEffect } from 'react';
@@ -43,14 +44,19 @@ const Layout: React.FC = () => {
   }, [shellPolicy.variant, location]);
 
   return (
-    <SidebarShell
-      variant={shellPolicy.variant}
-      suppressSecondMenu={shellPolicy.suppressSecondMenu}
-      // 工作台页沉浸避让由路由层 immersiveShellAvoid 承担，page-container 不叠加
-      immersiveMarginTop={shellPolicy.immersiveMarginTop}
-    >
-      <Outlet />
-    </SidebarShell>
+    <>
+      <SidebarShell
+        variant={shellPolicy.variant}
+        suppressSecondMenu={shellPolicy.suppressSecondMenu}
+        // 工作台页沉浸避让由路由层 immersiveShellAvoid 承担，page-container 不叠加
+        immersiveMarginTop={shellPolicy.immersiveMarginTop}
+      >
+        <Outlet />
+      </SidebarShell>
+      {/* 默认名用户首登昵称/头像引导（规划7.3）：布局层全局挂载，
+          page/bare 形态都覆盖，条件不满足时组件零渲染 */}
+      <NicknameOnboardingGuide />
+    </>
   );
 };
 

@@ -1,6 +1,20 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "Set up your profile",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "Welcome! Set a nickname so people can recognize you. You can also upload an avatar, and change both anytime later in Profile.",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "Avatar (optional)",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "Nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder":
+    "Please enter a nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired":
+    "Please enter a nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "Nickname cannot exceed 50 characters",
+  "PC.Components.NicknameOnboardingGuide.skip": "Skip",
+  "PC.Components.NicknameOnboardingGuide.saveFailed":
+    "Save failed. Please retry.",
   "PC.Components.TimedPeriodSelector.customPeriod": "Custom schedule",
   "PC.Pages.Login.hostSessionSyncFailed": "Could not sync the desktop login session. Retry or update the client.",
   "PC.Layouts.Setting.AccountBind.loadFailed": "Unable to load linked accounts. Please refresh and retry.",
