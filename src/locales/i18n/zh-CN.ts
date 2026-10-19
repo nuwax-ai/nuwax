@@ -2863,6 +2863,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.previewChecking": "应用检测中",
   "PC.Pages.AppDevPro.previewCheckingHint": "正在确认应用是否可以访问，请稍候",
   "PC.Pages.AppDevPro.readinessServiceStarting": "服务正在启动中",
+  "PC.Pages.AppDevPro.readinessProvisioning": "容器已启动，应用资源准备中",
   "PC.Pages.AppDevPro.readinessServiceStopping":
     "服务正在停止中，稍后将自动为您重启服务",
   "PC.Pages.AppDevPro.readinessDevIncomplete":

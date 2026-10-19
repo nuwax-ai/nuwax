@@ -291,6 +291,8 @@ export enum UserAppReadinessStatusEnum {
   NotDeployed = 'not_deployed',
   /** 启动中 */
   Starting = 'starting',
+  /** 资源准备中 */
+  Provisioning = 'provisioning',
   /** 停止中 */
   Stopping = 'stopping',
   /** 已停止 */
@@ -390,7 +392,7 @@ export interface UserAppReadiness {
   app_stage: string;
   /** 应用是否可以访问 */
   ready: boolean;
-  /** 顶层业务状态：not_deployed / starting / stopping / stopped / ready / degraded / failed / unknown / unsupported */
+  /** 顶层业务状态：not_deployed / starting / provisioning / stopping / stopped / ready / degraded / failed / unknown / unsupported */
   status: UserAppReadinessStatusEnum;
   /**
    * 计算容器状态。与业务 ready/status 独立。
@@ -413,6 +415,7 @@ export interface UserAppReadiness {
 export type UserAppReadinessUiKind =
   | 'access'
   | 'starting'
+  | 'provisioning'
   | 'stopping'
   | 'stopped'
   | 'notDeployed'
@@ -422,7 +425,8 @@ export type UserAppReadinessUiKind =
 /**
  * 把就绪探测的顶层状态收成预览区要处理的几类。
  * status 为 ready 时，还要 ready 字段为 true 才算正常访问。
- * starting / stopping / stopped 各有提示。
+ * starting / provisioning / stopping / stopped 各有提示。
+ * provisioning 只在容器已 running 时由预览区展示「资源准备中」。
  * 未部署、启动失败可以手动重启。unsupported 视为开发未完成。unknown 先忽略。
  *
  * @param status 顶层业务状态；还没有探测结果时返回 null
@@ -438,6 +442,8 @@ export const getUserAppReadinessUiKind = (
       return ready === true ? 'access' : null;
     case UserAppReadinessStatusEnum.Starting:
       return 'starting';
+    case UserAppReadinessStatusEnum.Provisioning:
+      return 'provisioning';
     case UserAppReadinessStatusEnum.Stopping:
       return 'stopping';
     case UserAppReadinessStatusEnum.Stopped:
