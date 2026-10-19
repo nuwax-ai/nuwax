@@ -2747,6 +2747,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "Published as Component Successfully",
   "PC.Pages.AppDevIndex.publishFailed": "Publish failed",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "Publish failed. Please fix the errors and try again",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "Project build failed. The publish request was not submitted. Fix the code issues and try again",
   "PC.Pages.AppDevIndex.selectFile": "Select File",
   "PC.Pages.AppDevIndex.selectFileFirst": "Please select a file first",
   "PC.Pages.AppDevIndex.selectedFile": "Selected File",

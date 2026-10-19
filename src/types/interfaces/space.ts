@@ -85,8 +85,11 @@ export interface PublishComponentModalProps {
   onlyShowTemplate?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
-  // 定义一个发布智能体前执行的方法函数
-  onBeforePublishFn?: () => Promise<void>;
+  /**
+   * 发布前置钩子：提交发布申请前先执行（如项目构建打包）。
+   * 返回 false 或抛错表示前置步骤失败，弹窗阻断本次 publish/apply 提交（错误提示由调用方负责）。
+   */
+  onBeforePublishFn?: () => Promise<boolean | void>;
   /**
    * 自定义提交：收集分类、发布空间后交由调用方处理（不再由弹窗内直接提交申请）。
    * 用于网站应用等「先选范围、再构建、最后申请」的流程。

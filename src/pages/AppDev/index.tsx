@@ -818,18 +818,30 @@ const AppDev: React.FC = () => {
   const handleBeforePublish = async () => {
     if (!hasValidProjectId || !projectId) {
       message.error(t('PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy'));
-      return;
+      // 返回 false 阻断发布弹窗继续提交 publish/apply
+      return false;
     }
     // 先关闭弹窗，再显示 loading 效果（与发布成组件一致）
     setOpenPublishComponentModal(false);
     setIsDeploying(true);
-    const { code } = await buildProject(
-      projectId,
-      PageDevelopPublishTypeEnum.AGENT,
-    );
-
-    if (code !== SUCCESS_CODE) {
+    try {
+      const { code, message: buildMessage } = await buildProject(
+        projectId,
+        PageDevelopPublishTypeEnum.AGENT,
+      );
+      // 构建失败（如代码问题）：阻断发布申请并明确提示，不允许继续 publish/apply
+      if (code !== SUCCESS_CODE) {
+        setIsDeploying(false);
+        message.error(
+          buildMessage || t('PC.Pages.AppDevIndex.publishBuildFailedBlocked'),
+        );
+        return false;
+      }
+    } catch {
+      // 网络等异常同样阻断发布申请（buildProject 走 skipErrorHandler，需自行提示）
       setIsDeploying(false);
+      message.error(t('PC.Pages.AppDevIndex.publishBuildFailedBlocked'));
+      return false;
     }
   };
 
