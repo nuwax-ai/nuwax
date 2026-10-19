@@ -928,7 +928,7 @@ const Login: React.FC = () => {
                 okText={dict('PC.Pages.Login.enterpriseSwitchConfirm')}
                 confirmLoading={enterpriseSwitching}
                 okButtonProps={{ disabled: !enterpriseDomain.trim() }}
-                destroyOnClose
+                destroyOnHidden
               >
                 <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
                   {dict('PC.Pages.Login.enterpriseLoginHint')}

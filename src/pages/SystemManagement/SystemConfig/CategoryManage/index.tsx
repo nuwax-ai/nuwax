@@ -123,9 +123,12 @@ const CategoryManage: React.FC = () => {
   // 删除分类
   const handleDelete = (record: CategoryItem) => {
     confirm({
-      title: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle'),
+      title: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteAskTitle'),
       icon: <ExclamationCircleOutlined />,
-      content: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteContent'),
+      content: t(
+        'PC.Pages.SystemConfigCategoryManage.confirmDeleteContentWithName',
+        record.name,
+      ),
       okText: t('PC.Common.Global.confirm'),
       cancelText: t('PC.Common.Global.cancel'),
       onOk: async () => {

@@ -1342,8 +1342,8 @@ const ProjectPanel = forwardRef<
         project.projectType === AgentComponentTypeEnum.NormalProject ||
         project.projectType === AgentComponentTypeEnum.UserApp;
       Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
+        title: dict('PC.Common.Global.deleteConfirmContent'),
+        content: project.name,
         okButtonProps: { danger: true },
         okText: dict('PC.Common.Global.delete'),
         cancelText: dict('PC.Common.Global.cancel'),
