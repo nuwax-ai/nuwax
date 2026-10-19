@@ -145,37 +145,19 @@ const IMChannelCardList = forwardRef<
     reload: fetchData,
   }));
 
-  // const handleToggleStatus = async (
-  //   record: IMChannelInfo,
-  //   checked: boolean,
-  // ) => {
-  //   setSwitchingIds((prev) => [...prev, record.id]);
-  //   try {
-  //     const res = await apiUpdateIMConfigChannelEnabled({
-  //       id: record.id,
-  //       enabled: checked,
-  //     });
-  //     if (res.code === SUCCESS_CODE) {
-  //       message.success(`${checked ? '启用' : '停用'}成功`);
-  //       // 更新本地数据
-  //       setAllRobots((prev) =>
-  //         prev.map((item) =>
-  //           item.id === record.id ? { ...item, enabled: checked } : item,
-  //         ),
-  //       );
-  //     }
-  //   } catch (error) {
-  //     console.error('Toggle status failed:', error);
-  //   } finally {
-  //     setSwitchingIds((prev) => prev.filter((id) => id !== record.id));
-  //   }
-  // };
-
-  const handleDelete = (id: number, channel: string, title: string) => {
+  const handleDelete = (
+    id: number,
+    channel: string,
+    title: string,
+    agentName: string,
+  ) => {
     Modal.confirm({
       title,
       icon: <ExclamationCircleOutlined />,
-      content: dict('PC.Pages.IMChannel.CardList.deleteContent'),
+      content: dict(
+        'PC.Pages.IMChannel.CardList.deleteContentWithName',
+        agentName,
+      ),
       okText: dict('PC.Common.Global.confirm'),
       okType: 'danger',
       cancelText: dict('PC.Common.Global.cancel'),
@@ -281,6 +263,7 @@ const IMChannelCardList = forwardRef<
                         platformName,
                         typeLabel,
                       ),
+                      record.agentName,
                     );
                   }}
                 />

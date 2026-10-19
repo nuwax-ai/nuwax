@@ -91,8 +91,8 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   // 内置删除：确认框 + API + 全局事件（供侧栏列表同步刷新）
   const handleDelete = () => {
     Modal.confirm({
-      title: t('PC.Common.Global.deleteConfirmTitle'),
-      content: t('PC.Common.Global.deleteConfirmContent'),
+      title: t('PC.Common.Global.deleteConfirmContent'),
+      content: currentTopic,
       okButtonProps: { danger: true },
       okText: t('PC.Common.Global.delete'),
       cancelText: t('PC.Common.Global.cancel'),
