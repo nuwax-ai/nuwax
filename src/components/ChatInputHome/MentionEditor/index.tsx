@@ -345,6 +345,118 @@ const placeCaretAtEnd = (element: HTMLElement) => {
 };
 
 /**
+ * 光标的可序列化描述（撤销栈快照用）：
+ * - path/offset：从编辑器根到光标节点的 childNodes 索引路径 + 节点内偏移。
+ *   innerHTML 快照恢复后 br/块级结构会被原样解析回来，路径可精确还原；
+ * - textOffset：编辑器纯文本内字符偏移。相邻文本节点（如 \n 分行）会被
+ *   重新解析合并、路径失效，此时按字符偏移兜底定位。
+ */
+interface CaretSnapshot {
+  path: number[];
+  offset: number;
+  textOffset: number;
+}
+
+/** 捕获当前光标；光标不在编辑器内（如弹窗夺焦）返回 null */
+const getCaretSnapshot = (root: HTMLElement): CaretSnapshot | null => {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const node = range.startContainer;
+  if (!root.contains(node)) return null;
+
+  const path: number[] = [];
+  let current: Node | null = node;
+  while (current && current !== root) {
+    const parent: Node | null = current.parentNode;
+    if (!parent) return null;
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
+    current = parent;
+  }
+
+  const preRange = document.createRange();
+  preRange.selectNodeContents(root);
+  preRange.setEnd(node, range.startOffset);
+  return {
+    path,
+    offset: range.startOffset,
+    textOffset: preRange.toString().length,
+  };
+};
+
+/**
+ * 按快照恢复光标，失败返回 false（调用方兜底）。偏移越界时收敛到最近
+ * 可用位置；textOffset 恰落在两文本节点边界时优先下一节点开头（删除行首
+ * 字符的撤销应回到下一行行首，而非上一行行尾）。
+ */
+const restoreCaretSnapshot = (
+  root: HTMLElement,
+  caret: CaretSnapshot,
+): boolean => {
+  // 1) 结构路径优先（br/块级结构在 innerHTML 往返后保持）
+  let node: Node = root;
+  let pathValid = true;
+  for (const index of caret.path) {
+    if (index < 0 || index >= node.childNodes.length) {
+      pathValid = false;
+      break;
+    }
+    node = node.childNodes[index];
+  }
+  const selection = window.getSelection();
+  if (pathValid && selection) {
+    const maxOffset =
+      node.nodeType === Node.TEXT_NODE
+        ? (node.textContent || '').length
+        : node.childNodes.length;
+    const range = document.createRange();
+    range.setStart(node, Math.min(caret.offset, maxOffset));
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    return true;
+  }
+
+  // 2) 字符偏移兜底（相邻文本节点被合并的快照）
+  if (!selection) return false;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let remaining = caret.textOffset;
+  let lastTextNode: Text | null = null;
+  while (walker.nextNode()) {
+    const textNode = walker.currentNode as Text;
+    lastTextNode = textNode;
+    const length = (textNode.textContent || '').length;
+    if (remaining < length) {
+      const range = document.createRange();
+      range.setStart(textNode, remaining);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    }
+    if (remaining === length) {
+      // 边界：下一文本节点开头 > 本节点结尾（跨 br/块回到下一行行首）
+      const next = walker.nextNode() as Text | null;
+      const target = next ?? textNode;
+      const range = document.createRange();
+      range.setStart(target, next ? 0 : length);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    }
+    remaining -= length;
+  }
+  if (!lastTextNode) return false;
+  const range = document.createRange();
+  range.setStart(lastTextNode, (lastTextNode.textContent || '').length);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
+};
+
+/**
  * 获取光标前一个节点
  * 用于判断光标是否紧贴在已插入的 mention chip 后面
  *
@@ -522,8 +634,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== Refs ====================
     /** 编辑器 DOM 引用 */
     const editorRef = useRef<HTMLDivElement>(null);
-    /** 编辑器内容快照栈（innerHTML），用于撤销/重做 */
-    const undoStackRef = useRef<string[]>(['']);
+    /**
+     * 编辑器内容快照栈（innerHTML + 光标快照），用于撤销/重做。
+     * 光标随快照保存：撤销某次编辑时把光标放回该次编辑的落点（如删序号
+     * 的删除点），而不是被重置到内容末尾（NW-065）。
+     */
+    const undoStackRef = useRef<
+      { html: string; caret: CaretSnapshot | null }[]
+    >([{ html: '', caret: null }]);
     /** 当前快照在栈中的位置 */
     const undoIndexRef = useRef(0);
     /** 是否正在应用撤销/重做，避免重复入栈 */
@@ -630,9 +748,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       setIsEditorEmpty(serializedText.trim().length === 0);
     }, []);
 
-    /** 重置撤销/重做栈 */
+    /** 重置撤销/重做栈（编程置数：清空/草稿恢复，无对应光标） */
     const resetUndoStack = useCallback((snapshot = '') => {
-      undoStackRef.current = [snapshot];
+      undoStackRef.current = [{ html: snapshot, caret: null }];
       undoIndexRef.current = 0;
     }, []);
 
@@ -681,14 +799,19 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [enableMention],
     );
 
-    /** 记录当前 DOM 快照到撤销栈 */
+    /** 记录当前 DOM 快照（含光标路径）到撤销栈 */
     const recordUndoSnapshot = useCallback(() => {
       if (!editorRef.current || isHistoryActionRef.current) return;
 
-      const snapshot = editorRef.current.innerHTML;
+      const html = editorRef.current.innerHTML;
+      const snapshot = {
+        html,
+        // 捕获时机在本次编辑提交后：即本次编辑落点（撤销本次编辑时光标回到这里）
+        caret: getCaretSnapshot(editorRef.current),
+      };
       const stack = undoStackRef.current;
       const index = undoIndexRef.current;
-      if (stack[index] === snapshot) return;
+      if (stack[index]?.html === html) return;
 
       let nextStack = stack.slice(0, index + 1);
       nextStack.push(snapshot);
@@ -822,7 +945,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [recordUndoSnapshot, runMentionDetection, syncEditorStateFromDom],
     );
 
-    /** 应用历史快照 */
+    /** 应用历史快照：恢复内容后把光标放回「被撤销/重做的那次编辑」的落点
+     * （NW-065：删序号后撤销，光标应回到删除点而不是被重置到内容末尾）。
+     * 光标源取撤销前/重做后快照记录的落点；其在新内容上无法定位（如快照
+     * 无光标、文本大幅变化）时按目标快照落点→内容末尾逐级兜底 */
     const applyHistorySnapshot = useCallback(
       (targetIndex: number) => {
         if (!editorRef.current) return;
@@ -831,9 +957,23 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         if (snapshot === undefined) return;
 
         isHistoryActionRef.current = true;
-        editorRef.current.innerHTML = snapshot;
+        editorRef.current.innerHTML = snapshot.html;
+        const previousIndex = undoIndexRef.current;
         undoIndexRef.current = targetIndex;
-        placeCaretAtEnd(editorRef.current);
+        editorRef.current.focus();
+        // undo 离开的是当前快照（被撤销编辑的落点）；redo 进入的是目标快照
+        // （被重做编辑的落点）——两者都取更高下标的快照
+        const caretSource =
+          undoStackRef.current[Math.max(previousIndex, targetIndex)];
+        const caretRestored = Boolean(
+          (caretSource?.caret &&
+            restoreCaretSnapshot(editorRef.current, caretSource.caret)) ||
+          (snapshot.caret &&
+            restoreCaretSnapshot(editorRef.current, snapshot.caret)),
+        );
+        if (!caretRestored) {
+          placeCaretAtEnd(editorRef.current);
+        }
         syncEditorStateFromDom();
         // 撤销/重做后不自动唤起 @ 弹窗：此时 DOM 刚恢复，光标坐标未稳定，
         // 且用户意图是回退而非重新选择技能，避免出现错位弹窗

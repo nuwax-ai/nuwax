@@ -210,6 +210,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ChatInputHome.autoCommitSwitch": "変更の自動コミット",
   "PC.Components.ChatInputHome.approvalModeSwitch": "承認モード",
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} アップロードに失敗しました",
+  "PC.Components.ChatInputHome.attachmentUploadingHint": "添付ファイルをアップロード中です。しばらくお待ちください…",
   "PC.Components.ChatInputHome.agentMode": "エージェントモード",
   "PC.Components.ChatInputHome.agentModeAuto": "自動",
   "PC.Components.ChatInputHome.agentModeAutoDesc": "ツール実行前にユーザーに確認しません",

@@ -9,6 +9,7 @@ import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import * as businessAuth from '@/utils/businessAuth';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -42,7 +43,7 @@ vi.mock('@/hooks/useSubscription', () => ({
   }),
 }));
 
-// 编辑器桩
+// 编辑器桩：透传 onChange/onPressEnter 供用例驱动文字输入与回车发送
 vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
   const React = await import('react');
   return {
@@ -52,7 +53,16 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
         focus: vi.fn(),
         clear: vi.fn(),
       }));
-      return React.createElement('div', { 'data-testid': 'mention-editor' });
+      return React.createElement('input', {
+        'data-testid': 'mention-editor-stub',
+        onChange: (e: any) => props.onChange?.(e.target.value),
+        onKeyDown: (e: any) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            props.onPressEnter?.(e);
+          }
+        },
+      });
     }),
   };
 });
@@ -300,13 +310,88 @@ describe('+ 号菜单附件上传（常驻文件选择器）', () => {
     );
 
     await waitFor(() => expect(uploadListState.files.length).toBe(1));
-    expect(uploadListState.files[0]?.type).toBe('image/png');
+    expect(uploadListState.files[0].type).toBe('image/png');
     await waitFor(() => {
       expect(uploadListState.files[0]?.status).toBe('done');
     });
-    expect(uploadListState.files[0]?.url).toBe(
+    expect(uploadListState.files[0].url).toBe(
       'https://cdn.example.com/shot.png',
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('附件上传中禁止发送：按钮禁用样式、点击与回车都不发出（NW-109）', async () => {
+    // fetch 悬挂：附件停留在 uploading
+    const pending = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal('fetch', pending);
+    const onEnter = vi.fn();
+    renderInput({ onEnter });
+
+    await pickFileThroughPlusMenu(
+      new File([new Uint8Array([137, 80, 78, 71])], 'shot.png', {
+        type: 'image/png',
+      }),
+    );
+    await waitFor(() => expect(uploadListState.files.length).toBe(1));
+    expect(uploadListState.files[0].status).toBe('uploading');
+
+    // 已有文字（文字满足发送条件）也不能发：发送按钮禁用
+    fireEvent.change(screen.getByTestId('mention-editor-stub'), {
+      target: { value: '带附件的问题' },
+    });
+    const sendBox = document.querySelector('.send-box') as HTMLElement;
+    expect(sendBox).toBeTruthy();
+    expect(sendBox.className).toContain('disabled');
+    fireEvent.click(sendBox);
+    expect(onEnter).not.toHaveBeenCalled();
+
+    // 回车同样被拦截（confirmSendMessage 上传中直接返回）
+    fireEvent.keyDown(screen.getByTestId('mention-editor-stub'), {
+      key: 'Enter',
+    });
+    expect(onEnter).not.toHaveBeenCalled();
+  });
+
+  it('附件上传完成后恢复可发送：点击发送携带已完成附件', async () => {
+    let resolveUpload: (v: any) => void = () => {};
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const onEnter = vi.fn();
+    renderInput({ onEnter });
+
+    await pickFileThroughPlusMenu(
+      new File([new Uint8Array([137, 80, 78, 71])], 'shot.png', {
+        type: 'image/png',
+      }),
+    );
+    await waitFor(() => expect(uploadListState.files.length).toBe(1));
+
+    fireEvent.change(screen.getByTestId('mention-editor-stub'), {
+      target: { value: '带附件的问题' },
+    });
+    let sendBox = document.querySelector('.send-box') as HTMLElement;
+    expect(sendBox.className).toContain('disabled');
+
+    // 上传完成：按钮解禁，点击发送把附件随消息带出
+    await act(async () => {
+      resolveUpload({ json: () => Promise.resolve(IMG_SUCCESS_RESP) });
+    });
+    await waitFor(() => {
+      sendBox = document.querySelector('.send-box') as HTMLElement;
+      expect(sendBox.className).not.toContain('disabled');
+    });
+    fireEvent.click(sendBox);
+    expect(onEnter).toHaveBeenCalledTimes(1);
+    const [, sentFiles] = onEnter.mock.calls[0];
+    expect(sentFiles).toHaveLength(1);
+    expect(sentFiles[0]).toMatchObject({
+      url: 'https://cdn.example.com/shot.png',
+      status: 'done',
+    });
   });
 });

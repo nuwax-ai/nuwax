@@ -254,6 +254,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatInputHome.autoCommitSwitch": "Auto commit changes",
   "PC.Components.ChatInputHome.approvalModeSwitch": "Approval mode",
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} upload failed",
+  "PC.Components.ChatInputHome.attachmentUploadingHint": "Attachment is uploading, please wait...",
   "PC.Components.ChatInputCommands.search": "Search skills or plugins",
   "PC.Components.ChatInputCommands.loadFailed": "Could not load. Close and try again.",
   "PC.Components.ChatInputHomeManualComponentItem.keywordNetwork": "Network",
