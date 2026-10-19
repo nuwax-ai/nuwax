@@ -6229,7 +6229,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "上框展示名称",
   "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "请输入上框展示名称",
   "PC.Pages.SystemRecommendManage.confirmDeleteContentWithName": "删除「{0}」后无法恢复，确定继续吗？",
-  "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "确认删除",
+  "PC.Pages.SystemRecommendManage.confirmDeleteAskTitle": "确定要删除吗？",
   "PC.Pages.SystemRecommendManage.editTitle": "编辑推荐",
   "PC.Pages.SystemRecommendManage.updateSuccess": "更新成功",
   "PC.Pages.SystemRecommendManage.functionType.agentDev": "智能体开发",

@@ -219,7 +219,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const handleDelete = useCallback(
     (record: DisplayRecommendInfo) => {
       modal.confirm({
-        title: dict('PC.Pages.SystemRecommendManage.confirmDeleteTitle'),
+        title: dict('PC.Pages.SystemRecommendManage.confirmDeleteAskTitle'),
         content: dict(
           'PC.Pages.SystemRecommendManage.confirmDeleteContentWithName',
           record.label,

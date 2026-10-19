@@ -5589,7 +5589,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "上部に表示する名称",
   "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "上部に表示する名称を入力してください",
   "PC.Pages.SystemRecommendManage.confirmDeleteContentWithName": "「{0}」を削除すると元に戻せません。続行しますか？",
-  "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "削除の確認",
+  "PC.Pages.SystemRecommendManage.confirmDeleteAskTitle": "削除してもよろしいですか？",
   "PC.Pages.SystemRecommendManage.editTitle": "おすすめを編集",
   "PC.Pages.SystemRecommendManage.updateSuccess": "更新に成功しました",
   "PC.Pages.SystemRecommendManage.functionType.agentDev": "エージェント開発",

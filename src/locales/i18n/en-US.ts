@@ -6248,7 +6248,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "Upper box display name",
   "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "Enter the upper box display name",
   "PC.Pages.SystemRecommendManage.confirmDeleteContentWithName": "Deleting \"{0}\" cannot be undone. Continue?",
-  "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "Confirm Delete",
+  "PC.Pages.SystemRecommendManage.confirmDeleteAskTitle": "Are you sure you want to delete?",
   "PC.Pages.SystemRecommendManage.editTitle": "Edit Recommendation",
   "PC.Pages.SystemRecommendManage.updateSuccess": "Updated successfully",
   "PC.Pages.SystemRecommendManage.functionType.agentDev": "Agent Development",
