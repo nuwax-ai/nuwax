@@ -283,6 +283,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ChatTitleActions.uncollectFailed": "取消收藏失败",
   "PC.Components.ChatTitleActions.uncollected": "已取消收藏",
   "PC.Components.ConversationQuickNav.tooltip": "会话快捷导航",
+  "PC.Components.ConversationRendererV2.engineInternalError": "智能体引擎启动异常，请稍后重试或重新进入会话",
   "PC.Components.ConversationRendererV2.traceTitleProcessOnly": "执行过程",
   "PC.Components.ConversationRendererV2.traceMetricTools": "{0} 次工具调用",
   "PC.Components.ConversationRendererV2.traceMetricMessages": "{0} 条消息",
