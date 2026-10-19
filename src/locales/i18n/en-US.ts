@@ -3440,7 +3440,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.IMChannel.CardList.confirmDelete": "Confirm delete {0} {1}?",
   "PC.Pages.IMChannel.CardList.defaultPlatformName": "this ",
   "PC.Pages.IMChannel.CardList.delete": "Delete",
-  "PC.Pages.IMChannel.CardList.deleteContent": "This action cannot be undone. Please proceed with caution.",
+  "PC.Pages.IMChannel.CardList.deleteContentWithName": "Deleting \"{0}\" cannot be undone. Please proceed with caution.",
   "PC.Pages.IMChannel.CardList.edit": "Edit",
   "PC.Pages.IMChannel.CardList.enterpriseApp": "Enterprise App",
   "PC.Pages.IMChannel.CardList.lastEdited": "Last edited",

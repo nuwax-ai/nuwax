@@ -3340,7 +3340,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.IMChannel.CardList.confirmDelete": "確認刪除{0}{1}？",
   "PC.Pages.IMChannel.CardList.defaultPlatformName": "該",
   "PC.Pages.IMChannel.CardList.delete": "刪除",
-  "PC.Pages.IMChannel.CardList.deleteContent": "刪除後將無法恢復，請謹慎操作。",
+  "PC.Pages.IMChannel.CardList.deleteContentWithName": "刪除「{0}」後將無法恢復，請謹慎操作。",
   "PC.Pages.IMChannel.CardList.edit": "編輯",
   "PC.Pages.IMChannel.CardList.enterpriseApp": "企業應用",
   "PC.Pages.IMChannel.CardList.lastEdited": "最近編輯",

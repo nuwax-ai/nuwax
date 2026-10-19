@@ -3362,7 +3362,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.IMChannel.CardList.confirmDelete": "{0} {1} の削除を確認しますか?",
   "PC.Pages.IMChannel.CardList.defaultPlatformName": "これ",
   "PC.Pages.IMChannel.CardList.delete": "消去",
-  "PC.Pages.IMChannel.CardList.deleteContent": "この操作は元に戻すことができません。慎重に進めてください。",
+  "PC.Pages.IMChannel.CardList.deleteContentWithName": "「{0}」を削除すると元に戻せません。慎重に進めてください。",
   "PC.Pages.IMChannel.CardList.edit": "編集",
   "PC.Pages.IMChannel.CardList.enterpriseApp": "エンタープライズアプリ",
   "PC.Pages.IMChannel.CardList.lastEdited": "最終編集",
