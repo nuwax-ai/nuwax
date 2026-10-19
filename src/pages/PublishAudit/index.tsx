@@ -40,8 +40,6 @@ const getPublishAuditTargetTypeText = (targetType?: string): string => {
       return dict('PC.Pages.PublishAudit.typeUserApp');
     case SquareAgentTypeEnum.ThirdApp:
       return dict('PC.Pages.PublishAudit.typeThirdApp');
-    case SquareAgentTypeEnum.NormalProject:
-      return dict('PC.Pages.PublishAudit.typeNormalProject');
     case SquareAgentTypeEnum.Plugin:
       return dict('PC.Pages.PublishAudit.typePlugin');
     case SquareAgentTypeEnum.Workflow:
@@ -109,8 +107,6 @@ const PublishAudit: React.FC = () => {
       url = `/space/${spaceId}/app-project-detail/${targetId}`;
     } else if (targetType === SquareAgentTypeEnum.ThirdApp) {
       url = `/space/${spaceId}/third-app-detail/${targetId}`;
-    } else if (targetType === SquareAgentTypeEnum.NormalProject) {
-      url = `/space/${spaceId}/normal-project-detail/${targetId}`;
     }
 
     if (url) {
@@ -188,11 +184,6 @@ const PublishAudit: React.FC = () => {
         },
         [SquareAgentTypeEnum.ThirdApp]: {
           text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.ThirdApp),
-        },
-        [SquareAgentTypeEnum.NormalProject]: {
-          text: getPublishAuditTargetTypeText(
-            SquareAgentTypeEnum.NormalProject,
-          ),
         },
         [SquareAgentTypeEnum.Plugin]: {
           text: getPublishAuditTargetTypeText(SquareAgentTypeEnum.Plugin),

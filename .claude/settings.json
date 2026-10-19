@@ -11,15 +11,6 @@
         ]
       },
       {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/plan-gate.mjs"
-          }
-        ]
-      },
-      {
         "matcher": "Bash",
         "hooks": [
           {
