@@ -2864,6 +2864,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.previewChecking": "Checking the app",
   "PC.Pages.AppDevPro.previewCheckingHint": "Waiting until the app is ready to open",
   "PC.Pages.AppDevPro.readinessServiceStarting": "The service is starting",
+  "PC.Pages.AppDevPro.readinessProvisioning": "Container is running. Preparing application resources",
   "PC.Pages.AppDevPro.readinessServiceStopping":
     "The service is stopping and will restart automatically",
   "PC.Pages.AppDevPro.readinessDevIncomplete":
