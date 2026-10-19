@@ -45,6 +45,10 @@ export const adjustScrollPositionAfterDOMUpdate = (
 ): void => {
   if (!container) return;
 
+  // 标记窗口活动：UnifiedChatSession 的滚动钩子检测到本标记时让位，
+  // 避免两套补偿基线（本函数取触发时刻值）在用户中途滚动时互相拉扯
+  (container as any).__legacyScrollAnchorWindow = true;
+
   // 使用一个活动窗口来记录从加载开始时总共增高了多少
   let currentBaseScrollHeight = oldScrollHeight;
   let currentBaseScrollTop = oldScrollTop;
@@ -94,5 +98,8 @@ export const adjustScrollPositionAfterDOMUpdate = (
       });
       (container as any).__isProgrammaticScroll = false;
     }
+
+    // 窗口结束，解除让位标记
+    delete (container as any).__legacyScrollAnchorWindow;
   }, 600);
 };
