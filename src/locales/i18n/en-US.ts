@@ -4887,7 +4887,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemConfigCategoryManage.chatbox": "ChatBox",
   "PC.Pages.SystemConfigCategoryManage.component": "Component",
   "PC.Pages.SystemConfigCategoryManage.confirmDeleteContent": "Are you sure you want to delete this category? This action cannot be undone.",
-  "PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle": "Confirm Delete",
+  "PC.Pages.SystemConfigCategoryManage.confirmDeleteAskTitle": "Are you sure you want to delete this category?",
   "PC.Pages.SystemConfigCategoryManage.connector": "Connector",
   "PC.Pages.SystemConfigCategoryManage.deleteFailed": "Failed to delete category:",
   "PC.Pages.SystemConfigCategoryManage.deletedSuccessfully": "Category deleted successfully",

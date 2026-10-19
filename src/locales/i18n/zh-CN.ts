@@ -4885,7 +4885,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemConfigCategoryManage.chatbox": "对话框智能体",
   "PC.Pages.SystemConfigCategoryManage.component": "组件",
   "PC.Pages.SystemConfigCategoryManage.confirmDeleteContent": "确定要删除此分类吗？此操作无法撤销。",
-  "PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle": "确认删除",
+  "PC.Pages.SystemConfigCategoryManage.confirmDeleteAskTitle": "确定要删除此分类吗？",
   "PC.Pages.SystemConfigCategoryManage.connector": "连接器",
   "PC.Pages.SystemConfigCategoryManage.deleteFailed": "删除分类失败:",
   "PC.Pages.SystemConfigCategoryManage.deletedSuccessfully": "分类已删除",

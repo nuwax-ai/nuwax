@@ -4614,7 +4614,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemConfigCategoryManage.chatbox": "チャットボックスエージェント",
   "PC.Pages.SystemConfigCategoryManage.component": "成分",
   "PC.Pages.SystemConfigCategoryManage.confirmDeleteContent": "このカテゴリを削除してもよろしいですか?この操作は元に戻すことができません。",
-  "PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle": "削除の確認",
+  "PC.Pages.SystemConfigCategoryManage.confirmDeleteAskTitle": "このカテゴリを削除してもよろしいですか？",
   "PC.Pages.SystemConfigCategoryManage.connector": "コネクタ",
   "PC.Pages.SystemConfigCategoryManage.deletedSuccessfully": "カテゴリが正常に削除されました",
   "PC.Pages.SystemConfigCategoryManage.deleteFailed": "カテゴリを削除できませんでした:",
