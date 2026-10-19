@@ -433,6 +433,62 @@ describe('useHomeSectionData', () => {
     );
   });
 
+  it('NW-044：执行中补丁未命中已加载行时兜底重拉，终态补丁不触发', async () => {
+    apiAgentConversationListMock.mockResolvedValue({
+      data: [buildConversation({ id: 7 })],
+    });
+    const useHomeSectionData = await freshHook();
+    const { emitConversationChanged } = await import(
+      '@/utils/directorySyncEvents'
+    );
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(apiAgentConversationListMock).toHaveBeenCalledTimes(1);
+
+    // 会话 99 不在已加载列表（刚创建、列表读滞后）：EXECUTING 补丁无处落地，
+    // 须触发一次静默重拉把行连服务端状态拉回
+    await act(async () => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '99',
+        patch: { taskStatus: TaskStatus.EXECUTING },
+        origin: 'test',
+        reason: 'task-status',
+      });
+      await flush();
+    });
+    expect(apiAgentConversationListMock).toHaveBeenCalledTimes(2);
+    // 命中已加载行的 EXECUTING 补丁：本地落位即可，不额外重拉
+    await act(async () => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '7',
+        patch: { taskStatus: TaskStatus.EXECUTING },
+        origin: 'test',
+        reason: 'task-status',
+      });
+      await flush();
+    });
+    expect(apiAgentConversationListMock).toHaveBeenCalledTimes(2);
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.EXECUTING,
+    );
+    // 未命中行的终态补丁（EXECUTING 之外）不触发重拉
+    await act(async () => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '100',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      });
+      await flush();
+    });
+    expect(apiAgentConversationListMock).toHaveBeenCalledTimes(2);
+  });
+
   it('resetSearchAndRefresh：清空关键词并按空 topic 整体刷新', async () => {
     apiAgentConversationListMock.mockResolvedValue({ data: [] });
     const useHomeSectionData = await freshHook();

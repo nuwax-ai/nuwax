@@ -1039,6 +1039,12 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       data,
       'modify',
     );
+    // NW-123：文件树滞后/未加载时映射结果为空，files:[] 会被后端以
+    // "files is invalid" 拒绝并弹全局橙色失败——与提交流程的绿色成功提示
+    // 同屏自相矛盾。无可保存内容时直接跳过请求（与防抖单文件保存同口径）。
+    if (updatedFilesList.length === 0) {
+      return false;
+    }
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: updatedFilesList as UpdateFileInfo[],

@@ -284,6 +284,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatTitleActions.uncollectFailed": "Failed to remove from favorites",
   "PC.Components.ChatTitleActions.uncollected": "Removed from favorites",
   "PC.Components.ConversationQuickNav.tooltip": "Conversation quick navigation",
+  "PC.Components.ConversationRendererV2.engineInternalError": "The agent engine failed to start. Please retry later or reopen the conversation.",
   "PC.Components.ConversationRendererV2.traceTitleProcessOnly": "Work trace",
   "PC.Components.ConversationRendererV2.traceMetricTools": "{0} tool calls",
   "PC.Components.ConversationRendererV2.traceMetricMessages": "{0} messages",
