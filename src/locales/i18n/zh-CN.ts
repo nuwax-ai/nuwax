@@ -3824,7 +3824,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.PublishAudit.statusPassed": "通过",
   "PC.Pages.PublishAudit.statusRejected": "拒绝",
   "PC.Pages.PublishAudit.typeAgent": "智能体",
-  "PC.Pages.PublishAudit.typeNormalProject": "常规项目",
   "PC.Pages.PublishAudit.typePlugin": "插件",
   "PC.Pages.PublishAudit.typeSkill": "技能",
   "PC.Pages.PublishAudit.typeThirdApp": "三方应用",
