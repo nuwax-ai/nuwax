@@ -12,16 +12,27 @@
  */
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
+import {
+  COLLAPSED_PROJECT_KEYS_KEY,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+} from '@/layouts/DynamicMenusLayout/NewHomeSection/collapsePreference';
 import { clearMicroAppDevSession } from './businessAuth';
 import eventBus, { EVENT_NAMES } from './eventBus';
 
-/** clear 时需要保留的用户显式偏好键（主题三键 + 语言两键，跨会话/跨登录态保留） */
+/**
+ * clear 时需要保留的用户显式偏好键（主题三键 + 语言两键 + 首页分组布局，
+ * 跨会话/跨登录态保留）。会话失效重登不应把用户最后收起的布局重置。
+ */
 const USER_PREF_STORAGE_KEYS: string[] = [
   STORAGE_KEYS.USER_THEME_CONFIG,
   STORAGE_KEYS.GLOBAL_SETTINGS,
   STORAGE_KEYS.HAS_USER_SWITCH_THEME,
   I18N_STORAGE_KEYS.ACTIVE_LANG,
   I18N_STORAGE_KEYS.USER_SET,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+  COLLAPSED_PROJECT_KEYS_KEY,
 ];
 
 /**
