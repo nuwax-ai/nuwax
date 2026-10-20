@@ -11,7 +11,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-        "commit": "c5d904a367eabd8570876aeccc50624676393272"
+        "commit": "d10fe5cefe7b71a4f85ef7e06e36ca7af335b243"
       },
       "projectDir": ".",
       "workspaceMode": "project-workspace",
@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "66d8cb9b0d5e34f1b932877958dafb80cd15bdca1c3e46b4b713ae66ddc9319b",
+        "sha256": "ae0e0413699e4859746b7482da131db5f7593c0076cec553016514d4cfdcb3b9",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -53,9 +53,9 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T13:30:23.950Z",
+      "builtAt": "2026-10-20T13:52:59.392Z",
       "cache": {
-        "key": "5d29f988691a9375094de0fd3ee059c504aeddc28c4b0b22a5391e1280a5611d",
+        "key": "f32c1cc32d8d5180c6c8900e688f3cca7826a2f08fbe2a70c1367831d61d0ece",
         "hit": false
       }
     },
@@ -69,7 +69,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "e17d8930463c95d5e11d6f58f81a60410e02fb68"
+        "commit": "2c8e6153a1a211658dfa695955995b932c233090"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -77,7 +77,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "f9f639af64c1d3a5cccfd562fa6187f241cd31d43cdbb5fda701b54e8febfbc5",
+        "sha256": "afac96d91afc71013241bd5a29eb42f2b814c964f0f4c067587ffb638d06e96d",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -98,11 +98,10 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T13:24:10.944Z",
+      "builtAt": "2026-10-20T13:53:24.573Z",
       "cache": {
-        "key": "569b919c5213f28b8abc34b51a30e7ffbd21c94b19abbaca6c3cf65d66089641",
-        "hit": true,
-        "reusedAt": "2026-10-20T13:30:24.524Z"
+        "key": "36d3633ca0e62711836ff06f05b626a4efb511b02d8395a8340149488d041a59",
+        "hit": false
       }
     }
   ]
