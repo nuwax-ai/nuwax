@@ -11,7 +11,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-        "commit": "e0c47d2717393a605b3089f4e7e83436c2dd4c95"
+        "commit": "2ece50c9fdc178853f03f67661b7f81434a49c1d"
       },
       "projectDir": ".",
       "workspaceMode": "project-workspace",
@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "142c98f32d8f99eb35bfeda9101def3c0b8ec65d396e97dd8f1cdb82626821dd",
+        "sha256": "704c41c7d148c91ef463be6e586889096f9ddb7736e11b4ad6ca30e59071ef90",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -53,11 +53,10 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T09:43:28.228Z",
+      "builtAt": "2026-10-20T11:41:06.448Z",
       "cache": {
-        "key": "9670f56121abf6a6c020e1c7153f5da313a10a8bcfc91f0544c4f47b0d8c3d15",
-        "hit": true,
-        "reusedAt": "2026-10-20T11:30:12.387Z"
+        "key": "9afc68528f62a64afa7f2bfc5de7351dbf6d5ef04ce1793bead6a8a9d9005ee4",
+        "hit": false
       }
     },
     {
@@ -70,7 +69,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "639611ae5935f2601102a6fe106cb701ef4964bb"
+        "commit": "0626f5523fd15b8edb56df4b77d0484f194e3a29"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -78,7 +77,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "946daffe75149535d7dc559ebfc117e3adfe8648ce99927c28a6710c5aa73d1c",
+        "sha256": "d75985f1394c8ffdba816497c7e64010033be3d042f97c77418f8c1091dcae3b",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -99,11 +98,10 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T02:38:35.322Z",
+      "builtAt": "2026-10-20T11:41:31.665Z",
       "cache": {
-        "key": "6b46dc79c88f591f31bde7df47e21d5f0344db5b19b187c088fea1246364abe7",
-        "hit": true,
-        "reusedAt": "2026-10-20T11:30:12.901Z"
+        "key": "16de5dcf3ece97280dc09c8ca1fce1dbd589eb1ee7c33671a476e03c18c4c52c",
+        "hit": false
       }
     }
   ]
