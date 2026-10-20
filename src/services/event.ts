@@ -16,6 +16,7 @@ export async function apiCollectEvent(): Promise<
 > {
   return request('/api/notify/event/collect/batch', {
     method: 'GET',
+    silentPolling: true,
   });
 }
 
@@ -23,5 +24,6 @@ export async function apiCollectEvent(): Promise<
 export async function apiClearEvent(): Promise<RequestResponse<null>> {
   return request('/api/notify/event/clear', {
     method: 'GET',
+    silentPolling: true,
   });
 }

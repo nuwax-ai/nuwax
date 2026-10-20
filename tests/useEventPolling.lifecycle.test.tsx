@@ -69,6 +69,26 @@ describe('全局通知真实 React / Umi request 生命周期', () => {
     vi.useRealTimers();
   });
 
+  it('后台采集失败不产生未处理拒绝或清会话，下一轮恢复后正常分发', async () => {
+    login();
+    collect
+      .mockRejectedValueOnce(new Error('HTTP 401'))
+      .mockResolvedValueOnce(events)
+      .mockResolvedValue(empty);
+    renderHook(() => useEventPolling());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(collect).toHaveBeenCalledTimes(1);
+    expect(emissionsFor('test-event')).toHaveLength(0);
+    expect(emissionsFor(EVENT_NAMES.AUTH_SESSION_CLEARED)).toHaveLength(0);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(collect).toHaveBeenCalledTimes(3);
+    expect(emissionsFor('test-event')).toHaveLength(1);
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
   it('未登录挂载不首跑，也不在可见页反复重试', async () => {
     renderHook(() => useEventPolling());
     await act(async () => {

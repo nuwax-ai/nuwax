@@ -148,6 +148,14 @@ const errorHandler = (error: any, opts: any) => {
   if (!error) {
     return;
   }
+  // 被动轮询只保留失败结果供下一轮重试，不清会话、跳登录或弹提示。
+  if (
+    error?.config?.silentPolling === true ||
+    opts?.silentPolling === true ||
+    opts?.config?.silentPolling === true
+  ) {
+    return;
+  }
   // 请求方明确自行处理错误时，不弹全局网络提示；认证失效仍走统一登出。
   if (
     (error?.config?.skipErrorHandler || opts?.skipErrorHandler) &&
@@ -354,6 +362,12 @@ const responseInterceptors = [
 
     // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
+      if (config?.silentPolling === true) {
+        // 仍以失败结束本轮，避免 useRequest 把错误 envelope 当成功数据广播。
+        const error = errorThrower({ ...data, success: false });
+        error.config = config;
+        throw error;
+      }
       if (config?.skipErrorHandler) return response; // 跳过错误处理
       const error = errorThrower?.(data);
 
