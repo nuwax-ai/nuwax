@@ -14,6 +14,7 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import { isImeConfirming } from '@/utils/imeEnter';
 import {
   apiNormalProjectDelete,
   apiNormalProjectUpdate,
@@ -2009,7 +2010,11 @@ const ProjectPanel = forwardRef<
           <Input
             value={renameName}
             onChange={(event) => setRenameName(event.target.value)}
-            onPressEnter={handleChildRenameSubmit}
+            onPressEnter={(event) => {
+              // NW-148：输入法选词的回车不提交
+              if (isImeConfirming(event)) return;
+              void handleChildRenameSubmit();
+            }}
             maxLength={50}
           />
         </Modal>
@@ -2027,7 +2032,11 @@ const ProjectPanel = forwardRef<
           <Input
             value={projectRenameName}
             onChange={(event) => setProjectRenameName(event.target.value)}
-            onPressEnter={handleProjectRenameSubmit}
+            onPressEnter={(event) => {
+              // NW-148：输入法选词的回车不提交
+              if (isImeConfirming(event)) return;
+              void handleProjectRenameSubmit();
+            }}
             maxLength={50}
           />
         </Modal>

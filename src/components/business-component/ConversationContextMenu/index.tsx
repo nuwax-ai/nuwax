@@ -11,6 +11,7 @@ import {
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { emitConversationChanged } from '@/utils/directorySyncEvents';
+import { isImeConfirming } from '@/utils/imeEnter';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -331,7 +332,11 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         <Input
           value={renameTopic}
           onChange={(e) => setRenameTopic(e.target.value)}
-          onPressEnter={handleRenameSubmit}
+          onPressEnter={(event) => {
+            // NW-148：输入法选词的回车不提交，等拼音上屏后再按一次
+            if (isImeConfirming(event)) return;
+            void handleRenameSubmit();
+          }}
           maxLength={50}
         />
       </Modal>
