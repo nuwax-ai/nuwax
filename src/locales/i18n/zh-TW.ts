@@ -5509,6 +5509,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.VerifyCode.countdownSuffix": " 秒後",
   "PC.Pages.VerifyCode.inputEmailCode": "請輸入郵箱驗證碼",
   "PC.Pages.VerifyCode.inputSmsCode": "請輸入簡訊驗證碼",
+  "PC.Pages.VerifyCode.loggingIn": "登入中...",
   "PC.Pages.VerifyCode.resend": "重新傳送",
   "PC.Pages.VerifyCode.yourEmail": "你的郵箱",
   "PC.Pages.VerifyCode.yourPhone": "手機號",
