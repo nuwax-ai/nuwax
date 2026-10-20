@@ -94,8 +94,9 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     expect(h.download).not.toHaveBeenCalled();
     await act(async () => finish({ success: true }));
     expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent(key('installing'));
+      screen.getByRole('button', { name: key('installing') }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('下载到安装状态由宿主推进，显示进度并且不追加第二次安装', async () => {
@@ -133,14 +134,17 @@ describe('更新就绪日志入口与主进程一键策略', () => {
       state({ status: 'installing', installAfterDownload: true });
       h.listeners.forEach((listener) => listener(h.state));
     });
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent(key('installingHint'));
+      screen.getByRole('button', { name: key('installing') }),
+    ).toBeInTheDocument();
     await act(async () => finish(true));
     expect(h.install).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent(key('installingHint'));
+      screen.getByRole('button', { name: key('installing') }),
+    ).toBeInTheDocument();
   });
 
   it('一键任务失败后可以从日志重试，不触发安装', async () => {
@@ -183,9 +187,10 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     await userEvent.click(
       within(card).getByRole('button', { name: key('install') }),
     );
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      await screen.findByRole('dialog', {}, { timeout: 2_000 }),
-    ).toHaveTextContent(key('installingHint'));
+      screen.getByRole('button', { name: key('installing') }),
+    ).toBeInTheDocument();
     act(() => {
       state({
         status: 'error',
@@ -205,7 +210,7 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('安装状态在延迟内结束时不残留进度弹窗', () => {
+  it('安装失败后结束局部等待状态，不残留进度弹窗', () => {
     vi.useFakeTimers();
     try {
       state({ status: 'installing', installAfterDownload: true });
