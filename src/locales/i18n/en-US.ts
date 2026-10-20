@@ -5769,6 +5769,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.VerifyCode.countdownSuffix": "s later",
   "PC.Pages.VerifyCode.inputEmailCode": "Enter email verification code",
   "PC.Pages.VerifyCode.inputSmsCode": "Enter SMS verification code",
+  "PC.Pages.VerifyCode.loggingIn": "Logging in...",
   "PC.Pages.VerifyCode.resend": "Resend",
   "PC.Pages.VerifyCode.yourEmail": "your email ",
   "PC.Pages.VerifyCode.yourPhone": "phone number ",

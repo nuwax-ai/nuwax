@@ -5495,6 +5495,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.VerifyCode.countdownSuffix": "後ほど",
   "PC.Pages.VerifyCode.inputEmailCode": "メール認証コードを入力してください",
   "PC.Pages.VerifyCode.inputSmsCode": "SMS 確認コードを入力してください",
+  "PC.Pages.VerifyCode.loggingIn": "ログイン中...",
   "PC.Pages.VerifyCode.resend": "再送信",
   "PC.Pages.VerifyCode.yourEmail": "あなたのメールアドレス",
   "PC.Pages.VerifyCode.yourPhone": "電話番号",
