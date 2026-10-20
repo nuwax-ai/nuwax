@@ -1,16 +1,15 @@
 /**
  * 客户端版本徽标（logo 旁，仅桌面宿主）
- * @description 常显宿主客户端版本号；有新版本 → 「更新」文案胶囊：hover 弹
- * 「目标版本 + 发布日期 + 更新日志」卡片，点击直接进入下载流程；
- * 下载中 → 进度圆环（卡片内同步进度）；下载完成 → 「重启更新」文案胶囊（点击进入 loading
- * 后重启安装）；失败（已有目标版本）→ 点击重试。
- * 点击「重启更新」→ 全屏重启遮罩：宿主侧退出前清理链可达 10s+ 才 quitAndInstall，
- * 遮罩保留到进程退出；宿主拒绝/异常（dev 包/MSI）浮出错误。
+ * @description 有新版本时显示「新版本就绪」；点击/悬停打开更新日志，由日志内按钮发起操作。
+ * Windows 一键宿主从下载入口继续安装，renderer 只消费进度，不追加安装调用；
+ * 旧宿主保留先下载、再安装的能力边界。下载和安装均使用局部状态反馈，
+ * 宿主侧退出前清理链可达 10s+ 才 quitAndInstall；此时保持徽标忙碌，不阻挡页面。
+ * 宿主拒绝/异常（dev 包/MSI）浮出错误。
  * 浏览器 / 旧宿主（无 updater 桥）整体不渲染。
  */
 import { dict } from '@/services/i18nRuntime';
 import { InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Button, Modal, Popover, Progress, Spin } from 'antd';
+import { Button, Modal, Popover, Progress } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   isAvailable,
@@ -48,7 +47,7 @@ const ClientVersionBadge: React.FC = () => {
   const [state, setState] = useState<ClientUpdateState | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  /** 重启安装遮罩：running=已触发宿主安装（清理+退出空窗，可达数十秒）；failed=宿主拒绝/异常 */
+  /** running 保持局部忙碌到宿主退出；failed 显示宿主拒绝/异常。 */
   const [installPhase, setInstallPhase] = useState<
     'idle' | 'running' | 'failed'
   >('idle');
@@ -56,8 +55,12 @@ const ClientVersionBadge: React.FC = () => {
     undefined,
   );
   const mounted = useRef(true);
+  const actionInFlight = useRef(false);
+  const installationActive =
+    installPhase === 'running' || state?.status === 'installing';
 
   useEffect(() => {
+    mounted.current = true;
     start();
     const unsubscribe = subscribe((next) => {
       if (mounted.current) setState(next);
@@ -67,6 +70,16 @@ const ClientVersionBadge: React.FC = () => {
       unsubscribe();
     };
   }, []);
+
+  // IPC 已接受任务后，宿主仍可能报告安装启动失败；释放本入口供用户重试。
+  useEffect(() => {
+    if (state?.status === 'error' && installPhase === 'running') {
+      actionInFlight.current = false;
+      setBusy(false);
+      setInstallError(state.error);
+      setInstallPhase('failed');
+    }
+  }, [state?.status, state?.error, installPhase]);
 
   const realPercent =
     typeof state?.progress?.percent === 'number' &&
@@ -82,35 +95,71 @@ const ClientVersionBadge: React.FC = () => {
   const status = state.status;
   const versionText = `v${state.hostVersion}`;
   const targetVersion = state.version ? `v${state.version}` : '';
+  const oneClickUpdate =
+    state.installAfterDownload === true && state.canAutoUpdate !== false;
 
   const handleDownload = async () => {
+    if (
+      actionInFlight.current ||
+      status === 'downloading' ||
+      status === 'installing'
+    )
+      return;
+    actionInFlight.current = true;
     setBusy(true);
-    await triggerDownload();
-    if (mounted.current) setBusy(false);
+    setInstallError(undefined);
+    setPopoverOpen(false);
+    let handedOff = false;
+    try {
+      const ok = await triggerDownload();
+      if (!mounted.current) return;
+      if (oneClickUpdate) {
+        handedOff = ok;
+        setInstallPhase(ok ? 'running' : 'failed');
+      }
+    } catch {
+      if (mounted.current) {
+        setInstallPhase('failed');
+        setInstallError(dict('PC.Components.ClientUpdate.errorTitle'));
+      }
+    } finally {
+      if (!handedOff) {
+        actionInFlight.current = false;
+        if (mounted.current) setBusy(false);
+      }
+    }
   };
 
   const handleInstall = async () => {
+    if (actionInFlight.current || status === 'installing') return;
+    actionInFlight.current = true;
     setBusy(true);
     setInstallError(undefined);
-    // 全屏遮罩即刻接管反馈：宿主侧要先跑退出前清理链（可达 10s+）才 quitAndInstall，
-    // 期间仅有 hover 卡内按钮 spinner，鼠标移开后整个界面无任何可见状态
+    setPopoverOpen(false);
+    // 宿主清理和退出期间只在徽标反馈安装状态。
     setInstallPhase('running');
+    let handedOff = false;
     try {
       const res = await triggerInstall();
+      if (!mounted.current) return;
       if (!res?.success) {
-        // dev 包/MSI/宿主拒绝：收回遮罩并浮出错误
+        // dev 包/MSI/宿主拒绝：结束忙碌状态并浮出错误
         setInstallPhase('failed');
         setInstallError(res?.error);
         return;
       }
-      // 成功：进程即将退出，遮罩保留到窗口关闭（回退正常 UI 会造成「点了没反应」假象）
+      handedOff = true;
+      // 成功：保留徽标忙碌到进程退出，避免误以为任务已结束而重复提交。
     } catch {
       if (mounted.current) {
         setInstallPhase('failed');
         setInstallError(dict('PC.Components.ClientUpdate.installFailed'));
       }
     } finally {
-      if (mounted.current) setBusy(false);
+      if (!handedOff) {
+        actionInFlight.current = false;
+        if (mounted.current) setBusy(false);
+      }
     }
   };
 
@@ -138,6 +187,12 @@ const ClientVersionBadge: React.FC = () => {
 
   const isError = status === 'error';
   const isDownloading = status === 'downloading';
+  const isInstalling = installationActive;
+  const downloadLabel = dict(
+    oneClickUpdate
+      ? 'PC.Components.ClientUpdate.install'
+      : 'PC.Components.ClientUpdate.download',
+  );
   const percent = isDownloading ? realPercent ?? simPercent : undefined;
 
   const cardTitle = isError
@@ -188,7 +243,11 @@ const ClientVersionBadge: React.FC = () => {
       <div
         style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}
       >
-        {status === 'downloaded' ? (
+        {isInstalling ? (
+          <Button loading disabled>
+            {dict('PC.Components.ClientUpdate.installing')}
+          </Button>
+        ) : status === 'downloaded' ? (
           <Button type="primary" loading={busy} onClick={handleInstall}>
             {dict('PC.Components.ClientUpdate.install')}
           </Button>
@@ -199,31 +258,20 @@ const ClientVersionBadge: React.FC = () => {
           </Button>
         ) : (
           <Button type="primary" loading={busy} onClick={handleDownload}>
-            {isError
-              ? dict('PC.Components.ClientUpdate.retry')
-              : dict('PC.Components.ClientUpdate.download')}
+            {isError ? dict('PC.Components.ClientUpdate.retry') : downloadLabel}
           </Button>
         )}
       </div>
     </div>
   );
 
-  // 点击徽标 = 直接触发对应动作（下载/重试/重启安装）；下载中不重复触发，进度看悬浮卡
-  const handleBadgeClick = () => {
-    if (status === 'downloaded') {
-      handleInstall();
-    } else if (!isDownloading) {
-      handleDownload();
-    }
-  };
-
   const ariaLabel = isDownloading
     ? dict('PC.Components.ClientUpdate.downloading')
-    : status === 'downloaded'
-    ? dict('PC.Components.ClientUpdate.install')
+    : isInstalling
+    ? dict('PC.Components.ClientUpdate.installing')
     : isError
     ? dict('PC.Components.ClientUpdate.errorTitle')
-    : dict('PC.Components.ClientUpdate.download');
+    : dict('PC.Components.ClientUpdate.ready');
 
   return (
     <>
@@ -231,8 +279,8 @@ const ClientVersionBadge: React.FC = () => {
         placement="bottomLeft"
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
-        trigger="hover"
-        mouseEnterDelay={0.3}
+        trigger={['hover', 'click']}
+        mouseEnterDelay={0.8}
         arrow={false}
         destroyOnHidden
         title={cardTitle}
@@ -240,8 +288,14 @@ const ClientVersionBadge: React.FC = () => {
       >
         <span
           role="button"
+          tabIndex={0}
           aria-label={ariaLabel}
-          onClick={handleBadgeClick}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setPopoverOpen((open) => !open);
+            }
+          }}
           style={
             isDownloading
               ? {
@@ -264,7 +318,7 @@ const ClientVersionBadge: React.FC = () => {
                   color: isError
                     ? 'var(--xagi-color-error)'
                     : 'var(--xagi-color-primary)',
-                  // 文案胶囊（更新/重启更新）12px 与版本号小字同级；error 仍为图标
+                  // 就绪提示与版本号小字同级；error 仍为图标。
                   fontSize: isError ? 15 : 12,
                   fontWeight: isError ? undefined : 500,
                   cursor: 'pointer',
@@ -279,21 +333,23 @@ const ClientVersionBadge: React.FC = () => {
               strokeWidth={18}
               showInfo={false}
             />
-          ) : status === 'downloaded' ? (
+          ) : isInstalling ? (
             <>
-              {busy && <LoadingOutlined spin style={{ marginRight: 4 }} />}
-              {dict('PC.Components.ClientUpdate.install')}
+              {(busy || isInstalling) && (
+                <LoadingOutlined spin style={{ marginRight: 4 }} />
+              )}
+              {dict('PC.Components.ClientUpdate.installing')}
             </>
           ) : isError ? (
             <InfoCircleOutlined />
           ) : (
-            dict('PC.Components.ClientUpdate.update')
+            dict('PC.Components.ClientUpdate.ready')
           )}
         </span>
       </Popover>
-      {/* 重启更新遮罩：清理+退出空窗期的全局反馈；成功后保留到进程退出 */}
+      {/* 只有失败需要额外提示；下载和安装不打开进度弹窗。 */}
       <Modal
-        open={installPhase !== 'idle'}
+        open={installPhase === 'failed'}
         centered
         width={420}
         footer={null}
@@ -303,56 +359,38 @@ const ClientVersionBadge: React.FC = () => {
         zIndex={3000}
         destroyOnHidden
       >
-        {installPhase === 'failed' ? (
-          <div>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: 'var(--xagi-color-error)',
-              }}
-            >
-              {dict('PC.Components.ClientUpdate.installFailed')}
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 12,
-                color: 'var(--xagi-color-text-secondary)',
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {installError}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                marginTop: 16,
-              }}
-            >
-              <Button onClick={() => setInstallPhase('idle')}>
-                {dict('PC.Components.ClientUpdate.close')}
-              </Button>
-            </div>
+        <div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'var(--xagi-color-error)',
+            }}
+          >
+            {dict('PC.Components.ClientUpdate.installFailed')}
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
-            <Spin size="large" />
-            <div style={{ marginTop: 16, fontSize: 15, fontWeight: 500 }}>
-              {dict('PC.Components.ClientUpdate.installing')}
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 12,
-                color: 'var(--xagi-color-text-tertiary)',
-              }}
-            >
-              {dict('PC.Components.ClientUpdate.installingHint')}
-            </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: 'var(--xagi-color-text-secondary)',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {installError ?? state.error}
           </div>
-        )}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginTop: 16,
+            }}
+          >
+            <Button onClick={() => setInstallPhase('idle')}>
+              {dict('PC.Components.ClientUpdate.close')}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </>
   );

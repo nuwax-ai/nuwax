@@ -11,6 +11,7 @@ import {
   extractOpenUiArtifactId,
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
+import { taskResultFileName } from '@/utils/taskResult';
 
 export type ProgressStepStatus = 'completed' | 'active' | 'pending';
 
@@ -32,6 +33,11 @@ export interface ProgressCapsuleTaskResult {
   key: string;
   description: string;
   file: string;
+  /**
+   * 同一个 task-result 里有多个 file 时，行内改展示文件名。
+   * 缺省仍用 description，避免单文件产物改掉原来的文案。
+   */
+  label?: string;
 }
 
 /** OpenUI 产物行（仅 Backend.Sandbox.Event.renderUI，inline/sidecar 两形态）：
@@ -121,10 +127,16 @@ const nodeDisplayTitle = (node: ConversationProcessNode): string =>
   node.title?.trim() || nodeAction(node);
 
 const TASK_RESULT_TAG = /<task-result[^>]*>([\s\S]*?)<\/task-result>/g;
+const stripTaskResultText = (value: string): string =>
+  value.trim().replace(/<[^>]+>/g, '');
 const pickTaskResultChild = (inner: string, tag: string): string =>
-  (inner.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))?.[1] ?? '')
-    .trim()
-    .replace(/<[^>]+>/g, '');
+  stripTaskResultText(
+    inner.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))?.[1] ?? '',
+  );
+const pickTaskResultFiles = (inner: string): string[] =>
+  [...inner.matchAll(/<file[^>]*>([\s\S]*?)<\/file>/g)]
+    .map((match) => stripTaskResultText(match[1]))
+    .filter(Boolean);
 
 /** 从轮内 assistant 消息原文提取 <task-result> 标签（会话输出同源口径） */
 const extractTaskResults = (
@@ -135,14 +147,18 @@ const extractTaskResults = (
     if (message.role !== AssistantRoleEnum.ASSISTANT) continue;
     for (const match of message.text?.matchAll(TASK_RESULT_TAG) ?? []) {
       const description = pickTaskResultChild(match[1], 'description');
-      const file = pickTaskResultChild(match[1], 'file');
-      if (description || file) {
+      const files = pickTaskResultFiles(match[1]);
+      if (!description && files.length === 0) continue;
+      // 同一标签里的多个 file 各占一行。只留第一个时，其余文件在胶囊里点不到
+      const fileList = files.length > 0 ? files : [''];
+      fileList.forEach((file) => {
         results.push({
           key: `${message.id}-${results.length}`,
           description,
           file,
+          label: files.length > 1 ? taskResultFileName(file) : undefined,
         });
-      }
+      });
     }
   }
   return results;
