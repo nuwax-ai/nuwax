@@ -56,7 +56,8 @@
       "builtAt": "2026-10-20T10:16:44.398Z",
       "cache": {
         "key": "3ecfebe2a38a69dcf3ceb843597f6220e9381a169812314eea3fb8b671a0107c",
-        "hit": false
+        "hit": true,
+        "reusedAt": "2026-10-20T10:40:41.273Z"
       }
     },
     {
@@ -101,7 +102,8 @@
       "builtAt": "2026-10-20T10:17:05.361Z",
       "cache": {
         "key": "69f835975b6c0ca5a06bfcecf5e954a87d23a0b693a3bb4861d18768044e84ab",
-        "hit": false
+        "hit": true,
+        "reusedAt": "2026-10-20T10:40:41.764Z"
       }
     }
   ]
