@@ -1,0 +1,1 @@
+import{a0 as s,af as t}from"./index-DwaiJoJn.js";const a="/m/assets/icon-video-play-BhdH60ZI.png";class n{constructor(){this.title="",this.convId="",this.items=[]}}let e="",o=null;function i(a){e=s(),o=a,t({url:"/pages/message/merge-forward-detail"})}function l(){const t=e==s()?o:null;return o=null,t}export{n as I,a as _,i as o,l as t};

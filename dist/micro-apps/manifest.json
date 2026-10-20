@@ -48,16 +48,16 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.14.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T10:16:44.398Z",
+      "builtAt": "2026-10-20T09:43:28.228Z",
       "cache": {
-        "key": "3ecfebe2a38a69dcf3ceb843597f6220e9381a169812314eea3fb8b671a0107c",
+        "key": "9670f56121abf6a6c020e1c7153f5da313a10a8bcfc91f0544c4f47b0d8c3d15",
         "hit": true,
-        "reusedAt": "2026-10-20T10:40:41.273Z"
+        "reusedAt": "2026-10-20T11:30:12.387Z"
       }
     },
     {
@@ -94,16 +94,16 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.14.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T10:17:05.361Z",
+      "builtAt": "2026-10-20T02:38:35.322Z",
       "cache": {
-        "key": "69f835975b6c0ca5a06bfcecf5e954a87d23a0b693a3bb4861d18768044e84ab",
+        "key": "6b46dc79c88f591f31bde7df47e21d5f0344db5b19b187c088fea1246364abe7",
         "hit": true,
-        "reusedAt": "2026-10-20T10:40:41.764Z"
+        "reusedAt": "2026-10-20T11:30:12.901Z"
       }
     }
   ]
