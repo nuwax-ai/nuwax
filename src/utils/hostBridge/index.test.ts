@@ -473,6 +473,18 @@ describe('hostBridge（统一对外接入层）', () => {
   });
 
   describe('cookie session bridge', () => {
+    it('验证异常继续 reject，不转换成未登录 false', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          syncSession: async () => {
+            throw new Error('HTTP 503');
+          },
+        },
+      };
+      await expect(auth.syncSession()).rejects.toThrow(
+        'Cookie session validation unavailable',
+      );
+    });
     it('validates an already stored cookie without passing a token', async () => {
       const syncSession = vi.fn(async () => true);
       const beginLogin = vi.fn(async () => true);
