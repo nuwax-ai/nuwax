@@ -38,6 +38,10 @@ vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
+import {
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+} from './collapsePreference';
 import SidebarNavHomeSection from './SidebarNavHomeSection';
 
 const shell = {
@@ -61,11 +65,13 @@ describe('style3 侧栏切回同步', () => {
     refreshList.mockClear();
     revalidateVisible.mockClear();
     hasExecutingChildren.mockClear();
+    window.localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    window.localStorage.clear();
   });
 
   it('路由在挂载后 30 秒内切换时，节流到期仍刷新静止的项目和任务列表', () => {
@@ -147,6 +153,37 @@ describe('style3 侧栏切回同步', () => {
         name: 'PC.Components.AgentConversation.viewMore',
       }),
     ).toBeNull();
+  });
+
+  it('挂载时沿用上次收起的项目分组，展开后清掉偏好', () => {
+    window.localStorage.setItem(PROJECT_SECTION_COLLAPSED_KEY, '1');
+    render(<SidebarNavHomeSection shell={shell} />);
+
+    const projectHeader = screen.getByRole('button', {
+      name: 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
+    });
+    expect(projectHeader).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(projectHeader);
+    expect(projectHeader).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      window.localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY),
+    ).toBeNull();
+  });
+
+  it('收起任务分组后重新挂载仍保持收起', () => {
+    const first = render(<SidebarNavHomeSection shell={shell} />);
+    const taskName = 'PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask';
+
+    fireEvent.click(screen.getByRole('button', { name: taskName }));
+    expect(window.localStorage.getItem(TASK_SECTION_COLLAPSED_KEY)).toBe('1');
+
+    first.unmount();
+    render(<SidebarNavHomeSection shell={shell} />);
+    expect(screen.getByRole('button', { name: taskName })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 });
 

@@ -77,6 +77,10 @@ import {
   useState,
 } from 'react';
 import { history } from 'umi';
+import {
+  readCollapsedProjectKeys,
+  writeCollapsedProjectKeys,
+} from '../../collapsePreference';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -277,10 +281,14 @@ const ProjectPanel = forwardRef<
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
-    // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记
-    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
-      () => new Set(),
+    // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记。
+    // 收起集合同时是用户最后一次布局（NW-149），初始化与变更都读写本地偏好
+    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() =>
+      readCollapsedProjectKeys(),
     );
+    useEffect(() => {
+      writeCollapsedProjectKeys(collapsedIds);
+    }, [collapsedIds]);
     // 项目级标记：置顶/归档/收藏回读自后端字段（字段未返回时不标记）
     const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
     const [archivedIds, setArchivedIds] = useState<Set<string>>(

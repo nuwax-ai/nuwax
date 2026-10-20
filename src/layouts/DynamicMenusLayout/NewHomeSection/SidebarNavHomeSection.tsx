@@ -10,6 +10,12 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 
+import {
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+  readCollapsedFlag,
+  writeCollapsedFlag,
+} from './collapsePreference';
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import styles from './index.less';
 import TaskListSection from './TaskListSection';
@@ -23,9 +29,22 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   const location = useLocation();
   const { aiOSCommercialEdition } = useCommercialEdition();
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
-  // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
-  const [projectCollapsed, setProjectCollapsed] = useState(false);
-  const [taskCollapsed, setTaskCollapsed] = useState(false);
+  // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表）；NW-149 起记录最后一次
+  // 布局，刷新或重开客户端后保持收起。读取失败由偏好模块回退默认展开
+  const [projectCollapsed, setProjectCollapsed] = useState(() =>
+    readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY),
+  );
+  const [taskCollapsed, setTaskCollapsed] = useState(() =>
+    readCollapsedFlag(TASK_SECTION_COLLAPSED_KEY),
+  );
+  // 折叠态就是用户最后一次操作：所有变更入口（分组头点击、滚动置顶展开）
+  // 都经 state，变更后统一落盘，避免漏记某个入口
+  useEffect(() => {
+    writeCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY, projectCollapsed);
+  }, [projectCollapsed]);
+  useEffect(() => {
+    writeCollapsedFlag(TASK_SECTION_COLLAPSED_KEY, taskCollapsed);
+  }, [taskCollapsed]);
   const lastSyncAtRef = useRef(Date.now());
   const pendingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
