@@ -118,69 +118,86 @@ const VerifyCode: React.FC = () => {
     });
   };
 
+  // 校验失败后清空已输入的验证码，回到第一格可继续输入
+  const resetCodeInput = () => {
+    setCodeString('');
+    setErrorString('');
+    window.setTimeout(() => {
+      inputRef.current?.focus({
+        preventScroll: true,
+        cursor: 'end',
+      });
+    }, 0);
+  };
+
   // 验证码登录
-  const { run: runLoginCode } = useRequest(apiLoginCode, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
-      const {
-        resetPass,
-        expireDate,
-        token,
-        redirect: responseRedirectUrl,
-      } = result;
-      try {
-        const authResult = await finishBusinessLogin(token);
-        if (authResult !== 'ready') {
-          message.error(
-            authResult === 'missing-dev-token'
-              ? '登录接口未返回本地调试所需的 Token'
-              : '客户端登录会话同步失败，请升级客户端后重试',
-          );
-          return;
-        }
-        localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phone);
+  const { run: runLoginCode, loading: loginLoading } = useRequest(
+    apiLoginCode,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
+        const {
+          resetPass,
+          expireDate,
+          token,
+          redirect: responseRedirectUrl,
+        } = result;
         try {
-          const latestUserInfo = await UserService.refreshUserInfo();
-          await syncLangFromUserInfo(latestUserInfo);
-        } catch (error) {
-          console.error(
-            '[VerifyCode] Sync language after login failed:',
-            error,
-          );
+          const authResult = await finishBusinessLogin(token);
+          if (authResult !== 'ready') {
+            message.error(
+              authResult === 'missing-dev-token'
+                ? '登录接口未返回本地调试所需的 Token'
+                : '客户端登录会话同步失败，请升级客户端后重试',
+            );
+            resetCodeInput();
+            return;
+          }
+          localStorage.setItem(EXPIRE_DATE, expireDate);
+          localStorage.setItem(PHONE, params[0].phone);
+          try {
+            const latestUserInfo = await UserService.refreshUserInfo();
+            await syncLangFromUserInfo(latestUserInfo);
+          } catch (error) {
+            console.error(
+              '[VerifyCode] Sync language after login failed:',
+              error,
+            );
+          }
+          // 登录成功后强制刷新菜单数据（可能切换了账号）
+          await loadMenus(true);
+          // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+          if (!resetPass) {
+            history.push('/set-password');
+          } else {
+            navigateAfterLogin(
+              history,
+              searchParams.get('redirect'),
+              responseRedirectUrl,
+              navigateToAuthUrl,
+            );
+          }
+        } finally {
+          // 成功路径导航离开本页；提前 return 的失败路径在此恢复提交能力
+          settleLoginPending();
         }
-        // 登录成功后强制刷新菜单数据（可能切换了账号）
-        await loadMenus(true);
-        // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
-        if (!resetPass) {
-          history.push('/set-password');
-        } else {
-          navigateAfterLogin(
-            history,
-            searchParams.get('redirect'),
-            responseRedirectUrl,
-            navigateToAuthUrl,
-          );
-        }
-      } finally {
-        // 成功路径导航离开本页；提前 return 的失败路径在此恢复提交能力
+      },
+      onError: (error: any) => {
+        resetCodeInput();
         settleLoginPending();
-      }
+        // 验证码失效（后端原始报错如「校验参数异常」）已由请求层转成可懂 toast；
+        // 页面清空已输入的码并放开重发冷却，引导重新获取后重试
+        const rawMessage = error?.info?.message ?? error?.message;
+        if (isLoginCodeInvalidError(rawMessage)) {
+          setCodeString('');
+          setErrorString(dict('PC.Pages.VerifyCode.codeInvalidTip'));
+          onClearTimer();
+          setCountDown(0);
+        }
+      },
     },
-    onError: (error: any) => {
-      settleLoginPending();
-      // 验证码失效（后端原始报错如「校验参数异常」）已由请求层转成可懂 toast；
-      // 页面清空已输入的码并放开重发冷却，引导重新获取后重试
-      const rawMessage = error?.info?.message ?? error?.message;
-      if (isLoginCodeInvalidError(rawMessage)) {
-        setCodeString('');
-        setErrorString(dict('PC.Pages.VerifyCode.codeInvalidTip'));
-        onClearTimer();
-        setCountDown(0);
-      }
-    },
-  });
+  );
 
   /**
    * 触发验证码登录。输入填满自动提交、回车与按钮点击共用此入口；
@@ -477,6 +494,12 @@ const VerifyCode: React.FC = () => {
               <ImageCaptcha {...resendCaptcha.inputProps} />
             </div>
           )}
+          {loginLoading ? (
+            <div className={styles['login-status']} role="status">
+              <Spin size="small" />
+              <span>{dict('PC.Pages.VerifyCode.loggingIn')}</span>
+            </div>
+          ) : null}
         </div>
         <Input
           ref={inputRef}

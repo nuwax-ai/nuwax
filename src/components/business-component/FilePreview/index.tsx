@@ -34,6 +34,13 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
 import { useLocalPreviewSource } from './useLocalPreviewSource';
+import { mountXlsxImageOverlay } from './xlsxImageOverlay';
+import {
+  extractXlsxImages,
+  imagesFromPreviewer,
+  omitXlsxDrawings,
+  previewerHasSheetImages,
+} from './xlsxSheetImages';
 
 // @ts-ignore
 import jsPreviewDocx from '@js-preview/docx';
@@ -663,6 +670,7 @@ const FilePreviewContent: React.FC<
     type: FileType;
   } | null>(null);
   const pptxAbortControllerRef = useRef<AbortController | null>(null);
+  const xlsxImageOverlayDisposeRef = useRef<(() => void) | null>(null);
   const downloadAbortControllerRef = useRef<AbortController | null>(null);
   const preparedPptxRef = useRef<{
     src: FilePreviewProps['src'];
@@ -1027,6 +1035,8 @@ const FilePreviewContent: React.FC<
     setStatus('loading');
     setErrorMessage('');
 
+    xlsxImageOverlayDisposeRef.current?.();
+    xlsxImageOverlayDisposeRef.current = null;
     if (previewerRef.current) {
       try {
         previewerRef.current.destroy?.();
@@ -1068,11 +1078,71 @@ const FilePreviewContent: React.FC<
           previewer = jsPreviewDocx.init(containerRef.current);
           await previewer.preview(previewSrc);
           break;
-        case 'xlsx':
-          // @js-preview/excel 不支持 height 参数，高度通过 CSS 控制
+        case 'xlsx': {
+          // 插件不改原文件。只有原文件预览失败时，才去掉绘图再试一次。
           previewer = jsPreviewExcel.init(containerRef.current);
-          await previewer.preview(previewSrc);
+          let overlayImages: Awaited<ReturnType<typeof extractXlsxImages>> = [];
+          try {
+            await previewer.preview(previewSrc);
+          } catch (error) {
+            const fallback = await omitXlsxDrawings(
+              previewer?.fileData ?? previewSrc,
+            );
+            if (!fallback || !isCurrentRequest() || !containerRef.current) {
+              throw error;
+            }
+            overlayImages = await extractXlsxImages(
+              previewer?.fileData ?? previewSrc,
+            );
+            try {
+              previewer.destroy?.();
+            } catch (e) {
+              /* ignore */
+            }
+            if (!isCurrentRequest() || !containerRef.current) throw error;
+            containerRef.current.innerHTML = '';
+            previewer = jsPreviewExcel.init(containerRef.current);
+            try {
+              await previewer.preview(fallback);
+            } catch (retryError) {
+              throw error;
+            }
+          }
+          if (!isCurrentRequest() || !containerRef.current) break;
+          const modelImages = overlayImages.length
+            ? overlayImages
+            : imagesFromPreviewer(previewer);
+          const showImages = (images: typeof modelImages) => {
+            if (
+              !isCurrentRequest() ||
+              !containerRef.current ||
+              !images.length
+            ) {
+              return;
+            }
+            xlsxImageOverlayDisposeRef.current?.();
+            xlsxImageOverlayDisposeRef.current = mountXlsxImageOverlay(
+              containerRef.current,
+              previewer,
+              images,
+            );
+          };
+          showImages(modelImages);
+          if (!overlayImages.length) {
+            const imageSource = previewer?.fileData ?? previewSrc;
+            void extractXlsxImages(imageSource, {
+              includeDrawings: !previewerHasSheetImages(previewer),
+            })
+              .then((extra) => {
+                if (!extra.length) return;
+                showImages([...modelImages, ...extra]);
+              })
+              .catch((overlayError) => {
+                console.warn('[FilePreview] xlsx 图片叠层失败', overlayError);
+              });
+          }
           break;
+        }
         case 'pdf':
           previewer = jsPreviewPdf.init(containerRef.current, {
             width: containerRef.current.clientWidth || undefined,
@@ -1194,6 +1264,8 @@ const FilePreviewContent: React.FC<
       textRequestIdRef.current += 1;
       textAbortControllerRef.current?.abort();
       pptxAbortControllerRef.current?.abort();
+      xlsxImageOverlayDisposeRef.current?.();
+      xlsxImageOverlayDisposeRef.current = null;
       downloadAbortControllerRef.current?.abort();
       downloadAbortControllerRef.current = null;
       preparedPptxRef.current = null;
