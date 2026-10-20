@@ -2821,6 +2821,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.previewChecking": "アプリを確認中",
   "PC.Pages.AppDevPro.previewCheckingHint": "アプリがアクセス可能になるまでお待ちください",
   "PC.Pages.AppDevPro.readinessServiceStarting": "サービスを起動しています",
+  "PC.Pages.AppDevPro.readinessProvisioning": "コンテナは起動済みです。アプリのリソースを準備しています",
   "PC.Pages.AppDevPro.readinessServiceStopping":
     "サービスを停止しています。このあと自動で再起動します",
   "PC.Pages.AppDevPro.readinessDevIncomplete":

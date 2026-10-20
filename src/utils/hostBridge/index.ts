@@ -224,13 +224,13 @@ export function syncShellAvoidanceCss(): void {
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
 export const auth = {
-  /** Cookie session is owned by the browser; the host only validates and mirrors it. */
+  /** false 仅表示无有效会话；宿主验证异常继续抛出，交由页面重试。 */
   async syncSession(): Promise<boolean> {
     try {
       return (await getBridge()?.auth?.syncSession?.()) ?? false;
     } catch (e) {
       console.warn('[hostBridge] sync cookie session failed', e);
-      return false;
+      throw new Error('Cookie session validation unavailable');
     }
   },
   async beginLogin(): Promise<boolean> {

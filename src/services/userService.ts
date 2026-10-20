@@ -100,39 +100,37 @@ export class UserService {
         this.saveUserInfoToStorage(result.data);
         return result.data;
       } else {
-        // 服务器返回错误，清除本地存储
+        const { code, message: errorMessage } = result;
+        // 服务不可用不能证明会话失效，保留资料和登录缓存供恢复后重试。
+        if (code !== USER_NO_LOGIN && code !== REDIRECT_LOGIN) {
+          if (errorMessage && !isChatTemp()) message.warning(errorMessage);
+          throw new Error('User info request failed');
+        }
         this.clearUserInfo();
+        clearLoginStatusCache();
 
         // 如果是临时会话就不跳转
         if (isChatTemp()) {
           return null;
         }
 
-        const { code, message: errorMessage } = result;
         // 根据错误码处理不同情况
         switch (code) {
           // 用户未登录，跳转到登录页
           case USER_NO_LOGIN:
             if (autoJump) {
-              clearLoginStatusCache();
               redirectToLogin(-1);
             }
             break;
           // 重定向到登录页
           case REDIRECT_LOGIN:
-            clearLoginStatusCache();
             void navigateToAuthUrl(errorMessage);
             break;
-          // 默认错误处理
-          default:
-            // 只有当请求不在过滤列表中才显示错误消息
-            message.warning(errorMessage);
         }
         return null;
       }
     } catch (error) {
       console.error('Failed to fetch user info from server:', error);
-      this.clearUserInfo();
       throw error;
     }
   }

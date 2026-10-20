@@ -1,13 +1,11 @@
 import AppStartup from '@/components/business-component/AppStartup';
 import NoPermissionPage from '@/pages/403';
 import {
-  clearLoginStatusCache,
   getLoginStatusFromCache,
   setLoginStatusToCache,
   UserService,
 } from '@/services/userService';
 import { isRoutePathHidden } from '@/utils/permission';
-import { redirectToLogin } from '@/utils/router';
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, useModel } from 'umi';
 
@@ -22,6 +20,7 @@ const AuthWithLoading: React.FC = () => {
   const [loading, setLoading] = useState(
     () => getLoginStatusFromCache() !== true,
   );
+  const [failed, setFailed] = useState(false);
   const location = useLocation();
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
@@ -45,6 +44,7 @@ const AuthWithLoading: React.FC = () => {
   // ===== 副作用 =====
   useEffect(() => {
     if (isExcludedPath) return;
+    setFailed(false);
     if (getLoginStatusFromCache() === true) {
       setLoading(false);
       return;
@@ -54,20 +54,18 @@ const AuthWithLoading: React.FC = () => {
     setLoading(true);
     const checkLoginStatus = async () => {
       try {
-        const data = await UserService.fetchUserInfoFromServer(false);
+        // 认证错误由服务层按错误码导航，避免覆盖 4011 的 SSO 目标。
+        const data = await UserService.fetchUserInfoFromServer();
         if (cancelled) return;
         if (data) {
           setLoginStatusToCache(true);
           setLoading(false);
           return;
         }
-        clearLoginStatusCache();
-        redirectToLogin('-1');
       } catch (error) {
         if (cancelled) return;
         console.error('Failed to verify login status:', error);
-        clearLoginStatusCache();
-        redirectToLogin('-1');
+        setFailed(true);
       }
     };
 
@@ -84,8 +82,8 @@ const AuthWithLoading: React.FC = () => {
   }
 
   // 如果还在加载中，显示loading
-  if (loading) {
-    return <AppStartup />;
+  if (loading || failed) {
+    return <AppStartup failed={failed} />;
   }
 
   // 校验当前访问路径是否由于租户配置限制而被隐藏
