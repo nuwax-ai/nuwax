@@ -45,9 +45,17 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     statistics,
     collect,
     targetType,
+    targetSubType,
   } = publishedItemInfo;
-  /** 网站应用、三方应用不是智能体详情页，不提供「进入独立页面」。 */
-  const canEnterAgentPage = targetType === AgentComponentTypeEnum.Agent;
+  /** 网页应用、网站应用、三方应用用「打开」，不进智能体详情。 */
+  const isOpenApp =
+    (targetType === AgentComponentTypeEnum.Agent &&
+      targetSubType === AgentComponentTypeEnum.PageApp) ||
+    targetType === AgentComponentTypeEnum.UserApp ||
+    targetType === AgentComponentTypeEnum.ThirdApp;
+  /** 普通智能体才提供「进入独立页面」。 */
+  const canEnterAgentPage =
+    targetType === AgentComponentTypeEnum.Agent && !isOpenApp;
   // 智能体收藏
   const { run: runCollectAgent } = useRequest((id: number) => collectApi(id), {
     manual: true,
@@ -120,28 +128,43 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
             {extra}
           </footer>
           <div className={cx(styles['action-box'], 'flex', 'items-center')}>
-            <Button
-              type="primary"
-              className={cx(styles['action-btn'])}
-              icon={<ICON_MESSAGE />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartUse?.(e);
-              }}
-            >
-              {dict('PC.Pages.Square.SingleAgent.summon')}
-            </Button>
-            {canEnterAgentPage ? (
+            {isOpenApp ? (
               <Button
+                type="primary"
                 className={cx(styles['action-btn'])}
                 onClick={(e) => {
                   e.stopPropagation();
-                  history.push(`/agent/${targetId}`);
+                  onStartUse?.(e);
                 }}
               >
-                {dict('PC.Pages.Square.SingleAgent.enterStandalone')}
+                {dict('PC.Pages.Square.SingleAgent.open')}
               </Button>
-            ) : null}
+            ) : (
+              <>
+                <Button
+                  type="primary"
+                  className={cx(styles['action-btn'])}
+                  icon={<ICON_MESSAGE />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartUse?.(e);
+                  }}
+                >
+                  {dict('PC.Pages.Square.SingleAgent.summon')}
+                </Button>
+                {canEnterAgentPage ? (
+                  <Button
+                    className={cx(styles['action-btn'])}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      history.push(`/agent/${targetId}`);
+                    }}
+                  >
+                    {dict('PC.Pages.Square.SingleAgent.enterStandalone')}
+                  </Button>
+                ) : null}
+              </>
+            )}
             <span
               className={cx(styles['star-box'])}
               onClick={handleToggleCollect}
