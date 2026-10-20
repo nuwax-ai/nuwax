@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   runTenantConfig: vi.fn(),
   redirectToLogin: vi.fn(),
   isRoutePathHidden: vi.fn(),
+  hostProduct: null as string | null,
+  syncSession: vi.fn(),
 }));
 
 vi.mock('umi', () => ({
@@ -46,8 +48,8 @@ vi.mock('@/utils/conversationV2Rollout', () => ({
 vi.mock('@/utils/directorySyncEvents', () => ({}));
 vi.mock('@/utils/hostBridge', () => ({
   hostBridge: {
-    auth: { syncSession: vi.fn().mockResolvedValue(true) },
-    host: { getProduct: () => null },
+    auth: { syncSession: mocks.syncSession },
+    host: { getProduct: () => mocks.hostProduct },
   },
   isDesktopHost: () => false,
   syncShellAvoidanceCss: vi.fn(),
@@ -84,6 +86,8 @@ beforeEach(() => {
   localStorage.clear();
   mocks.loginStatus = null;
   mocks.pathname = '/home';
+  mocks.hostProduct = null;
+  mocks.syncSession.mockResolvedValue(true);
   mocks.initI18n.mockResolvedValue(undefined);
   mocks.getUserInfo.mockResolvedValue({ id: 1 });
   mocks.fetchUserInfoFromServer.mockResolvedValue({ id: 1 });
@@ -109,6 +113,18 @@ afterEach(() => {
 });
 
 describe('首屏初始数据失败可恢复', () => {
+  it('客户端宿主验证服务异常交给启动重试，不按未登录跳转', async () => {
+    mocks.hostProduct = 'nuwax';
+    mocks.syncSession.mockRejectedValue(
+      new Error('Cookie session validation unavailable'),
+    );
+    await expect(getInitialState()).rejects.toThrow(
+      'Cookie session validation unavailable',
+    );
+    expect(mocks.getUserInfo).not.toHaveBeenCalled();
+    expect(mocks.clearLoginStatusCache).not.toHaveBeenCalled();
+    expect(mocks.redirectToLogin).not.toHaveBeenCalled();
+  });
   it.each(['getUserInfo', 'syncLangFromUserInfo', 'queryMenus'] as const)(
     '%s 意外失败交给启动兜底，Cookie 模式清除旧 token',
     async (step) => {
@@ -232,25 +248,30 @@ describe('首屏启动与鉴权加载衔接', () => {
     expect(mocks.fetchUserInfoFromServer).toHaveBeenCalledOnce();
   });
 
-  it('未登录缓存不能跳过校验，未登录结果直接跳转且不露出业务页面', async () => {
+  it('认证失效交给服务层导航，路由不重复覆盖登录目标或露出业务页面', async () => {
     mocks.loginStatus = false;
     mocks.fetchUserInfoFromServer.mockResolvedValue(null);
     render(React.createElement(AuthWithLoading));
     await act(async () => {});
     expect(mocks.fetchUserInfoFromServer).toHaveBeenCalledOnce();
-    expect(mocks.redirectToLogin).toHaveBeenCalledWith('-1');
+    expect(mocks.fetchUserInfoFromServer).toHaveBeenCalledWith();
+    expect(mocks.redirectToLogin).not.toHaveBeenCalled();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
   });
 
-  it('校验失败立即跳转登录页，不等待或闪出业务页面', async () => {
+  it('网络校验失败显示重试入口，保留会话且不露出业务页面', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mocks.fetchUserInfoFromServer.mockRejectedValue(
       new Error('network failed'),
     );
     render(React.createElement(AuthWithLoading));
     await act(async () => {});
-    expect(mocks.clearLoginStatusCache).toHaveBeenCalledOnce();
-    expect(mocks.redirectToLogin).toHaveBeenCalledWith('-1');
+    expect(mocks.clearLoginStatusCache).not.toHaveBeenCalled();
+    expect(mocks.redirectToLogin).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('应用加载失败');
+    expect(
+      screen.getByRole('button', { name: '重新加载' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
   });
 
