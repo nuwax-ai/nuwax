@@ -1,7 +1,12 @@
 import { usePageModel } from '@/modelScopes/usePageModel';
+import { taskResultFileName } from '@/utils/taskResult';
+import classNames from 'classnames';
 import React, { useContext } from 'react';
 import { TaskResultContext } from './context';
+import styles from './index.less';
 import TaskResultRow from './TaskResultRow';
+
+const cx = classNames.bind(styles);
 
 /**
  * TaskResult 组件
@@ -15,6 +20,56 @@ interface TaskResultProps {
   node?: any;
   conversationId?: string | number;
 }
+
+/** 把 markdown 子节点收成纯文本。文件名可能被拆成多个文本节点，不能只取第一个。 */
+const readNodeText = (node: React.ReactNode): string => {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(readNodeText).join('');
+  }
+  if (React.isValidElement(node)) {
+    return readNodeText(
+      (node.props as { children?: React.ReactNode }).children,
+    );
+  }
+  return '';
+};
+
+const elementTag = (child: React.ReactElement): string => {
+  if (typeof child.type === 'string') {
+    return child.type;
+  }
+  const tagName = (child.props as { node?: { tagName?: string } }).node
+    ?.tagName;
+  return typeof tagName === 'string' ? tagName : '';
+};
+
+/**
+ * 收集某种子标签的文本。
+ * 多个 <file> 必须分开保留：拼成一个字符串后，点击会去打开一个不存在的路径。
+ */
+const collectTagTexts = (children: React.ReactNode, tag: string): string[] => {
+  const found: string[] = [];
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) {
+      return;
+    }
+    const props = child.props as { children?: React.ReactNode };
+    if (elementTag(child) === tag) {
+      const text = readNodeText(props.children).trim();
+      if (text) {
+        found.push(text);
+      }
+      return;
+    }
+    if (props.children) {
+      found.push(...collectTagTexts(props.children, tag));
+    }
+  });
+  return found;
+};
 
 const TaskResult: React.FC<TaskResultProps> = ({
   children,
@@ -41,31 +96,19 @@ const TaskResult: React.FC<TaskResultProps> = ({
   }
 
   try {
-    // children 可能是单个元素而非数组（task-result 标签只包一个子节点时），
-    // 直接 .filter 会抛 "c?.filter is not a function"——统一 toArray 后再过滤
-    const childItems = React.Children.toArray(children);
-    // 有文件描述显示文件描述
-    const fileDescription = childItems
-      .filter((item: any) => item.type === 'description')
-      .map((item: any) => item.props?.children ?? '')
-      .join('');
-    // 有文件名显示文件名
-    const fileName = childItems
-      .filter((item: any) => item.type === 'file')
-      .map((item: any) => item.props?.children ?? '')
-      .join('');
+    const fileDescription = collectTagTexts(children, 'description').join('');
+    const files = collectTagTexts(children, 'file');
     // 没有文件名不显示组件
-    if (!fileName) {
+    if (files.length === 0) {
       return null;
     }
 
-    // 点击事件处理
-    const handleClick = async () => {
-      /**
-       * fileName: /home/user/1465924/workspace/2025-financial-statistics.pptx
-       * conversationId: 1465924
-       * fileId: workspace/2025-financial-statistics.pptx
-       */
+    /**
+     * 打开其中一个产物。
+     * fileName 可能是工作区相对路径，也可能只是文件名（新产物不再带会话目录）。
+     * 带 `${conversationId}/` 时切掉沙箱前缀；纯文件名原样交给文件树按文件名搜索。
+     */
+    const openFile = async (fileName: string) => {
       let fileId = fileName.split(`${conversationId}/`).pop();
 
       // 当点击的是文件夹时，如果文件ID以 / 结尾，则去掉 /
@@ -91,13 +134,40 @@ const TaskResult: React.FC<TaskResultProps> = ({
       setTaskAgentSelectTrigger(Date.now());
     };
 
+    if (files.length === 1) {
+      return (
+        <TaskResultRow
+          label={fileDescription ? fileDescription : files[0]}
+          description={fileDescription}
+          dataKey={taskResultKey}
+          onClick={() => {
+            void openFile(files[0]);
+          }}
+        />
+      );
+    }
+
     return (
-      <TaskResultRow
-        label={fileDescription ? fileDescription : fileName}
-        description={fileDescription}
-        dataKey={taskResultKey}
-        onClick={handleClick}
-      />
+      <div className={cx(styles['task-result-group'])} data-key={taskResultKey}>
+        {fileDescription ? (
+          <div className={cx(styles['task-result-summary'])}>
+            {fileDescription}
+          </div>
+        ) : null}
+        {files.map((fileName, index) => (
+          <TaskResultRow
+            key={`${taskResultKey}-${fileName}`}
+            label={taskResultFileName(fileName)}
+            description={
+              fileDescription ? `${fileDescription}\n${fileName}` : fileName
+            }
+            dataKey={`${taskResultKey}-${index}`}
+            onClick={() => {
+              void openFile(fileName);
+            }}
+          />
+        ))}
+      </div>
     );
   } catch (error) {
     console.warn('TaskResult error', error);
