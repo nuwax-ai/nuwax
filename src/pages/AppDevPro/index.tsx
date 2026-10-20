@@ -3245,13 +3245,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
   }, [remoteBuildTask?.taskId]);
 
-  /** 点击部署：构建并生产部署 */
+  /** 点击部署：先确认，再构建并生产部署 */
   const handleOpenPublish = useCallback(() => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
       return;
     }
-    void publishFlow.startPublish();
+    modalConfirm(
+      dict('PC.Pages.AppDevPro.confirmDeployTitle'),
+      dict('PC.Pages.AppDevPro.confirmDeployContent'),
+      () => {
+        void publishFlow.startPublish();
+      },
+    );
   }, [appId, publishFlow]);
 
   /**

@@ -2842,6 +2842,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.close": "閉じる",
   "PC.Pages.AppDevPro.confirmingDevelopment": "開発内容を確認中",
   "PC.Pages.AppDevPro.confirmingDevelopmentHint": "確認後、プロジェクトの開発を続行します",
+  "PC.Pages.AppDevPro.confirmDeployContent": "確認後、ビルドして本番環境にデプロイします。",
+  "PC.Pages.AppDevPro.confirmDeployTitle": "デプロイしますか？",
   "PC.Pages.AppDevPro.confirmStopContent": "停止すると現在の環境をプレビューできなくなります。停止しますか？",
   "PC.Pages.AppDevPro.confirmStopTitle": "サービスを停止しますか？",
   "PC.Pages.AppDevPro.containerStarting": "サービスを起動しています…",
