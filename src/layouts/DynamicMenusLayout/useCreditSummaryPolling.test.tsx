@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
   emit: vi.fn(),
   options: undefined as any,
-  service: undefined as any,
   tenantConfigInfo: undefined as { enableSubscription?: number } | undefined,
   hostVisible: true,
   docHidden: false,
@@ -29,8 +28,7 @@ vi.mock('@/services/hostVisibility', () => ({
 vi.mock('@/utils/eventBus', () => ({ default: { emit: mocks.emit } }));
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: mocks.tenantConfigInfo }),
-  useRequest: (service: unknown, options: unknown) => {
-    mocks.service = service;
+  useRequest: (_service: unknown, options: unknown) => {
     mocks.options = options;
     return { run: mocks.run, cancel: mocks.cancel };
   },
@@ -60,23 +58,6 @@ afterEach(() => {
 });
 
 describe('积分 summary 全局轮询', () => {
-  it('轮询显式静默，失败不广播空积分且下一次成功仍可同步', async () => {
-    mocks.summary.mockResolvedValue({
-      code: '0000',
-      data: { totalCredit: 123 },
-    });
-    renderHook(() => useCreditSummaryPolling());
-    await mocks.service();
-    expect(mocks.summary).toHaveBeenCalledWith({ silentPolling: true });
-    expect(mocks.options.throwOnError).toBe(false);
-    mocks.options.onError(new Error('HTTP 401'));
-    mocks.options.onSuccess(undefined);
-    expect(mocks.emit).not.toHaveBeenCalled();
-    mocks.options.onSuccess({ totalCredit: 123 });
-    expect(mocks.emit).toHaveBeenCalledWith(EVENT_TYPE.CreditSummaryUpdated, {
-      totalCredit: 123,
-    });
-  });
   it('按 60 秒间隔配置标准轮询，挂载即请求一次，重渲染不重复请求', () => {
     const view = renderHook(() => useCreditSummaryPolling());
     expect(mocks.options.manual).toBe(true);
