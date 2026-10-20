@@ -1,6 +1,27 @@
 @import '@/styles/color';
 @import '@/styles/theme';
 
+.task-result-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin: 8px 0;
+
+  .task-result {
+    margin: 0;
+  }
+}
+
+.task-result-summary {
+  color: #15171f;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  word-break: break-word;
+}
+
 .task-result {
   display: flex;
   align-items: center;
