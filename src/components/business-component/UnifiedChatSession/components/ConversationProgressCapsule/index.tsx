@@ -486,7 +486,11 @@ const ConversationProgressCapsule: React.FC<
                 key={item.key}
                 type="button"
                 className={cx(safeStyles['result-row'])}
-                title={item.description || item.file}
+                title={
+                  item.label
+                    ? [item.description, item.file].filter(Boolean).join('\n')
+                    : item.description || item.file
+                }
                 onClick={() => handleOpenTaskResult(item.file)}
               >
                 <span className={cx(safeStyles['node-kind-icon'])} aria-hidden>
@@ -495,7 +499,7 @@ const ConversationProgressCapsule: React.FC<
                 <span
                   className={cx(safeStyles['node-text'], safeStyles.truncate)}
                 >
-                  {item.description || item.file}
+                  {item.label || item.description || item.file}
                 </span>
                 <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
                   <RightOutlined />

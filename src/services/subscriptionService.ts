@@ -137,10 +137,10 @@ export async function apiGetUserWithdrawConfig(): Promise<
 // ──────────────────────────────────────────────
 
 // 查询当前登录用户总积分
-export async function apiGetCreditSummary(): Promise<
-  RequestResponse<CreditSummaryInfo>
-> {
-  return request('/api/credit/summary', { method: 'GET' });
+export async function apiGetCreditSummary(options?: {
+  silentPolling?: boolean;
+}): Promise<RequestResponse<CreditSummaryInfo>> {
+  return request('/api/credit/summary', { method: 'GET', ...options });
 }
 
 export async function apiListCreditPackages(): Promise<

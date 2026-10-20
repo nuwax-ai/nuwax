@@ -17,15 +17,20 @@ export const useCreditSummaryPolling = () => {
   const enabled =
     !!tenantConfigInfo && tenantConfigInfo.enableSubscription !== 0;
 
-  const polling = useRequest(apiGetCreditSummary, {
-    manual: true,
-    pollingInterval: CREDIT_POLLING_INTERVAL,
-    pollingWhenHidden: false,
-    pollingErrorRetryCount: -1,
-    onSuccess: (data: unknown) => {
-      eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, data);
+  // 当前 Umi 的轮询计时器不会消费拒绝；失败在调用边界收口，不广播空结果。
+  const polling = useRequest(
+    () => apiGetCreditSummary({ silentPolling: true }).catch(() => undefined),
+    {
+      manual: true,
+      pollingInterval: CREDIT_POLLING_INTERVAL,
+      pollingWhenHidden: false,
+      pollingErrorRetryCount: -1,
+      onSuccess: (data: unknown) => {
+        if (!data) return;
+        eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, data);
+      },
     },
-  });
+  );
   const pollingRef = useRef(polling);
   pollingRef.current = polling;
 
