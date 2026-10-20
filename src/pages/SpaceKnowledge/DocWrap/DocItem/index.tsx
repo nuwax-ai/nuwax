@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import {
   apiDocAutoRetryTaskByDocId,
   apiKnowledgeDocumentDetail,
@@ -135,20 +136,28 @@ const DocItem: React.FC<DocItemProps> = ({
 
       {info.docStatusCode === DocStatusCodeEnum.ANALYZED ? (
         <span className={cx(styles.analyzing, styles['analyzing-success'])}>
-          构建成功
+          {dict('PC.Pages.SpaceKnowledge.DocItem.buildSuccess')}
         </span>
       ) : info.docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED ? (
-        <Button
-          type="primary"
-          className={cx(styles['retry-btn'])}
-          size="small"
-          danger
-          onClick={handleAutoRetry}
+        // 有失败原因时，悬停按钮才提示，避免空提示
+        <Tooltip
+          title={info.docStatusReason?.trim() || undefined}
+          placement="right"
         >
-          构建失败,重新构建
-        </Button>
+          <Button
+            type="primary"
+            className={cx(styles['retry-btn'])}
+            size="small"
+            danger
+            onClick={handleAutoRetry}
+          >
+            {dict('PC.Pages.SpaceKnowledge.DocItem.buildFailedRetry')}
+          </Button>
+        </Tooltip>
       ) : (
-        <span className={cx(styles.analyzing)}>构建中</span>
+        <span className={cx(styles.analyzing)}>
+          {dict('PC.Pages.SpaceKnowledge.DocItem.building')}
+        </span>
       )}
     </li>
   );
