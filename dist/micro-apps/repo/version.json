@@ -45,14 +45,14 @@
     ]
   },
   "toolchain": {
-    "node": "v24.14.0",
+    "node": "v24.18.0",
     "pnpm": "10.27.0",
     "qiankun": "2.10.17-beta.0",
     "@tiny-codes/vite-plugin-qiankun": "2.4.0"
   },
-  "builtAt": "2026-10-20T02:38:13.856Z",
+  "builtAt": "2026-10-20T03:09:17.086Z",
   "cache": {
-    "key": "8f40d1457d6a95bca9b1c8c8717e9e6ad5c738a9840334a78b351bedbe0e2c08",
+    "key": "0d10ee5a68f7e21d75164745dcbc09787b438c6d37c006b915f3ea9c7b410905",
     "hit": false
   }
 }
