@@ -25,8 +25,6 @@ export const useCreditSummaryPolling = () => {
       pollingInterval: CREDIT_POLLING_INTERVAL,
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      throwOnError: false,
-      onError: () => {},
       onSuccess: (data: unknown) => {
         if (!data) return;
         eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, data);
