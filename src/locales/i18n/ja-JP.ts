@@ -4501,6 +4501,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Square.SingleAgent.startUsing": "使い始める",
   "PC.Pages.Square.SingleAgent.summon": "召喚",
   "PC.Pages.Square.SingleAgent.enterStandalone": "独立ページを開く",
+  "PC.Pages.Square.SingleAgent.open": "開く",
   "PC.Pages.Square.SingleAgent.paid": "有料",
   "PC.Pages.Square.SingleAgent.subscribed": "購読済み",
   "PC.Pages.Square.SkillDetail.copyTemplate": "テンプレートをコピー",

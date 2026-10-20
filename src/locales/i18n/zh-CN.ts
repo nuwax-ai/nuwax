@@ -4773,6 +4773,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Square.SingleAgent.startUsing": "开始使用",
   "PC.Pages.Square.SingleAgent.summon": "召唤",
   "PC.Pages.Square.SingleAgent.enterStandalone": "进入独立页面",
+  "PC.Pages.Square.SingleAgent.open": "打开",
   "PC.Pages.Square.SingleAgent.subscribed": "已订阅",
   "PC.Pages.Square.SkillDetail.copyTemplate": "复制模板",
   "PC.Pages.Square.SkillDetail.downloadExport": "下载导出",
