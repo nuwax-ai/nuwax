@@ -45,6 +45,7 @@ export interface ClientUpdateState {
     | 'not-available'
     | 'downloading'
     | 'downloaded'
+    | 'installing'
     | 'error';
   hostVersion: string;
   version?: string;
@@ -58,6 +59,8 @@ export interface ClientUpdateState {
   };
   error?: string;
   canAutoUpdate?: boolean;
+  /** 一次点击后由宿主下载、安装并重启；缺省保持旧版分步行为。 */
+  installAfterDownload?: boolean;
   isReadOnlyVolumeError?: boolean;
 }
 
@@ -87,11 +90,11 @@ export interface HostImBridge {
 }
 
 /** 压缩档。像素尺寸在任何一档都不变，只改变编码质量。 */
-export type CaptureQuality = "lossless" | "high" | "medium" | "low";
+export type CaptureQuality = 'lossless' | 'high' | 'medium' | 'low';
 
-export type StillFormat = "png" | "jpeg" | "webp";
-export type VideoFormat = "mp4" | "webm";
-export type RecordOutput = VideoFormat | "gif";
+export type StillFormat = 'png' | 'jpeg' | 'webp';
+export type VideoFormat = 'mp4' | 'webm';
+export type RecordOutput = VideoFormat | 'gif';
 
 export interface CaptureCompression {
   quality: CaptureQuality;
@@ -99,7 +102,7 @@ export interface CaptureCompression {
   maxBytes?: number;
 }
 
-export type CapturePermission = "granted" | "denied" | "not-determined" | "n/a";
+export type CapturePermission = 'granted' | 'denied' | 'not-determined' | 'n/a';
 
 export interface CaptureDisplayInfo {
   id: string;
@@ -147,14 +150,14 @@ export interface RecordOptions {
 }
 
 export type CaptureErrorCode =
-  | "canceled"
-  | "permission-denied"
-  | "busy"
-  | "encoder-unavailable"
-  | "unsupported"
-  | "untrusted"
-  | "invalid-argument"
-  | "failed";
+  | 'canceled'
+  | 'permission-denied'
+  | 'busy'
+  | 'encoder-unavailable'
+  | 'unsupported'
+  | 'untrusted'
+  | 'invalid-argument'
+  | 'failed';
 
 export interface CaptureSuccess {
   success: true;
@@ -189,11 +192,11 @@ export type CaptureCopyResult =
   | CaptureFailure;
 
 export type CaptureState =
-  | "idle"
-  | "selecting"
-  | "recording"
-  | "paused"
-  | "encoding";
+  | 'idle'
+  | 'selecting'
+  | 'recording'
+  | 'paused'
+  | 'encoding';
 
 /** 渲染进程侧可见的桥形状。 */
 export interface CaptureBridge {
@@ -382,7 +385,9 @@ export interface HostBridgeContract {
   updater: {
     getState(): Promise<ClientUpdateState | null>;
     check(): Promise<ClientUpdateCheckResult | null>;
+    /** installAfterDownload 为 true 时，下载并继续安装、重启；否则仅下载。 */
     download(): Promise<{ success: boolean; error?: string }>;
+    /** 安装已下载更新；一键策略也可由此入口补齐下载。 */
     install(): Promise<{ success: boolean; error?: string }>;
   };
   events: {
@@ -409,18 +414,31 @@ export interface HostBridgeContract {
 
 /** 浏览器没有桥；旧宿主可以只提供部分命名空间及方法，消费方按能力探测。 */
 export type CompatibleHostBridge = {
-  [Namespace in keyof HostBridgeContract]?: NonNullable<HostBridgeContract[Namespace]> extends (...args: never[]) => unknown
+  [Namespace in keyof HostBridgeContract]?: NonNullable<
+    HostBridgeContract[Namespace]
+  > extends (...args: never[]) => unknown
     ? NonNullable<HostBridgeContract[Namespace]>
     : Partial<NonNullable<HostBridgeContract[Namespace]>>;
 };
 
 type HostNamespaces = Omit<HostBridgeContract, 'canUse'>;
 /** 能力名区分大小写；命名空间表示至少有一个成员可用。 */
-export type HostCapability = Exclude<
-  keyof HostNamespaces | {
-    [K in keyof HostNamespaces]-?: `${K}.${Extract<keyof NonNullable<HostNamespaces[K]>, string>}`
-  }[keyof HostNamespaces],
-  'auth.getToken' | 'auth.persistToken'
-> | 'capture.screenshot.png' | 'capture.screenshot.jpeg' | 'capture.screenshot.webp'
-  | 'capture.record.mp4' | 'capture.record.webm' | 'capture.record.gif'
-  | 'capture.copy.image' | 'capture.copy.file';
+export type HostCapability =
+  | Exclude<
+      | keyof HostNamespaces
+      | {
+          [K in keyof HostNamespaces]-?: `${K}.${Extract<
+            keyof NonNullable<HostNamespaces[K]>,
+            string
+          >}`;
+        }[keyof HostNamespaces],
+      'auth.getToken' | 'auth.persistToken'
+    >
+  | 'capture.screenshot.png'
+  | 'capture.screenshot.jpeg'
+  | 'capture.screenshot.webp'
+  | 'capture.record.mp4'
+  | 'capture.record.webm'
+  | 'capture.record.gif'
+  | 'capture.copy.image'
+  | 'capture.copy.file';

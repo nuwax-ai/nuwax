@@ -62,3 +62,17 @@ export const extractLastTaskResultFile = (text: string): string | null => {
 
   return fileMatch?.[1]?.trim() ?? null;
 };
+
+/**
+ * 任务结果行上展示的文件名。
+ * 旧产物常带目录（`999999/report/a.pptx`），新产物经常只给文件名。
+ * 有路径时只留最后一段，避免一行里塞进整段目录。
+ */
+export const taskResultFileName = (file: string): string => {
+  const normalized = file.trim().replace(/[/\\]+$/, '');
+  const slash = Math.max(
+    normalized.lastIndexOf('/'),
+    normalized.lastIndexOf('\\'),
+  );
+  return (slash >= 0 ? normalized.slice(slash + 1) : normalized) || file.trim();
+};
