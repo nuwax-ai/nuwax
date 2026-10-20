@@ -50,6 +50,8 @@ const VerifyCode: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
+  // 覆盖校验接口和登录后的同步过程，不跟 useRequest 的 loading 一起提前结束
+  const [loginLoading, setLoginLoading] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
   const {
@@ -92,58 +94,55 @@ const VerifyCode: React.FC = () => {
   };
 
   // 验证码登录
-  const { run: runLoginCode, loading: loginLoading } = useRequest(
-    apiLoginCode,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
-        const {
-          resetPass,
-          expireDate,
-          token,
-          redirect: responseRedirectUrl,
-        } = result;
-        const authResult = await finishBusinessLogin(token);
-        if (authResult !== 'ready') {
-          message.error(
-            authResult === 'missing-dev-token'
-              ? '登录接口未返回本地调试所需的 Token'
-              : '客户端登录会话同步失败，请升级客户端后重试',
-          );
-          resetCodeInput();
-          return;
-        }
-        localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phone);
-        try {
-          const latestUserInfo = await UserService.refreshUserInfo();
-          await syncLangFromUserInfo(latestUserInfo);
-        } catch (error) {
-          console.error(
-            '[VerifyCode] Sync language after login failed:',
-            error,
-          );
-        }
-        // 登录成功后强制刷新菜单数据（可能切换了账号）
-        await loadMenus(true);
-        // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
-        if (!resetPass) {
-          history.push('/set-password');
-        } else {
-          navigateAfterLogin(
-            history,
-            searchParams.get('redirect'),
-            responseRedirectUrl,
-            navigateToAuthUrl,
-          );
-        }
-      },
-      onError: () => {
+  const { run: runLoginCode } = useRequest(apiLoginCode, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
+      const {
+        resetPass,
+        expireDate,
+        token,
+        redirect: responseRedirectUrl,
+      } = result;
+      const authResult = await finishBusinessLogin(token);
+      if (authResult !== 'ready') {
+        message.error(
+          authResult === 'missing-dev-token'
+            ? '登录接口未返回本地调试所需的 Token'
+            : '客户端登录会话同步失败，请升级客户端后重试',
+        );
         resetCodeInput();
-      },
+        setLoginLoading(false);
+        return;
+      }
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      localStorage.setItem(PHONE, params[0].phone);
+      try {
+        const latestUserInfo = await UserService.refreshUserInfo();
+        await syncLangFromUserInfo(latestUserInfo);
+      } catch (error) {
+        console.error('[VerifyCode] Sync language after login failed:', error);
+      }
+      // 登录成功后强制刷新菜单数据（可能切换了账号）
+      await loadMenus(true);
+      // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+      setLoginLoading(false);
+      if (!resetPass) {
+        history.push('/set-password');
+      } else {
+        navigateAfterLogin(
+          history,
+          searchParams.get('redirect'),
+          responseRedirectUrl,
+          navigateToAuthUrl,
+        );
+      }
     },
-  );
+    onError: () => {
+      resetCodeInput();
+      setLoginLoading(false);
+    },
+  });
 
   const codes = useMemo(() => {
     const newCodes = DefaultCode.slice(0);
@@ -178,6 +177,7 @@ const VerifyCode: React.FC = () => {
             code: _codeString,
             phoneOrEmail,
           };
+          setLoginLoading(true);
           runLoginCode(data);
         }, 100);
       }
@@ -266,6 +266,7 @@ const VerifyCode: React.FC = () => {
       code: codeString,
       phoneOrEmail,
     };
+    setLoginLoading(true);
     runLoginCode(data);
   };
 
