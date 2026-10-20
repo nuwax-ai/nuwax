@@ -17,8 +17,9 @@ export const useCreditSummaryPolling = () => {
   const enabled =
     !!tenantConfigInfo && tenantConfigInfo.enableSubscription !== 0;
 
+  // 当前 Umi 的轮询计时器不会消费拒绝；失败在调用边界收口，不广播空结果。
   const polling = useRequest(
-    () => apiGetCreditSummary({ silentPolling: true }),
+    () => apiGetCreditSummary({ silentPolling: true }).catch(() => undefined),
     {
       manual: true,
       pollingInterval: CREDIT_POLLING_INTERVAL,

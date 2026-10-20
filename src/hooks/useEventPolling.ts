@@ -122,8 +122,9 @@ export default function useEventPolling(): React.ReactElement | null {
     });
   };
 
+  // 当前 Umi 的轮询计时器不会消费拒绝；失败仅结束本轮，由下一轮重试。
   const { run: startPolling, cancel: stopPolling } = useRequest(
-    apiCollectEvent,
+    () => apiCollectEvent().catch(() => undefined),
     {
       manual: true,
       loading: false,
