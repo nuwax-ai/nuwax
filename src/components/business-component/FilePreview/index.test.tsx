@@ -69,6 +69,7 @@ vi.mock('ds-markdown', () => ({
   ),
 }));
 
+import jsPreviewExcel from '@js-preview/excel';
 import ReactMarkdown from 'react-markdown';
 import FilePreview from './index';
 
@@ -517,5 +518,25 @@ describe('FilePreview Markdown 后台刷新', () => {
     const lastSignal = vi.mocked(fetch).mock.calls[2][1]?.signal;
     unmount();
     expect(lastSignal?.aborted).toBe(true);
+  });
+});
+
+describe('FilePreview xlsx', () => {
+  it('预览成功时把原文件交给插件，不替换成另一份数据', async () => {
+    const buffer = new Uint8Array([1, 2, 3, 4]).buffer;
+    const preview = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(jsPreviewExcel.init).mockReturnValue({
+      preview,
+      destroy: vi.fn(),
+      fileData: buffer,
+      workbookDataSource: [],
+      mediasSource: [],
+    });
+
+    render(<FilePreview src={buffer} fileType="xlsx" />);
+    await settlePreview();
+
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(preview.mock.calls[0][0]).toBe(buffer);
   });
 });
