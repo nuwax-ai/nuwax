@@ -5767,6 +5767,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.VerifyCode.countdownSuffix": " 秒后",
   "PC.Pages.VerifyCode.inputEmailCode": "请输入邮箱验证码",
   "PC.Pages.VerifyCode.inputSmsCode": "请输入短信验证码",
+  "PC.Pages.VerifyCode.loggingIn": "登录中...",
   "PC.Pages.VerifyCode.resend": "重新发送",
   "PC.Pages.VerifyCode.yourEmail": "你的邮箱",
   "PC.Pages.VerifyCode.yourPhone": "手机号",
