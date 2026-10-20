@@ -132,7 +132,7 @@ export default function useEventPolling(): React.ReactElement | null {
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
       pollingErrorRetryCount: -1,
-      throwOnError: true,
+      throwOnError: false,
       onSuccess: async (data: ApiCollectEventResponse) => {
         if (!canPoll()) return;
         // 检查版本更新（优先处理，不阻塞事件处理）

@@ -17,15 +17,21 @@ export const useCreditSummaryPolling = () => {
   const enabled =
     !!tenantConfigInfo && tenantConfigInfo.enableSubscription !== 0;
 
-  const polling = useRequest(apiGetCreditSummary, {
-    manual: true,
-    pollingInterval: CREDIT_POLLING_INTERVAL,
-    pollingWhenHidden: false,
-    pollingErrorRetryCount: -1,
-    onSuccess: (data: unknown) => {
-      eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, data);
+  const polling = useRequest(
+    () => apiGetCreditSummary({ silentPolling: true }),
+    {
+      manual: true,
+      pollingInterval: CREDIT_POLLING_INTERVAL,
+      pollingWhenHidden: false,
+      pollingErrorRetryCount: -1,
+      throwOnError: false,
+      onError: () => {},
+      onSuccess: (data: unknown) => {
+        if (!data) return;
+        eventBus.emit(EVENT_TYPE.CreditSummaryUpdated, data);
+      },
     },
-  });
+  );
   const pollingRef = useRef(polling);
   pollingRef.current = polling;
 

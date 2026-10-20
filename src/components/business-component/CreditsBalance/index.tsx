@@ -37,12 +37,17 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
     ? location.pathname
     : null;
 
-  const { run: fetchCredits } = useRequest(apiGetCreditSummary, {
-    manual: true,
-    onSuccess: (data: any) => {
-      setBalance(data.totalCredit);
+  const { run: fetchCredits } = useRequest(
+    () => apiGetCreditSummary({ silentPolling: true }),
+    {
+      manual: true,
+      throwOnError: false,
+      onError: () => {},
+      onSuccess: (data: any) => {
+        if (typeof data?.totalCredit === 'number') setBalance(data.totalCredit);
+      },
     },
-  });
+  );
 
   useEffect(() => {
     if (!showCredits || !active) return;

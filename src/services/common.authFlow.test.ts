@@ -87,7 +87,7 @@ async function handleHttp401() {
   );
 }
 
-function runAxiosRequest(data: any, httpError?: any) {
+function runAxiosRequest(data: any, httpError?: any, options: any = {}) {
   const instance = axios.create({
     adapter: async (config: any) => {
       if (httpError) {
@@ -109,7 +109,7 @@ function runAxiosRequest(data: any, httpError?: any) {
     return response;
   });
 
-  const opts = { url: '/api/userapp/private/list/1' };
+  const opts = { url: '/api/userapp/private/list/1', ...options };
   return instance.request(opts).catch((error: any) => {
     requestConfig.errorConfig!.errorHandler!(error, opts);
     throw error;
@@ -141,6 +141,51 @@ function expectNoLogout() {
 }
 
 describe('匿名登录步骤的全局认证错误处理', () => {
+  describe('显式后台轮询全静默', () => {
+    it.each(['4010', '4011', '5000', '9999'])(
+      '业务错误 %s 保持失败且不提示、不清会话、不导航',
+      async (code) => {
+        window.history.replaceState({}, '', '/workspace');
+        await expect(
+          runAxiosRequest(
+            { code, message: 'poll failed', success: false, data: null },
+            undefined,
+            { url: '/api/credit/summary', silentPolling: true },
+          ),
+        ).rejects.toMatchObject({ info: { code } });
+        expectNoLogout();
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([401, 500, 503])(
+      'HTTP %s 仍交给轮询重试且无全局副作用',
+      async (status) => {
+        const failure = { response: { status } };
+        await expect(
+          runAxiosRequest(undefined, failure, { silentPolling: true }),
+        ).rejects.toBe(failure);
+        expectNoLogout();
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it('网络错误仍被消费为失败，成功响应保持原数据', async () => {
+      const failure = new TypeError('Failed to fetch');
+      await expect(
+        runAxiosRequest(undefined, failure, { silentPolling: true }),
+      ).rejects.toBe(failure);
+      expectNoLogout();
+      expect(mocks.warning).not.toHaveBeenCalled();
+      expect(mocks.error).not.toHaveBeenCalled();
+      const data = { code: '0000', success: true, data: { totalCredit: 42 } };
+      await expect(
+        runAxiosRequest(data, undefined, { silentPolling: true }),
+      ).resolves.toMatchObject({ data });
+    });
+  });
   beforeEach(async () => {
     vi.clearAllMocks();
     mocks.isConversationMockPage.mockReturnValue(false);
