@@ -6350,6 +6350,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "Settled",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "Subscription",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "Model Call",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "App Payment",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "Tool Call",
 
 

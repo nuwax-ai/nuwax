@@ -6330,6 +6330,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "已结算",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "订阅",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "模型调用",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "应用支付",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "工具调用",
 
   // ── 系统管理 - 订阅详情 Drawer ──────────────────────────
