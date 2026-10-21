@@ -115,14 +115,14 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
 
   return (
     <div className={styles.knowledgeGraphContainer}>
-      {loading && (
+      {/* {loading && (
         <div className={styles.loadingOverlay}>
           <Spin
             size="large"
             tip={dict('PC.Components.KnowledgeGraph.graphLoading')}
           />
         </div>
-      )}
+      )} */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           {showBackButton && (

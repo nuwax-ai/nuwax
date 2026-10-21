@@ -5,9 +5,16 @@
  * 包括入队、自动消费、intervention 协调、消费节流与队列操作。
  */
 import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
+import { useUnifiedChatQueue } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('umi', () => ({
+  useModel: () => ({}),
+}));
 
 describe('消息队列功能', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
@@ -15,10 +22,12 @@ describe('消息队列功能', () => {
   beforeEach(() => {
     sendMessage = vi.fn();
     vi.useFakeTimers();
+    localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    localStorage.clear();
   });
 
   /** 以一组 props 渲染消息队列能力，返回可控句柄 */
@@ -31,13 +40,14 @@ describe('消息队列功能', () => {
         hasPendingIntervention,
         minConsumeInterval,
         messageList,
+        conversationId = 'conv-1',
       }: any) =>
         useChatMessageQueue({
           isConversationActive,
           isEnqueueBlocked,
           isTaskExecuting,
           messageList,
-          conversationId: 'conv-1',
+          conversationId,
           sendMessage,
           hasPendingIntervention,
           minConsumeInterval,
@@ -451,26 +461,39 @@ describe('消息队列功能', () => {
   });
 
   // ============ 功能5：队列操作 ============
-  describe('队列操作：立即发送 / 编辑 / 删除 / 清空', () => {
-    it('立即发送：标记目标消息 sending，不停止会话，空闲后优先消费该项', () => {
+  describe('队列操作：立即发送 / 编辑 / 删除 / 清空 / 撤销 / 会话切换持久化', () => {
+    it('立即发送：不依赖会话忙碌或暂停状态直接调用 sendMessage 并出队，且不与同轮自动消费叠加双发', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
-        result.current.trySend('m2');
+        result.current.trySend(
+          'm2',
+          [{ name: 'f' } as any],
+          [11],
+          300,
+          'plan',
+          [{ slugId: 'doc-1', title: 'Doc 1' }],
+        );
+        result.current.pauseAutoConsume();
       });
       const m2 = result.current.queue[1];
       act(() => {
         result.current.sendNow(m2);
       });
-      // 与自动消费对齐：不再先 stop，忙碌时仅 markSending
-      expect(sendMessage).not.toHaveBeenCalled();
-      expect(result.current.queue.map((item) => item.text)).toEqual([
-        'm1',
+      // 无论忙碌还是已 pause，点击立即发送直接调 sendMessage（排队由后端承接），并从队列移除
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
         'm2',
-      ]);
-      expect(result.current.queue[1].sending).toBe(true);
-      expect(result.current.queue).toHaveLength(2);
+        [{ name: 'f' }],
+        [11],
+        300,
+        'plan',
+        [{ slugId: 'doc-1', title: 'Doc 1' }],
+        undefined,
+      );
+      expect(result.current.queue.map((item) => item.text)).toEqual(['m1']);
 
+      // 当前轮流式结束（active -> false）后才消费剩余的 m1
       rerender({
         isConversationActive: false,
         hasPendingIntervention: false,
@@ -481,8 +504,9 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
 
-      expect(sendMessage).toHaveBeenCalledWith(
-        'm2',
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        'm1',
         [],
         undefined,
         undefined,
@@ -490,21 +514,112 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
       );
-      expect(result.current.queue.map((item) => item.text)).toEqual(['m1']);
+      expect(result.current.queue).toHaveLength(0);
     });
 
-    it('编辑：把消息移出队列以回填输入框', () => {
+    it('删除单条与清空全部支持 undoLastRemove 按原下标顺序恢复', () => {
       const { result } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
+        result.current.trySend('m2');
+        result.current.trySend('m3');
       });
-      const m1 = result.current.queue[0];
-      let item: any;
+
+      const m2 = result.current.queue[1];
       act(() => {
-        item = result.current.editQueued(m1);
+        result.current.deleteQueued(m2.id);
       });
-      expect(item?.text).toBe('m1');
+      expect(result.current.queue.map((q) => q.text)).toEqual(['m1', 'm3']);
+
+      act(() => {
+        result.current.undoLastRemove();
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual([
+        'm1',
+        'm2',
+        'm3',
+      ]);
+
+      act(() => {
+        result.current.clearAllQueued();
+      });
       expect(result.current.queue).toHaveLength(0);
+
+      act(() => {
+        result.current.undoLastRemove();
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual([
+        'm1',
+        'm2',
+        'm3',
+      ]);
+    });
+
+    it('切换会话按 conversationId 持久化隔离并恢复队列，不因切会话被清空', () => {
+      const { result, rerender } = setup({
+        isConversationActive: true,
+        conversationId: 'conv-a',
+      });
+      act(() => {
+        result.current.trySend('msg-a');
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual(['msg-a']);
+
+      rerender({
+        isConversationActive: true,
+        conversationId: 'conv-b',
+        messageList: [],
+      });
+      expect(result.current.queue).toHaveLength(0);
+
+      rerender({
+        isConversationActive: true,
+        conversationId: 'conv-a',
+        messageList: [],
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual(['msg-a']);
+    });
+
+    it('编辑：把消息移出队列以回填输入框，useUnifiedChatQueue.handleEditQueued 派发完整快照', () => {
+      const { result } = renderHook(() =>
+        useUnifiedChatQueue({
+          conversationId: 88,
+          messageList: [],
+          selectedModelId: 10,
+          agentModeRef: { current: 'yolo' },
+          onSendMessage: sendMessage,
+          queueContext: { streamActive: true, taskExecuting: false },
+        }),
+      );
+      const docs = [{ slugId: 'doc-9', title: 'Spec' }];
+      const experts = [{ id: 5, type: AgentComponentTypeEnum.Agent }];
+      act(() => {
+        result.current.trySend('m1', [], [42], 99, 'plan', docs, experts);
+      });
+
+      const payloads: unknown[] = [];
+      const handler = (payload: unknown) => payloads.push(payload);
+      eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handler);
+
+      const m1 = result.current.queue[0];
+      act(() => {
+        result.current.handleEditQueued(m1);
+      });
+      eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handler);
+
+      expect(result.current.queue).toHaveLength(0);
+      expect(payloads).toEqual([
+        {
+          text: 'm1',
+          files: [],
+          skillIds: [42],
+          selectedDocs: docs,
+          modelId: 99,
+          selectedAgentMode: 'plan',
+          expertComponents: experts,
+          conversationId: 88,
+        },
+      ]);
     });
 
     it('删除：按 id 移除单条队列消息', () => {

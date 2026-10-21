@@ -57,9 +57,15 @@ export const saveQueue = (
       localStorage.removeItem(key);
       return;
     }
-    // sending 为运行态标记，不入库：刷新恢复后队列不应残留 loading 态
-    // （JSON.stringify 会省略值为 undefined 的键）
-    const persistable = queue.map((item) => ({ ...item, sending: undefined }));
+    // 附件只留可恢复/可发送的元数据：上传响应体（response）体积不定且无用，不入库
+    const persistable = queue.map((item) => ({
+      ...item,
+      files: item.files?.map((file) => {
+        const clone = { ...file };
+        delete clone.response;
+        return clone;
+      }),
+    }));
     localStorage.setItem(key, JSON.stringify(persistable));
   } catch {
     // ignore: localStorage 不可用或配额超限，降级为纯内存队列

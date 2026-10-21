@@ -140,6 +140,7 @@ import {
   getUserAppReadinessUiKind,
   getUserAppTtydProxyWsUrl,
   isUserAppReadinessAccessible,
+  UserAppContainerStatusEnum,
   UserAppReadinessStatusEnum,
 } from './services/appDevPro';
 import {
@@ -160,6 +161,19 @@ const cx = classNames.bind(styles);
 
 /** ensure 受理后延迟再保活，不跟 readiness 的容器状态走 */
 const ENSURE_KEEPALIVE_DELAY_MS = 3000;
+
+/** 开发预览连续未部署达到该时长后才自动重启，避免单次探测抖动。 */
+const UNDEPLOYED_AUTO_RESTART_MS = 15000;
+
+/** 两次自动重启之间至少间隔这么久，避免失败后立刻再打。 */
+const UNDEPLOYED_RESTART_GAP_MS = 60000;
+
+/** 容器还在启停时只等待，不重复拉起。 */
+const CONTAINER_TRANSITION_STATUSES = new Set<string>([
+  UserAppContainerStatusEnum.Starting,
+  UserAppContainerStatusEnum.Restarting,
+  UserAppContainerStatusEnum.Stopping,
+]);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
 type AppDevWorkspaceView =
@@ -1582,6 +1596,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   devActionAllowedRef.current = devActionAllowed;
   const activeTasksRef = useRef(activeTasks);
   activeTasksRef.current = activeTasks;
+  /** 开发预览开始连续处于未部署的时间。离开该状态后清掉。 */
+  const undeployedSinceRef = useRef<number | null>(null);
+  /** 上一次因未部署自动重启的时间。离开未部署也不清，用来拉开两次重启。 */
+  const lastUndeployedRestartAtRef = useRef(0);
+  const undeployedRecoveringRef = useRef(false);
 
   /**
    * 开发环境进页 / 打开预览：用就绪状态决定下一步。
@@ -2640,6 +2659,183 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     skipReadinessUntilWatch,
     tasksActiveReady,
     userAppDomainList,
+  ]);
+
+  /**
+   * 开发预览停留时，readiness 连续一段时间都是未部署才自动重启应用。
+   * 上一次自动重启之后至少再隔一分钟，避免失败回到未部署后马上再打。
+   * 容器已是 running 直接重启。
+   * starting / restarting / stopping 只等到 running，不再拉起容器。
+   * 其它容器状态先 ensure，确认 running 后再重启应用。
+   */
+  const recoverUndeployedDevPreview = useCallback(async () => {
+    if (undeployedRecoveringRef.current) {
+      return;
+    }
+    const env = UserAppDbEnvEnum.Dev;
+    const stale = () =>
+      !active ||
+      dbEnvRef.current !== env ||
+      workspaceViewRef.current !== 'app-preview' ||
+      previewUserStoppedByEnvRef.current[env] ||
+      computerRestartHoldEnvRef.current === env ||
+      previewConversationActive ||
+      hasPendingIntervention;
+    const devCompileBusy = () => {
+      const phase = previewPhaseRef.current;
+      return (
+        phase === 'starting' ||
+        phase === 'building' ||
+        previewRestartingRef.current ||
+        awaitingContainerForRestartRef.current
+      );
+    };
+    if (stale() || devCompileBusy()) {
+      return;
+    }
+    if (
+      activeTasksRef.current.some(
+        (item) =>
+          item.taskType === UserAppTaskTypeEnum.DevStart ||
+          item.taskType === UserAppTaskTypeEnum.DevRestart,
+      )
+    ) {
+      return;
+    }
+    if (!hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
+      return;
+    }
+    const current = serviceReadinessRef.current.readinessByEnvRef.current[env];
+    if (
+      getUserAppReadinessUiKind(current?.status, current?.ready) !==
+      'notDeployed'
+    ) {
+      return;
+    }
+    if (
+      Date.now() - lastUndeployedRestartAtRef.current <
+      UNDEPLOYED_RESTART_GAP_MS
+    ) {
+      return;
+    }
+    undeployedRecoveringRef.current = true;
+    try {
+      const containerStatus = current?.container?.status;
+      if (containerStatus !== UserAppContainerStatusEnum.Running) {
+        if (
+          !containerStatus ||
+          !CONTAINER_TRANSITION_STATUSES.has(containerStatus)
+        ) {
+          const accepted = await ensureEnvPodRef.current(env, true, {
+            reensure: true,
+            deferRunning: true,
+          });
+          if (!accepted || stale()) {
+            return;
+          }
+        }
+        resumeReadinessWatch();
+        const running =
+          await serviceReadinessRef.current.waitUntilContainerRunning(
+            env,
+            stale,
+          );
+        if (!running || stale() || devCompileBusy()) {
+          return;
+        }
+        devPod.confirmContainerRunning();
+      }
+      const latest = serviceReadinessRef.current.readinessByEnvRef.current[env];
+      if (
+        stale() ||
+        isUserAppReadinessAccessible(latest) ||
+        latest?.status === UserAppReadinessStatusEnum.Starting ||
+        latest?.status === UserAppReadinessStatusEnum.Provisioning ||
+        latest?.status === UserAppReadinessStatusEnum.Stopping
+      ) {
+        return;
+      }
+      // 记下这次重启。未部署观察也重新计时，失败回到未部署后不会马上再打。
+      const now = Date.now();
+      lastUndeployedRestartAtRef.current = now;
+      undeployedSinceRef.current = now;
+      setPreviewStoppedForEnv(env, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current(env);
+    } finally {
+      undeployedRecoveringRef.current = false;
+    }
+  }, [
+    active,
+    devPod.confirmContainerRunning,
+    hasPendingIntervention,
+    previewConversationActive,
+    resumeReadinessWatch,
+    setPreviewStoppedForEnv,
+  ]);
+
+  useEffect(() => {
+    const leaveUndeployed = () => {
+      undeployedSinceRef.current = null;
+    };
+    if (
+      !active ||
+      !appId ||
+      dbEnv !== UserAppDbEnvEnum.Dev ||
+      workspaceView !== 'app-preview' ||
+      previewConversationActive ||
+      hasPendingIntervention ||
+      previewUserStopped
+    ) {
+      leaveUndeployed();
+      return;
+    }
+    const data = serviceReadiness.readinessByEnv[UserAppDbEnvEnum.Dev];
+    if (
+      getUserAppReadinessUiKind(data?.status, data?.ready) !== 'notDeployed'
+    ) {
+      leaveUndeployed();
+      return;
+    }
+    if (undeployedSinceRef.current === null) {
+      undeployedSinceRef.current = Date.now();
+    }
+    const phase = previewRuntime.phase;
+    if (
+      phase === 'starting' ||
+      phase === 'building' ||
+      previewRuntime.restarting ||
+      awaitingContainerForRestart
+    ) {
+      return;
+    }
+    const now = Date.now();
+    const observeWait = Math.max(
+      0,
+      UNDEPLOYED_AUTO_RESTART_MS - (now - undeployedSinceRef.current),
+    );
+    const restartGapWait = Math.max(
+      0,
+      UNDEPLOYED_RESTART_GAP_MS - (now - lastUndeployedRestartAtRef.current),
+    );
+    const wait = Math.max(observeWait, restartGapWait);
+    const timer = window.setTimeout(() => {
+      void recoverUndeployedDevPreview();
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [
+    active,
+    appId,
+    awaitingContainerForRestart,
+    dbEnv,
+    hasPendingIntervention,
+    previewConversationActive,
+    previewRuntime.phase,
+    previewRuntime.restarting,
+    previewUserStopped,
+    recoverUndeployedDevPreview,
+    serviceReadiness.readinessByEnv,
+    workspaceView,
   ]);
 
   // ==================================== git 版本控制 ====================================

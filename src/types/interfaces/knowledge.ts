@@ -592,9 +592,3 @@ export interface KnowledgeTripleDocumentInfo {
   // 更新时间
   updatedTime: string;
 }
-
-// 知识图谱 - 查询响应数据
-export interface KnowledgeTripleListResponse {
-  // 知识图谱文档列表
-  data: KnowledgeTripleDocumentInfo[];
-}

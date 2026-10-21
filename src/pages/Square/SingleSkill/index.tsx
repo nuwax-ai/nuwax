@@ -22,10 +22,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /** 广场技能卡片。主按钮仍是开始使用，收藏固定走技能接口。 */
-export type SingleSkillProps = Omit<
-  SingleAgentProps,
-  'collectApi' | 'unCollectApi'
->;
+export type SingleSkillProps = SingleAgentProps;
 
 /**
  * 广场技能卡片。

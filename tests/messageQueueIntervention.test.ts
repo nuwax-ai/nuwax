@@ -546,7 +546,7 @@ describe('消息队列与 Intervention 协调', () => {
 
   // ============ 场景6：立即发送与 Intervention 协调 ============
   describe('立即发送与 Intervention 协调', () => {
-    it('Intervention pending 时点击立即发送，不停止会话，解除后优先消费该项', () => {
+    it('Intervention pending 时点击立即发送，直接调用 sendMessage 并出队，其余队列项待解除后再消费', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -563,29 +563,13 @@ describe('消息队列与 Intervention 协调', () => {
         messageList: [],
       });
 
-      // 立即发送 m2：仅 markSending，不 stop；intervention 期间不会真正发出
+      // 立即发送 m2：直接调用 sendMessage 并出队
       const m2 = result.current.queue[1];
       act(() => {
         result.current.sendNow(m2);
       });
 
-      expect(sendMessage).not.toHaveBeenCalled();
-      expect(result.current.queue.map((item) => item.text)).toEqual([
-        'm1',
-        'm2',
-      ]);
-      expect(result.current.queue[1].sending).toBe(true);
-
-      rerender({
-        isConversationActive: false,
-        hasPendingIntervention: false,
-        minConsumeInterval: 500,
-        messageList: [],
-      });
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
-
+      expect(sendMessage).toHaveBeenCalledTimes(1);
       expect(sendMessage).toHaveBeenCalledWith(
         'm2',
         [],
@@ -596,6 +580,35 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
       );
       expect(result.current.queue.map((item) => item.text)).toEqual(['m1']);
+
+      // m2 经历流式周期后结束，且 Intervention 解除，再自动消费剩余的 m1
+      rerender({
+        isConversationActive: true,
+        hasPendingIntervention: true,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+      expect(result.current.queue).toHaveLength(0);
     });
   });
 });

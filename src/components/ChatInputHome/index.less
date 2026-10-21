@@ -37,10 +37,7 @@
   margin: 0 auto;
   max-width: 800px;
   gap: @marginXxs;
-  /* 顶部 12px（原 16px）：首行文字距卡片上缘收紧（NW-070），侧/底维持
-     原值——底部底栏负边距（-12px）与侧向贴边元素（公告/目录栏 calc(0px - @padding)）
-     均锚定侧/底 padding，动会连锁 */
-  padding: @paddingSm @padding 12px;
+  padding: 12px @padding;
   border-radius: 20px;
   background: @colorBgContainer;
   box-sizing: border-box;

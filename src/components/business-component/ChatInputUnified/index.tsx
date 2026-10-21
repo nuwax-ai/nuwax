@@ -462,7 +462,8 @@ const ChatInputUnifiedImpl: React.FC<
   // 仍有附件在上传中：发送按钮禁用 + Enter 拦截——此时 files 只含已完成
   // 附件，贸然发出会把上传中的附件静默丢弃（NW-109 数据丢失）
   const isUploadingAttachment = useMemo(
-    () => uploadFiles.some((item) => item.status === UploadFileStatus.uploading),
+    () =>
+      uploadFiles.some((item) => item.status === UploadFileStatus.uploading),
     [uploadFiles],
   );
   const [messageInfo, setMessageInfo] = useState<string>('');
@@ -1170,12 +1171,14 @@ const ChatInputUnifiedImpl: React.FC<
     };
   }, [draftScope]);
 
-  // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
+  // 监听队列消息编辑回填（含 skillIds / selectedDocs / expertComponents / modelId / agentMode 快照）
   useEffect(() => {
     const handleEditMessage = ({
       text,
       files: editFiles,
       skillIds: editSkillIds,
+      selectedDocs: editSelectedDocs,
+      expertComponents: editExpertComponents,
       modelId: editModelId,
       selectedAgentMode: editAgentMode,
       conversationId: targetConversationId,
@@ -1183,6 +1186,8 @@ const ChatInputUnifiedImpl: React.FC<
       text: string;
       files?: UploadFileInfo[];
       skillIds?: number[];
+      selectedDocs?: SelectedDocInfo[];
+      expertComponents?: AgentSelectedComponentInfo[];
       modelId?: number;
       selectedAgentMode?: AgentMode;
       conversationId?: number | string;
@@ -1194,12 +1199,38 @@ const ChatInputUnifiedImpl: React.FC<
       ) {
         return;
       }
-      setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
+      setMessageInfo((prev) => {
+        const next = prev ? `${prev}\n${text}` : text;
+        mentionEditorRef.current?.setEditorText?.(next);
+        return next;
+      });
       if (editFiles?.length) {
         setUploadFiles((prev) => [...prev, ...editFiles]);
       }
       if (editSkillIds?.length) {
         setSkillIds(editSkillIds);
+      }
+      if (editSelectedDocs?.length) {
+        setSelectedDocs(editSelectedDocs);
+      }
+      if (editExpertComponents?.length) {
+        setExpertComponents(
+          editExpertComponents.map((expert) => {
+            const detail = expert as Partial<{
+              name: string;
+              icon: string;
+              description: string;
+              defaultSelected: DefaultSelectedEnum;
+            }>;
+            return {
+              ...expert,
+              name: detail.name ?? '',
+              icon: detail.icon ?? '',
+              description: detail.description ?? '',
+              defaultSelected: detail.defaultSelected ?? DefaultSelectedEnum.No,
+            };
+          }),
+        );
       }
       if (editModelId !== undefined) {
         onModelSelect?.(editModelId);
