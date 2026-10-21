@@ -58,10 +58,10 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   /** 普通智能体才提供「进入独立页面」。 */
   const canEnterAgentPage =
     targetType === AgentComponentTypeEnum.Agent && !isOpenApp;
-  /** 网站项目、常规项目走项目收藏；普通智能体和网页应用走智能体收藏。 */
+  /** 网站项目、三方应用走项目收藏；普通智能体和网页应用走智能体收藏。 */
   const useProjectCollect =
     targetType === AgentComponentTypeEnum.UserApp ||
-    targetType === AgentComponentTypeEnum.NormalProject;
+    targetType === AgentComponentTypeEnum.ThirdApp;
 
   // 收藏
   const { run: runCollectAgent } = useRequest(
