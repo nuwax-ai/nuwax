@@ -1537,16 +1537,23 @@ export const MOCK_SCENARIOS: MockScenario[] = [
     label: '消息队列（长执行）',
     description:
       '长时间执行悬挂中连续发送消息 → 进入待发队列面板（等待/立即发送/删除/编辑/重排）',
-    verifies: 'MessageQueue 面板展示与停止后 flush',
+    verifies: 'MessageQueue 面板展示、立即发送并发直发与停止后 flush',
     transport: 'keep-open',
     events: [
-      think('长时间批量任务开始。'),
+      think('长时间批量任务开始。', true),
+      processing('verify_batch_status', 'EXECUTING', 'tc-queue-1', undefined, {
+        input: { batchId: 'BATCH-2026-01', checkItems: ['account', 'amount'] },
+      }),
       chat('正在处理第一批数据，预计需要较长时间……'),
       heartbeat(),
       { ...heartbeat(), delayMs: 1500 },
       { ...heartbeat(), delayMs: 1500 },
       { ...heartbeat(), delayMs: 1500 },
-      chat('第一批完成，正在处理第二批……'),
+      processing('verify_batch_status', 'FINISHED', 'tc-queue-1', undefined, {
+        input: { batchId: 'BATCH-2026-01', checkItems: ['account', 'amount'] },
+        data: { verifiedCount: 128, status: 'PASSED' },
+      }),
+      chat('第一批完成，正在处理第二批……', true),
       { ...heartbeat(), delayMs: 1500 },
       { ...heartbeat(), delayMs: 1500 },
     ],

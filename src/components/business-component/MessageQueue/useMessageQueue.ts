@@ -67,24 +67,7 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
     [updateQueue],
   );
 
-  /**
-   * 立即发送：原地标记指定项 sending（不移到队首、保留原位置与 id，避免组件
-   * 卸载重挂导致 loading 态丢失，也使用户始终在点击的那一行看到 loading）。
-   * UI 上立即显示 loading 且不可重复点击，待队列消费实际发送后
-   * 随 dequeueFirst 出列移除——loading 的结束与队列出列移除是同一时刻。
-   */
-  const markSending = useCallback(
-    (id: string) => {
-      updateQueue((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, sending: true } : item,
-        ),
-      );
-    },
-    [updateQueue],
-  );
-
-  const dequeueForEdit = useCallback(
+  const dequeueById = useCallback(
     (id: string): QueuedMessage | undefined => {
       const found = queueRef.current.find((item) => item.id === id);
       if (found) {
@@ -98,13 +81,29 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
   const dequeueFirst = useCallback((): QueuedMessage | undefined => {
     const current = queueRef.current;
     if (current.length === 0) return undefined;
-    // 优先消费「立即发送」（sending）的项，无论其在队列中的位置；
-    // 否则按队首顺序消费。按 id 出列，避免索引在并发更新下错位。
-    const sendingIdx = current.findIndex((item) => item.sending);
-    const target = sendingIdx >= 0 ? current[sendingIdx] : current[0];
+    // 按 id 出列，避免索引在并发更新下错位。
+    const target = current[0];
     updateQueue((prev) => prev.filter((item) => item.id !== target.id));
     return target;
   }, [updateQueue]);
+
+  /**
+   * 撤销删除/清空：把项按原下标插回（下标越界则追加；已存在的 id 跳过，避免重复）。
+   * 传入项需按原下标升序，逐个插入后相对顺序与删除前一致。
+   */
+  const restore = useCallback(
+    (entries: Array<{ item: QueuedMessage; index: number }>) => {
+      updateQueue((prev) => {
+        const next = [...prev];
+        entries.forEach(({ item, index }) => {
+          if (next.some((existing) => existing.id === item.id)) return;
+          next.splice(Math.min(index, next.length), 0, item);
+        });
+        return next;
+      });
+    },
+    [updateQueue],
+  );
 
   const clearQueue = useCallback(() => updateQueue(() => []), [updateQueue]);
 
@@ -136,8 +135,8 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
     enqueue,
     prepend,
     remove,
-    markSending,
-    dequeueForEdit,
+    dequeueById,
+    restore,
     dequeueFirst,
     clearQueue,
     reorder,

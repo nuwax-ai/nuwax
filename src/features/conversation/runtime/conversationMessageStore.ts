@@ -28,6 +28,7 @@ export interface ConversationMessageStore {
   applyOptimisticRound(
     user: MessageInfo,
     assistant: MessageInfo,
+    preserveIncompleteIds?: ReadonlySet<string>,
   ): MessageInfo[];
   /** SSE 投影写入（reducer 产出后的新列表），引用相同则跳过 */
   applyStreamReduction(messages: MessageInfo[]): MessageInfo[];
@@ -49,7 +50,10 @@ export interface ConversationMessageStore {
   /** 流结束：Loading/Incomplete → Stopped，执行中 processing → FAILED */
   finalizeOnClose(): void;
   /** 协议/轮询终态：对齐 legacy 统一清算 Loading 与执行中工具。 */
-  finalizeOnTerminalTaskStatus(taskStatus: TaskStatus): void;
+  finalizeOnTerminalTaskStatus(
+    taskStatus: TaskStatus,
+    ownerMessageId?: string,
+  ): void;
   /** 网络错误：owner 消息 → Error，其执行中 processing → FAILED */
   markStreamError(ownerId: string): void;
   /** 过期连接的迟到 close：只清理 owner 自己的消息 */
@@ -87,9 +91,14 @@ export function createConversationMessageStore(
       };
     },
 
-    applyOptimisticRound(user, assistant) {
+    applyOptimisticRound(user, assistant, preserveIncompleteIds) {
       return commit(
-        appendOutgoingConversationMessages(messages, user, assistant),
+        appendOutgoingConversationMessages(
+          messages,
+          user,
+          assistant,
+          preserveIncompleteIds,
+        ),
       );
     },
 
@@ -130,8 +139,14 @@ export function createConversationMessageStore(
       }
     },
 
-    finalizeOnTerminalTaskStatus(taskStatus) {
-      commit(finalizeMessagesOnTerminalTaskStatus(messages, taskStatus));
+    finalizeOnTerminalTaskStatus(taskStatus, ownerMessageId) {
+      commit(
+        finalizeMessagesOnTerminalTaskStatus(
+          messages,
+          taskStatus,
+          ownerMessageId,
+        ),
+      );
     },
 
     markStreamError(ownerId) {

@@ -3,7 +3,6 @@ import {
   CloseOutlined,
   EditOutlined,
   HolderOutlined,
-  LoadingOutlined,
   SendOutlined,
 } from '@ant-design/icons';
 import { useSortable } from '@dnd-kit/sortable';
@@ -24,6 +23,7 @@ export interface QueuedMessageItemProps {
   onSendNow: (message: QueuedMessage) => void;
   onDelete: (id: string) => void;
   onEdit: (message: QueuedMessage) => void;
+  sendNowDisabled?: boolean;
 }
 
 /** 单条待发送消息项（可拖拽排序，手柄触发） */
@@ -32,6 +32,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
   onSendNow,
   onDelete,
   onEdit,
+  sendNowDisabled,
 }) => {
   const {
     attributes,
@@ -57,9 +58,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
       className={cx(styles.container, { [styles['is-dragging']]: isDragging })}
       {...attributes}
     >
-      <div
-        className={cx(styles.card, { [styles['is-sending']]: message.sending })}
-      >
+      <div className={cx(styles.card)}>
         {/* 拖拽手柄：仅手柄触发拖拽，避免误触操作按钮 */}
         <span
           ref={setActivatorNodeRef}
@@ -87,15 +86,14 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
               className={cx(
                 styles['action-btn'],
                 styles['send-btn'],
-                message.sending && styles['is-disabled'],
+                sendNowDisabled && styles['is-disabled'],
               )}
               onClick={() => {
-                // sending 态由队列持有：loading 期间禁止重复触发
-                if (message.sending) return;
+                if (sendNowDisabled) return;
                 onSendNow(message);
               }}
             >
-              {message.sending ? <LoadingOutlined /> : <SendOutlined />}
+              <SendOutlined />
             </span>
           </Tooltip>
           <Tooltip
