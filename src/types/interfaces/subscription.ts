@@ -19,7 +19,7 @@ export interface DailyRevenueDetailRecord {
   userId: number;
   dt: string;
   amount: number;
-  type: string; // PLAN, MODEL_CALL, TOOL_CALL
+  type: string; // 类型,可用值:PLAN,MODEL_CALL,TOOL_CALL,PROJECT_PAY
   typeId: number;
   orderId: number;
   targetType: string;
