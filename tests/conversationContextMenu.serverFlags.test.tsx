@@ -4,6 +4,7 @@ import {
   apiAgentConversationCollect,
   apiAgentConversationPin,
   apiAgentConversationUnCollect,
+  apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { subscribeConversationChanged } from '@/utils/directorySyncEvents';
@@ -93,6 +94,50 @@ describe('会话菜单服务端标记', () => {
       expect(apiAgentConversationPin).toHaveBeenCalledWith(42, true),
     );
     expect(onFlagChanged).toHaveBeenCalledWith('pinned', true);
+  });
+
+  it.each([
+    { isComposing: true, keyCode: 13 },
+    { isComposing: false, keyCode: 229 },
+  ])('重命名组字回车不保存，上屏后回车保存中文（%j）', async (ime) => {
+    vi.mocked(apiAgentConversationUpdate).mockResolvedValueOnce({
+      success: true,
+    } as never);
+    const onRenamed = vi.fn();
+    render(
+      <ConversationContextMenu
+        conversationId={42}
+        currentTopic="原会话"
+        showMoreButton
+        onRenamed={onRenamed}
+      >
+        {(moreButton) => <div>{moreButton}原会话</div>}
+      </ConversationContextMenu>,
+    );
+    openMenu();
+    fireEvent.click(
+      await screen.findByText('PC.Components.ConversationContextMenu.rename'),
+    );
+    const input = await screen.findByRole('textbox');
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'zhongwen' } });
+    if (!ime.isComposing) fireEvent.compositionEnd(input);
+    expect(fireEvent.keyDown(input, { key: 'Enter', ...ime })).toBe(true);
+    fireEvent.keyUp(input, { key: 'Enter' });
+    expect(apiAgentConversationUpdate).not.toHaveBeenCalled();
+    expect(onRenamed).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeVisible();
+
+    fireEvent.compositionEnd(input, { data: '中文' });
+    fireEvent.change(input, { target: { value: '中文' } });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+    await waitFor(() => expect(onRenamed).toHaveBeenCalledWith('中文'));
+    expect(apiAgentConversationUpdate).toHaveBeenCalledTimes(1);
+    expect(apiAgentConversationUpdate).toHaveBeenCalledWith({
+      id: 42,
+      topic: '中文',
+    });
   });
 
   it('置顶成功广播 conversation.changed 标记补丁（bug 2475 左列表联动）', async () => {

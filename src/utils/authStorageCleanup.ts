@@ -10,18 +10,29 @@
  *   （2026-09-11「一进入就是英文」回归的相邻问题）。
  * 这些偏好与登录态无关，会话闪断重登不应销毁，clear 时暂存原样恢复。
  */
+import {
+  COLLAPSED_PROJECT_KEYS_KEY,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+} from '@/constants/homeLayout.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { clearMicroAppDevSession } from './businessAuth';
 import eventBus, { EVENT_NAMES } from './eventBus';
 
-/** clear 时需要保留的用户显式偏好键（主题三键 + 语言两键，跨会话/跨登录态保留） */
+/**
+ * clear 时需要保留的用户显式偏好键（主题三键 + 语言两键 + 首页分组布局，
+ * 跨会话/跨登录态保留）。会话失效重登不应把用户最后收起的布局重置。
+ */
 const USER_PREF_STORAGE_KEYS: string[] = [
   STORAGE_KEYS.USER_THEME_CONFIG,
   STORAGE_KEYS.GLOBAL_SETTINGS,
   STORAGE_KEYS.HAS_USER_SWITCH_THEME,
   I18N_STORAGE_KEYS.ACTIVE_LANG,
   I18N_STORAGE_KEYS.USER_SET,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+  COLLAPSED_PROJECT_KEYS_KEY,
 ];
 
 /**

@@ -66,6 +66,11 @@ export async function openRemoteFileUrl(
   url: string,
   fileName?: string,
 ): Promise<void> {
+  // 附件元数据只允许打开网络文件，不能把脚本或本机协议交给新窗口执行。
+  const target = new URL(url, window.location.href);
+  if (!['http:', 'https:'].includes(target.protocol)) {
+    throw new Error('Unsupported file URL protocol.');
+  }
   const resolvedName =
     fileName ||
     url.split('/').filter(Boolean).pop()?.split('?')[0] ||

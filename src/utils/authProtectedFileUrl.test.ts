@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   isAuthProtectedFileUrl,
+  openRemoteFileUrl,
   resolveAuthProtectedFileFetchUrl,
 } from './authProtectedFileUrl';
 
 describe('authProtectedFileUrl', () => {
+  it.each(['javascript:alert(1)', 'data:text/html,hello', 'file:///tmp/test'])(
+    '拒绝附件中的非网络协议：%s',
+    async (url) => {
+      await expect(openRemoteFileUrl(url)).rejects.toThrow(
+        'Unsupported file URL protocol',
+      );
+    },
+  );
   it('detects /api/f/ paths as auth protected', () => {
     expect(
       isAuthProtectedFileUrl(
