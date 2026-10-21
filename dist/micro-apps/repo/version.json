@@ -8,17 +8,17 @@
   "source": {
     "branch": "main",
     "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-    "commit": "c7035259b155d487071de9e2f346f70c74ba7a7b"
+    "commit": "3a8cf80c17f908c956eda7d2f4dd148d19cf19fd"
   },
   "projectDir": ".",
   "workspaceMode": "project-workspace",
   "buildEnvironment": {},
   "typecheck": {
     "status": "matched-upstream-baseline",
-    "upstreamDiagnostics": 72,
-    "adapterDiagnostics": 72,
+    "upstreamDiagnostics": 68,
+    "adapterDiagnostics": 68,
     "newDiagnostics": 0,
-    "baselineSha256": "17fe10dde7fab16f72ec7e80d50621d88e216878fc1f8dbc2be3934609f5ca70",
+    "baselineSha256": "ef32dee08ff1523651f36df67b0130c2dd78fa85934c6151b3f4fd4f6c28cb59",
     "command": [
       "exec",
       "tsc",
@@ -29,7 +29,7 @@
     ]
   },
   "adapter": {
-    "sha256": "faf7478279b959acdf174b578592bf8e427244c5c2339f986767b8272377de94",
+    "sha256": "07719a841b2aa2a9c2964ac6e13a1ba6b9864328f14ffaf9d33c43fecefe3b3e",
     "files": [
       "adapter.json",
       "adapter.patch",
@@ -50,10 +50,9 @@
     "qiankun": "2.10.17-beta.0",
     "@tiny-codes/vite-plugin-qiankun": "2.4.0"
   },
-  "builtAt": "2026-10-21T08:55:45.580Z",
+  "builtAt": "2026-10-21T14:05:28.974Z",
   "cache": {
-    "key": "38d16c1bb8f204486374741cd553b33b9fcf0a0a4aef003c89d9bfe5ba235eb1",
-    "hit": true,
-    "reusedAt": "2026-10-21T13:38:32.845Z"
+    "key": "cf875056ce313ab723f5802c4ea57479719bc7cbb0dface5a5c6870027ccf003",
+    "hit": false
   }
 }
