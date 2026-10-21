@@ -459,6 +459,13 @@ const ChatInputUnifiedImpl: React.FC<
       ),
     [uploadFiles],
   );
+  // 仍有附件在上传中：发送按钮禁用 + Enter 拦截——此时 files 只含已完成
+  // 附件，贸然发出会把上传中的附件静默丢弃（NW-109 数据丢失）
+  const isUploadingAttachment = useMemo(
+    () =>
+      uploadFiles.some((item) => item.status === UploadFileStatus.uploading),
+    [uploadFiles],
+  );
   const [messageInfo, setMessageInfo] = useState<string>('');
   const [skillIds, setSkillIds] = useState<number[]>([]);
   // 资料库（空间文档仓库）已选文档：编辑器 chip 派生（增删/清空自动同步），随消息以 selectedDocs 发送
@@ -513,6 +520,8 @@ const ChatInputUnifiedImpl: React.FC<
   }, [stopOwnerId]);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  // 上传中发送拦截提示的上次弹出时间（节流，见 confirmSendMessage）
+  const uploadHintAtRef = useRef(0);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   useEffect(() => {
     if (!supportsAgentCapabilities) {
@@ -653,8 +662,9 @@ const ChatInputUnifiedImpl: React.FC<
   }, [visible, isHoveringBtn]);
 
   const disabledSend = useMemo(() => {
-    return !messageInfo && !files?.length;
-  }, [messageInfo, files]);
+    // 上传中禁发（NW-109）：即使已有文字也等附件就绪，防附件被静默丢弃
+    return (!messageInfo && !files?.length) || isUploadingAttachment;
+  }, [messageInfo, files, isUploadingAttachment]);
 
   /**
    * 会话活跃态：上层传入的流式/任务信号 + messageList 末条 Loading 兜底
@@ -695,6 +705,16 @@ const ChatInputUnifiedImpl: React.FC<
 
   const confirmSendMessage = (value: string) => {
     if (isStoppingConversation || loadingStopConversation) return;
+    // 附件上传中拦截发送（NW-109）：此时 files 只含已完成附件，发出即丢附件；
+    // 提示节流 1.5s——回车连按时避免 message.info 逐次堆叠
+    if (isUploadingAttachment) {
+      const now = Date.now();
+      if (now - uploadHintAtRef.current > 1500) {
+        uploadHintAtRef.current = now;
+        message.info(t('PC.Components.ChatInputHome.attachmentUploadingHint'));
+      }
+      return;
+    }
     if (!!value.trim() || !!files?.length) {
       onEnter(
         value,
@@ -995,6 +1015,9 @@ const ChatInputUnifiedImpl: React.FC<
   const getButtonTooltip = () => {
     if (wholeDisabled) {
       return t('PC.Components.ChatInputHome.conversationDisabled');
+    }
+    if (isUploadingAttachment) {
+      return t('PC.Components.ChatInputHome.attachmentUploadingHint');
     }
     if (disabledSend) {
       return t('PC.Components.ChatInputHome.enterQuestion');

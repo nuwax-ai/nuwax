@@ -1,7 +1,9 @@
 import ProjectPanel, {
   ProjectPanelHandle,
 } from '@/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel';
+import { apiAgentConversationUpdate } from '@/services/agentConfig';
 import {
+  apiUserAppUpdate,
   apiUserProjectArchive,
   apiUserProjectPageQuery,
   apiUserProjectPin,
@@ -125,6 +127,7 @@ vi.mock('@/services/userProjectApp', async () => {
 describe('项目侧栏原型交互', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     // 复位 mock 的服务端真值，避免上一条用例的置顶/归档泄漏到下一条
     // （resetServerFlags 挂在 mock 实例上，import 类型来自真实模块，须断言）
     (
@@ -165,6 +168,75 @@ describe('项目侧栏原型交互', () => {
       ).toBeVisible(),
     );
   });
+
+  it.each(['项目', '子会话'] as const)(
+    '%s 重命名忽略组字回车及 229，上屏后仍可保存',
+    async (target) => {
+      render(<ProjectPanel compact />);
+      const row = await screen.findByRole('button', { name: /项目甲/ });
+      if (target === '项目') {
+        fireEvent.click(
+          within(row).getByRole('button', {
+            name: 'PC.Components.ActionMenu.more',
+          }),
+        );
+        fireEvent.click(
+          await screen.findByText(
+            'PC.Components.ConversationContextMenu.rename',
+          ),
+        );
+      } else {
+        await screen.findByText('子会话一');
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: 'PC.Components.ConversationContextMenu.rename',
+          }),
+        );
+      }
+      const input = within(await screen.findByRole('dialog')).getByRole(
+        'textbox',
+      );
+      await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: 'zhongwen' } });
+      fireEvent.keyDown(input, {
+        key: 'Enter',
+        keyCode: 13,
+        isComposing: true,
+      });
+      fireEvent.keyUp(input, { key: 'Enter' });
+      fireEvent.compositionEnd(input);
+      fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+      fireEvent.keyUp(input, { key: 'Enter' });
+      expect(apiAgentConversationUpdate).not.toHaveBeenCalled();
+      expect(apiUserAppUpdate).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeVisible();
+
+      fireEvent.change(input, { target: { value: '中文' } });
+      if (target === '项目') {
+        fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+        await waitFor(() =>
+          expect(apiUserAppUpdate).toHaveBeenCalledWith({
+            id: 1,
+            name: '中文',
+          }),
+        );
+      } else {
+        fireEvent.click(
+          screen.getByRole('button', { name: 'PC.Common.Global.confirm' }),
+        );
+        await waitFor(() =>
+          expect(apiAgentConversationUpdate).toHaveBeenCalledWith({
+            id: 11,
+            topic: '中文',
+          }),
+        );
+      }
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+    },
+  );
 
   it('项目右键与更多互斥，切换项目后也只保留当前菜单（2536）', async () => {
     render(<ProjectPanel compact />);
