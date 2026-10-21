@@ -8,11 +8,15 @@ describe('isImeConfirming', () => {
   });
 
   it('部分输入法只给 keyCode 229，也要让开', () => {
-    expect(isImeConfirming({ nativeEvent: { isComposing: false }, keyCode: 229 })).toBe(true);
+    expect(
+      isImeConfirming({ nativeEvent: { isComposing: false }, keyCode: 229 }),
+    ).toBe(true);
   });
 
   it('普通 Enter 正常提交', () => {
-    expect(isImeConfirming({ nativeEvent: { isComposing: false }, keyCode: 13 })).toBe(false);
+    expect(
+      isImeConfirming({ nativeEvent: { isComposing: false }, keyCode: 13 }),
+    ).toBe(false);
   });
 
   it('缺少原生事件字段时按普通 Enter 处理', () => {

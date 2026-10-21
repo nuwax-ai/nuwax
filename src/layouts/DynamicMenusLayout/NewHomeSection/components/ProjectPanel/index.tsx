@@ -14,7 +14,6 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import { isImeConfirming } from '@/utils/imeEnter';
 import {
   apiNormalProjectDelete,
   apiNormalProjectUpdate,
@@ -50,6 +49,7 @@ import {
   observeConversationTaskStatuses,
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
+import { isImeConfirming } from '@/utils/imeEnter';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -2021,7 +2021,7 @@ const ProjectPanel = forwardRef<
             onPressEnter={(event) => {
               // NW-148：输入法选词的回车不提交
               if (isImeConfirming(event)) return;
-              void handleChildRenameSubmit();
+              void handleChildRenameSubmit().catch(() => null);
             }}
             maxLength={50}
           />
@@ -2043,7 +2043,7 @@ const ProjectPanel = forwardRef<
             onPressEnter={(event) => {
               // NW-148：输入法选词的回车不提交
               if (isImeConfirming(event)) return;
-              void handleProjectRenameSubmit();
+              void handleProjectRenameSubmit().catch(() => null);
             }}
             maxLength={50}
           />

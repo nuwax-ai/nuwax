@@ -335,7 +335,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
           onPressEnter={(event) => {
             // NW-148：输入法选词的回车不提交，等拼音上屏后再按一次
             if (isImeConfirming(event)) return;
-            void handleRenameSubmit();
+            void handleRenameSubmit().catch(() => null);
           }}
           maxLength={50}
         />
