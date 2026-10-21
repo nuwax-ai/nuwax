@@ -39,6 +39,8 @@ export interface UseChatMessageQueueParams {
   messageList: MessageInfo[];
   conversationId: any;
   sendMessage: SendMessage;
+  /** 停止当前会话（立即发送时若会话忙碌则调用，停止后自然触发 auto-consume 发送下一条） */
+  runStopConversation?: (id: any) => void | Promise<unknown>;
   minConsumeInterval?: number;
   hasPendingIntervention?: boolean;
 }
@@ -50,6 +52,7 @@ export const useChatMessageQueue = ({
   messageList,
   conversationId,
   sendMessage,
+  runStopConversation,
   minConsumeInterval = 1200,
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
@@ -193,8 +196,12 @@ export const useChatMessageQueue = ({
 
     // 从「流式结束时刻」起算，而非上次发送时刻：上一条响应通常耗时数秒，
     // 若以发送时刻为基准，elapsed 恒大于间隔会使 wait≈0，间隔形同虚设。
+    // 若队列中有立即发送（sending）的项，说明是用户显式催促，上一轮 stop 结束后以极短缓冲（50ms）迅速发送；
+    // 否则保持正常防抖节奏（默认 1200ms）。
+    const hasSending = messageQueue.queue.some((item) => item.sending);
+    const targetInterval = hasSending ? 50 : minIntervalRef.current;
     const elapsed = Date.now() - blockReleasedAtRef.current;
-    const wait = Math.max(minIntervalRef.current - elapsed, 0);
+    const wait = Math.max(targetInterval - elapsed, 0);
 
     consumeTimerRef.current = window.setTimeout(() => {
       consumeTimerRef.current = null;
@@ -369,9 +376,10 @@ export const useChatMessageQueue = ({
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   /**
-   * 立即发送：与自动消费对齐，不再先 stop。
-   * - 忙碌：仅 markSending，等当前轮结束后优先消费该项
-   * - 空闲：markSending + scheduleAutoConsume 主动发出
+   * 立即发送：
+   * - 忙碌（流式中或任务执行中）：调用 runStopConversation 停止当前会话（通知后端中止在途 -start 请求），
+   *   并原地标记 sending（UI 立即显示 loading 且不可重复点击）；当前轮次停止后自动优先消费该项发出；
+   * - 空闲：markSending + scheduleAutoConsume 主动发出。
    */
   const sendNow = useCallback(
     (qMsg: QueuedMessage) => {
@@ -380,11 +388,22 @@ export const useChatMessageQueue = ({
       // 原地标记 sending：保留原 id，UI 立即显示 loading 且不可重复点击；
       // 该条留在队列里直至消费实际发送后随 dequeueFirst 出列。
       messageQueue.markSending(qMsg.id);
+      // 若当前会话处于活跃/忙碌状态，调用 stop 接口中止当前在途请求
+      if (
+        conversationId &&
+        (streamActiveRef.current || taskExecutingRef.current)
+      ) {
+        void Promise.resolve(runStopConversation?.(conversationId)).catch(
+          (error) => {
+            console.error('[messageQueue] runStopConversation failed', error);
+          },
+        );
+      }
       // 会话已空闲时不会有流式结束边沿，需主动触发一次消费；
-      // 忙碌时 canAttemptConsume 会拒绝，等本轮结束后自然消费。
+      // 忙碌时 canAttemptConsume 会拒绝，等本轮 stop 结束后自然消费。
       scheduleAutoConsume();
     },
-    [messageQueue, scheduleAutoConsume],
+    [messageQueue, conversationId, runStopConversation, scheduleAutoConsume],
   );
 
   const deleteQueued = useCallback(
