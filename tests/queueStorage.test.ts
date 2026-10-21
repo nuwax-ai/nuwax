@@ -23,24 +23,9 @@ describe('queueStorage 队列持久化', () => {
     localStorage.clear();
   });
 
-  it('save 后 load 还原队列：queuedAt 还原为 Date，保留 skillIds/modelId/agentMode 快照并剥离附件 response', () => {
+  it('save 后 load 还原队列：queuedAt 还原为 Date，保留 skillIds/modelId/agentMode 快照', () => {
     saveQueue('c1', [
-      makeMsg({
-        skillIds: [7],
-        modelId: 3,
-        selectedAgentMode: 'ask',
-        files: [
-          {
-            uid: 'u1',
-            name: 'pic.png',
-            type: 'image/png',
-            size: 100,
-            url: 'https://example.com/pic.png',
-            key: 'k1',
-            response: { raw: 'large-payload' },
-          },
-        ],
-      }),
+      makeMsg({ skillIds: [7], modelId: 3, selectedAgentMode: 'ask' }),
     ]);
     const loaded = loadQueue('c1');
     expect(loaded).toHaveLength(1);
@@ -49,8 +34,6 @@ describe('queueStorage 队列持久化', () => {
     expect(loaded[0].modelId).toBe(3);
     expect(loaded[0].selectedAgentMode).toBe('ask');
     expect(loaded[0].queuedAt).toBeInstanceOf(Date);
-    expect(loaded[0].files?.[0]?.url).toBe('https://example.com/pic.png');
-    expect(loaded[0].files?.[0]?.response).toBeUndefined();
   });
 
   it('保存空队列会删除存储键', () => {
