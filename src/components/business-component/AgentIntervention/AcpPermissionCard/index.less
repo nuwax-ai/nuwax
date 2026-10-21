@@ -158,7 +158,7 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      padding: 0 @paddingSm @paddingXs; // 增加左右边距
+      padding: 6px @paddingSm @paddingXs; // 增加上下左右边距，防止首个选项外描边/背景被 overflow: hidden 裁剪
       gap: 6px; // 每一项之间增加微小的间距
 
       .actionBtn {
