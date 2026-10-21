@@ -197,16 +197,6 @@ export function createConversationRuntimeSession(
   let settledTerminalStatus: TaskStatus | null = null;
   // 停止接口跨异步边界：同会话新一轮或切页后，旧停止成功不得取消当前轮。
   let stopRequestGeneration = 0;
-  /**
-   * 当前会话在途的 live 流连接表：
-   * 支持「上一轮仍在执行时点击立即发送直调 chat 接口」的后端排队场景，
-   * send() 不再强行 abort 上一轮连接，保证上一轮任务过程（PROCESSING/MESSAGE/FINAL_RESULT）
-   * 完整送达并正确渲染；仅在切换会话/卸载（resetForConversationSwitch）时统一中断全部在途连接。
-   */
-  const activeLiveRuns = new Map<
-    string,
-    { ownerMessageId: string; abort?: () => void }
-  >();
   const stateListeners = new Set<RuntimeSessionListener>();
 
   const notifyState = () => {
@@ -274,14 +264,9 @@ export function createConversationRuntimeSession(
     ownerMessageId: string,
     context?: {
       isSuggestEnabled?: boolean;
-      /** 是否已被同会话后续新发起的轮次取代（后端排队场景下的前置轮） */
-      isSupersededRun?: boolean;
     },
   ) => {
-    const isSupersededRun = context?.isSupersededRun === true;
-    if (!isSupersededRun || !currentRequestId) {
-      currentRequestId = res.requestId || '';
-    }
+    currentRequestId = res.requestId || '';
     const snapshot = store.getSnapshot();
     const currentMessage = snapshot.find(
       (message) => message.id === ownerMessageId,
@@ -308,17 +293,12 @@ export function createConversationRuntimeSession(
 
     if (res.eventType === 'ERROR') {
       if (conversationId !== null) {
-        if (isSupersededRun) {
-          // 前置轮次出错：仅收敛该轮自身消息与工具，不关停后续仍在排队/执行的轮次
-          store.finalizeOnTerminalTaskStatus(TaskStatus.FAILED, ownerMessageId);
-        } else {
-          finalizeConversationTerminal(conversationId, TaskStatus.FAILED);
-          runtime.effects.dispatch({
-            type: 'recent.status.patch',
-            conversationId,
-            status: TaskStatus.FAILED,
-          });
-        }
+        finalizeConversationTerminal(conversationId, TaskStatus.FAILED);
+        runtime.effects.dispatch({
+          type: 'recent.status.patch',
+          conversationId,
+          status: TaskStatus.FAILED,
+        });
       }
       return;
     }
@@ -401,14 +381,9 @@ export function createConversationRuntimeSession(
         res,
       );
       if (terminalStatus) {
-        if (isSupersededRun) {
-          // 前置轮次结束但后续已有新轮次在途：只收敛本轮消息与工具，不将整段会话或新轮 Loading 占位提前终结
-          store.finalizeOnTerminalTaskStatus(terminalStatus, ownerMessageId);
-        } else {
-          // applyStreamEvent 同时承接 live 与 sub；终态必须在这里统一清算，
-          // 否则历史会话通过 sub 恢复时只会更新 taskStatus，Loading/工具态仍残留。
-          finalizeConversationTerminal(conversationId, terminalStatus);
-        }
+        // applyStreamEvent 同时承接 live 与 sub；终态必须在这里统一清算，
+        // 否则历史会话通过 sub 恢复时只会更新 taskStatus，Loading/工具态仍残留。
+        finalizeConversationTerminal(conversationId, terminalStatus);
       }
       // 问答型以外的智能体收尾（对齐旧线 conversationInfo：立即刷文件树
       // → 按需刷 Git → task-result 文件选中开预览 → 未命中发兜底 trigger；
@@ -431,11 +406,10 @@ export function createConversationRuntimeSession(
         });
       }
       // live 使用发送时的开关；sub 恢复没有发送上下文，读取已加载的智能体配置。
-      // 仅在非被取代的最新轮次结束时拉取问题建议。
       const isSuggestEnabled =
         context?.isSuggestEnabled ??
         currentAgent?.openSuggest === OpenCloseEnum.Open;
-      if (isSuggestEnabled && !isSupersededRun) {
+      if (isSuggestEnabled) {
         runtime.effects.dispatch({
           type: 'suggest.fetch',
           params: { conversationId } as never,
@@ -493,19 +467,9 @@ export function createConversationRuntimeSession(
     if (isStopping) return;
     stopRequestGeneration += 1;
     const { conversationId, message } = input;
-    // 跨会话切换时才中断旧会话连接；同会话忙碌态下直发（如点击队列「立即发送」）
-    // 不中断正在执行的上一轮连接，由后端排队承接，确保上一轮任务轨迹与最终回答完整渲染。
-    if (
-      currentConversationId !== null &&
-      String(currentConversationId) !== String(conversationId)
-    ) {
-      activeLiveRuns.forEach((entry) => {
-        entry.abort?.();
-      });
-      activeLiveRuns.clear();
-      runtime.liveConnection.abortCurrent();
-      runtime.resetStreamProjection();
-    }
+    // 取代上一轮连接：中断、重置投影
+    runtime.liveConnection.abortCurrent();
+    runtime.resetStreamProjection();
     currentConversationId = conversationId;
     // 新一轮发送：清上一轮终态记忆（终态自愈只对本轮快照生效）
     settledTerminalStatus = null;
@@ -560,10 +524,7 @@ export function createConversationRuntimeSession(
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    const activeOwnerIds = new Set(
-      Array.from(activeLiveRuns.values(), (entry) => entry.ownerMessageId),
-    );
-    store.applyOptimisticRound(chatMessage, currentMessage, activeOwnerIds);
+    store.applyOptimisticRound(chatMessage, currentMessage);
 
     const params = {
       conversationId,
@@ -586,17 +547,12 @@ export function createConversationRuntimeSession(
     // 必有 MESSAGE/THINK 事件，到 FINAL 时恒为 false，改名接口永不触发（禅道 bug2382）
     let topicUpdateArmed = true;
     const liveRunId = runtime.liveConnection.startRun();
-    activeLiveRuns.set(liveRunId, { ownerMessageId: currentMessageId });
 
-    const rawAbortConnection = openLiveConversationStream(params, {
+    const abortConnection = openLiveConversationStream(params, {
       onMessage: (res: ConversationChatResponse) => {
-        if (
-          !activeLiveRuns.has(liveRunId) ||
-          currentConversationId !== conversationId
-        ) {
+        if (!runtime.liveConnection.isCurrent(liveRunId)) {
           return;
         }
-        const isSupersededRun = runtime.liveConnection.isSuperseded(liveRunId);
         let terminalStatus: TaskStatus | undefined;
         if (res.eventType === 'FINAL_RESULT') {
           terminalStatus = resolveTerminalTaskStatus(
@@ -636,10 +592,8 @@ export function createConversationRuntimeSession(
         // 消息投影 + 事件分支副作用（live 与 sub 恢复共用）
         applyStreamEvent(res, currentMessageId, {
           isSuggestEnabled: input.isSuggestEnabled,
-          isSupersededRun,
         });
         if (
-          !isSupersededRun &&
           !terminalStatus &&
           (res.eventType === 'FINAL_RESULT' || res.eventType === 'ERROR')
         ) {
@@ -648,14 +602,10 @@ export function createConversationRuntimeSession(
         }
       },
       onClose: () => {
-        activeLiveRuns.delete(liveRunId);
-        runtime.resetStreamProjection(currentMessageId);
-        runtime.liveConnection.complete(liveRunId);
         const ownsClose = () =>
           currentConversationId === conversationId &&
-          !runtime.liveConnection.isSuperseded(liveRunId) &&
-          activeLiveRuns.size === 0;
-        // 过期连接或仍有其它在途轮次：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
+          !runtime.liveConnection.isSuperseded(liveRunId);
+        // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
         if (!ownsClose()) {
           store.finalizeOwnedOnStaleClose(currentMessageId);
           return;
@@ -700,13 +650,7 @@ export function createConversationRuntimeSession(
         }
       },
       onError: () => {
-        activeLiveRuns.delete(liveRunId);
-        runtime.resetStreamProjection(currentMessageId);
-        runtime.liveConnection.complete(liveRunId);
-        if (
-          runtime.liveConnection.isSuperseded(liveRunId) ||
-          activeLiveRuns.size > 0
-        ) {
+        if (runtime.liveConnection.isSuperseded(liveRunId)) {
           store.markStreamError(currentMessageId);
           return;
         }
@@ -726,16 +670,6 @@ export function createConversationRuntimeSession(
       },
     });
 
-    let aborted = false;
-    const abortConnection = () => {
-      if (aborted) return;
-      aborted = true;
-      rawAbortConnection?.();
-    };
-    const activeEntry = activeLiveRuns.get(liveRunId);
-    if (activeEntry) {
-      activeEntry.abort = abortConnection;
-    }
     runtime.liveConnection.attach(liveRunId, abortConnection);
   };
 
@@ -777,10 +711,6 @@ export function createConversationRuntimeSession(
     stopRequestGeneration += 1;
     isStopping = false;
     stopPromise = null;
-    activeLiveRuns.forEach((entry) => {
-      entry.abort?.();
-    });
-    activeLiveRuns.clear();
     runtime.liveConnection.abortCurrent();
     resumeController.abortResumeStream();
     runtime.resetStreamProjection();

@@ -303,7 +303,7 @@ const MessageQueueDemo: React.FC = () => {
                   }}
                   onEdit={handleEdit}
                   onClear={() => {
-                    messageQueue.clearAllQueued();
+                    messageQueue.clearQueue();
                     log('🗑 清空');
                   }}
                   onReorder={(from, to) => {
