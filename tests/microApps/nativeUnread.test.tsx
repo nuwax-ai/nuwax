@@ -10,6 +10,7 @@ import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('umi', () => ({ request: vi.fn() }));
 const auth = vi.hoisted(() => ({
   loggedIn: true,
   listeners: new Set<() => void>(),
