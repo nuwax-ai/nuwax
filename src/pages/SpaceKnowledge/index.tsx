@@ -186,7 +186,7 @@ const SpaceKnowledge: React.FC = () => {
       });
       if (response.code === SUCCESS_CODE && response.data) {
         // 直接使用返回的数据（响应体 data 为 { data: 文档列表 } 结构）
-        setGraphDocList(response.data.data || []);
+        setGraphDocList(response.data || []);
       }
     } catch (error) {
       // console.error('加载知识图谱列表失败:', error);

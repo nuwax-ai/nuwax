@@ -2,7 +2,11 @@
  * V2 最终回答归属判断。只依据消息段边界与终态文本做保守去重，
  * 无法证明是完整拼接时保留后端原文。
  */
-import { AssistantRoleEnum, MessageModeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AssistantRoleEnum,
+  MessageModeEnum,
+} from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { MessageSegment } from './parseMessageSegments';
@@ -18,23 +22,6 @@ export const isAnswerCandidateMessage = (message: MessageInfo): boolean =>
   (message.type === undefined ||
     message.type === MessageModeEnum.CHAT ||
     message.type === MessageModeEnum.ANSWER);
-
-export function findLastAnswerCandidateSegment(
-  messages: MessageInfo[],
-  parsedSegments: MessageSegment[][],
-): AnswerSegmentRef | null {
-  for (let mi = parsedSegments.length - 1; mi >= 0; mi -= 1) {
-    if (!isAnswerCandidateMessage(messages[mi])) continue;
-    const segments = parsedSegments[mi];
-    for (let si = segments.length - 1; si >= 0; si -= 1) {
-      const segment = segments[si];
-      if (segment.type === 'text' && segment.content.trim()) {
-        return { messageIndex: mi, segmentIndex: si };
-      }
-    }
-  }
-  return null;
-}
 
 const isAskName = (name?: string): boolean =>
   !!name &&
@@ -79,6 +66,49 @@ const isAskSegment = (
     )
   );
 };
+
+const isOpenUiRenderName = (name?: string): boolean =>
+  !!name &&
+  (/nuwax_render_openui/i.test(name) ||
+    /Backend\.Sandbox\.Event\.renderUI/i.test(name));
+
+const isPlainEventSegment = (segment: MessageSegment): boolean =>
+  segment.type === 'process' &&
+  segment.componentType === AgentComponentTypeEnum.Event &&
+  !isOpenUiRenderName(segment.name);
+
+const isTrailingProcessOrThinkBoundary = (
+  segment: MessageSegment,
+  message: MessageInfo,
+): boolean => {
+  if (segment.type === 'think') return true;
+  if (segment.type !== 'process') return false;
+  if (!segment.executeId || isPlainEventSegment(segment)) return false;
+  if (isAskSegment(segment, message)) return false;
+  return true;
+};
+
+export function findLastAnswerCandidateSegment(
+  messages: MessageInfo[],
+  parsedSegments: MessageSegment[][],
+): AnswerSegmentRef | null {
+  for (let mi = parsedSegments.length - 1; mi >= 0; mi -= 1) {
+    if (!isAnswerCandidateMessage(messages[mi])) continue;
+    const segments = parsedSegments[mi];
+    for (let si = segments.length - 1; si >= 0; si -= 1) {
+      const segment = segments[si];
+      if (segment.type === 'text' && segment.content.trim()) {
+        return { messageIndex: mi, segmentIndex: si };
+      }
+      // 末尾以普通工具或思考段收尾（其后无任何总结正文）时，
+      // 工具/思考之前的文本属于过程说明（narration），不能越过工具提拔为最终回答。
+      if (isTrailingProcessOrThinkBoundary(segment, messages[mi])) {
+        return null;
+      }
+    }
+  }
+  return null;
+}
 
 /** 从末段向前跨过问答，保留同一回答的各段；普通工具、思考和未知内容仍是分界。 */
 export function findAnswerSegmentsThroughAsk(
@@ -163,6 +193,25 @@ export function selectFinalResultAnswerText({
   parsedSegments: MessageSegment[][];
 }): string | undefined {
   if (!outputText || running) return outputText;
+  const tail = findLastAnswerCandidateSegment(messages, parsedSegments);
+  if (!tail) {
+    // 整轮以工具或思考收尾（其后未产出任何正文）：若 outputText 仅是工具前过程说明的原样汇总，
+    // 则全部文本均归属轨迹内的 narration，不冒充最终回答。
+    const preProcessTexts = parsedSegments.flatMap((segments, index) =>
+      isAnswerCandidateMessage(messages[index])
+        ? segments.flatMap((seg) =>
+            seg.type === 'text' && seg.content.trim() ? [seg.content] : [],
+          )
+        : [],
+    );
+    if (
+      preProcessTexts.length > 0 &&
+      isExactTextAggregation(outputText, preProcessTexts)
+    ) {
+      return '';
+    }
+    return outputText;
+  }
   const sourceMessage =
     outputMessageIndex === undefined ? undefined : messages[outputMessageIndex];
   if (
@@ -172,8 +221,7 @@ export function selectFinalResultAnswerText({
   ) {
     return outputText;
   }
-  const tail = findLastAnswerCandidateSegment(messages, parsedSegments);
-  if (!tail || tail.messageIndex !== outputMessageIndex) return outputText;
+  if (tail.messageIndex !== outputMessageIndex) return outputText;
   const tailSegments = parsedSegments[tail.messageIndex];
   const tailSegment = tailSegments[tail.segmentIndex];
   if (

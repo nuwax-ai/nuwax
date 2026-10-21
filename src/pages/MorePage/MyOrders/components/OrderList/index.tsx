@@ -201,7 +201,7 @@ const OrderList: React.FC = () => {
         open={!!shippingModalData}
         onCancel={() => setShippingModalData(null)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Descriptions
           column={1}

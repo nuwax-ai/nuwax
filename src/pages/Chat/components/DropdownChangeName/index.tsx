@@ -20,7 +20,7 @@ import {
 } from 'antd';
 import { ModalFuncProps } from 'antd/es/modal/interface';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useNavigate } from 'umi';
 import styles from './index.less';
 
@@ -57,16 +57,47 @@ const DropdownChangeName: React.FC<Porps> = ({
 
   const [cachedConversationInfo, setCachedConversationInfo] =
     useState<ConversationInfo>(conversationInfo);
+  const cachedConversationInfoRef = useRef(cachedConversationInfo);
+  cachedConversationInfoRef.current = cachedConversationInfo;
+  // 标题锚点：弹层挂回当前保活页，避免隐藏页的弹窗跑到正在看的页面上
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const getModalContainer = useCallback(() => {
+    return (
+      (anchorRef.current?.closest('[data-client-page-key]') as HTMLElement) ||
+      document.body
+    );
+  }, []);
 
   useEffect(() => {
-    if (conversationInfo?.id) {
-      setCachedConversationInfo(conversationInfo);
-    }
+    if (!conversationInfo?.id) return;
+    setCachedConversationInfo((previous) => {
+      if (
+        previous?.id === conversationInfo.id &&
+        previous?.topic === conversationInfo.topic &&
+        previous?.topicUpdated === conversationInfo.topicUpdated &&
+        previous?.icon === conversationInfo.icon
+      ) {
+        return previous;
+      }
+      return conversationInfo;
+    });
   }, [
+    conversationInfo,
+    conversationInfo?.icon,
     conversationInfo?.id,
     conversationInfo?.topic,
     conversationInfo?.topicUpdated,
   ]);
+
+  // 弹窗挂载后再灌表单。关闭时不保留 Modal，避免其 Portal 跟着会话刷新空转
+  useEffect(() => {
+    if (!modalOpenEdit) return;
+    const current = cachedConversationInfoRef.current;
+    form.setFieldsValue({
+      topic: current?.topic,
+      icon: current?.icon || current?.agent?.icon || '',
+    });
+  }, [form, modalOpenEdit]);
 
   const items: MenuProps['items'] = [
     {
@@ -197,16 +228,7 @@ const DropdownChangeName: React.FC<Porps> = ({
 
   const handleMenuClick: MenuProps['onClick'] = async (e) => {
     if (e.key === 'edit') {
-      // 重置表单
       form.resetFields();
-      // 填充表单数据
-      form.setFieldsValue({
-        topic: cachedConversationInfo.topic,
-        icon:
-          cachedConversationInfo.icon ||
-          cachedConversationInfo.agent?.icon ||
-          '',
-      });
       setDisabledEdit(true);
       setModalOpenEdit(true);
       return;
@@ -255,7 +277,7 @@ const DropdownChangeName: React.FC<Porps> = ({
   return (
     <>
       <Dropdown menu={menuProps}>
-        <div className={cx(styles['dropdown-container'])}>
+        <div ref={anchorRef} className={cx(styles['dropdown-container'])}>
           <Space size={4}>
             {cachedConversationInfo?.id && (
               <>
@@ -266,70 +288,75 @@ const DropdownChangeName: React.FC<Porps> = ({
           </Space>
         </div>
       </Dropdown>
-      <Modal
-        title={dict('PC.Pages.Chat.editConversationInfo')}
-        centered
-        okButtonProps={{ disabled: disabledEdit, loading: loadingEdit }}
-        open={modalOpenEdit}
-        onOk={handleSubmit}
-        onCancel={() => setModalOpenEdit(false)}
-      >
-        <Form
-          form={form}
-          name="basic"
-          labelCol={{ span: 24 }}
-          wrapperCol={{ span: 24 }}
-          style={{ maxWidth: 600 }}
-          initialValues={{ remember: true }}
-          onValuesChange={onValuesChange}
-          autoComplete="off"
-          layout="vertical"
+      {modalOpenEdit ? (
+        <Modal
+          title={dict('PC.Pages.Chat.editConversationInfo')}
+          centered
+          getContainer={getModalContainer}
+          okButtonProps={{ disabled: disabledEdit, loading: loadingEdit }}
+          open
+          onOk={handleSubmit}
+          onCancel={() => setModalOpenEdit(false)}
         >
-          <Form.Item
-            label={dict('PC.Pages.Chat.conversationIcon')}
-            name="icon"
-            className={cx(styles['avatar-upload-item'])}
+          <Form
+            form={form}
+            name="basic"
+            labelCol={{ span: 24 }}
+            wrapperCol={{ span: 24 }}
+            style={{ maxWidth: 600 }}
+            initialValues={{ remember: true }}
+            onValuesChange={onValuesChange}
+            autoComplete="off"
+            layout="vertical"
           >
-            <UploadAvatar
-              imageUrl={iconValue || ''}
-              onUploadSuccess={(url) => {
-                form.setFieldsValue({ icon: url });
-                onValuesChange();
-              }}
-              svgIconName="icons-common-plus"
-            />
-          </Form.Item>
+            <Form.Item
+              label={dict('PC.Pages.Chat.conversationIcon')}
+              name="icon"
+              className={cx(styles['avatar-upload-item'])}
+            >
+              <UploadAvatar
+                imageUrl={iconValue || ''}
+                onUploadSuccess={(url) => {
+                  form.setFieldsValue({ icon: url });
+                  onValuesChange();
+                }}
+                svgIconName="icons-common-plus"
+              />
+            </Form.Item>
 
-          <Form.Item<FieldType>
-            label={dict('PC.Pages.Chat.conversationName')}
-            name="topic"
-            rules={[
-              {
-                required: true,
-                message: dict('PC.Pages.Chat.conversationNameRequired'),
-              },
-              {
-                validator: (_, value) => {
-                  if (value && value.trim() === '') {
-                    return Promise.reject(
-                      new Error(dict('PC.Pages.Chat.conversationNameNoSpaces')),
-                    );
-                  }
-                  return Promise.resolve();
+            <Form.Item<FieldType>
+              label={dict('PC.Pages.Chat.conversationName')}
+              name="topic"
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Pages.Chat.conversationNameRequired'),
                 },
-              },
-            ]}
-          >
-            <Input
-              size="large"
-              style={{ marginTop: 10 }}
-              placeholder={dict('PC.Pages.Chat.inputConversationName')}
-              showCount
-              maxLength={50}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+                {
+                  validator: (_, value) => {
+                    if (value && value.trim() === '') {
+                      return Promise.reject(
+                        new Error(
+                          dict('PC.Pages.Chat.conversationNameNoSpaces'),
+                        ),
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input
+                size="large"
+                style={{ marginTop: 10 }}
+                placeholder={dict('PC.Pages.Chat.inputConversationName')}
+                showCount
+                maxLength={50}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
+      ) : null}
       {/* 删除 */}
       {contextHolder}
     </>

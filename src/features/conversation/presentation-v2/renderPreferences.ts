@@ -127,15 +127,28 @@ export function splitNodesByVisibility(
 }
 
 /**
- * 外层轨迹默认展开态：运行轮恒展开；实时流结束与历史终态轮统一收起。
+ * 外层轨迹默认展开态：
+ * - 运行轮恒展开；
+ * - 终态轮若未产出最终总结回答（如用户中途停止、模型断流、或纯工具执行轮无总结正文）
+ *   且存在过程节点（nodes.length > 0），默认保持展开，直接露出已执行的工具与思考过程；
+ * - 已有最终总结回答的终态轮默认收起，突出结论。
  * 用户手动操作后由渲染层固定，本函数只提供「未手动干预时」的默认值。
  */
 export function defaultTraceExpanded(
-  turn: Pick<ConversationTurnPresentationV2, 'running'>,
+  turn: Pick<ConversationTurnPresentationV2, 'running'> &
+    Partial<Pick<ConversationTurnPresentationV2, 'finalAnswer' | 'nodes'>>,
   preset: ConversationRendererPreset,
   historicalTurn = false,
 ): boolean {
   void preset;
   void historicalTurn;
-  return turn.running;
+  if (turn.running) return true;
+  if (
+    turn.finalAnswer !== undefined &&
+    !turn.finalAnswer.text.trim() &&
+    (turn.nodes?.length ?? 0) > 0
+  ) {
+    return true;
+  }
+  return false;
 }

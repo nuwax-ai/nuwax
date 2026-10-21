@@ -49,6 +49,7 @@ import {
   observeConversationTaskStatuses,
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
+import { isImeConfirming } from '@/utils/imeEnter';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -76,6 +77,10 @@ import {
   useState,
 } from 'react';
 import { history } from 'umi';
+import {
+  readCollapsedProjectKeys,
+  writeCollapsedProjectKeys,
+} from '../../collapsePreference';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -276,10 +281,14 @@ const ProjectPanel = forwardRef<
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
-    // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记
-    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
-      () => new Set(),
+    // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记。
+    // 收起集合同时是用户最后一次布局（NW-149），初始化与变更都读写本地偏好
+    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() =>
+      readCollapsedProjectKeys(),
     );
+    useEffect(() => {
+      writeCollapsedProjectKeys(collapsedIds);
+    }, [collapsedIds]);
     // 项目级标记：置顶/归档/收藏回读自后端字段（字段未返回时不标记）
     const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
     const [archivedIds, setArchivedIds] = useState<Set<string>>(
@@ -1342,8 +1351,8 @@ const ProjectPanel = forwardRef<
         project.projectType === AgentComponentTypeEnum.NormalProject ||
         project.projectType === AgentComponentTypeEnum.UserApp;
       Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
+        title: dict('PC.Common.Global.deleteConfirmContent'),
+        content: project.name,
         okButtonProps: { danger: true },
         okText: dict('PC.Common.Global.delete'),
         cancelText: dict('PC.Common.Global.cancel'),
@@ -2009,7 +2018,11 @@ const ProjectPanel = forwardRef<
           <Input
             value={renameName}
             onChange={(event) => setRenameName(event.target.value)}
-            onPressEnter={handleChildRenameSubmit}
+            onPressEnter={(event) => {
+              // NW-148：输入法选词的回车不提交
+              if (isImeConfirming(event)) return;
+              void handleChildRenameSubmit().catch(() => null);
+            }}
             maxLength={50}
           />
         </Modal>
@@ -2027,7 +2040,11 @@ const ProjectPanel = forwardRef<
           <Input
             value={projectRenameName}
             onChange={(event) => setProjectRenameName(event.target.value)}
-            onPressEnter={handleProjectRenameSubmit}
+            onPressEnter={(event) => {
+              // NW-148：输入法选词的回车不提交
+              if (isImeConfirming(event)) return;
+              void handleProjectRenameSubmit().catch(() => null);
+            }}
             maxLength={50}
           />
         </Modal>

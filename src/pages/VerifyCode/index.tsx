@@ -22,7 +22,7 @@ import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
-import { Button, Input, InputRef, message } from 'antd';
+import { Button, Input, InputRef, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -50,6 +50,8 @@ const VerifyCode: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
+  // 覆盖校验接口和登录后的同步过程，不跟 useRequest 的 loading 一起提前结束
+  const [loginLoading, setLoginLoading] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
   const {
@@ -79,6 +81,18 @@ const VerifyCode: React.FC = () => {
     });
   };
 
+  // 校验失败后清空已输入的验证码，回到第一格可继续输入
+  const resetCodeInput = () => {
+    setCodeString('');
+    setErrorString('');
+    window.setTimeout(() => {
+      inputRef.current?.focus({
+        preventScroll: true,
+        cursor: 'end',
+      });
+    }, 0);
+  };
+
   // 验证码登录
   const { run: runLoginCode } = useRequest(apiLoginCode, {
     manual: true,
@@ -97,6 +111,8 @@ const VerifyCode: React.FC = () => {
             ? '登录接口未返回本地调试所需的 Token'
             : '客户端登录会话同步失败，请升级客户端后重试',
         );
+        resetCodeInput();
+        setLoginLoading(false);
         return;
       }
       localStorage.setItem(EXPIRE_DATE, expireDate);
@@ -110,6 +126,7 @@ const VerifyCode: React.FC = () => {
       // 登录成功后强制刷新菜单数据（可能切换了账号）
       await loadMenus(true);
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+      setLoginLoading(false);
       if (!resetPass) {
         history.push('/set-password');
       } else {
@@ -120,6 +137,10 @@ const VerifyCode: React.FC = () => {
           navigateToAuthUrl,
         );
       }
+    },
+    onError: () => {
+      resetCodeInput();
+      setLoginLoading(false);
     },
   });
 
@@ -156,6 +177,7 @@ const VerifyCode: React.FC = () => {
             code: _codeString,
             phoneOrEmail,
           };
+          setLoginLoading(true);
           runLoginCode(data);
         }, 100);
       }
@@ -244,6 +266,7 @@ const VerifyCode: React.FC = () => {
       code: codeString,
       phoneOrEmail,
     };
+    setLoginLoading(true);
     runLoginCode(data);
   };
 
@@ -370,6 +393,12 @@ const VerifyCode: React.FC = () => {
               <ImageCaptcha {...resendCaptcha.inputProps} />
             </div>
           )}
+          {loginLoading ? (
+            <div className={styles['login-status']} role="status">
+              <Spin size="small" />
+              <span>{dict('PC.Pages.VerifyCode.loggingIn')}</span>
+            </div>
+          ) : null}
         </div>
         <Input
           ref={inputRef}

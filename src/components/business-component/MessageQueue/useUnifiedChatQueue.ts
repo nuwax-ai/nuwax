@@ -127,6 +127,12 @@ export const useUnifiedChatQueue = ({
         eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
           text: item.text,
           files: item.files,
+          // 入队快照一并回填：输入框监听端据此恢复技能/文档/模型/模式/专家，避免编辑后静默丢失
+          skillIds: item.skillIds,
+          selectedDocs: item.selectedDocs,
+          modelId: item.modelId,
+          selectedAgentMode: item.selectedAgentMode,
+          expertComponents: item.expertComponents,
           // 带上会话 id，监听方（ChatInputHome）据此过滤，避免多实例（主聊天/预览 Tab）串扰
           conversationId,
         });

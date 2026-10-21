@@ -421,8 +421,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                     disabled: !hasPermission('task_manage_delete'),
                     confirm: {
                       title: t(
-                        'PC.Pages.SystemTaskCenterProTable.confirmDeleteTask',
+                        'PC.Pages.SystemTaskCenterProTable.confirmDeleteThisTask',
                       ),
+                      description: record.taskName,
                     },
                     onClick: () => handleDeleteTask(record.id),
                   },

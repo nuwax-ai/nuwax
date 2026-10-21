@@ -136,8 +136,6 @@ export interface SingleAgentProps {
   showUserCount?: boolean;
   showConvCount?: boolean;
   showCollectCount?: boolean;
-  collectApi?: (targetId: number) => Promise<any>;
-  unCollectApi?: (targetId: number) => Promise<any>;
   // 卡片图标形态：方形圆角（默认）/ 圆形（智能体「人」形资源口径）
   iconShape?: 'square' | 'circle';
 }

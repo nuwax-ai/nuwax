@@ -178,7 +178,10 @@ const UserManage: React.FC = () => {
           key: 'delete',
           label: dict('PC.Pages.UserManage.Index.delete'),
           danger: true,
-          confirm: {},
+          confirm: {
+            title: dict('PC.Pages.UserManage.Index.deleteConfirmTitle'),
+            description: record.userName || record.nickName,
+          },
           disabled: !hasPermissionByMenuCode(
             'user_manage',
             'user_manage_disable',

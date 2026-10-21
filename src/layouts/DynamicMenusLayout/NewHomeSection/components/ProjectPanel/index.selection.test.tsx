@@ -200,6 +200,9 @@ describe('ProjectPanel 选中关系', () => {
     });
     // 路由参数复位为无 spaceId（/home）；空间路由用例自行改写
     routeParams.params = {};
+    // NW-149 起项目行收起态会落 localStorage：用例之间必须清掉，
+    // 否则前一个用例收起过的项目会让后一个用例的核对探针跳过该项目
+    window.localStorage.clear();
   });
 
   it('项目新建任务透传列表中的电脑与工作目录，不额外请求项目详情', async () => {

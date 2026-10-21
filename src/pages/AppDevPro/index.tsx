@@ -140,6 +140,7 @@ import {
   getUserAppReadinessUiKind,
   getUserAppTtydProxyWsUrl,
   isUserAppReadinessAccessible,
+  UserAppContainerStatusEnum,
   UserAppReadinessStatusEnum,
 } from './services/appDevPro';
 import {
@@ -151,6 +152,7 @@ import { isProjectNameDefined } from './utils/isProjectNameDefined';
 import {
   decideDatabaseContainerAction,
   decideProdSwitchAppAction,
+  isUserAppContainerRunning,
 } from './utils/isUserAppContainerRunning';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
@@ -159,6 +161,19 @@ const cx = classNames.bind(styles);
 
 /** ensure 受理后延迟再保活，不跟 readiness 的容器状态走 */
 const ENSURE_KEEPALIVE_DELAY_MS = 3000;
+
+/** 开发预览连续未部署达到该时长后才自动重启，避免单次探测抖动。 */
+const UNDEPLOYED_AUTO_RESTART_MS = 15000;
+
+/** 两次自动重启之间至少间隔这么久，避免失败后立刻再打。 */
+const UNDEPLOYED_RESTART_GAP_MS = 60000;
+
+/** 容器还在启停时只等待，不重复拉起。 */
+const CONTAINER_TRANSITION_STATUSES = new Set<string>([
+  UserAppContainerStatusEnum.Starting,
+  UserAppContainerStatusEnum.Restarting,
+  UserAppContainerStatusEnum.Stopping,
+]);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
 type AppDevWorkspaceView =
@@ -1501,6 +1516,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // starting、unknown 继续等下一次探测，不在状态未定时空重连预览或再打 restart
     while (
       readiness?.status === UserAppReadinessStatusEnum.Starting ||
+      readiness?.status === UserAppReadinessStatusEnum.Provisioning ||
       readiness?.status === UserAppReadinessStatusEnum.Unknown
     ) {
       if (switchedAway()) {
@@ -1576,10 +1592,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   dismissPreviewLoadErrorRef.current = previewRuntime.dismissPreviewLoadError;
   const previewLoadErrorRef = useRef(previewRuntime.previewLoadError);
   previewLoadErrorRef.current = previewRuntime.previewLoadError;
+  const devActionAllowedRef = useRef(devActionAllowed);
+  devActionAllowedRef.current = devActionAllowed;
+  const activeTasksRef = useRef(activeTasks);
+  activeTasksRef.current = activeTasks;
+  /** 开发预览开始连续处于未部署的时间。离开该状态后清掉。 */
+  const undeployedSinceRef = useRef<number | null>(null);
+  /** 上一次因未部署自动重启的时间。离开未部署也不清，用来拉开两次重启。 */
+  const lastUndeployedRestartAtRef = useRef(0);
+  const undeployedRecoveringRef = useRef(false);
 
   /**
    * 开发环境进页 / 打开预览：用就绪状态决定下一步。
-   * ready 直接打开；starting / stopping / stopped / 开发未完成不再额外 start。
+   * ready 直接打开；starting / provisioning / stopping / stopped / 开发未完成不再额外 start。
+   * not_deployed 且容器已 running、根目录已有有效项目文件时直接 start，避免停在未部署提示。
+   * 应用已经在启动，或服务已经起来时，不再因为未部署重复 start。
+   * 容器还没 running，或还没有有效文件时，仍不 start。
    * stopped 由状态变化时的 restart 拉起。没有探测结果时仍走原来的 start。
    * 主页首次创建进入时，调用方传入 ignoreReadiness：条件已满足就直接 start，
    * 不看 readiness，避免探测中途变成 failed 等状态把启动拦住。刷新仍走就绪判断。
@@ -1618,11 +1646,30 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         readiness?.status,
         readiness?.ready,
       );
+      // 未部署只在容器已 running、已有有效项目文件，且当前没有启动中的任务时才 start。
+      const phase = previewPhaseRef.current;
+      const appAlreadyStartingOrStarted =
+        previewRunningRef.current ||
+        previewRestartingRef.current ||
+        phase === 'starting' ||
+        phase === 'building' ||
+        !devActionAllowedRef.current ||
+        activeTasksRef.current.some(
+          (item) =>
+            item.taskType === UserAppTaskTypeEnum.DevStart ||
+            item.taskType === UserAppTaskTypeEnum.DevRestart,
+        );
+      const canStartUndeployed =
+        readinessKind === 'notDeployed' &&
+        isUserAppContainerRunning(readiness) &&
+        hasValidWorkspaceProjectFiles(fileTreeDataRef.current) &&
+        !appAlreadyStartingOrStarted;
       if (
         readinessKind === 'starting' ||
+        readinessKind === 'provisioning' ||
         readinessKind === 'stopping' ||
         readinessKind === 'stopped' ||
-        readinessKind === 'notDeployed' ||
+        (readinessKind === 'notDeployed' && !canStartUndeployed) ||
         readinessKind === 'failed' ||
         readinessKind === 'incomplete'
       ) {
@@ -2497,7 +2544,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：刷新进入时允许则先看 dev 就绪结果，可访问直接 iframe，否则 start；
+   * 开发环境须等 tasks/active 首包：刷新进入时允许则先看 dev 就绪结果，可访问直接 iframe；
+   * 容器已 running 且应用未部署、有效文件已齐时直接 start，不再停在未部署提示。其它未就绪状态不额外 start；
    * 主页首次创建进入时，条件齐了直接 start，不看中途 readiness。
    * 不允许（服务已在跑）且已有预览域名时，挂起 dev 就绪探测，可访问后再 iframe，不再 start / stream。
    * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
@@ -2605,6 +2653,183 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     skipReadinessUntilWatch,
     tasksActiveReady,
     userAppDomainList,
+  ]);
+
+  /**
+   * 开发预览停留时，readiness 连续一段时间都是未部署才自动重启应用。
+   * 上一次自动重启之后至少再隔一分钟，避免失败回到未部署后马上再打。
+   * 容器已是 running 直接重启。
+   * starting / restarting / stopping 只等到 running，不再拉起容器。
+   * 其它容器状态先 ensure，确认 running 后再重启应用。
+   */
+  const recoverUndeployedDevPreview = useCallback(async () => {
+    if (undeployedRecoveringRef.current) {
+      return;
+    }
+    const env = UserAppDbEnvEnum.Dev;
+    const stale = () =>
+      !active ||
+      dbEnvRef.current !== env ||
+      workspaceViewRef.current !== 'app-preview' ||
+      previewUserStoppedByEnvRef.current[env] ||
+      computerRestartHoldEnvRef.current === env ||
+      previewConversationActive ||
+      hasPendingIntervention;
+    const devCompileBusy = () => {
+      const phase = previewPhaseRef.current;
+      return (
+        phase === 'starting' ||
+        phase === 'building' ||
+        previewRestartingRef.current ||
+        awaitingContainerForRestartRef.current
+      );
+    };
+    if (stale() || devCompileBusy()) {
+      return;
+    }
+    if (
+      activeTasksRef.current.some(
+        (item) =>
+          item.taskType === UserAppTaskTypeEnum.DevStart ||
+          item.taskType === UserAppTaskTypeEnum.DevRestart,
+      )
+    ) {
+      return;
+    }
+    if (!hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
+      return;
+    }
+    const current = serviceReadinessRef.current.readinessByEnvRef.current[env];
+    if (
+      getUserAppReadinessUiKind(current?.status, current?.ready) !==
+      'notDeployed'
+    ) {
+      return;
+    }
+    if (
+      Date.now() - lastUndeployedRestartAtRef.current <
+      UNDEPLOYED_RESTART_GAP_MS
+    ) {
+      return;
+    }
+    undeployedRecoveringRef.current = true;
+    try {
+      const containerStatus = current?.container?.status;
+      if (containerStatus !== UserAppContainerStatusEnum.Running) {
+        if (
+          !containerStatus ||
+          !CONTAINER_TRANSITION_STATUSES.has(containerStatus)
+        ) {
+          const accepted = await ensureEnvPodRef.current(env, true, {
+            reensure: true,
+            deferRunning: true,
+          });
+          if (!accepted || stale()) {
+            return;
+          }
+        }
+        resumeReadinessWatch();
+        const running =
+          await serviceReadinessRef.current.waitUntilContainerRunning(
+            env,
+            stale,
+          );
+        if (!running || stale() || devCompileBusy()) {
+          return;
+        }
+        devPod.confirmContainerRunning();
+      }
+      const latest = serviceReadinessRef.current.readinessByEnvRef.current[env];
+      if (
+        stale() ||
+        isUserAppReadinessAccessible(latest) ||
+        latest?.status === UserAppReadinessStatusEnum.Starting ||
+        latest?.status === UserAppReadinessStatusEnum.Provisioning ||
+        latest?.status === UserAppReadinessStatusEnum.Stopping
+      ) {
+        return;
+      }
+      // 记下这次重启。未部署观察也重新计时，失败回到未部署后不会马上再打。
+      const now = Date.now();
+      lastUndeployedRestartAtRef.current = now;
+      undeployedSinceRef.current = now;
+      setPreviewStoppedForEnv(env, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current(env);
+    } finally {
+      undeployedRecoveringRef.current = false;
+    }
+  }, [
+    active,
+    devPod.confirmContainerRunning,
+    hasPendingIntervention,
+    previewConversationActive,
+    resumeReadinessWatch,
+    setPreviewStoppedForEnv,
+  ]);
+
+  useEffect(() => {
+    const leaveUndeployed = () => {
+      undeployedSinceRef.current = null;
+    };
+    if (
+      !active ||
+      !appId ||
+      dbEnv !== UserAppDbEnvEnum.Dev ||
+      workspaceView !== 'app-preview' ||
+      previewConversationActive ||
+      hasPendingIntervention ||
+      previewUserStopped
+    ) {
+      leaveUndeployed();
+      return;
+    }
+    const data = serviceReadiness.readinessByEnv[UserAppDbEnvEnum.Dev];
+    if (
+      getUserAppReadinessUiKind(data?.status, data?.ready) !== 'notDeployed'
+    ) {
+      leaveUndeployed();
+      return;
+    }
+    if (undeployedSinceRef.current === null) {
+      undeployedSinceRef.current = Date.now();
+    }
+    const phase = previewRuntime.phase;
+    if (
+      phase === 'starting' ||
+      phase === 'building' ||
+      previewRuntime.restarting ||
+      awaitingContainerForRestart
+    ) {
+      return;
+    }
+    const now = Date.now();
+    const observeWait = Math.max(
+      0,
+      UNDEPLOYED_AUTO_RESTART_MS - (now - undeployedSinceRef.current),
+    );
+    const restartGapWait = Math.max(
+      0,
+      UNDEPLOYED_RESTART_GAP_MS - (now - lastUndeployedRestartAtRef.current),
+    );
+    const wait = Math.max(observeWait, restartGapWait);
+    const timer = window.setTimeout(() => {
+      void recoverUndeployedDevPreview();
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [
+    active,
+    appId,
+    awaitingContainerForRestart,
+    dbEnv,
+    hasPendingIntervention,
+    previewConversationActive,
+    previewRuntime.phase,
+    previewRuntime.restarting,
+    previewUserStopped,
+    recoverUndeployedDevPreview,
+    serviceReadiness.readinessByEnv,
+    workspaceView,
   ]);
 
   // ==================================== git 版本控制 ====================================
@@ -2986,6 +3211,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       // 应用已在启动，或本页正在启动/重启：不再重新编译
       if (
         initialStatus === UserAppReadinessStatusEnum.Starting ||
+        initialStatus === UserAppReadinessStatusEnum.Provisioning ||
         devCompileBusy()
       ) {
         return;
@@ -3023,6 +3249,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       if (
         stale() ||
         snapshot?.status === UserAppReadinessStatusEnum.Starting ||
+        snapshot?.status === UserAppReadinessStatusEnum.Provisioning ||
         devCompileBusy()
       ) {
         return;
@@ -3214,13 +3441,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
   }, [remoteBuildTask?.taskId]);
 
-  /** 点击部署：构建并生产部署 */
+  /** 点击部署：先确认，再构建并生产部署 */
   const handleOpenPublish = useCallback(() => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
       return;
     }
-    void publishFlow.startPublish();
+    modalConfirm(
+      dict('PC.Pages.AppDevPro.confirmDeployTitle'),
+      dict('PC.Pages.AppDevPro.confirmDeployContent'),
+      () => {
+        void publishFlow.startPublish();
+      },
+    );
   }, [appId, publishFlow]);
 
   /**
@@ -3679,6 +3912,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         onDeploy={handleOpenPublish}
         readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
         readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
+        readinessContainerStatus={
+          serviceReadiness.readinessByEnv[dbEnv]?.container?.status
+        }
         holdPreview={computerRestartHoldEnv === dbEnv}
         previewAlreadyPresented={previewPresentedByEnv[dbEnv]}
         suppressReadinessStatus={previewUserStopped}

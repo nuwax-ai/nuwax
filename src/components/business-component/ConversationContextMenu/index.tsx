@@ -11,6 +11,7 @@ import {
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { emitConversationChanged } from '@/utils/directorySyncEvents';
+import { isImeConfirming } from '@/utils/imeEnter';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -91,8 +92,8 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   // 内置删除：确认框 + API + 全局事件（供侧栏列表同步刷新）
   const handleDelete = () => {
     Modal.confirm({
-      title: t('PC.Common.Global.deleteConfirmTitle'),
-      content: t('PC.Common.Global.deleteConfirmContent'),
+      title: t('PC.Common.Global.deleteConfirmContent'),
+      content: currentTopic,
       okButtonProps: { danger: true },
       okText: t('PC.Common.Global.delete'),
       cancelText: t('PC.Common.Global.cancel'),
@@ -331,7 +332,11 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         <Input
           value={renameTopic}
           onChange={(e) => setRenameTopic(e.target.value)}
-          onPressEnter={handleRenameSubmit}
+          onPressEnter={(event) => {
+            // NW-148：输入法选词的回车不提交，等拼音上屏后再按一次
+            if (isImeConfirming(event)) return;
+            void handleRenameSubmit().catch(() => null);
+          }}
           maxLength={50}
         />
       </Modal>

@@ -648,13 +648,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
         }),
         PREFS(preset),
       );
-      if (status === MessageStatusEnum.Complete) {
-        expect(screen.getByTestId('v2-trace-toggle')).toHaveAttribute(
-          'aria-expanded',
-          'false',
-        );
-        fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-      }
+      // 无最终回答正文且存在过程节点时，终态也默认保持轨迹展开
       expect(screen.getByTestId('v2-trace-toggle')).toHaveAttribute(
         'aria-expanded',
         'true',
@@ -1352,8 +1346,8 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
   it('终态历史组默认收起，打开整轮后组内详情仍由第三层独立控制', () => {
     renderV2(buildGroupedTurn(false, MessageStatusEnum.Complete));
     const traceToggle = screen.getByTestId('v2-trace-toggle');
-    expect(traceToggle.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(traceToggle);
+    // 纯工具终态轮（无总结正文）整轮轨迹默认保持展开，但内部历史工具组默认收起
+    expect(traceToggle.getAttribute('aria-expanded')).toBe('true');
     const groupToggle = document.querySelector(
       '[data-tool-group-id="tool-group:read-1"] > button',
     );
@@ -1472,7 +1466,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
       }),
     ];
     renderV2(failed, PREFS('focused', { tool: 'hidden' }));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    // 无总结正文的终态轮默认展开，失败节点直接可见
     const row = document.querySelector('[data-node-id="bad"]');
     expect(row).not.toBeNull();
   });
@@ -1720,8 +1714,8 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     expect(screen.getByTestId('v2-narration')).toHaveTextContent(narration);
   });
 
-  it('停止轮无正文：只显示停止状态，不冒充回答；操作栏不出现', () => {
-    renderV2([
+  it('停止轮无正文：保持轨迹展开并按已完成工具数显示状态，不冒充回答；操作栏不出现', () => {
+    const { unmount } = renderV2([
       msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
       msg({
         id: 'a1',
@@ -1734,10 +1728,56 @@ describe('ConversationRendererV2 · 回答与异常', () => {
         status: MessageStatusEnum.Stopped,
       }),
     ]);
+    expect(screen.getByTestId('v2-trace-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
+      'PC.Components.ConversationRendererV2.answerStoppedWithTools:1',
+    );
+    expect(screen.queryByTestId('copy-button')).toBeNull();
+    unmount();
+
+    // 尚无已完成工具时中断：显示基础停止提示
+    renderV2([
+      msg({ id: 'u2', role: AssistantRoleEnum.USER, text: '任务2' }),
+      msg({
+        id: 'a2',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: thinkTag('thinking', '正在思考方案'),
+        status: MessageStatusEnum.Stopped,
+      }),
+    ]);
     expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
       'PC.Components.ConversationRendererV2.answerStopped',
     );
-    expect(screen.queryByTestId('copy-button')).toBeNull();
+  });
+
+  it('纯工具完成轮无总结正文：保持轨迹展开且不弹「未生成回答」提示', () => {
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '执行脚本' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: `我先帮你运行检查脚本。${processTag({
+          executeId: 'e1',
+          type: 'ToolCall',
+          status: 'FINISHED',
+          name: 'run_script',
+        })}`,
+        status: MessageStatusEnum.Complete,
+      }),
+    ]);
+    // 轨迹默认展开，工具前的过渡说明留在轨迹内作为 narration 展示
+    expect(screen.getByTestId('v2-trace-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(
+      '我先帮你运行检查脚本。',
+    );
+    // 底部回答区不把前置过渡话术冒充为最终回答，也不弹 answerEmpty 报错式提示
+    expect(screen.getByTestId('v2-final-answer')).toBeEmptyDOMElement();
   });
 
   it('正常完成但空回答（0/0/0 空轮）：显示空回答提示，不留无声空白', () => {
@@ -1826,7 +1866,6 @@ describe('ConversationRendererV2 · 回答与异常', () => {
       ],
       PREFS('balanced', { tool: 'expanded' }),
     );
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
@@ -1872,7 +1911,6 @@ describe('ConversationRendererV2 · 回答与异常', () => {
         preferences={PREFS('balanced', { tool: 'expanded' })}
       />,
     );
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });

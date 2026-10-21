@@ -87,7 +87,7 @@ async function handleHttp401() {
   );
 }
 
-function runAxiosRequest(data: any, httpError?: any) {
+function runAxiosRequest(data: any, httpError?: any, options: any = {}) {
   const instance = axios.create({
     adapter: async (config: any) => {
       if (httpError) {
@@ -109,7 +109,7 @@ function runAxiosRequest(data: any, httpError?: any) {
     return response;
   });
 
-  const opts = { url: '/api/userapp/private/list/1' };
+  const opts = { url: '/api/userapp/private/list/1', ...options };
   return instance.request(opts).catch((error: any) => {
     requestConfig.errorConfig!.errorHandler!(error, opts);
     throw error;
@@ -141,6 +141,51 @@ function expectNoLogout() {
 }
 
 describe('匿名登录步骤的全局认证错误处理', () => {
+  describe('显式后台轮询全静默', () => {
+    it.each(['4010', '4011', '5000', '9999'])(
+      '业务错误 %s 保持失败且不提示、不清会话、不导航',
+      async (code) => {
+        window.history.replaceState({}, '', '/workspace');
+        await expect(
+          runAxiosRequest(
+            { code, message: 'poll failed', success: false, data: null },
+            undefined,
+            { url: '/api/credit/summary', silentPolling: true },
+          ),
+        ).rejects.toMatchObject({ info: { code } });
+        expectNoLogout();
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([401, 500, 503])(
+      'HTTP %s 仍交给轮询重试且无全局副作用',
+      async (status) => {
+        const failure = { response: { status } };
+        await expect(
+          runAxiosRequest(undefined, failure, { silentPolling: true }),
+        ).rejects.toBe(failure);
+        expectNoLogout();
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it('网络错误仍被消费为失败，成功响应保持原数据', async () => {
+      const failure = new TypeError('Failed to fetch');
+      await expect(
+        runAxiosRequest(undefined, failure, { silentPolling: true }),
+      ).rejects.toBe(failure);
+      expectNoLogout();
+      expect(mocks.warning).not.toHaveBeenCalled();
+      expect(mocks.error).not.toHaveBeenCalled();
+      const data = { code: '0000', success: true, data: { totalCredit: 42 } };
+      await expect(
+        runAxiosRequest(data, undefined, { silentPolling: true }),
+      ).resolves.toMatchObject({ data });
+    });
+  });
   beforeEach(async () => {
     vi.clearAllMocks();
     mocks.isConversationMockPage.mockReturnValue(false);
@@ -386,33 +431,39 @@ describe('匿名登录步骤的全局认证错误处理', () => {
       expectNoLogout();
     });
 
-    it.each(['4030', '4290'])('Axios 响应链拒绝业务失败 %s', async (code) => {
-      await expect(
-        runAxiosRequest({
-          code,
-          message: '应用请求失败',
-          success: false,
-          data: null,
-          tid: 'axios-trace',
-        }),
-      ).rejects.toMatchObject({
-        name: 'BizError',
-        info: { code, message: '应用请求失败', tid: 'axios-trace' },
-      });
-      // 响应拦截器及 Umi catch 重复调用时仍只显示一次提示。
-      expect(mocks.warning).toHaveBeenCalledTimes(1);
-      expectNoLogout();
-    });
+    it.each(['4030', '4290', '5000', '9999'])(
+      'Axios 响应链拒绝业务失败 %s',
+      async (code) => {
+        await expect(
+          runAxiosRequest({
+            code,
+            message: '应用请求失败',
+            success: false,
+            data: null,
+            tid: 'axios-trace',
+          }),
+        ).rejects.toMatchObject({
+          name: 'BizError',
+          info: { code, message: '应用请求失败', tid: 'axios-trace' },
+        });
+        // 响应拦截器及 Umi catch 重复调用时仍只显示一次提示。
+        expect(mocks.warning).toHaveBeenCalledTimes(1);
+        expectNoLogout();
+      },
+    );
 
-    it('Axios HTTP 403 仍拒绝原错误并保留状态码', async () => {
-      const error = Object.assign(new Error('Request failed with status 403'), {
-        response: { status: 403 },
-      });
-
-      await expect(runAxiosRequest(undefined, error)).rejects.toBe(error);
-      expect(error.response.status).toBe(403);
-      expectNoLogout();
-    });
+    it.each([403, 500, 502, 503])(
+      '普通 Axios HTTP %s 拒绝原错误且不清会话或跳登录',
+      async (status) => {
+        const error = Object.assign(
+          new Error(`Request failed with status ${status}`),
+          { response: { status } },
+        );
+        await expect(runAxiosRequest(undefined, error)).rejects.toBe(error);
+        expect(error.response.status).toBe(status);
+        expectNoLogout();
+      },
+    );
   });
 
   describe('保留原有静默和调用方自处理策略', () => {

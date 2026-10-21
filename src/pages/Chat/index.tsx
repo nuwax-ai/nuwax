@@ -54,7 +54,7 @@ import {
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
@@ -954,7 +954,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
               variableParams: firstVariableParams,
               sandboxId: effectiveSandboxId,
               currentInfo: data,
-              isSuggestEnabled: data?.agent?.openSuggest === 1,
+              isSuggestEnabled: data?.agent?.openSuggest === OpenCloseEnum.Open,
               skillIds,
               selectedDocs: firstSelectedDocs,
               modelId: selectedModelId,

@@ -4,7 +4,7 @@ import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
  * 宿主客户端更新状态服务（logo 旁版本徽标消费）。
  *
  * 数据源：hostBridge.updater.getState()（壳主进程 autoUpdater 单例）。
- * 主动拉取 + 自适应轮询——下载中/检查中 2s，其余 30s；状态变化即时通知订阅者。
+ * 主动拉取 + 自适应轮询——下载/检查/安装中 2s，其余 30s；状态变化即时通知订阅者。
  * 浏览器 / 旧宿主（无 updater 命名空间）available() 为 false，徽标整体隐藏。
  */
 
@@ -22,34 +22,41 @@ function notify(): void {
   listeners.forEach((listener) => listener(state));
 }
 
-function schedule(): void {
-  if (timer) clearTimeout(timer);
-  const active =
-    state?.status === 'downloading' || state?.status === 'checking';
-  timer = setTimeout(
-    () => {
-      timer = null;
-      void refresh();
-    },
-    active ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
-  );
-}
-
-async function refresh(): Promise<void> {
-  if (!isAvailable()) return;
-  const next = await hostBridge.updater.getState();
-  if (next && typeof next === 'object') {
-    state = next;
-    notify();
-  }
-  if (started) schedule();
-}
-
 /** 宿主更新能力是否可用（桌面宿主 + 新壳 updater 命名空间都在场）。 */
 export function isAvailable(): boolean {
   return (
     isDesktopHost() &&
     typeof window.NuwaClawBridge?.updater?.getState === 'function'
+  );
+}
+
+async function refresh(): Promise<void> {
+  if (!isAvailable()) return;
+  try {
+    const next = await hostBridge.updater.getState();
+    if (next && typeof next === 'object') {
+      state = next;
+      notify();
+    }
+  } catch {
+    // 更新退出时桥可能先断开；保留最后状态，仍在运行时由下次轮询恢复。
+  }
+}
+
+// 轮询只在本层续约；单次 refresh 不再隐式创建 timer，stop 后不会重新启动。
+function schedule(): void {
+  if (!started) return;
+  if (timer) clearTimeout(timer);
+  const active =
+    state?.status === 'downloading' ||
+    state?.status === 'checking' ||
+    state?.status === 'installing';
+  timer = setTimeout(
+    () => {
+      timer = null;
+      void refresh().then(schedule);
+    },
+    active ? ACTIVE_POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS,
   );
 }
 
@@ -70,7 +77,7 @@ export function subscribe(listener: ClientUpdateListener): () => void {
 export function start(): void {
   if (started || !isAvailable()) return;
   started = true;
-  void refresh();
+  void refresh().then(schedule);
 }
 
 export function stop(): void {
@@ -82,24 +89,43 @@ export function stop(): void {
 }
 
 /**
- * 触发下载：本地先乐观切到 downloading（徽标即刻变圆环），随后轮询校正；
+ * 触发下载（installAfterDownload 宿主会继续安装）：乐观切到 downloading，随后轮询校正；
  * 宿主拒绝/失败时回查真实状态。
  */
 export async function download(): Promise<boolean> {
   if (!isAvailable()) return false;
   if (state) {
-    state = { ...state, status: 'downloading' };
+    state = {
+      ...state,
+      status: 'downloading',
+      error: undefined,
+      progress: undefined,
+    };
     notify();
   }
+  if (started) schedule();
   // 不信任包装层布尔语义：自行收敛 success 字段（旧宿主怪异回包防御）
-  const res = await hostBridge.updater.download();
-  const ok = !!res?.success;
+  let ok = false;
+  try {
+    const res = await hostBridge.updater.download();
+    ok = !!res?.success;
+  } catch (error) {
+    if (state) {
+      state = {
+        ...state,
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      };
+      notify();
+    }
+  }
   await refresh();
+  schedule();
   return ok;
 }
 
 /**
- * 重启并安装（仅 downloaded 状态有意义）。
+ * 重启并安装；一键策略可按需补齐下载，旧宿主须先下载。
  * 透传宿主执行结果：success 后宿主进程将退出（清理+quitAndInstall 有数秒~数十秒空窗），
  * 失败（dev 包/MSI/宿主拒绝）由调用方浮出错误。
  */

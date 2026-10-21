@@ -66,8 +66,22 @@
             var captchaConfig = null;
             var captchaResultHandled = false;
 
-            // 获取验证码配置
+            // 获取验证码配置。地址同时带 captchaPrefix、captchaSceneId 时直接使用，否则请求租户配置。
             function fetchCaptchaConfig() {
+                try {
+                    var params = new URLSearchParams(window.location.search);
+                    var captchaPrefix = (params.get('captchaPrefix') || '').trim();
+                    var captchaSceneId = (params.get('captchaSceneId') || '').trim();
+                    if (captchaPrefix && captchaSceneId) {
+                        return Promise.resolve({
+                            prefix: captchaPrefix,
+                            sceneId: captchaSceneId,
+                        });
+                    }
+                } catch (error) {
+                    console.error('读取地址中的验证码参数失败:', error);
+                }
+
                 return fetch('/api/tenant/config', {
                     method: 'GET',
                     headers: {
