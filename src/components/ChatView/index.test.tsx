@@ -5,7 +5,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('umi', () => ({
@@ -28,6 +28,10 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 vi.mock('@/components/ChatView/index.less', () => ({
+  default: new Proxy({}, { get: () => 'cls' }),
+}));
+
+vi.mock('@/components/ChatView/AttachFile/index.less', () => ({
   default: new Proxy({}, { get: () => 'cls' }),
 }));
 
@@ -339,5 +343,76 @@ describe('ChatView', () => {
       'data-conversation-id',
       '1557156',
     );
+  });
+
+  it('图片附件点击放大预览，非图片附件不参与预览（NW-121/U-NA12/U-DK9）', async () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          role: AssistantRoleEnum.USER,
+          text: '看图',
+          attachments: [
+            {
+              fileKey: 'k-img',
+              fileUrl: 'https://cdn.example.com/shot.png',
+              fileName: 'shot.png',
+              mimeType: 'image/png',
+            },
+            {
+              fileKey: 'k-doc',
+              fileUrl: 'https://cdn.example.com/report.md',
+              fileName: 'report.md',
+              mimeType: 'text/markdown',
+            },
+          ],
+        })}
+      />,
+    );
+
+    // 图片附件走 antd Image（缩略图可点），非图片附件仍是文档占位图
+    const imageThumb = screen.getByAltText('shot.png');
+    expect(imageThumb).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/shot.png',
+    );
+    expect(document.querySelector('.ant-image')).toBeInTheDocument();
+
+    // 点击缩略图打开预览大图
+    fireEvent.click(imageThumb);
+    const previewImage = await waitFor(() => {
+      const el = document.querySelector(
+        '.ant-image-preview img',
+      ) as HTMLImageElement | null;
+      expect(el).not.toBeNull();
+      return el as HTMLImageElement;
+    });
+    expect(previewImage.getAttribute('src')).toBe(
+      'https://cdn.example.com/shot.png',
+    );
+  });
+
+  it('mimeType 缺失时按文件名扩展识别图片附件（后端历史记录容错）', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          role: AssistantRoleEnum.ASSISTANT,
+          text: '',
+          attachments: [
+            {
+              fileKey: 'k-legacy',
+              fileUrl: 'https://cdn.example.com/legacy.jpeg',
+              fileName: 'legacy.jpeg',
+              mimeType: '',
+            },
+          ],
+        })}
+      />,
+    );
+    // 空 mimeType 的 .jpeg 附件按图片处理（antd Image 渲染，可预览）
+    expect(
+      document.querySelector('.ant-image img[src*="legacy.jpeg"]'),
+    ).not.toBeNull();
   });
 });

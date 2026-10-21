@@ -227,6 +227,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ChatInputHome.autoCommitSwitch": "變更自動提交",
   "PC.Components.ChatInputHome.approvalModeSwitch": "審批模式",
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} 上傳失敗",
+  "PC.Components.ChatInputHome.attachmentUploadingHint": "附件上傳中，請稍候…",
   "PC.Components.ChatInputHome.agentMode": "Agent 模式",
   "PC.Components.ChatInputHome.agentModeAuto": "自動",
   "PC.Components.ChatInputHome.agentModeAutoDesc": "工具呼叫前將不會詢問使用者",
