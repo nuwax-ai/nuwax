@@ -34,9 +34,10 @@ grep -nE "^\s+[A-Z_]+: [0-9]{4}," submodules/nuwax-im/nuwax-im-web/src/ws/protoc
 | 自定义事件 | `eventBus.emit(eventType, payload)`，与 batch 共用同一批处理器 | 同上 |
 | 消费标记 | IM 路径**不**调用 `apiClearEvent`；只有 batch 在处理完后调用 `GET /api/notify/event/clear` | `src/hooks/useEventPolling.ts` |
 | 去重 | 不去重。同一事件两路可能各到一次，由处理器幂等兜底 | — |
-| 未读角标 | 先读 `getSnapshot().unreadTotal` 作初值，再跟随 `onUnreadChange`。0 不显示，1–99 显示数字，超过 99 显示 `99+` | `src/components/business-component/ImMenuBadge` |
+| 未读角标 | 已登录且存在启用的伙伴菜单（含祖先均启用）时，菜单就绪及路由路径/参数切换主动查询 `GET /api/instant-message/unread-total`，按 `data.total` 更新；IM 挂载后继续跟随 `onUnreadChange`。快照仅补尚无确认值的初值，不使在途查询失效或覆盖已确认值；推送优先于先发查询，过期响应丢弃，失败保留原值。0 不显示，1–99 显示数字，超过 99 显示 `99+` | `src/services/imEventBridge.ts`、`src/layouts/DynamicMenusLayout/index.tsx`、`src/components/business-component/ImMenuBadge` |
+| 原生未读桥例外 | 商业桌面宿主提供原生未读桥时，角标订阅壳层快照与推送，导航不另发 Web 查询 | `src/services/imEventBridge.ts` |
 | 角标位置 | 经典布局 `DynamicTabs/TabItem`、单栏布局 `SidebarNavHeader`。只加在解析到 `nuwax-im-web` 的当前页菜单上；通知中心沿用原有未读口径 | `src/utils/imMenuPolicy.ts` |
-| 按需初始化 | 用户没打开过消息菜单时不加载 IM，没有 IM 事件，也没有角标；业务事件仍由 batch 兜底 | — |
+| 按需初始化 | 用户没打开过消息菜单时不加载 IM，但导航查询已可更新角标；IM 事件仍待首次挂载后接入，业务事件由 batch 兜底 | — |
 | 全局对象 | 消息应用加载模块时把 `window.__im` 装在真实 `window` 上（vite-plugin-qiankun 的 ESM 产物不运行在 JS 沙箱内），宿主直接读取即可 | `src/types/interfaces/im.ts`（消费端类型，所有键都可选） |
 
 ## 3. batch 与 IM 两路对照

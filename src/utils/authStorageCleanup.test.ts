@@ -11,6 +11,11 @@ vi.mock('@/services/i18nRuntime', () => ({
 
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
+import {
+  COLLAPSED_PROJECT_KEYS_KEY,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+} from '@/layouts/DynamicMenusLayout/NewHomeSection/collapsePreference';
 import { clearStoragePreservingUserPrefs } from './authStorageCleanup';
 
 describe('clearStoragePreservingUserPrefs', () => {
@@ -21,6 +26,9 @@ describe('clearStoragePreservingUserPrefs', () => {
     localStorage.setItem(STORAGE_KEYS.HAS_USER_SWITCH_THEME, '1');
     localStorage.setItem(I18N_STORAGE_KEYS.ACTIVE_LANG, 'en-US');
     localStorage.setItem(I18N_STORAGE_KEYS.USER_SET, '2');
+    localStorage.setItem(PROJECT_SECTION_COLLAPSED_KEY, '1');
+    localStorage.setItem(TASK_SECTION_COLLAPSED_KEY, '1');
+    localStorage.setItem(COLLAPSED_PROJECT_KEYS_KEY, '["1:100"]');
     localStorage.setItem('ACCESS_TOKEN', 'token');
     localStorage.setItem('SPACE_ID', '752');
   });
@@ -43,6 +51,9 @@ describe('clearStoragePreservingUserPrefs', () => {
     expect(localStorage.getItem(STORAGE_KEYS.HAS_USER_SWITCH_THEME)).toBe('1');
     expect(localStorage.getItem(I18N_STORAGE_KEYS.ACTIVE_LANG)).toBe('en-US');
     expect(localStorage.getItem(I18N_STORAGE_KEYS.USER_SET)).toBe('2');
+    expect(localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY)).toBe('1');
+    expect(localStorage.getItem(TASK_SECTION_COLLAPSED_KEY)).toBe('1');
+    expect(localStorage.getItem(COLLAPSED_PROJECT_KEYS_KEY)).toBe('["1:100"]');
   });
 
   it('保留键本就不存在时不被凭空恢复', () => {
