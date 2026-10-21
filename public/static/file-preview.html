@@ -13,6 +13,19 @@
     <!-- Local styles -->
     <link rel="stylesheet" href="/libs/js-preview/file-preview.css?v=2026.9.14-md-first-col">
 
+    <!-- 与主站一致：默认不请求 /favicon.ico，有租户图标时再用同一份配置 -->
+    <link rel="icon" href="data:,">
+    <script>
+        (function () {
+            try {
+                var config = JSON.parse(localStorage.getItem('TENANT_CONFIG_INFO') || 'null');
+                var link = document.querySelector('link[rel~="icon"]');
+                if (link && config && config.faviconUrl) {
+                    link.href = config.faviconUrl;
+                }
+            } catch (error) {}
+        })();
+    </script>
 </head>
 
 <body>
