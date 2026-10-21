@@ -462,7 +462,8 @@ const ChatInputUnifiedImpl: React.FC<
   // 仍有附件在上传中：发送按钮禁用 + Enter 拦截——此时 files 只含已完成
   // 附件，贸然发出会把上传中的附件静默丢弃（NW-109 数据丢失）
   const isUploadingAttachment = useMemo(
-    () => uploadFiles.some((item) => item.status === UploadFileStatus.uploading),
+    () =>
+      uploadFiles.some((item) => item.status === UploadFileStatus.uploading),
     [uploadFiles],
   );
   const [messageInfo, setMessageInfo] = useState<string>('');
