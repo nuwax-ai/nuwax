@@ -8,7 +8,7 @@
 | --- | --- |
 | 入队（`trySend`） | `enqueueBlocked = streamActive \|\| taskExecuting` 为 true 时入队，一并快照 `text`、`files`、`skillIds`、`selectedDocs`、`expertComponents`、`modelId`、`selectedAgentMode` |
 | 自动消费（FIFO） | 仅在 `consumeBlocked`（`enqueueBlocked \|\| hasPendingIntervention`）由 true → false 的边沿触发，经过 `minConsumeInterval`（默认 1200ms，从阻塞解除时刻起算）弹出队首并回放完整快照；发出后置 `awaitingStreamEnd`，需经历完整 `active → idle` 周期才允许消费下一条（5s 看门狗防发送失败卡死） |
-| 立即发送（`sendNow`） | **不依赖会话流式/任务/暂停状态**，点击后立即出队并调用 `sendMessage`（chat 接口），由后端承接排队；同时置 `awaitingStreamEnd` 并清理待执行的消费定时器，防止与同轮自动消费叠加双发。会话停止中（`loadingStopConversation`）禁用该按钮，避免被会话层 `isStopping` 门禁静默丢弃 |
+| 立即发送（`sendNow`） | **不依赖会话流式/任务/暂停状态**，点击后立即出队并调用 `sendMessage`（chat 接口），由后端承接排队；运行时会话层（`createConversationRuntimeSession`）走**方案 A**：同会话并发直发**不中断（不 abort）**上一轮在途 SSE 连接，按 `ownerMessageId` 隔离流式多段投影、单轮终态收敛与详情轮询乐观尾保留，上一轮工具调用/思考/正文正常流式收尾，新发轮次独立保持 `Loading` 占位直至后端轮转推流。同时置 `awaitingStreamEnd` 并清理待执行的消费定时器，防止与同轮自动消费叠加双发。会话停止中（`loadingStopConversation`）禁用该按钮，避免被会话层 `isStopping` 门禁静默丢弃 |
 | 编辑（`handleEditQueued`） | 按 ID 出队并通过 `EVENT_NAMES.QUEUE_EDIT_MESSAGE` 向目标会话输入框回填完整快照（文本、附件、`skillIds`、`selectedDocs`、`expertComponents`、`modelId`、`selectedAgentMode`） |
 | 删除 / 清空全部 | `deleteQueued` / `clearAllQueued` 移除后弹出 5s「撤销」提示（`queueUndoToast`），点击撤销按原下标顺序插回；切换会话自动关闭提示 |
 | 拖拽排序（`reorder`） | 调整队列内顺序，自动消费按最新队首顺序执行 |
