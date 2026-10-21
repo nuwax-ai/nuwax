@@ -7,6 +7,7 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { isImeConfirming } from '@/utils/imeEnter';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
 import { Input, message, Modal, Segmented } from 'antd';
@@ -308,7 +309,10 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
             )}
             maxLength={50}
             autoFocus
-            onPressEnter={handleRenameSubmit}
+            onPressEnter={(event) => {
+              if (isImeConfirming(event)) return;
+              void handleRenameSubmit().catch(() => null);
+            }}
             suffix={
               <span style={{ color: '#bfbfbf', fontSize: 14 }}>
                 {newTopic.length} / 50

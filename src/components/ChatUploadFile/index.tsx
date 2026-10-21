@@ -1,8 +1,10 @@
 import FileTypeIcon from '@/components/base/FileTypeIcon';
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatUploadFileProps } from '@/types/interfaces/agentConfig';
 import { UploadFileInfo } from '@/types/interfaces/common';
+import { openRemoteFileUrl } from '@/utils/authProtectedFileUrl';
 import { formatBytes } from '@/utils/byteConverter';
 import { getProgressStatus } from '@/utils/upload';
 import {
@@ -10,9 +12,9 @@ import {
   CloseOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Image } from 'antd';
+import { Image, message } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +23,18 @@ const cx = classNames.bind(styles);
  * 聊天上传文件列表组件
  */
 const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
+  const [previewUrl, setPreviewUrl] = useState<string>();
+  const openFile = (file: UploadFileInfo) => {
+    // 未完成或失败的上传还没有可打开的服务端文件。
+    if (file.status !== UploadFileStatus.done || !file.url) return;
+    if (file.type?.includes('image/')) {
+      setPreviewUrl(file.url);
+    } else {
+      void openRemoteFileUrl(file.url, file.name).catch(() => {
+        message.error(dict('PC.Common.Global.operationFailed'));
+      });
+    }
+  };
   const getStatus = useCallback(
     (fileInfo: UploadFileInfo) => getProgressStatus(fileInfo),
     [],
@@ -44,11 +58,16 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
           'flex',
           'items-center',
         )}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          openFile(file);
+        }}
       >
         {/* 图片容器 */}
         <div className={cx(styles['image-container'], 'relative')}>
           <Image
             src={file?.url}
+            alt={file.name}
             fallback={IMAGE_FALLBACK}
             preview={false}
             className={styles['file-image']}
@@ -71,7 +90,11 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
 
         <CloseCircleOutlined
           className={cx(styles.del)}
-          onClick={() => onDel(file.uid)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDel(file.uid);
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
         />
       </div>
     );
@@ -89,6 +112,10 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
       <div
         key={file.uid}
         className={cx(styles['file-box'], 'flex', 'items-center')}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          openFile(file);
+        }}
       >
         {/* 使用 FileTypeIcon 组件显示文件图标 */}
         <div className={cx(styles['icon-container'], 'relative')}>
@@ -120,7 +147,11 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
 
         <CloseCircleOutlined
           className={cx(styles.del)}
-          onClick={() => onDel(file.uid)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDel(file.uid);
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
         />
       </div>
     );
@@ -135,6 +166,17 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
         }
         return renderDocumentFile(file as UploadFileInfo);
       })}
+      {previewUrl && (
+        <Image.PreviewGroup
+          items={[previewUrl]}
+          preview={{
+            visible: true,
+            onVisibleChange: (visible) => {
+              if (!visible) setPreviewUrl(undefined);
+            },
+          }}
+        />
+      )}
     </div>
   );
 };

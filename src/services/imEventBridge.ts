@@ -4,21 +4,33 @@ import {
   subscribeLoginStatus,
 } from '@/services/userService';
 import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
+import type { RequestResponse } from '@/types/interfaces/request';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
+import { request } from 'umi';
 
 let unreadCount = 0;
+let unreadRevision = 0;
+let hasWebUnreadConfirmation = false;
 const unreadListeners = new Set<() => void>();
 let disconnectCurrent: (() => void) | undefined;
 
 function updateUnreadCount(total: number): void {
-  if (!Number.isSafeInteger(total) || total < 0 || total === unreadCount)
-    return;
+  if (!Number.isSafeInteger(total) || total < 0) return;
+  if (total === unreadCount) return;
   unreadCount = total;
   unreadListeners.forEach((listener) => listener());
 }
 
-/** 导航只订阅展示值；商业客户端取壳层值，普通 Web 取 IM 实例值。 */
+function confirmWebUnreadCount(total: number): void {
+  if (!Number.isSafeInteger(total) || total < 0) return;
+  // 快照可能是挂载占位值；只有查询成功或推送才确认新数量，相同数值也算确认。
+  unreadRevision += 1;
+  hasWebUnreadConfirmation = true;
+  updateUnreadCount(total);
+}
+
+/** 商业客户端取壳层值；普通 Web 共用导航查询与 IM 推送的展示值。 */
 export const imUnreadState = {
   getSnapshot: (): number => unreadCount,
   subscribe(listener: () => void): () => void {
@@ -26,6 +38,65 @@ export const imUnreadState = {
     return () => unreadListeners.delete(listener);
   },
 };
+
+/** 导航持有此生命周期，未打开 IM 时也能查询；卸载及账号变化使在途响应失效。 */
+export function createWebImUnreadRefresh(): {
+  refresh(): Promise<void>;
+  dispose(): void;
+} {
+  if (hostBridge.im.hasNativeUnread()) {
+    return { refresh: async () => undefined, dispose: () => undefined };
+  }
+  let disposed = false;
+  let requestRevision = 0;
+  const refresh = async () => {
+    if (disposed || !getCurrentLoginStatus() || hostBridge.im.hasNativeUnread())
+      return;
+    const currentRequest = ++requestRevision;
+    const currentUnreadRevision = unreadRevision;
+    try {
+      const result: RequestResponse<{ total: number }> = await request(
+        '/api/instant-message/unread-total',
+        { method: 'GET', silentPolling: true },
+      );
+      if (
+        !disposed &&
+        getCurrentLoginStatus() &&
+        !hostBridge.im.hasNativeUnread() &&
+        currentRequest === requestRevision &&
+        currentUnreadRevision === unreadRevision &&
+        result?.code === '0000'
+      ) {
+        confirmWebUnreadCount(result.data?.total);
+      }
+    } catch {
+      // 后台校准失败保留最后成功值，下次导航继续尝试。
+    }
+  };
+  const clear = () => {
+    requestRevision += 1;
+    if (!hostBridge.im.hasNativeUnread()) {
+      hasWebUnreadConfirmation = false;
+      updateUnreadCount(0);
+    }
+  };
+  const offLogin = subscribeLoginStatus(() => {
+    clear();
+    if (getCurrentLoginStatus()) void refresh();
+  });
+  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clear);
+  return {
+    refresh,
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      requestRevision += 1;
+      hasWebUnreadConfirmation = false;
+      offLogin();
+      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clear);
+    },
+  };
+}
 
 /** 挂载完成后接入；返回的退订函数也负责清理当前账号的展示值。 */
 export function subscribeImEvents(): () => void {
@@ -42,7 +113,10 @@ export function subscribeImEvents(): () => void {
     unsubscribers.forEach((unsubscribe) => unsubscribe());
     if (disconnectCurrent === dispose) {
       disconnectCurrent = undefined;
-      if (!hostBridge.im.hasNativeUnread()) updateUnreadCount(0);
+      if (!hostBridge.im.hasNativeUnread()) {
+        hasWebUnreadConfirmation = false;
+        updateUnreadCount(0);
+      }
     }
   };
   disconnectCurrent = dispose;
@@ -79,13 +153,14 @@ export function subscribeImEvents(): () => void {
   ) {
     unsubscribers.push(
       im.onUnreadChange(({ total }) => {
-        if (isCurrent()) updateUnreadCount(total);
+        if (isCurrent()) confirmWebUnreadCount(total);
       }),
     );
   }
   // 先订阅再读快照，覆盖宿主晚挂载、未读数尚未再次变化的情况。
   if (
     !hostBridge.im.hasNativeUnread() &&
+    !hasWebUnreadConfirmation &&
     isCurrent() &&
     typeof im.getSnapshot === 'function'
   ) {

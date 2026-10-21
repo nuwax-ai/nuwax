@@ -14,6 +14,7 @@
     font-size: 14px;
     color: @BLANK24;
     overflow: hidden;
+    cursor: pointer;
 
     img {
       width: 50px;
@@ -22,6 +23,17 @@
       object-fit: cover;
       margin-right: 5px;
       border-radius: 10px;
+    }
+
+    /* 图片附件走 antd Image（可点击放大预览）：包裹层 div.ant-image 成为
+       flex 子项，与文件名的间距/shrink 转移到包裹层，保持原 50px 缩略布局 */
+    .ant-image {
+      flex-shrink: 0;
+      margin-right: 5px;
+
+      img {
+        margin-right: 0;
+      }
     }
   }
 }
