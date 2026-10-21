@@ -7,12 +7,13 @@
  * 不能因为读偏好把列表渲染打断。
  */
 
-/** 项目分组头（「项目」整块列表）是否收起 */
-export const PROJECT_SECTION_COLLAPSED_KEY = 'home-project-section-collapsed';
-/** 任务分组头（「任务」整块列表）是否收起 */
-export const TASK_SECTION_COLLAPSED_KEY = 'home-task-section-collapsed';
-/** 项目面板内各项目行的收起集合（复合键，见 projectKeyOf） */
-export const COLLAPSED_PROJECT_KEYS_KEY = 'home-collapsed-project-keys';
+import { COLLAPSED_PROJECT_KEYS_KEY } from '@/constants/homeLayout.constants';
+
+export {
+  COLLAPSED_PROJECT_KEYS_KEY,
+  PROJECT_SECTION_COLLAPSED_KEY,
+  TASK_SECTION_COLLAPSED_KEY,
+} from '@/constants/homeLayout.constants';
 
 function storage(): Storage | null {
   if (typeof window === 'undefined') return null;
