@@ -9,6 +9,10 @@ import {
 } from '@/constants/images.constants';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiUserProjectCollect,
+  apiUserProjectUnCollect,
+} from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import { Button } from 'antd';
@@ -32,8 +36,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   showUserCount = true,
   showConvCount = true,
   showCollectCount = true,
-  collectApi = apiCollectAgent,
-  unCollectApi = apiUnCollectAgent,
   iconShape = 'square',
 }) => {
   const {
@@ -56,18 +58,32 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   /** 普通智能体才提供「进入独立页面」。 */
   const canEnterAgentPage =
     targetType === AgentComponentTypeEnum.Agent && !isOpenApp;
-  // 智能体收藏
-  const { run: runCollectAgent } = useRequest((id: number) => collectApi(id), {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      onToggleCollectSuccess(targetId, true);
-    },
-  });
+  /** 网站项目、常规项目走项目收藏；普通智能体和网页应用走智能体收藏。 */
+  const useProjectCollect =
+    targetType === AgentComponentTypeEnum.UserApp ||
+    targetType === AgentComponentTypeEnum.NormalProject;
 
-  // 智能体取消收藏
+  // 收藏
+  const { run: runCollectAgent } = useRequest(
+    (id: number) =>
+      useProjectCollect
+        ? apiUserProjectCollect(id, String(targetType))
+        : apiCollectAgent(id),
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        onToggleCollectSuccess(targetId, true);
+      },
+    },
+  );
+
+  // 取消收藏
   const { run: runUnCollectAgent } = useRequest(
-    (id: number) => unCollectApi(id),
+    (id: number) =>
+      useProjectCollect
+        ? apiUserProjectUnCollect(id, String(targetType))
+        : apiUnCollectAgent(id),
     {
       manual: true,
       debounceInterval: 300,
