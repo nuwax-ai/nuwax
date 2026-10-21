@@ -11,16 +11,23 @@ import { request } from 'umi';
 
 let unreadCount = 0;
 let unreadRevision = 0;
+let hasWebUnreadConfirmation = false;
 const unreadListeners = new Set<() => void>();
 let disconnectCurrent: (() => void) | undefined;
 
 function updateUnreadCount(total: number): void {
   if (!Number.isSafeInteger(total) || total < 0) return;
-  // 相同数值的推送也代表一次新确认，不能被更早发起的查询覆盖。
-  unreadRevision += 1;
   if (total === unreadCount) return;
   unreadCount = total;
   unreadListeners.forEach((listener) => listener());
+}
+
+function confirmWebUnreadCount(total: number): void {
+  if (!Number.isSafeInteger(total) || total < 0) return;
+  // 快照可能是挂载占位值；只有查询成功或推送才确认新数量，相同数值也算确认。
+  unreadRevision += 1;
+  hasWebUnreadConfirmation = true;
+  updateUnreadCount(total);
 }
 
 /** 商业客户端取壳层值；普通 Web 共用导航查询与 IM 推送的展示值。 */
@@ -60,7 +67,7 @@ export function createWebImUnreadRefresh(): {
         currentUnreadRevision === unreadRevision &&
         result?.code === '0000'
       ) {
-        updateUnreadCount(result.data?.total);
+        confirmWebUnreadCount(result.data?.total);
       }
     } catch {
       // 后台校准失败保留最后成功值，下次导航继续尝试。
@@ -68,7 +75,10 @@ export function createWebImUnreadRefresh(): {
   };
   const clear = () => {
     requestRevision += 1;
-    if (!hostBridge.im.hasNativeUnread()) updateUnreadCount(0);
+    if (!hostBridge.im.hasNativeUnread()) {
+      hasWebUnreadConfirmation = false;
+      updateUnreadCount(0);
+    }
   };
   const offLogin = subscribeLoginStatus(() => {
     clear();
@@ -81,6 +91,7 @@ export function createWebImUnreadRefresh(): {
       if (disposed) return;
       disposed = true;
       requestRevision += 1;
+      hasWebUnreadConfirmation = false;
       offLogin();
       eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clear);
     },
@@ -102,7 +113,10 @@ export function subscribeImEvents(): () => void {
     unsubscribers.forEach((unsubscribe) => unsubscribe());
     if (disconnectCurrent === dispose) {
       disconnectCurrent = undefined;
-      if (!hostBridge.im.hasNativeUnread()) updateUnreadCount(0);
+      if (!hostBridge.im.hasNativeUnread()) {
+        hasWebUnreadConfirmation = false;
+        updateUnreadCount(0);
+      }
     }
   };
   disconnectCurrent = dispose;
@@ -139,13 +153,14 @@ export function subscribeImEvents(): () => void {
   ) {
     unsubscribers.push(
       im.onUnreadChange(({ total }) => {
-        if (isCurrent()) updateUnreadCount(total);
+        if (isCurrent()) confirmWebUnreadCount(total);
       }),
     );
   }
   // 先订阅再读快照，覆盖宿主晚挂载、未读数尚未再次变化的情况。
   if (
     !hostBridge.im.hasNativeUnread() &&
+    !hasWebUnreadConfirmation &&
     isCurrent() &&
     typeof im.getSnapshot === 'function'
   ) {

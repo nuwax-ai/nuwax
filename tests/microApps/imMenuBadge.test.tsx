@@ -3,7 +3,10 @@ import DynamicMenusLayout from '@/layouts/DynamicMenusLayout';
 import { imUnreadState, subscribeImEvents } from '@/services/imEventBridge';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
+import {
+  MenuEnabledEnum,
+  OpenTypeEnum,
+} from '@/types/menuPermission/menu-manage';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -47,6 +50,7 @@ const messageMenu = {
   code: 'message',
   path: '/instant-message',
   openType: OpenTypeEnum.CurrentTab,
+  status: MenuEnabledEnum.Enabled,
 } as MenuItemDto;
 
 let pushUnread: (total: number) => void = () => {};
@@ -176,7 +180,11 @@ describe('导航主动校准伙伴未读数', () => {
     const view = renderNavigation();
     expect(mocks.request).not.toHaveBeenCalled();
     mocks.menuTree = [
-      { code: 'parent', children: [messageMenu] } as MenuItemDto,
+      {
+        code: 'parent',
+        status: MenuEnabledEnum.Enabled,
+        children: [messageMenu],
+      } as MenuItemDto,
     ];
     mocks.request.mockResolvedValue(success(3));
     view.rerenderNavigation();
@@ -199,6 +207,44 @@ describe('导航主动校准伙伴未读数', () => {
     expect(imUnreadState.getSnapshot()).toBe(9);
     await act(async () => old.resolve(success(20)));
     expect(imUnreadState.getSnapshot()).toBe(9);
+  });
+
+  it('IM 挂载的初始快照不使在途导航查询失效', async () => {
+    const pending = deferred();
+    mocks.request.mockReturnValue(pending.promise);
+    renderNavigation();
+    act(() => connect(0));
+    await act(async () => pending.resolve(success(9)));
+    expect(imUnreadState.getSnapshot()).toBe(9);
+  });
+
+  it('导航已查询成功时，IM 初始占位快照不覆盖最新数量', async () => {
+    mocks.request.mockResolvedValue(success(9));
+    renderNavigation();
+    await settle();
+    act(() => connect(0));
+    expect(imUnreadState.getSnapshot()).toBe(9);
+  });
+
+  it.each([
+    ['伙伴禁用', [{ ...messageMenu, status: MenuEnabledEnum.Disabled }]],
+    ['伙伴未启用', [{ ...messageMenu, status: undefined }]],
+    [
+      '祖先禁用',
+      [
+        {
+          code: 'parent',
+          status: MenuEnabledEnum.Disabled,
+          children: [messageMenu],
+        },
+      ],
+    ],
+  ])('%s 时不触发查询', async (_label, menus) => {
+    mocks.menuTree = menus as MenuItemDto[];
+    const view = renderNavigation();
+    view.navigate('/space');
+    await settle();
+    expect(mocks.request).not.toHaveBeenCalled();
   });
 
   it.each([5, 7, 0])(

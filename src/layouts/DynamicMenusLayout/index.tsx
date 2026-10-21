@@ -8,6 +8,7 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { createWebImUnreadRefresh } from '@/services/imEventBridge';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import { MenuEnabledEnum } from '@/types/menuPermission/menu-manage';
 import { isImMenu } from '@/utils/imMenuPolicy';
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useModel } from 'umi';
@@ -18,7 +19,8 @@ import { useCreditSummaryPolling } from './useCreditSummaryPolling';
 const containsImMenu = (menus: MenuItemDto[]): boolean =>
   menus.some(
     (menu) =>
-      isImMenu(menu) || (!!menu.children && containsImMenu(menu.children)),
+      menu.status === MenuEnabledEnum.Enabled &&
+      (isImMenu(menu) || (!!menu.children && containsImMenu(menu.children))),
   );
 
 export interface DynamicMenusLayoutProps {
