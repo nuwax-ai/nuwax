@@ -649,7 +649,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             prevMap.set(mentionKey(pendingMention), pendingMention);
           }
 
-          return Array.from(
+          const next = Array.from(
             editorRef.current!.querySelectorAll('[data-mention-id]'),
           ).map((chip) => {
             const el = chip as HTMLElement;
@@ -676,6 +676,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
                   })
             );
           });
+          if (
+            next.length === prev.length &&
+            next.every(
+              (item, idx) => mentionKey(item) === mentionKey(prev[idx]),
+            )
+          ) {
+            return prev;
+          }
+          return next;
         });
       },
       [enableMention],

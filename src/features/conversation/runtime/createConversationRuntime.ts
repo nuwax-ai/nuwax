@@ -44,8 +44,8 @@ export interface ConversationRuntime {
     ownerMessageId: string,
     event: ConversationChatResponse,
   ): ConversationEventReduction;
-  resetStreamProjection(): void;
-  getActiveOutputMessageId(): string;
+  resetStreamProjection(ownerMessageId?: string): void;
+  getActiveOutputMessageId(ownerMessageId?: string): string;
 }
 
 /**
@@ -60,6 +60,7 @@ export function createConversationRuntime(
   options?: ConversationRuntimeOptions,
 ): ConversationRuntime {
   let activeOutputMessageId = '';
+  const activeOutputMessageIdByOwner = new Map<string, string>();
   const liveConnection = createLiveConnectionController();
   const resumeConnection = createResumeConnectionController();
   const effects = createEffectDispatcher({
@@ -74,21 +75,42 @@ export function createConversationRuntime(
     effects,
 
     reduceStreamEvent(messages, ownerMessageId, event) {
+      const currentActiveOutputId = ownerMessageId
+        ? activeOutputMessageIdByOwner.get(ownerMessageId) ?? ''
+        : activeOutputMessageId;
       const reduction = reduceConversationEvent(
-        { messages, activeOutputMessageId },
+        { messages, activeOutputMessageId: currentActiveOutputId },
         ownerMessageId,
         event,
         adapters,
       );
       activeOutputMessageId = reduction.activeOutputMessageId;
+      if (ownerMessageId) {
+        if (reduction.activeOutputMessageId) {
+          activeOutputMessageIdByOwner.set(
+            ownerMessageId,
+            reduction.activeOutputMessageId,
+          );
+        } else {
+          activeOutputMessageIdByOwner.delete(ownerMessageId);
+        }
+      }
       return reduction;
     },
 
-    resetStreamProjection() {
+    resetStreamProjection(ownerMessageId?: string) {
+      if (ownerMessageId) {
+        activeOutputMessageIdByOwner.delete(ownerMessageId);
+        return;
+      }
       activeOutputMessageId = '';
+      activeOutputMessageIdByOwner.clear();
     },
 
-    getActiveOutputMessageId() {
+    getActiveOutputMessageId(ownerMessageId?: string) {
+      if (ownerMessageId) {
+        return activeOutputMessageIdByOwner.get(ownerMessageId) ?? '';
+      }
       return activeOutputMessageId;
     },
   };
