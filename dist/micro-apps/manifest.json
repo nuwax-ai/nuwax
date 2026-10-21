@@ -11,7 +11,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-        "commit": "31effb933dc27bd6ac7e99d99f078ab4947e5973"
+        "commit": "8a2413395bade94bf1fd448015509d6c2ac30cfd"
       },
       "projectDir": ".",
       "workspaceMode": "project-workspace",
@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "261aba0cdee3909392b94221cea7edfd1baf90ce6f9bb5522577b1edcbdfe906",
+        "sha256": "cea686711f264659d90b43bb985ea8c8b34b0cc01a1b45473d69f46884990a92",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -48,14 +48,14 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T14:27:16.073Z",
+      "builtAt": "2026-10-21T06:12:16.229Z",
       "cache": {
-        "key": "d9e116d1a39380afe0219d00883b99b2ee5c9c4a5a081b55f08531d46dda129c",
+        "key": "f574acae8465799e807c91e8655954df3bf8bca4156b8c7995292966241df8a6",
         "hit": false
       }
     },
@@ -69,7 +69,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "2c8e6153a1a211658dfa695955995b932c233090"
+        "commit": "9641d0f961667666c3ad1ed41a31aa280ad2fd69"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -77,7 +77,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "afac96d91afc71013241bd5a29eb42f2b814c964f0f4c067587ffb638d06e96d",
+        "sha256": "f7456fa0f9253de5c64a6c696cbeb91eb2bf898f508e6b348103a7c5d682f98f",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -93,16 +93,15 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-20T13:53:24.573Z",
+      "builtAt": "2026-10-21T06:12:36.192Z",
       "cache": {
-        "key": "36d3633ca0e62711836ff06f05b626a4efb511b02d8395a8340149488d041a59",
-        "hit": true,
-        "reusedAt": "2026-10-20T14:27:16.691Z"
+        "key": "45aae28407299f0a4c63ccc7860456a230850f579ce3490b8781803d015c22ba",
+        "hit": false
       }
     }
   ]
