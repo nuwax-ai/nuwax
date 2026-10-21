@@ -588,6 +588,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
     isLocallyStreaming,
     isAwaitingChatTerminal,
     conversationInfo,
+    runStopConversation,
   } = props;
   return (
     <ConversationSessionProvider
@@ -600,6 +601,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
       onSendMessage={onSendMessage}
       minConsumeInterval={queueMinConsumeInterval}
       queueContext={queueContext}
+      runStopConversation={runStopConversation}
     >
       <UnifiedChatSessionInner {...props} />
     </ConversationSessionProvider>
