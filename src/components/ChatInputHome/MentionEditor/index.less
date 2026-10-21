@@ -16,7 +16,6 @@
 .mention-editor {
   position: relative;
   width: 100%;
-  padding: 4px @paddingSm;
   text-indent: var(--mention-inline-prefix-offset, 0);
   font-size: @fontSize;
   line-height: 1.75;
@@ -49,9 +48,9 @@
   &.empty::before {
     content: attr(data-placeholder);
     position: absolute;
-    top: 4px;
-    left: @paddingSm;
-    right: @paddingSm;
+    top: 0;
+    left: 0;
+    right: 0;
     color: @colorTextQuaternary;
     text-indent: var(--mention-inline-prefix-offset, 0);
     pointer-events: none;
