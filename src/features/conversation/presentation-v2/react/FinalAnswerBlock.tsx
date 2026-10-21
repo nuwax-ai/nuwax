@@ -72,6 +72,12 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
       lastAssistant?.status === 'stopped' ||
       lastAssistant?.status === 'error' ||
       !lastAssistant?.status);
+  const completedToolCount = turn.nodes.filter(
+    (node) =>
+      (node.kind === 'tool' || node.kind === 'subagent') &&
+      node.status === 'finished',
+  ).length;
+  const hasProcessNodes = turn.nodes.length > 0;
 
   // V2 会话内搜索定位锚点：turn 聚合后无单条消息 DOM，把 turn 内全部
   // server 消息 id 挂到常显区根节点，供 ConversationSearchPanel 按词匹配定位
@@ -102,14 +108,24 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
         />
       ) : turn.terminalStatus === 'stopped' ? (
         <div className={cx(styles['answer-status'])}>
-          {dict('PC.Components.ConversationRendererV2.answerStopped')}
+          {completedToolCount > 0
+            ? dict(
+                'PC.Components.ConversationRendererV2.answerStoppedWithTools',
+                completedToolCount,
+              )
+            : dict('PC.Components.ConversationRendererV2.answerStopped')}
         </div>
       ) : turn.terminalStatus === 'error' ? (
         <div className={cx(styles['answer-status'])}>
-          {dict('PC.Components.ConversationRendererV2.answerError')}
+          {completedToolCount > 0
+            ? dict(
+                'PC.Components.ConversationRendererV2.answerErrorWithTools',
+                completedToolCount,
+              )
+            : dict('PC.Components.ConversationRendererV2.answerError')}
         </div>
-      ) : terminal ? (
-        // 正常完成但未产出正文（如 0 节点空轮）：一行轻提示，避免回答区空白无解释
+      ) : terminal && !hasProcessNodes ? (
+        // 仅在 0 节点且 0 正文的纯空轮显示轻提示；已有执行过程节点时上方轨迹已保持展开呈现结果，不再弹「未生成回答」
         <div className={cx(styles['answer-status'])}>
           {dict('PC.Components.ConversationRendererV2.answerEmpty')}
         </div>
