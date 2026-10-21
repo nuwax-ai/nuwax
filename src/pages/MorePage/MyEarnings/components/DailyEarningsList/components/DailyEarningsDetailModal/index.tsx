@@ -7,6 +7,7 @@ import type { DailyRevenueDetailRecord } from '@/types/interfaces/subscription';
 import {
   AppstoreOutlined,
   BuildOutlined,
+  PayCircleOutlined,
   RobotOutlined,
 } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
@@ -37,6 +38,10 @@ const REVENUE_ICON_CONFIG: Record<
   TOOL_CALL: {
     icon: <BuildOutlined />,
     styleKey: 'tag-tool',
+  },
+  PROJECT_PAY: {
+    icon: <PayCircleOutlined />,
+    styleKey: 'tag-project',
   },
 };
 
