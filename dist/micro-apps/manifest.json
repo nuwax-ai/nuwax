@@ -48,16 +48,16 @@
         ]
       },
       "toolchain": {
-        "node": "v24.14.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-21T08:55:45.580Z",
+      "builtAt": "2026-10-21T11:00:22.763Z",
       "cache": {
-        "key": "38d16c1bb8f204486374741cd553b33b9fcf0a0a4aef003c89d9bfe5ba235eb1",
+        "key": "5a5fc7b45f2b3cea6a71f1f93efd7837ff47a3c1c70e5809ec407ea82293fe60",
         "hit": true,
-        "reusedAt": "2026-10-21T11:13:37.201Z"
+        "reusedAt": "2026-10-21T12:05:54.036Z"
       }
     },
     {
@@ -70,7 +70,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "5d9e507130534d1bc6738cff90f195ea26392e5e"
+        "commit": "fb4c13ec399f37d06ef1874a808ced892fe32e35"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -78,7 +78,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "0415f8da713a2e5a5aaee9a9b81a06bbdc809b3b90bdcedd7a408abbf637ae78",
+        "sha256": "577584b5b79983fdd3ed8b2d7aa55be66021c94d0735ccc31ad4d0664bf49f0e",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -94,16 +94,15 @@
         ]
       },
       "toolchain": {
-        "node": "v24.14.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-21T08:56:10.933Z",
+      "builtAt": "2026-10-21T12:06:15.506Z",
       "cache": {
-        "key": "acf47db380aad6282df349006bbb6969fe5b0e446e42c496118d7603a528df93",
-        "hit": true,
-        "reusedAt": "2026-10-21T11:13:37.648Z"
+        "key": "d338f160b9f326535a41138cf14c86c3b28c065d288ccb6d52b9a8b8e32d0c91",
+        "hit": false
       }
     }
   ]
