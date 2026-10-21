@@ -499,8 +499,10 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
               onSendNow={messageQueue.sendNow}
               onDelete={messageQueue.deleteQueued}
               onEdit={messageQueue.handleEditQueued}
-              onClear={messageQueue.clearQueue}
+              onClear={messageQueue.clearAllQueued}
+              onUndo={messageQueue.undoLastRemove}
               onReorder={messageQueue.reorder}
+              sendNowDisabled={loadingStopConversation}
             />
           </div>
         )}
