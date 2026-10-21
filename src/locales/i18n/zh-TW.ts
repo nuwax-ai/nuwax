@@ -6177,7 +6177,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - 收益明細",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "模型調用",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "訂閱",
-  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "項目付費",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "應用支付",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "工具調用",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colAccountNo": "卡號",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colBankName": "開戶行",

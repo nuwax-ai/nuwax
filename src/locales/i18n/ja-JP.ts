@@ -6176,7 +6176,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - Earnings Details",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "Model Call",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "Subscription",
-  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "Project Payment",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "App Payment",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "Tool Call",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colAccountNo": "Account No.",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colBankName": "Bank Name",
