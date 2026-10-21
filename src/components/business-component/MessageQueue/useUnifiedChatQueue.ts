@@ -44,6 +44,8 @@ export interface UseUnifiedChatQueueParams {
   minConsumeInterval?: number;
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
+  /** 停止会话函数（立即发送时若忙碌则调用） */
+  runStopConversation?: (id: any) => void | Promise<unknown>;
   /**
    * 队列的流式/任务上下文（必传语义：由 UnifiedChatSession 以自身 props 构造默认值，
    * 隔离入口（预览 Tab 等）显式传入 conversationAgent model 的上下文避免串扰）。
@@ -69,11 +71,17 @@ export const useUnifiedChatQueue = ({
   minConsumeInterval,
   hasPendingIntervention,
   queueContext,
+  runStopConversation: runStopConversationProp,
 }: UseUnifiedChatQueueParams) => {
   // 双线分支语义：queueContext（新线 Provider / 隔离入口）显式注入优先；
   // 未提供时保持基线行为——回落全局 conversationInfo model（旧线入口零改动）。
-  const { isConversationActive: modelStreamActive, conversationInfo } =
-    usePageModel('conversationInfo');
+  const {
+    isConversationActive: modelStreamActive,
+    conversationInfo,
+    runStopConversation: modelRunStopConversation,
+  } = usePageModel('conversationInfo');
+  const effectiveRunStopConversation =
+    runStopConversationProp ?? modelRunStopConversation;
 
   const queueGate = selectQueueGate(
     queueContext?.streamActive ?? modelStreamActive,
@@ -116,6 +124,7 @@ export const useUnifiedChatQueue = ({
     messageList: messageList || [],
     conversationId,
     sendMessage: rawSend,
+    runStopConversation: effectiveRunStopConversation,
     minConsumeInterval,
     hasPendingIntervention,
   });
@@ -127,12 +136,6 @@ export const useUnifiedChatQueue = ({
         eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
           text: item.text,
           files: item.files,
-          // 入队快照一并回填：输入框监听端据此恢复技能/文档/模型/模式/专家，避免编辑后静默丢失
-          skillIds: item.skillIds,
-          selectedDocs: item.selectedDocs,
-          modelId: item.modelId,
-          selectedAgentMode: item.selectedAgentMode,
-          expertComponents: item.expertComponents,
           // 带上会话 id，监听方（ChatInputHome）据此过滤，避免多实例（主聊天/预览 Tab）串扰
           conversationId,
         });

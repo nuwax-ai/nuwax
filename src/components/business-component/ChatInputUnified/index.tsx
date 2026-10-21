@@ -1171,14 +1171,12 @@ const ChatInputUnifiedImpl: React.FC<
     };
   }, [draftScope]);
 
-  // 监听队列消息编辑回填（含 skillIds / selectedDocs / expertComponents / modelId / agentMode 快照）
+  // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
   useEffect(() => {
     const handleEditMessage = ({
       text,
       files: editFiles,
       skillIds: editSkillIds,
-      selectedDocs: editSelectedDocs,
-      expertComponents: editExpertComponents,
       modelId: editModelId,
       selectedAgentMode: editAgentMode,
       conversationId: targetConversationId,
@@ -1186,8 +1184,6 @@ const ChatInputUnifiedImpl: React.FC<
       text: string;
       files?: UploadFileInfo[];
       skillIds?: number[];
-      selectedDocs?: SelectedDocInfo[];
-      expertComponents?: AgentSelectedComponentInfo[];
       modelId?: number;
       selectedAgentMode?: AgentMode;
       conversationId?: number | string;
@@ -1199,38 +1195,12 @@ const ChatInputUnifiedImpl: React.FC<
       ) {
         return;
       }
-      setMessageInfo((prev) => {
-        const next = prev ? `${prev}\n${text}` : text;
-        mentionEditorRef.current?.setEditorText?.(next);
-        return next;
-      });
+      setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
       if (editFiles?.length) {
         setUploadFiles((prev) => [...prev, ...editFiles]);
       }
       if (editSkillIds?.length) {
         setSkillIds(editSkillIds);
-      }
-      if (editSelectedDocs?.length) {
-        setSelectedDocs(editSelectedDocs);
-      }
-      if (editExpertComponents?.length) {
-        setExpertComponents(
-          editExpertComponents.map((expert) => {
-            const detail = expert as Partial<{
-              name: string;
-              icon: string;
-              description: string;
-              defaultSelected: DefaultSelectedEnum;
-            }>;
-            return {
-              ...expert,
-              name: detail.name ?? '',
-              icon: detail.icon ?? '',
-              description: detail.description ?? '',
-              defaultSelected: detail.defaultSelected ?? DefaultSelectedEnum.No,
-            };
-          }),
-        );
       }
       if (editModelId !== undefined) {
         onModelSelect?.(editModelId);
