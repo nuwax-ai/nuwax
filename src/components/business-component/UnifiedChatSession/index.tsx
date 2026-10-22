@@ -4,6 +4,15 @@ import {
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
 import ConversationStatus from '@/components/business-component/ConversationStatus';
+import {
+  CreditInsufficientInputBanner,
+  CreditInsufficientScope,
+  CreditInsufficientSessionPageBanner,
+  hasCreditDeductionInsufficientError,
+  useCreditBalancePositive,
+  useHistoryCreditExhausted,
+  useReportCreditInsufficient,
+} from '@/components/business-component/CreditInsufficientNotice';
 import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
@@ -412,6 +421,24 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     ],
   );
   const effectiveOpenUiSidecar = onOpenOpenUiSidecar ?? defaultOpenUiSidecar;
+  // 两条独立触发：本轮 FINAL_RESULT 含扣减失败文案、NW_CREDIT_INSUFFICIENT，或 errorReason 为 CREDIT_INSUFFICIENT；或历史最后一条含「积分已用完」/「积分不足」且余额仍为 0。
+  // 任一成立就通知页面顶部和输入框上方的提示条。积分轮询发现 totalCredit > 0 后收起。
+  const historyCreditExhausted = useHistoryCreditExhausted(
+    messageList,
+    conversationId,
+  );
+
+  // 当前余额是否大于 0
+  const creditBalancePositive = useCreditBalancePositive();
+
+  // 是否需要提示积分不足
+  const creditInsufficient =
+    (hasCreditDeductionInsufficientError(messageList) ||
+      historyCreditExhausted) &&
+    !creditBalancePositive;
+
+  // 上报积分不足
+  useReportCreditInsufficient(creditInsufficient);
 
   useEffect(
     () =>
@@ -427,6 +454,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
       className={cx(styles['session-container'], className)}
       style={style}
     >
+      <CreditInsufficientSessionPageBanner active={creditInsufficient} />
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
         conversationId={conversationId}
@@ -504,6 +532,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
             />
           </div>
         )}
+        <CreditInsufficientInputBanner active={creditInsufficient} />
         <ChatInputUnified
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
@@ -575,7 +604,11 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
   const outerSession = useConversationSession();
   if (outerSession) {
-    return <UnifiedChatSessionInner {...props} />;
+    return (
+      <CreditInsufficientScope>
+        <UnifiedChatSessionInner {...props} />
+      </CreditInsufficientScope>
+    );
   }
   const {
     conversationId,
@@ -591,20 +624,22 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
     runStopConversation,
   } = props;
   return (
-    <ConversationSessionProvider
-      conversationId={conversationId}
-      messageList={messageList ?? []}
-      modelStreamActive={isLocallyStreaming ?? isConversationActive}
-      awaitingChatTerminal={isAwaitingChatTerminal}
-      taskStatus={conversationInfo?.taskStatus}
-      selectedModelId={selectedModelId}
-      onSendMessage={onSendMessage}
-      minConsumeInterval={queueMinConsumeInterval}
-      queueContext={queueContext}
-      runStopConversation={runStopConversation}
-    >
-      <UnifiedChatSessionInner {...props} />
-    </ConversationSessionProvider>
+    <CreditInsufficientScope>
+      <ConversationSessionProvider
+        conversationId={conversationId}
+        messageList={messageList ?? []}
+        modelStreamActive={isLocallyStreaming ?? isConversationActive}
+        awaitingChatTerminal={isAwaitingChatTerminal}
+        taskStatus={conversationInfo?.taskStatus}
+        selectedModelId={selectedModelId}
+        onSendMessage={onSendMessage}
+        minConsumeInterval={queueMinConsumeInterval}
+        queueContext={queueContext}
+        runStopConversation={runStopConversation}
+      >
+        <UnifiedChatSessionInner {...props} />
+      </ConversationSessionProvider>
+    </CreditInsufficientScope>
   );
 };
 

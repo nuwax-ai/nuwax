@@ -12,8 +12,8 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import CreditsBreakdown from './components/CreditsBreakdown';
 // import CurrentPlanCard from './components/CurrentPlanCard';
+import SubscriptionPlanCards from '@/components/business-component/SystemSubscriptionPlanCards';
 import SubscribedContent from './components/SubscribedContent';
-import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 
 const MySubscriptions: React.FC<{
   app?: boolean;

@@ -7189,4 +7189,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可访问用户敏感数据或代用户执行操作，请按需申请",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授权范围变更已提交审核",
   "PC.Components.CommercialLicense.authorizationRequired": "请联系官方获取试用授权或商业授权",
+  "PC.Components.CreditInsufficientNotice.banner": "积分余额不足，请增购积分继续使用",
+  "PC.Components.CreditInsufficientNotice.upgrade": "增购积分",
+  "PC.Components.CreditInsufficientNotice.modalTitle": "增购积分",
+  "PC.Components.CreditInsufficientNotice.loadFailed": "套餐信息加载失败，请稍后重试",
+  "PC.Components.CreditInsufficientNotice.retry": "重试",
+  "PC.Components.CreditInsufficientNotice.historyExhausted": "积分已用完",
+  "PC.Components.CreditInsufficientNotice.historyInsufficient": "积分不足",
 };
