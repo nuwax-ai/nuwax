@@ -46,36 +46,3 @@
   color: #fff;
   box-shadow: none;
 }
-
-.plans-modal-wrap {
-  && {
-    overflow: hidden;
-  }
-
-  :global {
-    .ant-modal {
-      top: @marginLg;
-      padding-bottom: 0;
-    }
-
-    .ant-modal-content {
-      display: flex;
-      flex-direction: column;
-      max-height: calc(100vh - @marginLg * 2);
-    }
-
-    .ant-modal-body {
-      min-height: 0;
-      overflow: auto;
-    }
-  }
-}
-
-.modal-title-bar {
-  display: flex;
-  justify-content: center;
-}
-
-.plans-placeholder {
-  min-height: 160px;
-}
