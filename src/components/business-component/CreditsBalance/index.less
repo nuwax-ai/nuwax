@@ -11,11 +11,11 @@
 @infoIconMarginLeft: 4px;
 
 .credits-balance-wrapper {
-  // margin-left: calc(-1 * @marginXs);
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
+  margin-bottom: 10px;
 
   .container {
     display: flex;
@@ -29,7 +29,7 @@
     border-radius: @borderRadiusLg;
     background: @containerBgColor;
     border: @lineWidth @lineType @navDividerColor;
-    box-shadow: @balanceContainerShadow;
+    // box-shadow: @balanceContainerShadow;
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
 
@@ -93,7 +93,8 @@
 .top-up-btn {
   font-size: @fontSizeSm;
   border: none;
-  background: @btnBgColor;
+  // background: @btnBgColor;
+  background: transparent;
   color: @navSecondMenuTextSecondary;
   flex-shrink: 0;
 
