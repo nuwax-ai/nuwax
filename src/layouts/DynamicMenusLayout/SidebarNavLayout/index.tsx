@@ -4,6 +4,7 @@
  *   由 DynamicMenusLayout 分发器按 effectiveNavigationStyle 挂载，桌面端锁定此形态
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import ConditionRender from '@/components/ConditionRender';
 import ResizeDivider from '@/components/ResizableSplit/ResizeDivider';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
@@ -50,7 +51,6 @@ import {
   resolveSecondMenuVisibility,
 } from '../secondMenuPolicy';
 import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
-import SidebarCreditCard from '../SidebarCreditCard';
 import SidebarNavHeader, { PanelToggleSvg } from '../SidebarNavHeader';
 import SidebarSearchModal from '../SidebarSearchModal';
 import { resolveNavHighlightTab } from '../sidebarSelectionPolicy';
@@ -501,7 +501,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
-          <SidebarCreditCard />
+          <CreditsBalance showFooter={false} />
           <div className={cx(styles['sidebar-footer-row'])}>
             {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
             <User placement="topLeft">
