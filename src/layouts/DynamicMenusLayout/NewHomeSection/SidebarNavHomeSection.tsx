@@ -217,14 +217,18 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     >
       {aiOSCommercialEdition && (
         <>
-          {renderSectionHeader({
-            label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
-            collapsed: projectCollapsed,
-            onToggle: handleProjectHeaderClick,
-          })}
+          {/* NW-195：确认真无项目时整组隐藏（标题＋内容），不再占位展示空态。 */}
+          {!shell.projectEmpty &&
+            renderSectionHeader({
+              label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
+              collapsed: projectCollapsed,
+              onToggle: handleProjectHeaderClick,
+            })}
+          {/* hidden 而非卸载：ProjectPanel 必须保持挂载，其他入口新建项目后
+              上报链（计数/空态）才能驱动分组恢复显示。 */}
           <div
             className={cx(styles['project-list-section'])}
-            hidden={projectCollapsed}
+            hidden={projectCollapsed || shell.projectEmpty}
           >
             <ProjectPanel
               ref={projectPanelRef}
@@ -234,6 +238,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
               onConversationClick={shell.handleConversationClick}
               activeConversationId={shell.chatId}
               onActiveChildResolved={shell.setActiveProjectChildId}
+              onEmptyStateChange={shell.handleProjectEmptyChange}
             />
           </div>
         </>
