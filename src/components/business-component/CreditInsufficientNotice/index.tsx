@@ -8,19 +8,40 @@ import {
   useCreditInsufficientSnapshot,
 } from './creditInsufficientStore';
 import styles from './index.less';
-import SystemSubscriptionPlansModal from './SystemSubscriptionPlansModal';
 
 const cx = classNames.bind(styles);
+
+type PurchaseModalComponent = React.ComponentType<{
+  open: boolean;
+  onCancel: () => void;
+}>;
 
 interface CreditInsufficientBannerProps {
   placement: 'page' | 'input';
 }
 
-/** 积分不足提示条。升级套餐打开系统套餐弹窗。 */
+/** 积分不足提示条。增购积分打开积分增购弹窗，按需加载以免会话页静态依赖购买逻辑。 */
 const CreditInsufficientBanner: React.FC<CreditInsufficientBannerProps> = ({
   placement,
 }) => {
-  const [plansOpen, setPlansOpen] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [PurchaseModal, setPurchaseModal] =
+    useState<PurchaseModalComponent | null>(null);
+
+  const openPurchase = () => {
+    setPurchaseOpen(true);
+    if (PurchaseModal) {
+      return;
+    }
+    import('@/components/business-component/PurchaseModal')
+      .then((module) => {
+        setPurchaseModal(() => module.default);
+      })
+      .catch((error: unknown) => {
+        console.error('[CreditInsufficientNotice] 增购积分弹窗加载失败', error);
+        setPurchaseOpen(false);
+      });
+  };
 
   return (
     <>
@@ -34,17 +55,16 @@ const CreditInsufficientBanner: React.FC<CreditInsufficientBannerProps> = ({
           <InfoCircleOutlined className={cx(styles['banner-icon'])} />
           {dict('PC.Components.CreditInsufficientNotice.banner')}
         </span>
-        <Button
-          className={cx(styles['upgrade-button'])}
-          onClick={() => setPlansOpen(true)}
-        >
+        <Button className={cx(styles['upgrade-button'])} onClick={openPurchase}>
           {dict('PC.Components.CreditInsufficientNotice.upgrade')}
         </Button>
       </div>
-      <SystemSubscriptionPlansModal
-        open={plansOpen}
-        onClose={() => setPlansOpen(false)}
-      />
+      {PurchaseModal ? (
+        <PurchaseModal
+          open={purchaseOpen}
+          onCancel={() => setPurchaseOpen(false)}
+        />
+      ) : null}
     </>
   );
 };
