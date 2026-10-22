@@ -1958,6 +1958,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         className={cx(styles['terminal-console'])}
         conversationId={finalSelectedId === '-1' ? id : undefined}
         visible={active && terminalConsoleVisible}
+        // 切到文件预览只是隐藏面板。连接留到本组件卸载再断，避免前台进程被新 shell 换掉
+        preserveTerminalConnections
         wsUrl={terminalWsUrl}
         wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
         wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
