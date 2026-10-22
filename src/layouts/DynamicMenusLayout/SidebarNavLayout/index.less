@@ -57,13 +57,11 @@
       margin-right: @margin;
     }
 
-    // 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右）
+    // 底部栏：积分卡在上，用户行与菜单 icon 在下
     .sidebar-footer {
       flex-shrink: 0;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      flex-direction: column;
       padding: @paddingSm 14px 14px;
       margin-right: 0;
 
@@ -76,6 +74,14 @@
         flex: 1;
         min-width: 0;
       }
+    }
+
+    .sidebar-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
     }
 
     .footer-actions {
