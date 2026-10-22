@@ -96,6 +96,22 @@
       }
     }
 
+    // 提交登录中的 loading 反馈 / 验证码失效引导文案（NW-124 / NW-049）
+    .status-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 22px;
+      margin-bottom: 6px;
+      color: @colorTextSecondary;
+
+      &.status-error {
+        color: @colorError;
+      }
+    }
+
     // 跟在重新发送、图形验证码后面，宽度与验证码格子对齐
     .login-status {
       display: flex;

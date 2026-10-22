@@ -623,7 +623,7 @@ describe('ChatCore / ChatPage', () => {
     await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
   });
 
-  it('常驻页隐藏后恢复终端，手动关闭与淘汰重建都保持关闭', async () => {
+  it('常驻页隐藏只收起终端不销毁连接，切回复用实例恢复；手动关闭与淘汰重建都保持关闭', async () => {
     conversationInfoState.current = {
       id: 100,
       agent: { id: 200, type: AgentTypeEnum.TaskAgent },
@@ -640,21 +640,39 @@ describe('ChatCore / ChatPage', () => {
     };
     const view = render(<CachedChatPage route={route} active />);
     const header = () => mockLeftContent.mock.calls.at(-1)?.[0]?.headerProps;
+    /** 页面层下发给右侧面板的终端元素（保持挂载即连接保活） */
+    const terminalElement = () =>
+      mockLeftContent.mock.calls.at(-1)?.[0]?.fileSidebarProps
+        ?.bottomContent as any;
     await waitFor(() => expect(header()).toBeTruthy());
     act(() => header().handleOpenTerminalPanel());
     await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
-    view.rerender(<CachedChatPage route={route} active={false} />);
     await waitFor(() =>
       expect(
         conversationPageCacheManager.getEntry('chat:100')?.resources
-          .terminalConnected,
-      ).toBe(false),
+          .terminalMounted,
+      ).toBe(true),
     );
+    view.rerender(<CachedChatPage route={route} active={false} />);
+    // 隐藏页只收起面板：终端元素仍在树内（visible=false）且开启连接保活，
+    // 正在执行的终端任务不被页面切换打断
+    await waitFor(() => expect(terminalElement()?.props.visible).toBe(false));
+    expect(terminalElement()?.props.preserveTerminalConnections).toBe(true);
+    expect(
+      conversationPageCacheManager.getEntry('chat:100')?.resources
+        .terminalMounted,
+    ).toBe(true);
+    expect(
+      conversationPageCacheManager.getEntry('chat:100')?.resources
+        .terminalConnected,
+    ).toBe(false);
     expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
       'terminal',
     );
     view.rerender(<CachedChatPage route={route} active />);
     await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
+    // 切回复用同一实例恢复视图，终端面板重新可见
+    await waitFor(() => expect(terminalElement()?.props.visible).toBe(true));
     act(() => header().handleOpenTerminalPanel());
     await waitFor(() => expect(header().isTerminalIconActive).toBe(false));
     view.unmount();

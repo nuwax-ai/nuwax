@@ -81,6 +81,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     useState<boolean>(true);
   // 智能分段标识(新增)
   const [isAiSegment, setIsAiSegment] = useState<boolean>(false);
+  // 分段配置信息
+  const segmentConfigModelRef = useRef<SegmentConfigModel | null>(null);
   const { aiOSCommercialEdition } = useCommercialEdition();
   useEffect(() => {
     if (!aiOSCommercialEdition && isAiSegment) {
@@ -103,9 +105,6 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       ),
     );
   }, [allUploadFileList]);
-
-  // 分段配置信息
-  const segmentConfigModelRef = useRef<SegmentConfigModel | null>(null);
 
   // 清除重置操作
   const handleClear = () => {
@@ -295,6 +294,15 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     setCurrent(KnowledgeTextStepEnum.Data_Processing);
   };
 
+  // 全部文件上传结束后，至少有一个成功才可进入下一步；仍在上传或全部失败时不可点击
+  const localDocNextDisabled =
+    uploadFileList.length === 0 ||
+    allUploadFileList.some(
+      (info) =>
+        info.status !== UploadFileStatus.done &&
+        info.status !== UploadFileStatus.error,
+    );
+
   // Modal弹窗footer组件
   const footerComponent = () => {
     switch (current) {
@@ -309,7 +317,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
               type="primary"
               disabled={
                 type === KnowledgeTextImportEnum.Local_Doc
-                  ? uploadFileList?.length === 0
+                  ? localDocNextDisabled
                   : false
               }
             >

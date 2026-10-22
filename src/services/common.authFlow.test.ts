@@ -378,6 +378,69 @@ describe('匿名登录步骤的全局认证错误处理', () => {
     },
   );
 
+  describe('登录链路验证码失效报错的人话化（NW-049）', () => {
+    it.each(entryPoints)(
+      '%s 将发码接口的「校验参数异常」转为引导重发的提示',
+      async (entryPoint) => {
+        await expect(
+          handleBusinessError(
+            entryPoint,
+            '4000',
+            '/api/user/code/send',
+            '校验参数异常',
+          ),
+        ).rejects.toMatchObject({
+          name: 'BizError',
+          info: { message: '校验参数异常' },
+        });
+        // 原始开发向文案不得直接暴露给用户；抛给调用方的错误仍保留原文
+        expect(mocks.warning).not.toHaveBeenCalledWith('校验参数异常');
+        expect(mocks.warning).toHaveBeenCalledWith(
+          'PC.Pages.VerifyCode.sendFailedRetry',
+        );
+      },
+    );
+
+    it.each(entryPoints)(
+      '%s 将验证码登录接口的「校验参数异常」转为引导重新获取的提示',
+      async (entryPoint) => {
+        await expect(
+          handleBusinessError(
+            entryPoint,
+            '4000',
+            '/api/user/codeLogin',
+            '校验参数异常',
+          ),
+        ).rejects.toMatchObject({
+          name: 'BizError',
+          info: { message: '校验参数异常' },
+        });
+        expect(mocks.warning).not.toHaveBeenCalledWith('校验参数异常');
+        expect(mocks.warning).toHaveBeenCalledWith(
+          'PC.Pages.VerifyCode.codeInvalidTip',
+        );
+      },
+    );
+
+    it.each(entryPoints)(
+      '%s 对非登录发码链路接口的同类报错保持原文案',
+      async (entryPoint) => {
+        await expect(
+          handleBusinessError(
+            entryPoint,
+            '4000',
+            '/api/user/passwordLogin',
+            '校验参数异常',
+          ),
+        ).rejects.toMatchObject({
+          name: 'BizError',
+          info: { message: '校验参数异常' },
+        });
+        expect(mocks.warning).toHaveBeenCalledWith('校验参数异常');
+      },
+    );
+  });
+
   describe('失败请求向调用方保留原始错误', () => {
     it('业务权限拒绝保留 code、message、tid 和原错误对象', () => {
       const error = requestConfig.errorConfig!.errorThrower!({

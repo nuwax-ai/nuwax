@@ -37,7 +37,7 @@
   margin: 0 auto;
   max-width: 800px;
   gap: @marginXxs;
-  padding: @padding @padding 12px;
+  padding: 12px @padding;
   border-radius: 20px;
   background: @colorBgContainer;
   box-sizing: border-box;
@@ -64,7 +64,7 @@
     }
 
     .input-wrapper {
-      padding: @padding @padding @padding;
+      padding: @paddingSm @padding @padding;
       display: flex;
       flex-direction: column;
       gap: @marginXxs;
@@ -106,11 +106,12 @@
   }
 
   /* 行首回执 pill 行（专家/召唤专家/首页项目类型）：内联占据输入框最前面，
-     编辑器文本经 inlinePrefixWidth 缩进到 pill 之后；pill 本体复用 expert-pill 样式 */
+     编辑器文本经 inlinePrefixWidth 缩进到 pill 之后；pill 本体复用 expert-pill 样式。
+     left 与编辑器 padding-left（2px，NW-070 收紧后）对齐，保证 pill 与正文同锚点 */
   .input-prefix-pills {
     position: absolute;
-    top: 4px;
-    left: @paddingSm;
+    top: 3px;
+    left: 2px;
     z-index: 2;
     display: flex;
     align-items: center;
@@ -120,8 +121,8 @@
 
   .selected-tag {
     position: absolute;
-    top: 4px;
-    left: @paddingSm;
+    top: 3px;
+    left: 2px;
     z-index: 2;
     display: inline-flex;
     align-items: center;

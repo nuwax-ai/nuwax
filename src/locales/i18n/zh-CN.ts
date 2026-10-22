@@ -1,6 +1,17 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "完善个人信息",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "欢迎！为自己设置一个昵称，让大家更容易认识你。也可以上传头像；稍后可在「个人中心」随时修改。",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "头像（可选）",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "昵称",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder": "请输入昵称",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired": "请输入昵称",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "昵称不能超过 50 个字符",
+  "PC.Components.NicknameOnboardingGuide.skip": "跳过",
+  "PC.Components.NicknameOnboardingGuide.saveFailed": "保存失败，请重试",
   "PC.Components.TimedPeriodSelector.customPeriod": "自定义周期",
   "PC.Pages.Login.hostSessionSyncFailed": "客户端登录会话同步失败，请重试或升级客户端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "账号绑定信息加载失败，请刷新重试",
@@ -284,6 +295,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ChatTitleActions.uncollectFailed": "取消收藏失败",
   "PC.Components.ChatTitleActions.uncollected": "已取消收藏",
   "PC.Components.ConversationQuickNav.tooltip": "会话快捷导航",
+  "PC.Components.ConversationRendererV2.engineInternalError": "智能体引擎启动异常，请稍后重试或重新进入会话",
   "PC.Components.ConversationRendererV2.traceTitleProcessOnly": "执行过程",
   "PC.Components.ConversationRendererV2.traceMetricTools": "{0} 次工具调用",
   "PC.Components.ConversationRendererV2.traceMetricMessages": "{0} 条消息",
@@ -353,9 +365,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.timeMinute": "分",
   "PC.Components.ConversationRendererV2.timeSecond": "秒",
   "PC.Components.ConversationRendererV2.hiddenEntry": "另有 {0} 项已隐藏",
-  "PC.Components.ConversationRendererV2.answerStopped": "本轮已停止，未生成回答",
-  "PC.Components.ConversationRendererV2.answerError": "本轮执行出错",
-  "PC.Components.ConversationRendererV2.answerEmpty": "本轮未生成回答内容",
+  "PC.Components.ConversationRendererV2.answerStopped": "已停止生成",
+  "PC.Components.ConversationRendererV2.answerStoppedWithTools": "已停止生成（已完成 {0} 项工具调用）",
+  "PC.Components.ConversationRendererV2.answerError": "响应中断，请稍后重试",
+  "PC.Components.ConversationRendererV2.answerErrorWithTools": "响应已中断（已完成 {0} 项工具调用，可继续追问或重试）",
+  "PC.Components.ConversationRendererV2.answerEmpty": "暂无响应内容，请重试",
   "PC.Components.ConversationRendererV2.userBubbleExpand": "展开",
   "PC.Components.ConversationRendererV2.userBubbleCollapse": "收起",
 
@@ -2743,6 +2757,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "成功发布成组件",
   "PC.Pages.AppDevIndex.publishFailed": "发布失败",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "发布失败,先尝试解决错误后重试",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "项目构建失败,已取消提交发布申请;请修复代码问题后重试",
   "PC.Pages.AppDevIndex.selectFile": "选择文件",
   "PC.Pages.AppDevIndex.selectFileFirst": "请先选择文件",
   "PC.Pages.AppDevIndex.selectedFile": "已选择文件",
@@ -5764,12 +5779,14 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.UserManage.UserViewMenuModal.menuId": "菜单 {0}",
   "PC.Pages.UserManage.UserViewMenuModal.resourceId": "资源 {0}",
   "PC.Pages.UserManage.UserViewMenuModal.viewMenuResourcePermission": "查看菜单资源权限",
+  "PC.Pages.VerifyCode.codeInvalidTip": "验证码已失效或错误，请重新获取",
   "PC.Pages.VerifyCode.codeSentTo": "验证码已发送至 {0}{1}",
   "PC.Pages.VerifyCode.countdownSuffix": " 秒后",
   "PC.Pages.VerifyCode.inputEmailCode": "请输入邮箱验证码",
   "PC.Pages.VerifyCode.inputSmsCode": "请输入短信验证码",
-  "PC.Pages.VerifyCode.loggingIn": "登录中...",
+  "PC.Pages.VerifyCode.loggingIn": "正在登录，请稍候…",
   "PC.Pages.VerifyCode.resend": "重新发送",
+  "PC.Pages.VerifyCode.sendFailedRetry": "验证码发送失败，请点击重新发送",
   "PC.Pages.VerifyCode.yourEmail": "你的邮箱",
   "PC.Pages.VerifyCode.yourPhone": "手机号",
   "PC.Routes.adminSubscriptionCredits": "订阅与积分（管理员）",
@@ -6330,6 +6347,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "已结算",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "订阅",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "模型调用",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "应用支付",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "工具调用",
 
   // ── 系统管理 - 订阅详情 Drawer ──────────────────────────

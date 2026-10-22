@@ -321,13 +321,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
         loading={loading}
         rowHoverable={false}
         rowSelection={rowSelection}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) =>
-            dict('PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments', total),
-        }}
+        pagination={false}
         scroll={{ x: 'max-content' }}
       />
     </div>

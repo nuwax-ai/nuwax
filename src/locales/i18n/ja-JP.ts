@@ -1,6 +1,20 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "プロフィールを設定",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "ようこそ！ニックネームを設定して、みんなに自分を知ってもらいましょう。アイコンもアップロードできます。後で「個人センター」からいつでも変更できます。",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "アイコン（任意）",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "ニックネーム",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder":
+    "ニックネームを入力してください",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired":
+    "ニックネームを入力してください",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "ニックネームは50文字以内で入力してください",
+  "PC.Components.NicknameOnboardingGuide.skip": "スキップ",
+  "PC.Components.NicknameOnboardingGuide.saveFailed":
+    "保存に失敗しました。もう一度お試しください",
   "PC.Components.TimedPeriodSelector.customPeriod": "カスタム周期",
   "PC.Pages.Login.hostSessionSyncFailed": "デスクトップのログイン状態を同期できませんでした。再試行するか、クライアントを更新してください。",
   "PC.Layouts.Setting.AccountBind.loadFailed": "連携アカウント情報を読み込めません。更新して再試行してください。",
@@ -2684,6 +2698,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "コンポーネントとして正常に公開されました",
   "PC.Pages.AppDevIndex.publishFailed": "公開に失敗しました",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "公開に失敗しました。エラーを修正して再試行してください",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "プロジェクトのビルドに失敗したため、公開申請の送信を中止しました。コードの問題を修正してから再試行してください",
   "PC.Pages.AppDevIndex.selectedFile": "選択したファイル",
   "PC.Pages.AppDevIndex.selectedFileWithName": "選択したファイル: {0}",
   "PC.Pages.AppDevIndex.selectFile": "ファイルの選択",
@@ -5492,12 +5507,14 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.UserManage.UserViewMenuModal.menuId": "メニュー {0}",
   "PC.Pages.UserManage.UserViewMenuModal.resourceId": "リソース {0}",
   "PC.Pages.UserManage.UserViewMenuModal.viewMenuResourcePermission": "「表示」メニューのリソース権限",
+  "PC.Pages.VerifyCode.codeInvalidTip": "認証コードが無効か誤っています。再取得してください",
   "PC.Pages.VerifyCode.codeSentTo": "検証コードが {0}{1} に送信されました",
   "PC.Pages.VerifyCode.countdownSuffix": "後ほど",
   "PC.Pages.VerifyCode.inputEmailCode": "メール認証コードを入力してください",
   "PC.Pages.VerifyCode.inputSmsCode": "SMS 確認コードを入力してください",
-  "PC.Pages.VerifyCode.loggingIn": "ログイン中...",
+  "PC.Pages.VerifyCode.loggingIn": "ログイン中です。しばらくお待ちください…",
   "PC.Pages.VerifyCode.resend": "再送信",
+  "PC.Pages.VerifyCode.sendFailedRetry": "認証コードの送信に失敗しました。再送信をクリックしてください",
   "PC.Pages.VerifyCode.yourEmail": "あなたのメールアドレス",
   "PC.Pages.VerifyCode.yourPhone": "電話番号",
   "PC.Routes.categoryManagement": "カテゴリ管理",
@@ -6176,6 +6193,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - Earnings Details",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "Model Call",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "Subscription",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "App Payment",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "Tool Call",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colAccountNo": "Account No.",
   "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colBankName": "Bank Name",

@@ -231,13 +231,14 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   /** 底部控制台布局模式（collapsed 时停止日志轮询） */
   const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
     useState<ConsoleLayoutMode>('collapsed');
-  /** 页面切走后卸掉终端，并清掉上次展开信号，避免切回时终端自己打开 */
+  /** 页面切走后折叠终端面板（连接保活不卸载），并清掉上次展开信号，避免切回时终端自己展开 */
   useLayoutEffect(() => {
     if (active) {
       return;
     }
     setDevConsoleExpandSignal(0);
-    setDevConsoleCollapseSignal(0);
+    // 面板不再卸载：发折叠信号让常驻实例收起，切回时不停留在隐藏前的展开态
+    setDevConsoleCollapseSignal((n) => n + 1);
     setDevConsoleLayoutResetSignal(0);
     setDevConsoleLayoutMode('collapsed');
     setDevConsoleActiveTab('terminal');
@@ -1039,6 +1040,12 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       data,
       'modify',
     );
+    // NW-123：文件树滞后/未加载时映射结果为空，files:[] 会被后端以
+    // "files is invalid" 拒绝并弹全局橙色失败——与提交流程的绿色成功提示
+    // 同屏自相矛盾。无可保存内容时直接跳过请求（与防抖单文件保存同口径）。
+    if (updatedFilesList.length === 0) {
+      return false;
+    }
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: updatedFilesList as UpdateFileInfo[],
@@ -1875,39 +1882,37 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             />
           </div>
 
-          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
-          {active ? (
-            <ConversationBottomConsole
-              // 在ConversationAgent中，conversationId 为 queryConversationId
-              conversationId={
-                finalSelectedComputerId === '-1'
-                  ? queryConversationId
-                  : undefined
-              }
-              visible={showDevConsole}
-              wsUrl={terminalWsUrl}
-              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-              layoutResetSignal={devConsoleLayoutResetSignal}
-              expandSignal={devConsoleExpandSignal}
-              collapseSignal={devConsoleCollapseSignal}
-              onLayoutModeChange={setDevConsoleLayoutMode}
-              onActiveTabChange={(tab) => {
-                setDevConsoleActiveTab(tab);
-              }}
-              devLog={{
-                logs: devLogs.logs,
-                isLoading: devLogs.isLoading,
-                lastLine: devLogs.lastLine,
-              }}
-              logsExtra={
-                <DevLogActions
-                  onRefresh={devLogs.refreshLogs}
-                  onClear={devLogs.clearLogs}
-                />
-              }
-            />
-          ) : null}
+          {/* 底部终端：页面隐藏只收起面板不卸载（连接保活），切回复用实例恢复视图 */}
+          <ConversationBottomConsole
+            // 在ConversationAgent中，conversationId 为 queryConversationId
+            conversationId={
+              finalSelectedComputerId === '-1' ? queryConversationId : undefined
+            }
+            visible={active && showDevConsole}
+            // 预览文件 / 桌面切换与页面切走只隐藏面板，不断开终端连接
+            preserveTerminalConnections
+            wsUrl={terminalWsUrl}
+            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+            layoutResetSignal={devConsoleLayoutResetSignal}
+            expandSignal={devConsoleExpandSignal}
+            collapseSignal={devConsoleCollapseSignal}
+            onLayoutModeChange={setDevConsoleLayoutMode}
+            onActiveTabChange={(tab) => {
+              setDevConsoleActiveTab(tab);
+            }}
+            devLog={{
+              logs: devLogs.logs,
+              isLoading: devLogs.isLoading,
+              lastLine: devLogs.lastLine,
+            }}
+            logsExtra={
+              <DevLogActions
+                onRefresh={devLogs.refreshLogs}
+                onClear={devLogs.clearLogs}
+              />
+            }
+          />
         </div>
       </div>
     </div>

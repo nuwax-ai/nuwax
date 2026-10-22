@@ -21,6 +21,7 @@ import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
+import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { Button, Input, InputRef, message, Spin } from 'antd';
 import classNames from 'classnames';
@@ -74,6 +75,44 @@ const VerifyCode: React.FC = () => {
 
   const { runSendCode, sendLoading } = useSendCode();
 
+  // ---- 登录提交锁（NW-124）：请求与成功收尾（同步会话/菜单/i18n）期间页面持续反馈并防重复提交 ----
+  const [loginPending, setLoginPending] = useState<boolean>(false);
+  const loginPendingRef = useRef<boolean>(false);
+
+  const settleLoginPending = () => {
+    loginPendingRef.current = false;
+    setLoginPending(false);
+  };
+
+  // ---- 重发流程锁（U-DK/PC1）：从点击重发到本次发码请求结束期间禁用重发 ----
+  // 覆盖阿里云滑窗 pending 期（倒计时尚未开始）与发码请求期，防连点重复发码。
+  const [resendBusy, setResendBusy] = useState<boolean>(false);
+  const resendBusyRef = useRef<boolean>(false);
+  const resendBusyTimerRef = useRef<number | null>(null);
+
+  const releaseResendBusy = useCallback(() => {
+    if (resendBusyTimerRef.current !== null) {
+      window.clearTimeout(resendBusyTimerRef.current);
+      resendBusyTimerRef.current = null;
+    }
+    if (!resendBusyRef.current) return;
+    resendBusyRef.current = false;
+    setResendBusy(false);
+  }, []);
+
+  const acquireResendBusy = useCallback(() => {
+    resendBusyRef.current = true;
+    setResendBusy(true);
+    // 用户放弃滑块时不会有任何回调，超时兜底解锁，避免重发按钮永久卡死
+    if (resendBusyTimerRef.current !== null) {
+      window.clearTimeout(resendBusyTimerRef.current);
+    }
+    resendBusyTimerRef.current = window.setTimeout(() => {
+      resendBusyTimerRef.current = null;
+      releaseResendBusy();
+    }, 15_000);
+  }, [releaseResendBusy]);
+
   const handleClick = () => {
     inputRef.current!.focus({
       preventScroll: true,
@@ -104,45 +143,79 @@ const VerifyCode: React.FC = () => {
         token,
         redirect: responseRedirectUrl,
       } = result;
-      const authResult = await finishBusinessLogin(token);
-      if (authResult !== 'ready') {
-        message.error(
-          authResult === 'missing-dev-token'
-            ? '登录接口未返回本地调试所需的 Token'
-            : '客户端登录会话同步失败，请升级客户端后重试',
-        );
-        resetCodeInput();
-        setLoginLoading(false);
-        return;
-      }
-      localStorage.setItem(EXPIRE_DATE, expireDate);
-      localStorage.setItem(PHONE, params[0].phone);
       try {
-        const latestUserInfo = await UserService.refreshUserInfo();
-        await syncLangFromUserInfo(latestUserInfo);
-      } catch (error) {
-        console.error('[VerifyCode] Sync language after login failed:', error);
-      }
-      // 登录成功后强制刷新菜单数据（可能切换了账号）
-      await loadMenus(true);
-      // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
-      setLoginLoading(false);
-      if (!resetPass) {
-        history.push('/set-password');
-      } else {
-        navigateAfterLogin(
-          history,
-          searchParams.get('redirect'),
-          responseRedirectUrl,
-          navigateToAuthUrl,
-        );
+        const authResult = await finishBusinessLogin(token);
+        if (authResult !== 'ready') {
+          message.error(
+            authResult === 'missing-dev-token'
+              ? '登录接口未返回本地调试所需的 Token'
+              : '客户端登录会话同步失败，请升级客户端后重试',
+          );
+          resetCodeInput();
+          setLoginLoading(false);
+          return;
+        }
+        localStorage.setItem(EXPIRE_DATE, expireDate);
+        localStorage.setItem(PHONE, params[0].phone);
+        try {
+          const latestUserInfo = await UserService.refreshUserInfo();
+          await syncLangFromUserInfo(latestUserInfo);
+        } catch (error) {
+          console.error(
+            '[VerifyCode] Sync language after login failed:',
+            error,
+          );
+        }
+        // 登录成功后强制刷新菜单数据（可能切换了账号）
+        await loadMenus(true);
+        // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+        setLoginLoading(false);
+        // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+        if (!resetPass) {
+          history.push('/set-password');
+        } else {
+          navigateAfterLogin(
+            history,
+            searchParams.get('redirect'),
+            responseRedirectUrl,
+            navigateToAuthUrl,
+          );
+        }
+      } finally {
+        // 成功路径导航离开本页；提前 return 的失败路径在此恢复提交能力
+        settleLoginPending();
       }
     },
-    onError: () => {
+    onError: (error: any) => {
       resetCodeInput();
       setLoginLoading(false);
+      settleLoginPending();
+      // 验证码失效（后端原始报错如「校验参数异常」）已由请求层转成可懂 toast；
+      // 页面清空已输入的码并放开重发冷却，引导重新获取后重试
+      const rawMessage = error?.info?.message ?? error?.message;
+      if (isLoginCodeInvalidError(rawMessage)) {
+        setCodeString('');
+        setErrorString(dict('PC.Pages.VerifyCode.codeInvalidTip'));
+        onClearTimer();
+        setCountDown(0);
+      }
     },
   });
+
+  /**
+   * 触发验证码登录。输入填满自动提交、回车与按钮点击共用此入口；
+   * pending 期间（含成功后的长收尾）再次触发一律忽略，防止重复登录请求。
+   */
+  const submitLoginCode = useCallback(
+    (code: string) => {
+      if (loginPendingRef.current) return;
+      loginPendingRef.current = true;
+      setLoginPending(true);
+      setErrorString('');
+      runLoginCode({ code, phoneOrEmail });
+    },
+    [phoneOrEmail, runLoginCode],
+  );
 
   const codes = useMemo(() => {
     const newCodes = DefaultCode.slice(0);
@@ -169,20 +242,20 @@ const VerifyCode: React.FC = () => {
       if (_codeString.length < VERIFICATION_CODE_LEN && errorString) {
         setErrorString('');
       }
-      // 验证码输入完毕后自动触发登录
-      if (_codeString.length === VERIFICATION_CODE_LEN && !sendLoading) {
+      // 验证码输入完毕后自动触发登录；登录 pending 或发码中不重复触发
+      if (
+        _codeString.length === VERIFICATION_CODE_LEN &&
+        !sendLoading &&
+        !loginPendingRef.current
+      ) {
         // 使用setTimeout确保状态更新完成后再执行登录
         setTimeout(() => {
-          const data = {
-            code: _codeString,
-            phoneOrEmail,
-          };
           setLoginLoading(true);
-          runLoginCode(data);
+          submitLoginCode(_codeString);
         }, 100);
       }
     },
-    [errorString, sendLoading, phoneOrEmail, runLoginCode],
+    [errorString, sendLoading, submitLoginCode],
   );
 
   // 发送验证码
@@ -204,13 +277,18 @@ const VerifyCode: React.FC = () => {
       }),
     };
     // 返回 Promise，让验证码组件在请求结束后再刷新实例
-    return runSendCode(_params).catch((error: unknown) => {
-      // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
-      onClearTimer();
-      setCountDown(0);
-      resendCaptcha.refresh();
-      throw error;
-    });
+    return runSendCode(_params)
+      .catch((error: unknown) => {
+        // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
+        onClearTimer();
+        setCountDown(0);
+        resendCaptcha.refresh();
+        throw error;
+      })
+      .finally(() => {
+        // 无论成败都解除重发锁（自动发码未持锁时为 no-op）
+        releaseResendBusy();
+      });
   };
 
   const isNeedAliyunCaptcha = () => {
@@ -262,12 +340,9 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleVerify = () => {
-    const data = {
-      code: codeString,
-      phoneOrEmail,
-    };
+    if (codeString?.length !== VERIFICATION_CODE_LEN) return;
     setLoginLoading(true);
-    runLoginCode(data);
+    submitLoginCode(codeString);
   };
 
   const handleSendCodeInit = () => {
@@ -296,14 +371,16 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleClickReSendCode = useCallback(() => {
-    if (countDown > 0) {
+    // 冷却期内与重发流程进行中（阿里云滑窗/发码请求）都禁止再次触发，防连点重复发码
+    if (countDown > 0 || resendBusyRef.current) {
       return;
     }
     const imageCaptcha = resendCaptcha.take();
     if (!imageCaptcha) return;
     pendingCaptchaRef.current = imageCaptcha;
+    acquireResendBusy();
     handleSendCodeInit();
-  }, [tenantConfigInfo, handlerSuccess]);
+  }, [tenantConfigInfo, countDown, acquireResendBusy]);
 
   const handleEnter = useCallback(
     (e: KeyboardEvent): void => {
@@ -311,10 +388,11 @@ const VerifyCode: React.FC = () => {
         if (codeString?.length !== VERIFICATION_CODE_LEN || sendLoading) {
           return;
         }
+        // 重复回车由提交锁（loginPendingRef）挡住
         handleVerify();
       }
     },
-    [codeString, sendLoading],
+    [codeString, sendLoading, handleVerify],
   );
 
   useEffect(() => {
@@ -323,6 +401,16 @@ const VerifyCode: React.FC = () => {
       window.removeEventListener('keyup', handleEnter);
     };
   }, [handleEnter]);
+
+  // 卸载清理重发锁的超时句柄，避免泄漏后在已卸载组件上置状态
+  useEffect(() => {
+    return () => {
+      if (resendBusyTimerRef.current !== null) {
+        window.clearTimeout(resendBusyTimerRef.current);
+        resendBusyTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <BasicLayout>
@@ -370,6 +458,24 @@ const VerifyCode: React.FC = () => {
               );
             })}
           </div>
+          {/* 提交后即时反馈（NW-124）：登录全程显示「正在登录」；验证码失效时显示引导文案 */}
+          {(loginPending || errorString) && (
+            <div
+              className={cx(
+                styles['status-line'],
+                errorString && !loginPending ? styles['status-error'] : null,
+              )}
+            >
+              {loginPending ? (
+                <>
+                  <Spin size="small" />
+                  {dict('PC.Pages.VerifyCode.loggingIn')}
+                </>
+              ) : (
+                errorString
+              )}
+            </div>
+          )}
           <div className={cx(styles['count-down-container'])}>
             {countDown > 0 && (
               <span className={styles['count-down']}>
@@ -379,7 +485,7 @@ const VerifyCode: React.FC = () => {
             <span
               className={cx(
                 styles['resend-btn'],
-                countDown > 0 ? null : styles.active,
+                countDown > 0 || resendBusy ? null : styles.active,
                 'cursor-pointer',
               )}
               onClick={handleClickReSendCode}

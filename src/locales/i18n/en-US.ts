@@ -1,6 +1,20 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.NicknameOnboardingGuide.title": "Set up your profile",
+  "PC.Components.NicknameOnboardingGuide.description":
+    "Welcome! Set a nickname so people can recognize you. You can also upload an avatar, and change both anytime later in Profile.",
+  "PC.Components.NicknameOnboardingGuide.avatarLabel": "Avatar (optional)",
+  "PC.Components.NicknameOnboardingGuide.nickNameLabel": "Nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNamePlaceholder":
+    "Please enter a nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNameRequired":
+    "Please enter a nickname",
+  "PC.Components.NicknameOnboardingGuide.nickNameTooLong":
+    "Nickname cannot exceed 50 characters",
+  "PC.Components.NicknameOnboardingGuide.skip": "Skip",
+  "PC.Components.NicknameOnboardingGuide.saveFailed":
+    "Save failed. Please retry.",
   "PC.Components.TimedPeriodSelector.customPeriod": "Custom schedule",
   "PC.Pages.Login.hostSessionSyncFailed": "Could not sync the desktop login session. Retry or update the client.",
   "PC.Layouts.Setting.AccountBind.loadFailed": "Unable to load linked accounts. Please refresh and retry.",
@@ -284,6 +298,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatTitleActions.uncollectFailed": "Failed to remove from favorites",
   "PC.Components.ChatTitleActions.uncollected": "Removed from favorites",
   "PC.Components.ConversationQuickNav.tooltip": "Conversation quick navigation",
+  "PC.Components.ConversationRendererV2.engineInternalError": "The agent engine failed to start. Please retry later or reopen the conversation.",
   "PC.Components.ConversationRendererV2.traceTitleProcessOnly": "Work trace",
   "PC.Components.ConversationRendererV2.traceMetricTools": "{0} tool calls",
   "PC.Components.ConversationRendererV2.traceMetricMessages": "{0} messages",
@@ -353,9 +368,11 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationRendererV2.timeMinute": "m",
   "PC.Components.ConversationRendererV2.timeSecond": "s",
   "PC.Components.ConversationRendererV2.hiddenEntry": "{0} items hidden",
-  "PC.Components.ConversationRendererV2.answerStopped": "This turn was stopped before an answer was produced",
-  "PC.Components.ConversationRendererV2.answerError": "This turn ended with an error",
-  "PC.Components.ConversationRendererV2.answerEmpty": "No answer content was generated this turn",
+  "PC.Components.ConversationRendererV2.answerStopped": "Generation stopped",
+  "PC.Components.ConversationRendererV2.answerStoppedWithTools": "Generation stopped ({0} tool calls completed)",
+  "PC.Components.ConversationRendererV2.answerError": "Response interrupted, please try again",
+  "PC.Components.ConversationRendererV2.answerErrorWithTools": "Response interrupted ({0} tool calls completed, you can follow up or retry)",
+  "PC.Components.ConversationRendererV2.answerEmpty": "No response content yet, please try again",
   "PC.Components.ConversationRendererV2.userBubbleExpand": "Show more",
   "PC.Components.ConversationRendererV2.userBubbleCollapse": "Show less",
 
@@ -2744,6 +2761,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "Published as Component Successfully",
   "PC.Pages.AppDevIndex.publishFailed": "Publish failed",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "Publish failed. Please fix the errors and try again",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "Project build failed. The publish request was not submitted. Fix the code issues and try again",
   "PC.Pages.AppDevIndex.selectFile": "Select File",
   "PC.Pages.AppDevIndex.selectFileFirst": "Please select a file first",
   "PC.Pages.AppDevIndex.selectedFile": "Selected File",
@@ -5766,12 +5784,14 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UserManage.UserViewMenuModal.menuId": "Menu {0}",
   "PC.Pages.UserManage.UserViewMenuModal.resourceId": "Resource {0}",
   "PC.Pages.UserManage.UserViewMenuModal.viewMenuResourcePermission": "View Menu Resource Permissions",
+  "PC.Pages.VerifyCode.codeInvalidTip": "The verification code is invalid or incorrect. Please get a new one",
   "PC.Pages.VerifyCode.codeSentTo": "Verification code sent to {0}{1}",
   "PC.Pages.VerifyCode.countdownSuffix": "s later",
   "PC.Pages.VerifyCode.inputEmailCode": "Enter email verification code",
   "PC.Pages.VerifyCode.inputSmsCode": "Enter SMS verification code",
-  "PC.Pages.VerifyCode.loggingIn": "Logging in...",
+  "PC.Pages.VerifyCode.loggingIn": "Signing in, please wait…",
   "PC.Pages.VerifyCode.resend": "Resend",
+  "PC.Pages.VerifyCode.sendFailedRetry": "Failed to send the verification code. Please click Resend",
   "PC.Pages.VerifyCode.yourEmail": "your email ",
   "PC.Pages.VerifyCode.yourPhone": "phone number ",
   "PC.Routes.adminSubscriptionCredits": "Subscriptions & Credits (Admin)",
@@ -6350,6 +6370,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "Settled",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "Subscription",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "Model Call",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay": "App Payment",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "Tool Call",
 
 
