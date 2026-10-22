@@ -50,6 +50,7 @@ import {
   resolveSecondMenuVisibility,
 } from '../secondMenuPolicy';
 import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
+import SidebarCreditCard from '../SidebarCreditCard';
 import SidebarNavHeader, { PanelToggleSvg } from '../SidebarNavHeader';
 import SidebarSearchModal from '../SidebarSearchModal';
 import { resolveNavHighlightTab } from '../sidebarSelectionPolicy';
@@ -500,68 +501,71 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
-          {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
-          <User placement="topLeft">
-            <div
-              ref={userRowRef}
-              className={cx(styles['sidebar-user-row'])}
-              title={userName}
-              onClick={() => setOpenAdmin(true)}
-            >
-              <UserAvatar
-                avatar={userInfo?.avatar}
+          <SidebarCreditCard />
+          <div className={cx(styles['sidebar-footer-row'])}>
+            {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
+            <User placement="topLeft">
+              <div
+                ref={userRowRef}
+                className={cx(styles['sidebar-user-row'])}
+                title={userName}
                 onClick={() => setOpenAdmin(true)}
-              />
-              <span
-                className={cx(styles['sidebar-user-name'])}
-                style={{ display: showUserName ? undefined : 'none' }}
               >
-                {userName}
-              </span>
-              {/* 与姓名同字体的 2em 标尺不参与 flex 排列，隐藏姓名即回收间隔。 */}
-              <span
-                ref={nameThresholdRef}
-                className={cx(styles['sidebar-user-name'])}
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  width: '2em',
-                  height: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              />
+                <UserAvatar
+                  avatar={userInfo?.avatar}
+                  onClick={() => setOpenAdmin(true)}
+                />
+                <span
+                  className={cx(styles['sidebar-user-name'])}
+                  style={{ display: showUserName ? undefined : 'none' }}
+                >
+                  {userName}
+                </span>
+                {/* 与姓名同字体的 2em 标尺不参与 flex 排列，隐藏姓名即回收间隔。 */}
+                <span
+                  ref={nameThresholdRef}
+                  className={cx(styles['sidebar-user-name'])}
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    width: '2em',
+                    height: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </div>
+            </User>
+            <div className={cx(styles['footer-actions'])}>
+              {(otherMenus || []).map((menu: MenuItemDto) => (
+                <Tooltip key={menu.code} title={menu.name} arrow={false}>
+                  <div
+                    className={cx(styles['footer-action-btn'])}
+                    onClick={() => handleUserClick(menu)}
+                  >
+                    {menu.icon ? (
+                      <SvgIcon name={menu.icon} />
+                    ) : menu.code === MENU_CODE_MORE_PAGE ? (
+                      /* 更多：后端未配图标，按原型以 "..." 呈现 */
+                      <EllipsisOutlined />
+                    ) : null}
+                  </div>
+                </Tooltip>
+              ))}
+              {showClientSettings && (
+                <Tooltip
+                  title={dict('PC.Components.UserOperate.clientSettings')}
+                  arrow={false}
+                >
+                  <div
+                    className={cx(styles['footer-action-btn'])}
+                    onClick={handleOpenClientSettings}
+                  >
+                    <SettingOutlined />
+                  </div>
+                </Tooltip>
+              )}
             </div>
-          </User>
-          <div className={cx(styles['footer-actions'])}>
-            {(otherMenus || []).map((menu: MenuItemDto) => (
-              <Tooltip key={menu.code} title={menu.name} arrow={false}>
-                <div
-                  className={cx(styles['footer-action-btn'])}
-                  onClick={() => handleUserClick(menu)}
-                >
-                  {menu.icon ? (
-                    <SvgIcon name={menu.icon} />
-                  ) : menu.code === MENU_CODE_MORE_PAGE ? (
-                    /* 更多：后端未配图标，按原型以 "..." 呈现 */
-                    <EllipsisOutlined />
-                  ) : null}
-                </div>
-              </Tooltip>
-            ))}
-            {showClientSettings && (
-              <Tooltip
-                title={dict('PC.Components.UserOperate.clientSettings')}
-                arrow={false}
-              >
-                <div
-                  className={cx(styles['footer-action-btn'])}
-                  onClick={handleOpenClientSettings}
-                >
-                  <SettingOutlined />
-                </div>
-              </Tooltip>
-            )}
           </div>
         </div>
       </div>
