@@ -9,6 +9,7 @@ import {
   CreditInsufficientScope,
   CreditInsufficientSessionPageBanner,
   hasCreditDeductionInsufficientError,
+  useCreditBalancePositive,
   useHistoryCreditExhausted,
   useReportCreditInsufficient,
 } from '@/components/business-component/CreditInsufficientNotice';
@@ -420,14 +421,23 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     ],
   );
   const effectiveOpenUiSidecar = onOpenOpenUiSidecar ?? defaultOpenUiSidecar;
-  // 两条独立触发：本轮 FINAL_RESULT 含扣减失败文案或 NW_CREDIT_INSUFFICIENT，或历史最后一条含「积分已用完」/「积分不足」且余额仍为 0。
-  // 任一成立就通知页面顶部和输入框上方的提示条，避免只覆盖实时会话、漏掉刷新后的历史。
+  // 两条独立触发：本轮 FINAL_RESULT 含扣减失败文案、NW_CREDIT_INSUFFICIENT，或 errorReason 为 CREDIT_INSUFFICIENT；或历史最后一条含「积分已用完」/「积分不足」且余额仍为 0。
+  // 任一成立就通知页面顶部和输入框上方的提示条。积分轮询发现 totalCredit > 0 后收起。
   const historyCreditExhausted = useHistoryCreditExhausted(
     messageList,
     conversationId,
   );
+
+  // 当前余额是否大于 0
+  const creditBalancePositive = useCreditBalancePositive();
+
+  // 是否需要提示积分不足
   const creditInsufficient =
-    hasCreditDeductionInsufficientError(messageList) || historyCreditExhausted;
+    (hasCreditDeductionInsufficientError(messageList) ||
+      historyCreditExhausted) &&
+    !creditBalancePositive;
+
+  // 上报积分不足
   useReportCreditInsufficient(creditInsufficient);
 
   useEffect(

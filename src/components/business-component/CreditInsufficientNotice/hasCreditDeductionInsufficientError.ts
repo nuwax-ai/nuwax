@@ -7,6 +7,9 @@ export const CREDIT_DEDUCTION_INSUFFICIENT_TEXT =
 /** FINAL_RESULT.error 里表示积分不足的错误码，和上面的中文文案是或关系 */
 export const CREDIT_INSUFFICIENT_ERROR_CODE = 'NW_CREDIT_INSUFFICIENT';
 
+/** FINAL_RESULT.errorReason 等于该值时提示增购 */
+export const CREDIT_INSUFFICIENT_ERROR_REASON = 'CREDIT_INSUFFICIENT';
+
 /** 历史消息正文：积分已用完 */
 const HISTORY_CREDIT_EXHAUSTED_KEY =
   'PC.Components.CreditInsufficientNotice.historyExhausted';
@@ -32,10 +35,17 @@ export function lastMessageIndicatesCreditExhausted(
 }
 
 export function hasCreditDeductionInsufficientError(
-  messageList?: Array<{ finalResult?: { error?: string } | null }>,
+  messageList?: Array<{
+    finalResult?: { error?: string; errorReason?: string } | null;
+  }>,
 ): boolean {
   return (messageList ?? []).some((message) => {
-    const error = message.finalResult?.error;
+    const finalResult = message.finalResult;
+    const errorReason = finalResult?.errorReason?.trim();
+    if (errorReason === CREDIT_INSUFFICIENT_ERROR_REASON) {
+      return true;
+    }
+    const error = finalResult?.error;
     return (
       !!error &&
       (error.includes(CREDIT_DEDUCTION_INSUFFICIENT_TEXT) ||
