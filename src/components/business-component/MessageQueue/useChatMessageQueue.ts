@@ -39,6 +39,8 @@ export interface UseChatMessageQueueParams {
   messageList: MessageInfo[];
   conversationId: any;
   sendMessage: SendMessage;
+  /** 停止当前会话（立即发送时若会话忙碌则调用，停止后自然触发 auto-consume 发送下一条） */
+  runStopConversation?: (id: any) => void | Promise<unknown>;
   minConsumeInterval?: number;
   hasPendingIntervention?: boolean;
 }
@@ -50,11 +52,11 @@ export const useChatMessageQueue = ({
   messageList,
   conversationId,
   sendMessage,
+  runStopConversation,
   minConsumeInterval = 1200,
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
-  // 传入 conversationId：队列按会话持久化到 localStorage，切换会话/刷新后可恢复
-  const messageQueue = useMessageQueue(conversationId);
+  const messageQueue = useMessageQueue();
 
   /** 以 messageList 为准兜底，避免 model isConversationActive 与真实流式状态脱节 */
   const streamActive = useMemo(
@@ -194,8 +196,12 @@ export const useChatMessageQueue = ({
 
     // 从「流式结束时刻」起算，而非上次发送时刻：上一条响应通常耗时数秒，
     // 若以发送时刻为基准，elapsed 恒大于间隔会使 wait≈0，间隔形同虚设。
+    // 若队列中有立即发送（sending）的项，说明是用户显式催促，上一轮 stop 结束后以极短缓冲（50ms）迅速发送；
+    // 否则保持正常防抖节奏（默认 1200ms）。
+    const hasSending = messageQueue.queue.some((item) => item.sending);
+    const targetInterval = hasSending ? 50 : minIntervalRef.current;
     const elapsed = Date.now() - blockReleasedAtRef.current;
-    const wait = Math.max(minIntervalRef.current - elapsed, 0);
+    const wait = Math.max(targetInterval - elapsed, 0);
 
     consumeTimerRef.current = window.setTimeout(() => {
       consumeTimerRef.current = null;
@@ -301,15 +307,8 @@ export const useChatMessageQueue = ({
     [enqueueBlocked, messageQueue, dispatchMessage],
   );
 
-  /** 最近一次删除/清空快照（按会话隔离），供 5s 撤销提示恢复原位置 */
-  const lastRemovedRef = useRef<Array<{ item: QueuedMessage; index: number }>>(
-    [],
-  );
-
   useEffect(() => {
-    // 切换会话：useMessageQueue 已同步切换并恢复目标会话的持久化队列（24h TTL）；
-    // 此处仅重置运行态锁、定时器与上一会话的撤销快照，不再清空持久化队列。
-    lastRemovedRef.current = [];
+    messageQueue.clearQueue();
     consumeLockRef.current = false;
     userPausedRef.current = false;
     awaitingStreamEndRef.current = false;
@@ -377,67 +376,44 @@ export const useChatMessageQueue = ({
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   /**
-   * 立即发送：不看流式/任务/暂停等会话状态，直接调 chat 接口，排队由后端处理。
-   * 先标记「等待流结束」并清掉待执行的消费定时器，避免同轮自动消费与直发叠加双发。
+   * 立即发送：
+   * - 忙碌（流式中或任务执行中）：调用 runStopConversation 停止当前会话（通知后端中止在途 -start 请求），
+   *   并原地标记 sending（UI 立即显示 loading 且不可重复点击）；当前轮次停止后自动优先消费该项发出；
+   * - 空闲：markSending + scheduleAutoConsume 主动发出。
    */
   const sendNow = useCallback(
     (qMsg: QueuedMessage) => {
-      const item = messageQueue.dequeueById(qMsg.id);
-      if (!item) return;
       // 「立即发送」视为用户重新参与，恢复自动消费
       userPausedRef.current = false;
-      clearConsumeTimers();
-      consumeLockRef.current = false;
-      markAwaitingStreamEnd();
-      dispatchMessage(
-        item.text,
-        item.files || [],
-        item.skillIds,
-        item.modelId,
-        item.selectedAgentMode,
-        item.selectedDocs,
-        item.expertComponents,
-      );
+      // 原地标记 sending：保留原 id，UI 立即显示 loading 且不可重复点击；
+      // 该条留在队列里直至消费实际发送后随 dequeueFirst 出列。
+      messageQueue.markSending(qMsg.id);
+      // 若当前会话处于活跃/忙碌状态，调用 stop 接口中止当前在途请求
+      if (
+        conversationId &&
+        (streamActiveRef.current || taskExecutingRef.current)
+      ) {
+        void Promise.resolve(runStopConversation?.(conversationId)).catch(
+          (error) => {
+            console.error('[messageQueue] runStopConversation failed', error);
+          },
+        );
+      }
+      // 会话已空闲时不会有流式结束边沿，需主动触发一次消费；
+      // 忙碌时 canAttemptConsume 会拒绝，等本轮 stop 结束后自然消费。
+      scheduleAutoConsume();
     },
-    [messageQueue, clearConsumeTimers, markAwaitingStreamEnd, dispatchMessage],
+    [messageQueue, conversationId, runStopConversation, scheduleAutoConsume],
   );
 
-  /** 删除单条：记录原位置快照供 undoLastRemove 恢复 */
   const deleteQueued = useCallback(
-    (queuedId: string) => {
-      const index = messageQueue.queue.findIndex(
-        (item) => item.id === queuedId,
-      );
-      if (index >= 0) {
-        lastRemovedRef.current = [{ item: messageQueue.queue[index], index }];
-      }
-      messageQueue.remove(queuedId);
-    },
+    (queuedId: string) => messageQueue.remove(queuedId),
     [messageQueue],
   );
 
-  /** 清空全部：记录全部项及原顺序快照供 undoLastRemove 恢复 */
-  const clearAllQueued = useCallback(() => {
-    if (messageQueue.queue.length > 0) {
-      lastRemovedRef.current = messageQueue.queue.map((item, index) => ({
-        item,
-        index,
-      }));
-    }
-    messageQueue.clearQueue();
-  }, [messageQueue]);
-
-  /** 撤销最近一次删除或清空，按原下标顺序插回 */
-  const undoLastRemove = useCallback(() => {
-    const entries = lastRemovedRef.current;
-    if (!entries.length) return;
-    lastRemovedRef.current = [];
-    messageQueue.restore(entries);
-  }, [messageQueue]);
-
   const editQueued = useCallback(
     (qMsg: QueuedMessage): QueuedMessage | undefined =>
-      messageQueue.dequeueById(qMsg.id),
+      messageQueue.dequeueForEdit(qMsg.id),
     [messageQueue],
   );
 
@@ -445,8 +421,6 @@ export const useChatMessageQueue = ({
     queue: messageQueue.queue,
     hasQueuedMessages: messageQueue.hasQueuedMessages,
     clearQueue: messageQueue.clearQueue,
-    clearAllQueued,
-    undoLastRemove,
     trySend,
     sendNow,
     deleteQueued,

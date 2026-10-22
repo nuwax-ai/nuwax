@@ -127,6 +127,7 @@ const MessageQueueDemo: React.FC = () => {
     messageList: messages,
     conversationId: 'demo-conv',
     sendMessage,
+    runStopConversation,
     minConsumeInterval: minInterval,
   });
 
@@ -303,7 +304,7 @@ const MessageQueueDemo: React.FC = () => {
                   }}
                   onEdit={handleEdit}
                   onClear={() => {
-                    messageQueue.clearAllQueued();
+                    messageQueue.clearQueue();
                     log('🗑 清空');
                   }}
                   onReorder={(from, to) => {

@@ -6,10 +6,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import QueuedMessageItem from './QueuedMessageItem';
 import styles from './index.less';
-import { destroyQueueUndoToast, showQueueUndoToast } from './queueUndoToast';
 import type { QueuedMessage } from './types';
 
 export type { QueuedMessage } from './types';
@@ -21,7 +20,7 @@ const cx = classNames.bind(styles);
 export interface MessageQueuePanelProps {
   /** 待发送消息列表 */
   queue: QueuedMessage[];
-  /** 立即发送（直接调用 chat 接口，由后端承接排队） */
+  /** 立即发送（标记优先消费；与自动消费对齐，不打断当前轮） */
   onSendNow: (message: QueuedMessage) => void;
   /** 删除某条 */
   onDelete: (id: string) => void;
@@ -29,12 +28,8 @@ export interface MessageQueuePanelProps {
   onEdit: (message: QueuedMessage) => void;
   /** 清空全部 */
   onClear: () => void;
-  /** 撤销最近一次删除/清空（传入时删除与清空会弹出 5s 撤销提示） */
-  onUndo?: () => void;
   /** 拖拽排序：把 fromIndex 处的项移动到 toIndex */
   onReorder: (fromIndex: number, toIndex: number) => void;
-  /** 禁用「立即发送」（如会话停止中：此时发送会被会话层静默丢弃） */
-  sendNowDisabled?: boolean;
 }
 
 /**
@@ -47,33 +42,11 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
   onDelete,
   onEdit,
   onClear,
-  onUndo,
   onReorder,
-  sendNowDisabled,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => () => destroyQueueUndoToast(), []);
-
   if (!queue.length) return null;
-
-  const handleDelete = (id: string) => {
-    onDelete(id);
-    if (onUndo) {
-      showQueueUndoToast(t('PC.Components.MessageQueue.deletedToast'), onUndo);
-    }
-  };
-
-  const handleClear = () => {
-    const count = queue.length;
-    onClear();
-    if (onUndo && count > 0) {
-      showQueueUndoToast(
-        t('PC.Components.MessageQueue.clearedToast', count),
-        onUndo,
-      );
-    }
-  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -107,7 +80,7 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
           <button
             type="button"
             className={cx(styles['queue-clear'])}
-            onClick={handleClear}
+            onClick={onClear}
           >
             {t('PC.Components.MessageQueue.clearAll')}
           </button>
@@ -128,9 +101,8 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
                   key={qMsg.id}
                   message={qMsg}
                   onSendNow={onSendNow}
-                  onDelete={handleDelete}
+                  onDelete={onDelete}
                   onEdit={onEdit}
-                  sendNowDisabled={sendNowDisabled}
                 />
               ))}
             </div>

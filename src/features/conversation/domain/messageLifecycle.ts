@@ -92,42 +92,20 @@ export function markOwnedMessageStreamError(
 /**
  * 终态确认后的消息收敛。轮询、live FINAL/ERROR 与 sub 恢复必须共用同一规则，
  * 当前轮的半途快照和恢复占位一并收口，避免旧 Loading 消息让整轮残留运行态。
- * 传入 ownerMessageId 时仅收敛该消息所属轮次（前后 USER 之间），不越界影响后续已入队直发的新轮次。
  */
 export function finalizeMessagesOnTerminalTaskStatus(
   messageList: MessageInfo[],
   taskStatus: TaskStatus,
-  ownerMessageId?: string,
 ): MessageInfo[] {
   if (!messageList.length || taskStatus === TaskStatus.EXECUTING) {
     return messageList;
   }
 
   let currentRoundStart = 0;
-  let currentRoundEnd = messageList.length - 1;
-  const ownerIndex = ownerMessageId
-    ? messageList.findIndex((message) => message.id === ownerMessageId)
-    : -1;
-
-  if (ownerIndex >= 0) {
-    for (let index = ownerIndex - 1; index >= 0; index -= 1) {
-      if (messageList[index].role === AssistantRoleEnum.USER) {
-        currentRoundStart = index + 1;
-        break;
-      }
-    }
-    for (let index = ownerIndex + 1; index < messageList.length; index += 1) {
-      if (messageList[index].role === AssistantRoleEnum.USER) {
-        currentRoundEnd = index - 1;
-        break;
-      }
-    }
-  } else {
-    for (let index = messageList.length - 1; index >= 0; index -= 1) {
-      if (messageList[index].role === AssistantRoleEnum.USER) {
-        currentRoundStart = index + 1;
-        break;
-      }
+  for (let index = messageList.length - 1; index >= 0; index -= 1) {
+    if (messageList[index].role === AssistantRoleEnum.USER) {
+      currentRoundStart = index + 1;
+      break;
     }
   }
 
@@ -140,11 +118,12 @@ export function finalizeMessagesOnTerminalTaskStatus(
       ? ProcessingEnum.FAILED
       : ProcessingEnum.FINISHED;
   const next = messageList.slice();
+  const lastIndex = next.length - 1;
   let changed = false;
 
-  for (let index = currentRoundEnd; index >= currentRoundStart; index -= 1) {
+  for (let index = lastIndex; index >= currentRoundStart; index -= 1) {
     const message = next[index];
-    const isTail = index === currentRoundEnd;
+    const isTail = index === lastIndex;
     // sub 占位追加后，执行中的历史半轮已不在尾部；协议终态必须一起收口。
     const incomplete =
       message.status === MessageStatusEnum.Loading ||

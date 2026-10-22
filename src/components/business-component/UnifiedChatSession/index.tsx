@@ -499,10 +499,8 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
               onSendNow={messageQueue.sendNow}
               onDelete={messageQueue.deleteQueued}
               onEdit={messageQueue.handleEditQueued}
-              onClear={messageQueue.clearAllQueued}
-              onUndo={messageQueue.undoLastRemove}
+              onClear={messageQueue.clearQueue}
               onReorder={messageQueue.reorder}
-              sendNowDisabled={loadingStopConversation}
             />
           </div>
         )}
@@ -590,6 +588,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
     isLocallyStreaming,
     isAwaitingChatTerminal,
     conversationInfo,
+    runStopConversation,
   } = props;
   return (
     <ConversationSessionProvider
@@ -602,6 +601,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
       onSendMessage={onSendMessage}
       minConsumeInterval={queueMinConsumeInterval}
       queueContext={queueContext}
+      runStopConversation={runStopConversation}
     >
       <UnifiedChatSessionInner {...props} />
     </ConversationSessionProvider>

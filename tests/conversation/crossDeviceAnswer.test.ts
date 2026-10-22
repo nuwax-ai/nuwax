@@ -149,40 +149,6 @@ describe('跨端快照回答归属', () => {
     );
   });
 
-  it('立即发送排队场景：第一轮已落库、第二轮刚直发尚未落库时，轮询快照不重复第一轮且保留第二轮', () => {
-    const secondUser = '7233af1e-2fa9-4328-9e7a-183829c2589a';
-    const secondAssistant = '73c0dc1a-0c45-4d6f-8a4d-b18463e3d3b6';
-    const local = appendOutgoingConversationMessages(
-      localRound(),
-      message(secondUser, AssistantRoleEnum.USER, '第二轮立即发送'),
-      message(secondAssistant, AssistantRoleEnum.ASSISTANT, '', {
-        status: MessageStatusEnum.Loading,
-      }),
-    );
-    // 服务端快照此时僅落库了第一轮，第二轮仍在后端队列中尚未落库
-    const incoming = pcSnapshot();
-    const merged = reconcileConversationSnapshotMessages(local, incoming);
-    expect(merged.map((item) => [item.role, item.text, item.status])).toEqual([
-      [AssistantRoleEnum.USER, '确认', MessageStatusEnum.Complete],
-      [
-        AssistantRoleEnum.ASSISTANT,
-        'PC 第一轮回答',
-        MessageStatusEnum.Complete,
-      ],
-      [AssistantRoleEnum.USER, '第二轮立即发送', MessageStatusEnum.Complete],
-      [AssistantRoleEnum.ASSISTANT, '', MessageStatusEnum.Loading],
-    ]);
-    expect(merged[0].clientRenderKey).toBe(localUserId);
-    expect(merged[1].clientRenderKey).toBe(localAssistantId);
-    expect(merged[2].clientRenderKey).toBe(secondUser);
-    expect(merged[3].clientRenderKey).toBe(secondAssistant);
-    const presentation = projectConversation(merged);
-    expect(presentation.turns).toHaveLength(2);
-    expect(presentation.turns[0].running).toBe(false);
-    expect(presentation.turns[0].finalAnswer.text).toBe('PC 第一轮回答');
-    expect(presentation.turns[1].running).toBe(true);
-  });
-
   it('本地 SSE assistant 的服务端 ID 已在同轮快照中时不重复保留', () => {
     const local = [
       message(localUserId, AssistantRoleEnum.USER, '确认'),

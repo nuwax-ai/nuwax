@@ -1966,9 +1966,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         className={cx(styles['terminal-console'])}
         conversationId={finalSelectedId === '-1' ? id : undefined}
         visible={active && terminalConsoleVisible}
-        wsUrl={terminalWsUrl}
-        // 文件预览 / 智能体电脑切换只隐藏面板，终端连接与正在执行的任务保持存活
+        // 切到文件预览只是隐藏面板。连接留到本组件卸载再断，避免前台进程被新 shell 换掉
         preserveTerminalConnections
+        wsUrl={terminalWsUrl}
         wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
         wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
         defaultActiveTab="terminal"
