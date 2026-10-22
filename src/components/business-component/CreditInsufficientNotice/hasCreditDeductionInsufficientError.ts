@@ -1,10 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 
-/** 后端在 FINAL_RESULT.error 里返回的积分扣减失败文案 */
-export const CREDIT_DEDUCTION_INSUFFICIENT_TEXT =
-  '积分不足以完成扣减，请增购积分后继续';
-
-/** FINAL_RESULT.error 里表示积分不足的错误码，和上面的中文文案是或关系 */
+/** FINAL_RESULT.error 里表示积分不足的错误码，和当前语言的「积分不足」是或关系 */
 export const CREDIT_INSUFFICIENT_ERROR_CODE = 'NW_CREDIT_INSUFFICIENT';
 
 /** FINAL_RESULT.errorReason 等于该值时提示增购 */
@@ -46,9 +42,10 @@ export function hasCreditDeductionInsufficientError(
       return true;
     }
     const error = finalResult?.error;
+    const insufficientText = dict(HISTORY_CREDIT_INSUFFICIENT_KEY);
     return (
       !!error &&
-      (error.includes(CREDIT_DEDUCTION_INSUFFICIENT_TEXT) ||
+      ((Boolean(insufficientText) && error.includes(insufficientText)) ||
         error.includes(CREDIT_INSUFFICIENT_ERROR_CODE))
     );
   });
