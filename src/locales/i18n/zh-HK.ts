@@ -7068,4 +7068,10 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可訪問用戶敏感數據或代用戶執行操作，請按需申請",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授權範圍變更已提交審核",
   "PC.Components.CommercialLicense.authorizationRequired": "請聯絡官方取得試用授權或商業授權",
+  "PC.Layouts.SidebarCredit.upgradeBenefits": "升級享更多權益",
+  "PC.Components.CreditInsufficientNotice.banner": "積分餘額不足，請升級套餐或增購積分繼續使用",
+  "PC.Components.CreditInsufficientNotice.upgrade": "升級套餐",
+  "PC.Components.CreditInsufficientNotice.modalTitle": "升級套餐",
+  "PC.Components.CreditInsufficientNotice.loadFailed": "套餐資料載入失敗，請稍後重試",
+  "PC.Components.CreditInsufficientNotice.retry": "重試",
 };

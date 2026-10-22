@@ -1,0 +1,94 @@
+@import '@/styles/token.less';
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: @marginXs;
+  margin-bottom: @marginXs;
+  padding: 10px @paddingSm;
+  border: 1px solid rgba(0, 0, 0, 6%);
+  border-radius: @borderRadiusLg;
+  background: #fff;
+}
+
+.credit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
+  min-width: 0;
+}
+
+.credit-main {
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+  min-width: 0;
+  color: #1f1f1f;
+  font-size: @fontSize;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.credit-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-name {
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+  flex-shrink: 0;
+  max-width: 46%;
+  color: #8c8c8c;
+  font-size: @fontSizeSm;
+  line-height: 18px;
+}
+
+.plan-name-badge {
+  max-width: 100%;
+  padding: 1px @paddingXs;
+  overflow: hidden;
+  border-radius: @borderRadiusOuter;
+  background: #f3eee6;
+  color: #8a8074;
+  font-size: @fontSizeSm;
+  font-weight: 400;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-info {
+  color: #e15b4a;
+  font-size: @fontSizeSm;
+}
+
+.upgrade-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: @controlHeight;
+  padding: 0 10px;
+  border: none;
+  border-radius: @borderRadius;
+  background: #f6efe4;
+  color: #8a6a3d;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3e7d4;
+  }
+}
+
+.upgrade-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
