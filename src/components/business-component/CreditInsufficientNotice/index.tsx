@@ -109,4 +109,5 @@ export {
   hasCreditDeductionInsufficientError,
   lastMessageIndicatesCreditExhausted,
 } from './hasCreditDeductionInsufficientError';
+export { useCreditBalancePositive } from './useCreditBalancePositive';
 export { useHistoryCreditExhausted } from './useHistoryCreditExhausted';

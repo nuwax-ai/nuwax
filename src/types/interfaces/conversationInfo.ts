@@ -103,6 +103,8 @@ export interface ConversationFinalResult {
   componentExecuteResults: ExecuteResultInfo[];
   endTime: number;
   error: string;
+  /** 业务错误原因。CREDIT_INSUFFICIENT 表示积分不足，需提示增购 */
+  errorReason?: string;
   outputText: string;
   promptTokens: number;
   startTime: number;
