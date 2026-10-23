@@ -109,6 +109,9 @@ export interface HomeSectionDataShell {
   /** 项目分组可见数（分组头计数用） */
   projectCount: number;
   handleProjectCountChange: (count: number) => void;
+  /** NW-195：确认真无项目（非加载中、接口已返回、无错误），隐藏整个项目分组 */
+  projectEmpty: boolean;
+  handleProjectEmptyChange: (empty: boolean) => void;
   /** 当前会话命中项目子会话 id（未命中 null）：任务列表选中互斥用 */
   activeProjectChildId: string | null;
   setActiveProjectChildId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -382,7 +385,21 @@ export function useHomeSectionData(options: {
         }
       }
     }
-    setLocalList((previous) => applyConversationChangedToList(previous, event));
+    setLocalList((previous) => {
+      const next = applyConversationChangedToList(previous, event);
+      // NW-044：执行中补丁没落到任何已加载行（会话刚创建、列表读接口滞后，
+      // 行还没进本页数据）时，本地补丁无处落地——运行态就此丢失，侧栏该项
+      // 状态槽为空且不再有后续事件可救（后续 topic 补丁才有重拉）。这里兜底
+      // 一次静默重拉（3s 节流与 topic 路径共用），把行连同服务端状态拉回来。
+      if (
+        next === previous &&
+        event.operation === 'updated' &&
+        event.patch?.taskStatus === TaskStatus.EXECUTING
+      ) {
+        throttledConversationReload();
+      }
+      return next;
+    });
     // 置顶/归档补丁（bug 2475）：本地补丁已即时排前/隐藏（applyConversationChangedToList），
     // 覆盖记录同本地 toggle——防随后的静默重拉读到滞后回包把刚归档的会话复活回列表
     if (event.operation === 'updated' && event.patch) {
@@ -669,6 +686,14 @@ export function useHomeSectionData(options: {
     [],
   );
 
+  // NW-195：确认真无项目（非加载中、接口已返回、无错误）时隐藏整个项目分组。
+  // 加载中/失败保持显示，初始 false 避免首屏闪隐。
+  const [projectEmpty, setProjectEmpty] = useState(false);
+  const handleProjectEmptyChange = useCallback(
+    (empty: boolean) => setProjectEmpty(empty),
+    [],
+  );
+
   // 当前会话命中项目子会话的 id（ProjectPanel 按路由反查后上报）：任务列表据此
   // 互斥去高亮——属于项目的会话选中只落项目分组一处，独立任务仍在任务列表高亮
   const [activeProjectChildId, setActiveProjectChildId] = useState<
@@ -703,6 +728,8 @@ export function useHomeSectionData(options: {
     handleConversationCollectedChanged,
     projectCount,
     handleProjectCountChange,
+    projectEmpty,
+    handleProjectEmptyChange,
     activeProjectChildId,
     setActiveProjectChildId,
     conversationRowActive,

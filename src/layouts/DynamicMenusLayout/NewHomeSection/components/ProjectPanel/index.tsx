@@ -1,4 +1,3 @@
-import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
@@ -260,6 +259,12 @@ const ProjectPanel = forwardRef<
      * 经典布局不传维持现状。
      */
     leadingMark?: boolean;
+    /**
+     * 确认空态上报(NW-195):非加载中、接口已返回且无项目、无加载错误时上报
+     * true,其余(加载中/有项目/加载失败)上报 false。父层据此隐藏整个项目分组——
+     * 分组头不在本组件内,仅靠组件自身 return null 藏不住标题。
+     */
+    onEmptyStateChange?: (empty: boolean) => void;
   }
 >(
   (
@@ -270,6 +275,7 @@ const ProjectPanel = forwardRef<
       activeConversationId,
       onActiveChildResolved,
       leadingMark = false,
+      onEmptyStateChange,
     },
     ref,
   ) => {
@@ -1143,6 +1149,13 @@ const ProjectPanel = forwardRef<
       onVisibleCountChange?.(visibleProjects.length);
     }, [visibleProjects.length, onVisibleCountChange]);
 
+    // NW-195:确认真无项目(非加载中、接口已返回、无错误)。加载失败不算空——
+    // 网络抖动被当作「暂无项目」藏掉分组会让用户以为项目丢了,错误态必须保留可重试。
+    const emptyConfirmed = !loading && projects.length === 0 && !loadError;
+    useEffect(() => {
+      onEmptyStateChange?.(emptyConfirmed);
+    }, [emptyConfirmed, onEmptyStateChange]);
+
     // 项目行内归档确认执行（红「确认」二次点击）：常规/全栈走真实接口置归档，
     // PageApp 契约未覆盖维持本地；成败都向服务端真值收敛一次（同 toggleProjectFlag）
     const handleProjectArchiveConfirm = async (project: ProjectItem) => {
@@ -1631,38 +1644,30 @@ const ProjectPanel = forwardRef<
       );
     }
 
+    // NW-195:确认真无项目时整组隐藏不占位。组件保持挂载只输出 null——数据轮询、
+    // 失败重试与「其他入口新建项目后分组恢复显示」都依赖内部 effects 继续跑,
+    // 父层卸载本组件会断掉这条恢复链。经典布局 tab 内容区同理自动置空。
+    if (emptyConfirmed) {
+      return null;
+    }
+
     if (projects.length === 0) {
+      // 走到这里只剩加载失败态:错误提示＋手动刷新保留,不能被空态隐藏吞掉
       return (
         <div
           className={cx(styles['project-panel'], { [styles.compact]: compact })}
         >
-          <div
-            className={cx(styles['project-empty'])}
-            role={loadError ? 'alert' : undefined}
-          >
-            {!loadError && (
-              <img
-                className={cx(styles['project-empty-img'])}
-                src={emptyStateNoData}
-                alt=""
-              />
-            )}
+          <div className={cx(styles['project-empty'])} role="alert">
             <div className={cx(styles['project-empty-text'])}>
-              {dict(
-                loadError
-                  ? 'PC.Common.Global.operationFailed'
-                  : 'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
-              )}
+              {dict('PC.Common.Global.operationFailed')}
             </div>
-            {loadError && (
-              <button
-                type="button"
-                className={cx(styles['load-more-entry'])}
-                onClick={loadInitialProjects}
-              >
-                {dict('PC.Common.Global.refresh')}
-              </button>
-            )}
+            <button
+              type="button"
+              className={cx(styles['load-more-entry'])}
+              onClick={loadInitialProjects}
+            >
+              {dict('PC.Common.Global.refresh')}
+            </button>
           </div>
         </div>
       );
