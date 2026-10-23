@@ -7131,4 +7131,11 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitiveTip": "機密データへのアクセスやユーザーに代わる操作が可能になります。必要な場合のみ申請してください",
   "PC.Components.OAuthScopeSetting.submitted": "保存しました。権限範囲の変更を審査に提出しました",
   "PC.Components.CommercialLicense.authorizationRequired": "試用ライセンスまたは商用ライセンスについて、公式窓口にお問い合わせください。",
+  "PC.Components.CreditInsufficientNotice.banner": "ポイント残高が不足しています。ポイントを追加購入して続行してください。",
+  "PC.Components.CreditInsufficientNotice.upgrade": "ポイントを追加購入",
+  "PC.Components.CreditInsufficientNotice.modalTitle": "ポイントを追加購入",
+  "PC.Components.CreditInsufficientNotice.loadFailed": "プラン情報の読み込みに失敗しました。しばらくしてから再試行してください。",
+  "PC.Components.CreditInsufficientNotice.retry": "再試行",
+  "PC.Components.CreditInsufficientNotice.historyExhausted": "ポイントを使い切りました",
+  "PC.Components.CreditInsufficientNotice.historyInsufficient": "ポイント不足",
 };

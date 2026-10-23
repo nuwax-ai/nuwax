@@ -109,6 +109,9 @@ export interface HomeSectionDataShell {
   /** 项目分组可见数（分组头计数用） */
   projectCount: number;
   handleProjectCountChange: (count: number) => void;
+  /** NW-195：确认真无项目（非加载中、接口已返回、无错误），隐藏整个项目分组 */
+  projectEmpty: boolean;
+  handleProjectEmptyChange: (empty: boolean) => void;
   /** 当前会话命中项目子会话 id（未命中 null）：任务列表选中互斥用 */
   activeProjectChildId: string | null;
   setActiveProjectChildId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -683,6 +686,14 @@ export function useHomeSectionData(options: {
     [],
   );
 
+  // NW-195：确认真无项目（非加载中、接口已返回、无错误）时隐藏整个项目分组。
+  // 加载中/失败保持显示，初始 false 避免首屏闪隐。
+  const [projectEmpty, setProjectEmpty] = useState(false);
+  const handleProjectEmptyChange = useCallback(
+    (empty: boolean) => setProjectEmpty(empty),
+    [],
+  );
+
   // 当前会话命中项目子会话的 id（ProjectPanel 按路由反查后上报）：任务列表据此
   // 互斥去高亮——属于项目的会话选中只落项目分组一处，独立任务仍在任务列表高亮
   const [activeProjectChildId, setActiveProjectChildId] = useState<
@@ -717,6 +728,8 @@ export function useHomeSectionData(options: {
     handleConversationCollectedChanged,
     projectCount,
     handleProjectCountChange,
+    projectEmpty,
+    handleProjectEmptyChange,
     activeProjectChildId,
     setActiveProjectChildId,
     conversationRowActive,

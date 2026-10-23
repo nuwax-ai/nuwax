@@ -7247,4 +7247,11 @@ export const EN_US: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitiveTip": "Grants access to sensitive data or actions on the user's behalf; request only if needed",
   "PC.Components.OAuthScopeSetting.submitted": "Saved. The scope change was submitted for review",
   "PC.Components.CommercialLicense.authorizationRequired": "Please contact the official team for a trial or commercial license.",
+  "PC.Components.CreditInsufficientNotice.banner": "Insufficient credits. Buy more credits to continue.",
+  "PC.Components.CreditInsufficientNotice.upgrade": "Buy credits",
+  "PC.Components.CreditInsufficientNotice.modalTitle": "Buy credits",
+  "PC.Components.CreditInsufficientNotice.loadFailed": "Couldn't load plans. Please try again later.",
+  "PC.Components.CreditInsufficientNotice.retry": "Retry",
+  "PC.Components.CreditInsufficientNotice.historyExhausted": "Credits used up",
+  "PC.Components.CreditInsufficientNotice.historyInsufficient": "Insufficient credits",
 };

@@ -513,16 +513,23 @@ describe('ProjectPanel 选中关系', () => {
       },
     );
 
-    it('成功返回空列表时展示暂无项目，不自动重试', async () => {
+    it('成功返回空列表时上报空态且不占位展示，不自动重试', async () => {
       respondPage([]);
-      await renderPanel();
+      // NW-195：确认真无项目改由父层隐藏整个分组，组件不再渲染
+      // 「暂无项目」占位；空态经 onEmptyStateChange 上报驱动隐藏
+      const onEmptyStateChange = vi.fn();
+      render(<ProjectPanel compact onEmptyStateChange={onEmptyStateChange} />);
+      await act(async () => {});
       expect(
-        screen.getByText(
+        screen.queryByText(
           'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
         ),
-      ).toBeInTheDocument();
+      ).not.toBeInTheDocument();
+      expect(onEmptyStateChange).toHaveBeenCalledWith(true);
       await finishRetries();
       expect(pageQueryMock).toHaveBeenCalledTimes(1);
+      // 空态确认是稳定状态：重试窗口走完仍保持上报 true
+      expect(onEmptyStateChange).toHaveBeenLastCalledWith(true);
     });
 
     it('持续失败有界结束，用户可重新加载恢复项目', async () => {

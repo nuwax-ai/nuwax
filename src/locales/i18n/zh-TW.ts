@@ -7089,4 +7089,11 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可訪問使用者敏感資料或代使用者執行操作，請按需申請",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授權範圍變更已提交審核",
   "PC.Components.CommercialLicense.authorizationRequired": "請聯繫官方取得試用授權或商業授權",
+  "PC.Components.CreditInsufficientNotice.banner": "積分餘額不足，請增購積分繼續使用",
+  "PC.Components.CreditInsufficientNotice.upgrade": "增購積分",
+  "PC.Components.CreditInsufficientNotice.modalTitle": "增購積分",
+  "PC.Components.CreditInsufficientNotice.loadFailed": "套餐資訊載入失敗，請稍後重試",
+  "PC.Components.CreditInsufficientNotice.retry": "重試",
+  "PC.Components.CreditInsufficientNotice.historyExhausted": "積分已用完",
+  "PC.Components.CreditInsufficientNotice.historyInsufficient": "積分不足",
 };

@@ -4,6 +4,10 @@ import {
   type GitVersionRecordPanelHandle,
 } from '@/components/business-component';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
+import {
+  CreditInsufficientPageBanner,
+  CreditInsufficientProvider,
+} from '@/components/business-component/CreditInsufficientNotice';
 import FileTreeGitSourcePanel, {
   useSourceControl,
   type ChangeListSection,
@@ -4209,301 +4213,318 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   // ==================== 主渲染 ====================
   // 与 home/chat 共用可拖拽面板，不再固定 480px 聊天栏或拓宽全局页面。
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
-      <section
-        className={cx(
-          'flex',
-          'flex-1',
-          styles.section,
-          `xagi-nav-${navigationStyle}`,
-        )}
-      >
-        <ResizableSplit
-          className={styles['main-row']}
-          stackBelowWidth={750}
-          minLeftWidth={430}
-          minRightWidth={320}
-          defaultLeftWidth={chatPanelWidth}
-          onResizeEnd={saveChatPanelWidthPercent}
-          left={
-            <div className={cx(styles['left-panel'])}>
-              <AppDevProHeaderBrand
-                userAppInfo={userAppInfo}
-                spaceId={spaceId}
-                appId={appId}
-                active={active}
-                onConfirmUpdate={setUserAppInfo}
-                progress={
-                  capsuleModel
-                    ? {
-                        open: progressOpen,
-                        running: capsuleModel.running,
-                        onClick: () => setProgressOpen((value) => !value),
-                      }
-                    : undefined
-                }
-              />
-              <div className={cx(styles['left-panel-body'])}>
-                <AgentConversationChatPanel
+    <CreditInsufficientProvider>
+      <div className={cx(styles.container, 'flex', 'flex-col')}>
+        <CreditInsufficientPageBanner />
+        {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
+        <section
+          className={cx(
+            'flex',
+            'flex-1',
+            styles.section,
+            `xagi-nav-${navigationStyle}`,
+          )}
+        >
+          <ResizableSplit
+            className={styles['main-row']}
+            stackBelowWidth={750}
+            minLeftWidth={430}
+            minRightWidth={320}
+            defaultLeftWidth={chatPanelWidth}
+            onResizeEnd={saveChatPanelWidthPercent}
+            left={
+              <div className={cx(styles['left-panel'])}>
+                <AppDevProHeaderBrand
+                  userAppInfo={userAppInfo}
+                  spaceId={spaceId}
+                  appId={appId}
                   active={active}
-                  routeSnapshot={{
-                    conversationId: queryConversationId,
-                    state: routeState,
-                    key: routeKey,
-                    action: routeAction,
-                  }}
-                  runtimeLine={runtimeLine}
-                  progressOpen={progressOpen}
-                  onCloseProgress={() => setProgressOpen(false)}
-                  selectedComputerId={finalSelectedComputerId}
-                  onChangeSelectedComputerId={setSelectedComputerId}
-                  onConversationEnd={handleConversationEnd}
-                  onOpenRepoDoc={handleOpenRepoDoc}
-                  gitReady={containerReadyForQueries}
+                  onConfirmUpdate={setUserAppInfo}
+                  progress={
+                    capsuleModel
+                      ? {
+                          open: progressOpen,
+                          running: capsuleModel.running,
+                          onClick: () => setProgressOpen((value) => !value),
+                        }
+                      : undefined
+                  }
                 />
+                <div className={cx(styles['left-panel-body'])}>
+                  <AgentConversationChatPanel
+                    active={active}
+                    routeSnapshot={{
+                      conversationId: queryConversationId,
+                      state: routeState,
+                      key: routeKey,
+                      action: routeAction,
+                    }}
+                    runtimeLine={runtimeLine}
+                    progressOpen={progressOpen}
+                    onCloseProgress={() => setProgressOpen(false)}
+                    selectedComputerId={finalSelectedComputerId}
+                    onChangeSelectedComputerId={setSelectedComputerId}
+                    onConversationEnd={handleConversationEnd}
+                    onOpenRepoDoc={handleOpenRepoDoc}
+                    gitReady={containerReadyForQueries}
+                  />
+                </div>
               </div>
-            </div>
-          }
-          right={
-            <div className={cx(styles['right-column'])}>
-              <AppDevProHeaderActions
-                userAppInfo={userAppInfo}
-                onPublish={handleOpenPublish}
-                onOpenMarketPublish={() => setOpenPublishModal(true)}
-                publishing={publishFlow.publishing}
-                remotePublishing={showRemotePublishing}
-                onCancelRemotePublish={handleCancelRemotePublish}
-                cancelRemotePublishLoading={cancelRemotePublishLoading}
-                isFileTreeSidebarVisible={isFileTreeIconActive}
-                onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-                isTerminalPanelOpen={isTerminalIconActive}
-                onOpenTerminalPanel={handleOpenTerminalPanel}
-                onOpenDomainBinding={() => setSettingsOpen(true)}
-                onRestartProdComputer={() => {
-                  setPodAppStage(UserAppDbEnvEnum.Prod);
-                  void handleRestartComputer();
-                }}
-                isDatabasePanelOpen={isDatabasePanelOpen}
-                onOpenDatabase={handleOpenDatabasePanel}
-                isShowAppPreview={isShowAppPreview}
-                isAppPreviewOpen={isAppPreviewOpen}
-                onOpenAppPreview={handleOpenAppPreview}
-                isShowDesktop={
-                  dbEnv === UserAppDbEnvEnum.Dev && !!envPodConversationId
-                }
-                isAgentDesktopOpen={isAgentDesktopOpen}
-                onOpenDesktopPanel={handleOpenDesktopPanel}
-                isBuildVersionRecordsOpen={buildVersionsOpen}
-                onToggleBuildVersionRecords={handleToggleBuildVersionRecords}
-                isPublishVersionRecordsOpen={publishVersionRecordsOpen}
-                onTogglePublishVersionRecords={
-                  handleTogglePublishVersionRecords
-                }
-                env={dbEnv}
-                onEnvChange={handleEnvChange}
-                readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
-                readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
-                previewRuntimeControls={previewRuntimeControls}
-                filePreviewMoreMenu={
-                  dbEnv === UserAppDbEnvEnum.Dev ? (
-                    <MoreActionsMenu
-                      onRestartServer={() => {
-                        void handleRestartComputer();
-                      }}
-                      onRestartAgent={() => {
-                        restartAgent(queryConversationId);
-                      }}
-                      isCloudComputer={finalSelectedComputerId === '-1'}
-                    />
-                  ) : null
-                }
-              />
+            }
+            right={
+              <div className={cx(styles['right-column'])}>
+                <AppDevProHeaderActions
+                  userAppInfo={userAppInfo}
+                  onPublish={handleOpenPublish}
+                  onOpenMarketPublish={() => setOpenPublishModal(true)}
+                  publishing={publishFlow.publishing}
+                  remotePublishing={showRemotePublishing}
+                  onCancelRemotePublish={handleCancelRemotePublish}
+                  cancelRemotePublishLoading={cancelRemotePublishLoading}
+                  isFileTreeSidebarVisible={isFileTreeIconActive}
+                  onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+                  isTerminalPanelOpen={isTerminalIconActive}
+                  onOpenTerminalPanel={handleOpenTerminalPanel}
+                  onOpenDomainBinding={() => setSettingsOpen(true)}
+                  onRestartProdComputer={() => {
+                    setPodAppStage(UserAppDbEnvEnum.Prod);
+                    void handleRestartComputer();
+                  }}
+                  isDatabasePanelOpen={isDatabasePanelOpen}
+                  onOpenDatabase={handleOpenDatabasePanel}
+                  isShowAppPreview={isShowAppPreview}
+                  isAppPreviewOpen={isAppPreviewOpen}
+                  onOpenAppPreview={handleOpenAppPreview}
+                  isShowDesktop={
+                    dbEnv === UserAppDbEnvEnum.Dev && !!envPodConversationId
+                  }
+                  isAgentDesktopOpen={isAgentDesktopOpen}
+                  onOpenDesktopPanel={handleOpenDesktopPanel}
+                  isBuildVersionRecordsOpen={buildVersionsOpen}
+                  onToggleBuildVersionRecords={handleToggleBuildVersionRecords}
+                  isPublishVersionRecordsOpen={publishVersionRecordsOpen}
+                  onTogglePublishVersionRecords={
+                    handleTogglePublishVersionRecords
+                  }
+                  env={dbEnv}
+                  onEnvChange={handleEnvChange}
+                  readinessStatus={
+                    serviceReadiness.readinessByEnv[dbEnv]?.status
+                  }
+                  readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
+                  previewRuntimeControls={previewRuntimeControls}
+                  filePreviewMoreMenu={
+                    dbEnv === UserAppDbEnvEnum.Dev ? (
+                      <MoreActionsMenu
+                        onRestartServer={() => {
+                          void handleRestartComputer();
+                        }}
+                        onRestartAgent={() => {
+                          restartAgent(queryConversationId);
+                        }}
+                        isCloudComputer={finalSelectedComputerId === '-1'}
+                      />
+                    ) : null
+                  }
+                />
 
-              <div className={cx(styles['right-column-body'])}>
-                <div
-                  className={cx('flex', 'flex-1', styles['content-container'], {
-                    [styles['content-container-fullscreen']]:
-                      fileView.preview.isFullscreen,
-                    // 与 ConversationAgent 的文件预览一致：交由客户端壳层为
-                    // Windows/Linux 沉浸工具栏补偿 fixed 全屏根节点。
-                    'immersive-shell-fullscreen': fileView.preview.isFullscreen,
-                  })}
-                >
-                  <ResizableSplit
-                    stackBelowWidth={420}
-                    minLeftWidth={180}
-                    minRightWidth={240}
-                    defaultLeftWidth={30}
-                    leftHidden={!(workspaceView === 'files' && canShowFileView)}
-                    left={
-                      <div className={styles['middle-panel']}>
-                        {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                        <FileTreeGitSourcePanel
-                          className={cx(styles['file-tree-sidebar'], 'w-full')}
-                          showSourceControl={
-                            isVersionControlEnabled &&
-                            workspaceFiles.files.length > 0
-                          }
-                          enableVersionControl={enableVersionControl}
-                          tree={{
-                            ...fileView.tree,
-                            loadedFolderIds: workspaceFiles.loadedFolderIds,
-                            loadingFolderIds: workspaceFiles.loadingFolderIds,
-                            onLoadDirectory: workspaceFiles.onLoadDirectory,
-                            remoteFileSearch: workspaceFiles.remoteFileSearch,
-                            handleFileSelect: async (fileId, options) => {
-                              await workspaceFiles.ensureFallbackDirectory(
-                                options,
-                              );
-                              await fileView.tree.handleFileSelect(
-                                fileId,
-                                options,
-                              );
-                            },
-                          }}
-                          treeClassName="w-full h-full"
-                          onImportProject={handleImportProject}
-                          importProjectLabel={dict(
-                            'PC.Components.FileTreePanel.FileTreeToolbar.importArtifacts',
-                          )}
-                          exportProjectLabel={dict(
-                            'PC.Components.FileTreePanel.FileTreeToolbar.exportArtifacts',
-                          )}
-                          isImportingProject={isImportingProject}
-                          sourceControl={{
-                            changeFiles: fileView.changeFiles,
-                            selectedChangeFile:
-                              gitSourceControl.selectedChangeFile,
-                            isCommitting:
-                              gitSourceControl.isCommitting ||
-                              fileView.preview.isSavingFiles,
-                            isRefreshingGitList: fileView.isRefreshingGitList,
-                            onRefreshGitList: fileView.refreshGitList,
-                            onDiffFileSelect: handleGitDiffFileSelect,
-                            onOpenChangeFile:
-                              gitSourceControl.handleOpenChangeFile,
-                            onDiscardChanges:
-                              gitSourceControl.handleDiscardChange,
-                            onStageChanges: gitSourceControl.handleStageChanges,
-                            onUnstageChanges:
-                              gitSourceControl.handleUnstageChanges,
-                            onAddToGitignore: (fileId) => {
-                              void gitSourceControl.handleAddToGitignore(
-                                fileId,
-                              );
-                            },
-                            onCommit: gitSourceControl.handleCommit,
-                          }}
+                <div className={cx(styles['right-column-body'])}>
+                  <div
+                    className={cx(
+                      'flex',
+                      'flex-1',
+                      styles['content-container'],
+                      {
+                        [styles['content-container-fullscreen']]:
+                          fileView.preview.isFullscreen,
+                        // 与 ConversationAgent 的文件预览一致：交由客户端壳层为
+                        // Windows/Linux 沉浸工具栏补偿 fixed 全屏根节点。
+                        'immersive-shell-fullscreen':
+                          fileView.preview.isFullscreen,
+                      },
+                    )}
+                  >
+                    <ResizableSplit
+                      stackBelowWidth={420}
+                      minLeftWidth={180}
+                      minRightWidth={240}
+                      defaultLeftWidth={30}
+                      leftHidden={
+                        !(workspaceView === 'files' && canShowFileView)
+                      }
+                      left={
+                        <div className={styles['middle-panel']}>
+                          {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                          <FileTreeGitSourcePanel
+                            className={cx(
+                              styles['file-tree-sidebar'],
+                              'w-full',
+                            )}
+                            showSourceControl={
+                              isVersionControlEnabled &&
+                              workspaceFiles.files.length > 0
+                            }
+                            enableVersionControl={enableVersionControl}
+                            tree={{
+                              ...fileView.tree,
+                              loadedFolderIds: workspaceFiles.loadedFolderIds,
+                              loadingFolderIds: workspaceFiles.loadingFolderIds,
+                              onLoadDirectory: workspaceFiles.onLoadDirectory,
+                              remoteFileSearch: workspaceFiles.remoteFileSearch,
+                              handleFileSelect: async (fileId, options) => {
+                                await workspaceFiles.ensureFallbackDirectory(
+                                  options,
+                                );
+                                await fileView.tree.handleFileSelect(
+                                  fileId,
+                                  options,
+                                );
+                              },
+                            }}
+                            treeClassName="w-full h-full"
+                            onImportProject={handleImportProject}
+                            importProjectLabel={dict(
+                              'PC.Components.FileTreePanel.FileTreeToolbar.importArtifacts',
+                            )}
+                            exportProjectLabel={dict(
+                              'PC.Components.FileTreePanel.FileTreeToolbar.exportArtifacts',
+                            )}
+                            isImportingProject={isImportingProject}
+                            sourceControl={{
+                              changeFiles: fileView.changeFiles,
+                              selectedChangeFile:
+                                gitSourceControl.selectedChangeFile,
+                              isCommitting:
+                                gitSourceControl.isCommitting ||
+                                fileView.preview.isSavingFiles,
+                              isRefreshingGitList: fileView.isRefreshingGitList,
+                              onRefreshGitList: fileView.refreshGitList,
+                              onDiffFileSelect: handleGitDiffFileSelect,
+                              onOpenChangeFile:
+                                gitSourceControl.handleOpenChangeFile,
+                              onDiscardChanges:
+                                gitSourceControl.handleDiscardChange,
+                              onStageChanges:
+                                gitSourceControl.handleStageChanges,
+                              onUnstageChanges:
+                                gitSourceControl.handleUnstageChanges,
+                              onAddToGitignore: (fileId) => {
+                                void gitSourceControl.handleAddToGitignore(
+                                  fileId,
+                                );
+                              },
+                              onCommit: gitSourceControl.handleCommit,
+                            }}
+                          />
+                        </div>
+                      }
+                      right={renderRightPanel()}
+                    />
+                    {repoDocPreviewData ? (
+                      <div className={styles['repo-doc-preview']}>
+                        <PagePreviewIframe
+                          pagePreviewData={repoDocPreviewData}
+                          active={active}
+                          showHeader
+                          showCloseButton
+                          showCopyButton={false}
+                          onClose={handleCloseRepoDocPreview}
                         />
                       </div>
-                    }
-                    right={renderRightPanel()}
+                    ) : null}
+                  </div>
+
+                  {/* 线上环境构建包版本记录侧栏 */}
+                  <AppDevBuildVersionDrawer
+                    visible={active && buildVersionsOpen}
+                    appId={appId}
+                    currentReleaseId={userAppInfo?.prodReleaseId}
+                    prodDeployed={userAppInfo?.prodDeployed === true}
+                    deployingVersion={publishFlow.deployingReleaseId}
+                    onDeployVersion={(version) => {
+                      void publishFlow.deployVersion(version);
+                    }}
+                    onClose={() => setBuildVersionsOpen(false)}
                   />
-                  {repoDocPreviewData ? (
-                    <div className={styles['repo-doc-preview']}>
-                      <PagePreviewIframe
-                        pagePreviewData={repoDocPreviewData}
-                        active={active}
-                        showHeader
-                        showCloseButton
-                        showCopyButton={false}
-                        onClose={handleCloseRepoDocPreview}
-                      />
-                    </div>
+                  {/* 线上环境发布版本记录侧栏 */}
+                  {appId ? (
+                    <AppDevPublishVersionRecords
+                      appId={appId}
+                      appName={userAppInfo?.name}
+                      visible={active && publishVersionRecordsOpen}
+                      onClose={() => setPublishVersionRecordsOpen(false)}
+                    />
                   ) : null}
                 </div>
-
-                {/* 线上环境构建包版本记录侧栏 */}
-                <AppDevBuildVersionDrawer
-                  visible={active && buildVersionsOpen}
-                  appId={appId}
-                  currentReleaseId={userAppInfo?.prodReleaseId}
-                  prodDeployed={userAppInfo?.prodDeployed === true}
-                  deployingVersion={publishFlow.deployingReleaseId}
-                  onDeployVersion={(version) => {
-                    void publishFlow.deployVersion(version);
-                  }}
-                  onClose={() => setBuildVersionsOpen(false)}
-                />
-                {/* 线上环境发布版本记录侧栏 */}
-                {appId ? (
-                  <AppDevPublishVersionRecords
-                    appId={appId}
-                    appName={userAppInfo?.name}
-                    visible={active && publishVersionRecordsOpen}
-                    onClose={() => setPublishVersionRecordsOpen(false)}
-                  />
-                ) : null}
               </div>
-            </div>
-          }
+            }
+          />
+        </section>
+
+        {/* ==================== 模态弹窗层 ==================== */}
+
+        {/* 导入项目弹窗 */}
+        <ImportProjectModal
+          open={active && openImportProject}
+          loading={isImportingProject}
+          onCancel={() => setOpenImportProject(false)}
+          onConfirm={handleImportProjectConfirm}
         />
-      </section>
 
-      {/* ==================== 模态弹窗层 ==================== */}
-
-      {/* 导入项目弹窗 */}
-      <ImportProjectModal
-        open={active && openImportProject}
-        loading={isImportingProject}
-        onCancel={() => setOpenImportProject(false)}
-        onConfirm={handleImportProjectConfirm}
-      />
-
-      {/* 域名绑定 */}
-      <AppDevSettingsModal
-        open={active && settingsOpen}
-        projectInfo={
-          userAppInfo
-            ? {
-                projectId: userAppInfo.id,
-                name: userAppInfo.name,
-              }
-            : null
-        }
-        domains={userAppDomainList}
-        domainListLoading={userAppDomainListLoading}
-        onCancel={() => setSettingsOpen(false)}
-        onSuccess={() => {
-          if (appId) {
-            runGetUserAppDomainList(appId);
+        {/* 域名绑定 */}
+        <AppDevSettingsModal
+          open={active && settingsOpen}
+          projectInfo={
+            userAppInfo
+              ? {
+                  projectId: userAppInfo.id,
+                  name: userAppInfo.name,
+                }
+              : null
           }
-        }}
-      />
+          domains={userAppDomainList}
+          domainListLoading={userAppDomainListLoading}
+          onCancel={() => setSettingsOpen(false)}
+          onSuccess={() => {
+            if (appId) {
+              runGetUserAppDomainList(appId);
+            }
+          }}
+        />
 
-      {/* Header 发布：选择分类与发布空间，发布到市场 */}
-      <PublishComponentModal
-        mode={AgentComponentTypeEnum.UserApp}
-        targetId={appId || 0}
-        open={active && openPublishModal}
-        spaceId={spaceId}
-        onCancel={() => setOpenPublishModal(false)}
-        onConfirm={() => {
-          setOpenPublishModal(false);
-          if (appId) {
-            runGetUserAppInfo(appId);
-          }
-        }}
-      />
+        {/* Header 发布：选择分类与发布空间，发布到市场 */}
+        <PublishComponentModal
+          mode={AgentComponentTypeEnum.UserApp}
+          targetId={appId || 0}
+          open={active && openPublishModal}
+          spaceId={spaceId}
+          onCancel={() => setOpenPublishModal(false)}
+          onConfirm={() => {
+            setOpenPublishModal(false);
+            if (appId) {
+              runGetUserAppInfo(appId);
+            }
+          }}
+        />
 
-      {/* 部署进度：构建日志 + 生产部署 */}
-      <AppDevPublishProgressModal
-        open={active && publishFlow.open}
-        phase={publishFlow.phase}
-        prodAccessUrl={publishFlow.prodAccessUrl}
-        prodReady={publishFlow.prodReady}
-        services={publishFlow.services}
-        startServices={publishFlow.startServices}
-        errorMessage={publishFlow.errorMessage}
-        failedStage={publishFlow.failedStage}
-        cancelLoading={publishFlow.cancelLoading}
-        onCancelTask={handleCancelDeployTask}
-        stopLoading={publishFlow.stopLoading}
-        onStopDeploy={handleStopDeploy}
-        onClose={handleCloseDeployProgress}
-      />
-    </div>
+        {/* 部署进度：构建日志 + 生产部署 */}
+        <AppDevPublishProgressModal
+          open={active && publishFlow.open}
+          phase={publishFlow.phase}
+          prodAccessUrl={publishFlow.prodAccessUrl}
+          prodReady={publishFlow.prodReady}
+          services={publishFlow.services}
+          startServices={publishFlow.startServices}
+          errorMessage={publishFlow.errorMessage}
+          failedStage={publishFlow.failedStage}
+          cancelLoading={publishFlow.cancelLoading}
+          onCancelTask={handleCancelDeployTask}
+          stopLoading={publishFlow.stopLoading}
+          onStopDeploy={handleStopDeploy}
+          onClose={handleCloseDeployProgress}
+        />
+      </div>
+    </CreditInsufficientProvider>
   );
 };
 

@@ -1,5 +1,9 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
+import {
+  CreditInsufficientPageBanner,
+  CreditInsufficientProvider,
+} from '@/components/business-component/CreditInsufficientNotice';
 import ExternalFilePreview from '@/components/business-component/ExternalFilePreview';
 import FileTreePreviewPanel, {
   type FileTreePreviewPanelProps,
@@ -82,256 +86,262 @@ const LeftContent: React.FC<LeftContentProps> = ({
   const showRightPanel = showFileTreePanel || isPagePreviewVisible;
 
   return (
-    <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-      {/* 页面顶部: 标题区域 */}
-      <header className={cx(styles['title-box'])}>
-        <div
-          className={cx(styles['title-container'], {
-            [styles['title-container-collapsed']]: isAppSidebarMode,
-          })}
-        >
+    <CreditInsufficientProvider>
+      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <CreditInsufficientPageBanner />
+        {/* 页面顶部: 标题区域 */}
+        <header className={cx(styles['title-box'])}>
           <div
-            className={cx('flex', 'items-center', 'gap-4', {
-              [styles['browser-style3-title-leading']]: alignBrowserStyle3Title,
+            className={cx(styles['title-container'], {
+              [styles['title-container-collapsed']]: isAppSidebarMode,
             })}
           >
-            {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
-            <ConditionRender
-              condition={
-                isAppSidebarMode &&
-                !headerProps.isAppSidebarVisible &&
-                !headerProps.hideMenu
-              }
-            >
-              <TooltipIcon
-                title={t('PC.Pages.Chat.expandNavigation')}
-                className={cx(styles['icon-box'])}
-                icon={
-                  <SvgIcon
-                    name="icons-nav-sidebar"
-                    style={{ fontSize: 16 }}
-                    onClick={headerProps.toggleAppSidebarVisible}
-                  />
-                }
-              />
-            </ConditionRender>
-
-            {/* 新建会话；hideNew 时隐藏新建会话图标 */}
-            <ConditionRender
-              condition={
-                isAppSidebarMode &&
-                !headerProps.isAppSidebarVisible &&
-                !headerProps.hideNew
-              }
-            >
-              <TooltipIcon
-                title={t('PC.Pages.Chat.newConversation')}
-                className={cx(styles['icon-box'])}
-                icon={
-                  <SvgIcon
-                    name="icons-nav-new_chat"
-                    style={{ fontSize: 16 }}
-                    onClick={() =>
-                      headerProps.createAppNewConversation(headerProps.agentId)
-                    }
-                  />
-                }
-              />
-            </ConditionRender>
-            {/* 下拉重命名会话、删除会话；hideTitle 时隐藏会话主题 */}
-            {!headerProps.hideTitle &&
-              (headerProps.renderTitle ? (
-                headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
-              ) : (
-                <DropdownChangeName
-                  agentId={headerProps.agentId}
-                  conversationInfo={headerProps.conversationInfo}
-                  setConversationInfo={headerProps.setConversationInfo}
-                  isAppSidebarMode={isAppSidebarMode}
-                />
-              ))}
-          </div>
-
-          <div className={cx('flex', 'items-center', 'gap-4')}>
-            {/* 需付费订阅的智能体：打开订阅套餐 */}
-            {headerProps.isEnableSubscription &&
-              effectiveAgent?.paymentRequired &&
-              !isAppSidebarMode && (
-                <TooltipIcon
-                  title={t('PC.Components.ConversationDetails.paidSubscribe')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-wodedingyue"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => headerProps.setOpenPaymentModal(true)}
-                />
-              )}
-
-            <ConversationPanelActions
-              iconClassName={styles['icon-box']}
-              activeClassName={styles.active}
-              progress={
-                headerProps.hasCapsuleContent && !isAppSidebarMode
-                  ? {
-                      open: headerProps.isCapsulePanelOpen,
-                      running: headerProps.capsuleRunning,
-                      onClick: headerProps.handleToggleCapsulePanel,
-                    }
-                  : undefined
-              }
-              detail={
-                headerProps.showSidebar && !isAppSidebarMode
-                  ? {
-                      open: headerProps.isAgentDetailModalOpen,
-                      onClick: headerProps.handleOpenAgentDetail,
-                    }
-                  : undefined
-              }
-            />
-
-            {/*打开预览页面*/}
-            {!!effectiveAgent?.expandPageArea &&
-              !!effectiveAgent?.pageHomeIndex && (
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.openPreviewPage')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-ecosystem"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => {
-                    headerProps.closePreviewView(); // 关闭文件树
-                    headerProps.handleOpenPreview(effectiveAgent);
-                  }}
-                />
-              )}
-
-            <ConversationPanelActions
-              iconClassName={styles['icon-box']}
-              activeClassName={styles.active}
-              files={
-                headerProps.isShowFilePanel &&
-                headerProps.showFilePreview &&
-                !headerProps.hideTree
-                  ? {
-                      open: headerProps.isFileTreeIconActive,
-                      onClick: headerProps.handleFileTreeVisible,
-                      title: t(
-                        headerProps.isFileTreeIconActive
-                          ? 'PC.Pages.Chat.closeArtifacts'
-                          : 'PC.Pages.Chat.openArtifacts',
-                      ),
-                    }
-                  : undefined
-              }
-              terminal={
-                headerProps.isShowFilePanel && !headerProps.hideTerminal
-                  ? {
-                      open: headerProps.isTerminalIconActive,
-                      onClick: headerProps.handleOpenTerminalPanel,
-                    }
-                  : undefined
-              }
-              desktop={
-                headerProps.isShowFilePanel && headerProps.isShowDesktop
-                  ? {
-                      open: headerProps.isDesktopIconActive,
-                      onClick: headerProps.handleOpenDesktopView,
-                    }
-                  : undefined
-              }
-            />
-
-            {/* 会话内搜索入口暂时移除（ConversationSearchPanel 组件保留，恢复时在此回挂） */}
-
-            {/* 自定义右侧控件插槽（例如发布组件） */}
-            {headerProps.renderHeaderRight?.({ effectiveAgent })}
-          </div>
-        </div>
-      </header>
-
-      {/* 页面主体: 内容区域（聊天区 vs 右侧面板可拖拽调宽，宽度持久化） */}
-      <div className={cx(styles['main-content-box'])}>
-        <ResizableSplit
-          className={cx('flex-1')}
-          minLeftWidth={430}
-          minRightWidth={420}
-          defaultLeftWidth={chatPanelWidth}
-          onResizeEnd={saveChatPanelWidthPercent}
-          left={
-            <div className={cx(styles['chat-pane'])}>
-              <div className={cx(styles['chat-section'])}>
-                <UnifiedChatSession
-                  {...chatSessionProps}
-                  showClearIcon={
-                    effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
-                  }
-                />
-              </div>
-              {/* 会话进度面板：挂 left 栏与 chat-section 平级，定位/容器查询上下文 = chat-pane */}
-              {chatPaneCapsule}
-            </div>
-          }
-          resetTrigger={showRightPanel ? 'visible' : 'hidden'}
-          rightHidden={!showRightPanel}
-          right={
             <div
-              className={cx(
-                styles['file-tree-sidebar'],
-                'flex',
-                'w-full',
-                'overflow-hide',
-              )}
+              className={cx('flex', 'items-center', 'gap-4', {
+                [styles['browser-style3-title-leading']]:
+                  alignBrowserStyle3Title,
+              })}
             >
-              <div className={cx(styles['right-panel-body'])}>
-                {showFileTreePanel ? (
-                  <ConversationInstanceCacheSlot
-                    activeKey={pageCacheKey}
-                    active={showFileTreePanel}
-                    retain={showFileTreePanel}
-                    exclusive={fileSidebarProps.viewMode === 'desktop'}
-                    testId="conversation-workspace-cache"
-                  >
-                    {externalFilePreview ? (
-                      <ExternalFilePreview
-                        className={cx(styles['file-tree-container'])}
-                        cId={externalFilePreview.cId}
-                        targetDir={externalFilePreview.targetDir}
-                        relativePath={externalFilePreview.relativePath}
-                        onBack={onExternalFilePreviewBack}
-                      />
-                    ) : (
-                      <FileTreePreviewPanel
-                        {...fileSidebarProps}
-                        className={cx(
-                          styles['file-tree-container'],
-                          fileSidebarProps.className,
-                        )}
-                      />
-                    )}
-                  </ConversationInstanceCacheSlot>
-                ) : null}
-                {pagePreview ? (
-                  <div
-                    className={cx(styles['page-preview-in-content'], {
-                      [styles['page-preview-in-content-hidden']]:
-                        !isPagePreviewVisible,
-                    })}
-                  >
-                    {pagePreview}
-                  </div>
-                ) : null}
-              </div>
+              {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
+              <ConditionRender
+                condition={
+                  isAppSidebarMode &&
+                  !headerProps.isAppSidebarVisible &&
+                  !headerProps.hideMenu
+                }
+              >
+                <TooltipIcon
+                  title={t('PC.Pages.Chat.expandNavigation')}
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      style={{ fontSize: 16 }}
+                      onClick={headerProps.toggleAppSidebarVisible}
+                    />
+                  }
+                />
+              </ConditionRender>
+
+              {/* 新建会话；hideNew 时隐藏新建会话图标 */}
+              <ConditionRender
+                condition={
+                  isAppSidebarMode &&
+                  !headerProps.isAppSidebarVisible &&
+                  !headerProps.hideNew
+                }
+              >
+                <TooltipIcon
+                  title={t('PC.Pages.Chat.newConversation')}
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-new_chat"
+                      style={{ fontSize: 16 }}
+                      onClick={() =>
+                        headerProps.createAppNewConversation(
+                          headerProps.agentId,
+                        )
+                      }
+                    />
+                  }
+                />
+              </ConditionRender>
+              {/* 下拉重命名会话、删除会话；hideTitle 时隐藏会话主题 */}
+              {!headerProps.hideTitle &&
+                (headerProps.renderTitle ? (
+                  headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
+                ) : (
+                  <DropdownChangeName
+                    agentId={headerProps.agentId}
+                    conversationInfo={headerProps.conversationInfo}
+                    setConversationInfo={headerProps.setConversationInfo}
+                    isAppSidebarMode={isAppSidebarMode}
+                  />
+                ))}
             </div>
-          }
-        />
+
+            <div className={cx('flex', 'items-center', 'gap-4')}>
+              {/* 需付费订阅的智能体：打开订阅套餐 */}
+              {headerProps.isEnableSubscription &&
+                effectiveAgent?.paymentRequired &&
+                !isAppSidebarMode && (
+                  <TooltipIcon
+                    title={t('PC.Components.ConversationDetails.paidSubscribe')}
+                    className={cx(styles['icon-box'])}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-wodedingyue"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={() => headerProps.setOpenPaymentModal(true)}
+                  />
+                )}
+
+              <ConversationPanelActions
+                iconClassName={styles['icon-box']}
+                activeClassName={styles.active}
+                progress={
+                  headerProps.hasCapsuleContent && !isAppSidebarMode
+                    ? {
+                        open: headerProps.isCapsulePanelOpen,
+                        running: headerProps.capsuleRunning,
+                        onClick: headerProps.handleToggleCapsulePanel,
+                      }
+                    : undefined
+                }
+                detail={
+                  headerProps.showSidebar && !isAppSidebarMode
+                    ? {
+                        open: headerProps.isAgentDetailModalOpen,
+                        onClick: headerProps.handleOpenAgentDetail,
+                      }
+                    : undefined
+                }
+              />
+
+              {/*打开预览页面*/}
+              {!!effectiveAgent?.expandPageArea &&
+                !!effectiveAgent?.pageHomeIndex && (
+                  <TooltipIcon
+                    title={t('PC.Pages.Chat.openPreviewPage')}
+                    className={cx(styles['icon-box'])}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={() => {
+                      headerProps.closePreviewView(); // 关闭文件树
+                      headerProps.handleOpenPreview(effectiveAgent);
+                    }}
+                  />
+                )}
+
+              <ConversationPanelActions
+                iconClassName={styles['icon-box']}
+                activeClassName={styles.active}
+                files={
+                  headerProps.isShowFilePanel &&
+                  headerProps.showFilePreview &&
+                  !headerProps.hideTree
+                    ? {
+                        open: headerProps.isFileTreeIconActive,
+                        onClick: headerProps.handleFileTreeVisible,
+                        title: t(
+                          headerProps.isFileTreeIconActive
+                            ? 'PC.Pages.Chat.closeArtifacts'
+                            : 'PC.Pages.Chat.openArtifacts',
+                        ),
+                      }
+                    : undefined
+                }
+                terminal={
+                  headerProps.isShowFilePanel && !headerProps.hideTerminal
+                    ? {
+                        open: headerProps.isTerminalIconActive,
+                        onClick: headerProps.handleOpenTerminalPanel,
+                      }
+                    : undefined
+                }
+                desktop={
+                  headerProps.isShowFilePanel && headerProps.isShowDesktop
+                    ? {
+                        open: headerProps.isDesktopIconActive,
+                        onClick: headerProps.handleOpenDesktopView,
+                      }
+                    : undefined
+                }
+              />
+
+              {/* 会话内搜索入口暂时移除（ConversationSearchPanel 组件保留，恢复时在此回挂） */}
+
+              {/* 自定义右侧控件插槽（例如发布组件） */}
+              {headerProps.renderHeaderRight?.({ effectiveAgent })}
+            </div>
+          </div>
+        </header>
+
+        {/* 页面主体: 内容区域（聊天区 vs 右侧面板可拖拽调宽，宽度持久化） */}
+        <div className={cx(styles['main-content-box'])}>
+          <ResizableSplit
+            className={cx('flex-1')}
+            minLeftWidth={430}
+            minRightWidth={420}
+            defaultLeftWidth={chatPanelWidth}
+            onResizeEnd={saveChatPanelWidthPercent}
+            left={
+              <div className={cx(styles['chat-pane'])}>
+                <div className={cx(styles['chat-section'])}>
+                  <UnifiedChatSession
+                    {...chatSessionProps}
+                    showClearIcon={
+                      effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
+                    }
+                  />
+                </div>
+                {/* 会话进度面板：挂 left 栏与 chat-section 平级，定位/容器查询上下文 = chat-pane */}
+                {chatPaneCapsule}
+              </div>
+            }
+            resetTrigger={showRightPanel ? 'visible' : 'hidden'}
+            rightHidden={!showRightPanel}
+            right={
+              <div
+                className={cx(
+                  styles['file-tree-sidebar'],
+                  'flex',
+                  'w-full',
+                  'overflow-hide',
+                )}
+              >
+                <div className={cx(styles['right-panel-body'])}>
+                  {showFileTreePanel ? (
+                    <ConversationInstanceCacheSlot
+                      activeKey={pageCacheKey}
+                      active={showFileTreePanel}
+                      retain={showFileTreePanel}
+                      exclusive={fileSidebarProps.viewMode === 'desktop'}
+                      testId="conversation-workspace-cache"
+                    >
+                      {externalFilePreview ? (
+                        <ExternalFilePreview
+                          className={cx(styles['file-tree-container'])}
+                          cId={externalFilePreview.cId}
+                          targetDir={externalFilePreview.targetDir}
+                          relativePath={externalFilePreview.relativePath}
+                          onBack={onExternalFilePreviewBack}
+                        />
+                      ) : (
+                        <FileTreePreviewPanel
+                          {...fileSidebarProps}
+                          className={cx(
+                            styles['file-tree-container'],
+                            fileSidebarProps.className,
+                          )}
+                        />
+                      )}
+                    </ConversationInstanceCacheSlot>
+                  ) : null}
+                  {pagePreview ? (
+                    <div
+                      className={cx(styles['page-preview-in-content'], {
+                        [styles['page-preview-in-content-hidden']]:
+                          !isPagePreviewVisible,
+                      })}
+                    >
+                      {pagePreview}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            }
+          />
+        </div>
       </div>
-    </div>
+    </CreditInsufficientProvider>
   );
 };
 
