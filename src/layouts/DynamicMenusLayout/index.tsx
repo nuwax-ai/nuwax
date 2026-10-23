@@ -44,7 +44,23 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = (props) => {
     if (!hasImMenu) return;
     const unreadRefresh = createWebImUnreadRefresh();
     unreadRefreshRef.current = unreadRefresh;
+
+    // NW-153 增强：切回前台对账校准未读数；增加 300ms 防抖合并 visibilitychange 与 focus 连发
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refreshOnVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        void unreadRefresh.refresh();
+      }, 300);
+    };
+    document.addEventListener('visibilitychange', refreshOnVisible);
+    window.addEventListener('focus', refreshOnVisible);
+
     return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', refreshOnVisible);
+      window.removeEventListener('focus', refreshOnVisible);
       unreadRefresh.dispose();
       unreadRefreshRef.current = undefined;
     };

@@ -1,4 +1,5 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import { mapEngineInternalErrorText } from '@/features/conversation/domain/engineErrorFallback';
 import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
 import { isConversationSandboxPath } from '@/features/conversation/presentation-v2/toolFilePresentation';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -32,7 +33,13 @@ const TextBlock: React.FC<{
 }> = ({ children, tone = 'output' }) =>
   children ? (
     <pre className={cx(styles['tool-detail-text'], styles[`is-${tone}`])}>
-      {children}
+      {/* NW-108：工具输出形态的引擎内部错误换用户态文案（命令/输入不改写） */}
+      {tone === 'command'
+        ? children
+        : mapEngineInternalErrorText(
+            children,
+            dict('PC.Components.ConversationRendererV2.engineInternalError'),
+          )}
     </pre>
   ) : null;
 

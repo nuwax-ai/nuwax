@@ -29,6 +29,10 @@ const ALL_TAB: ResourceCategoryInfo = {
   label: dict('PC.Pages.ExpertSkillConnector.tabAll'),
 };
 
+/** 「其他」分类判定：按 label 文案或 key 归一化匹配（U-BH4 置底用） */
+const isOtherCategory = (item: { key: string; label: string }) =>
+  item.label === '其他' || item.key?.trim().toLowerCase() === 'other';
+
 const useResourceCategories = (
   resourceType: ResourceTypeEnum,
   source: ResourceSourceEnum,
@@ -72,9 +76,19 @@ const useResourceCategories = (
 
   const handleSuccess = useCallback(
     (list: { key: string; label: string }[]) => {
-      setCategories([ALL_TAB, ...(list || [])]);
+      const items = list || [];
+      // 系统广场维度：内容分类的「其他」固定置底（U-BH4），其余保持接口下发顺序；
+      // 团队空间维度是空间列表映射，不适用该惯例
+      const ordered =
+        source === 'team'
+          ? items
+          : [
+              ...items.filter((item) => !isOtherCategory(item)),
+              ...items.filter((item) => isOtherCategory(item)),
+            ];
+      setCategories([ALL_TAB, ...ordered]);
     },
-    [],
+    [source],
   );
 
   // 不同数据源走不同接口；任一接口失败时静默降级（仅保留"全部"）；
