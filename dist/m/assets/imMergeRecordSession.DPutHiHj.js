@@ -1,1 +1,0 @@
-import{al as s,J as t}from"./index-CEApRjK-.js";const n="/m/assets/icon-video-play-BhdH60ZI.png";class a{constructor(){this.title="",this.convId="",this.items=[]}}let e="",o=null;function l(n){e=s(),o=n,t({url:"/pages/message/merge-forward-detail"})}function i(){const t=e==s()?o:null;return o=null,t}export{a as I,n as _,l as o,i as t};
