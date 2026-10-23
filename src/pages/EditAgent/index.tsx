@@ -1185,7 +1185,8 @@ const EditAgent: React.FC = () => {
       // 自带 min-width 580（右侧开关/取值控件不可裁），窄于 580+24 时以面板为准
       // 出横向滚动（NW-080 桌面客户端窄窗口右侧控件被裁）
       const isSubscriptionTab =
-        headerTab === 'subscriptionSetting' || headerTab === 'subscriptionStats';
+        headerTab === 'subscriptionSetting' ||
+        headerTab === 'subscriptionStats';
       const subscriptionTabMinWidth = 580 + 24;
       setStyle3MinWidth(
         `${Math.max(

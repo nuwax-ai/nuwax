@@ -29,7 +29,8 @@ export function buildContactDisplayNameMap(
   const map = new Map<string, string>();
   for (const row of rows ?? []) {
     if (row?.userId === null || row?.userId === undefined) continue;
-    const name = typeof row.displayName === 'string' ? row.displayName.trim() : '';
+    const name =
+      typeof row.displayName === 'string' ? row.displayName.trim() : '';
     if (name) map.set(String(row.userId), name);
   }
   return map;
