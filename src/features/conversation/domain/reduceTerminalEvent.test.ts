@@ -2,6 +2,7 @@ import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -101,6 +102,57 @@ describe('reduceTerminalEvent FINAL_RESULT text 投影', () => {
     expect(seenTexts).toHaveLength(1);
     expect(seenTexts[0]).toContain('executeId="exec-backfill-1"');
     expect(message?.text).toContain('<!--think-closed-->');
+  });
+});
+
+describe('reduceTerminalEvent FINAL_RESULT 终态透出（NW-050）', () => {
+  const failedFinal = (
+    error: string,
+    overrides: Partial<ConversationFinalResult> = {},
+  ): ConversationChatResponse => ({
+    completed: true,
+    eventType: ConversationEventTypeEnum.FINAL_RESULT,
+    data: {
+      ...finalResultEvent().data,
+      success: false,
+      error,
+      ...overrides,
+    } as ConversationFinalResult,
+    error: '',
+    requestId: 'req-failed-final',
+  });
+
+  it('success=false 明确失败时消息置 Error，不再显示为运行完成', () => {
+    const { message, taskStatus } = reduceTerminalEvent(
+      [currentMessage()],
+      'm1',
+      failedFinal('context length exceeded'),
+      stubReconciler,
+    );
+    expect(taskStatus).toBe(TaskStatus.FAILED);
+    expect(message?.status).toBe(MessageStatusEnum.Error);
+  });
+
+  it('用户主动取消（保留部分输出）不标 Error：取消不是失败', () => {
+    const { message, taskStatus } = reduceTerminalEvent(
+      [{ ...currentMessage(), text: '部分输出' }],
+      'm1',
+      failedFinal('用户主动取消任务', { outputText: '部分输出' }),
+      stubReconciler,
+    );
+    expect(taskStatus).toBe(TaskStatus.CANCEL);
+    expect(message?.status).toBe(MessageStatusEnum.Complete);
+  });
+
+  it('「正在执行任务」冲突拒绝新请求时不标 Error：旧任务仍在执行', () => {
+    const { message, taskStatus } = reduceTerminalEvent(
+      [currentMessage()],
+      'm1',
+      failedFinal('Agent正在执行任务，请等待当前任务完成后再发送新请求'),
+      stubReconciler,
+    );
+    expect(taskStatus).toBeUndefined();
+    expect(message?.status).toBe(MessageStatusEnum.Complete);
   });
 });
 

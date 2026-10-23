@@ -14,6 +14,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -195,6 +196,13 @@ export const useSourceControl = ({
   } | null>(null);
   /** Git 提交推送进行中 */
   const [isCommitting, setIsCommitting] = useState(false);
+  /**
+   * 提交单飞（NW-123）：isCommitting 是 state，同一事件批次内的连点（含
+   * loading 态重渲染前）读到旧值会放出第二条 /api/git/commit。第一条成功弹
+   * 「提交成功」、第二条撞上已变更的服务端状态被拒（files is invalid）再弹
+   * 橙色失败——一击双提示且自相矛盾。ref 在首个调用同步置位，后续点击直接拒绝。
+   */
+  const commitInFlightRef = useRef(false);
   /** Git 列表刷新进行中 */
   const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
   /** 当前 Git 分支名 */
@@ -693,7 +701,12 @@ export const useSourceControl = ({
         );
         return false;
       }
+      // 单飞：在途提交未收尾时拒绝重入（见 commitInFlightRef 注释）
+      if (commitInFlightRef.current) {
+        return false;
+      }
 
+      commitInFlightRef.current = true;
       setIsCommitting(true);
       try {
         // 执行 git commit + push
@@ -725,6 +738,7 @@ export const useSourceControl = ({
         console.error('Git commit push failed:', error);
         return false;
       } finally {
+        commitInFlightRef.current = false;
         setIsCommitting(false);
       }
     },

@@ -133,25 +133,20 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     }
   };
 
+  // 「预览 / 代码」双模式切换：html / md / .openui.json 存在内容或代理 URL 时展示。
+  // 独立放第二行右侧，不再与文件名、操作按钮挤首行（窄宽度下会被裁切）。
+  const showViewToggle =
+    viewMode === 'preview' &&
+    Boolean(
+      targetNode?.fileProxyUrl ||
+        (targetNode?.content !== undefined && targetNode?.content !== null),
+    ) &&
+    supportsPreviewCodeToggle(fileName);
+
   const hasFileInfoContent = useMemo(() => {
-    if (viewMode === 'preview') {
-      const hasFileDetails = !isFileTreeVisible && fileName;
-      // html / md / .openui.json：存在内容或代理 URL 时展示预览/代码切换
-      const hasSegmented =
-        (targetNode?.fileProxyUrl ||
-          (targetNode?.content !== undefined &&
-            targetNode?.content !== null)) &&
-        supportsPreviewCodeToggle(fileName);
-      return hasFileDetails || hasSegmented;
-    }
-    return true;
-  }, [
-    viewMode,
-    isFileTreeVisible,
-    fileName,
-    targetNode?.fileProxyUrl,
-    targetNode?.content,
-  ]);
+    // 仅 desktop 分支消费（preview 分支的 fileInfo 始终渲染，切换入口已独立成行）
+    return viewMode !== 'preview' || (!isFileTreeVisible && Boolean(fileName));
+  }, [viewMode, isFileTreeVisible, fileName]);
 
   const showRightActionButtons = useMemo(() => {
     const canShare =
@@ -186,290 +181,300 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
-      {viewMode !== 'desktop' && (
-        <div className={cx('flex', 'items-center', 'gap-4')}>
-          <span className={styles.filePreviewLabel}>
-            {dict('PC.Components.FilePathHeader.filePreview')}
-          </span>
+      <div className={styles.headerRow}>
+        {viewMode !== 'desktop' && (
+          <div className={cx('flex', 'items-center', 'gap-4')}>
+            <span className={styles.filePreviewLabel}>
+              {dict('PC.Components.FilePathHeader.filePreview')}
+            </span>
 
-          {/* 文件树展开/折叠按钮 */}
-          <Tooltip
-            title={
-              isFileTreeVisible
-                ? dict('PC.Components.FilePathHeader.collapseFileTree')
-                : dict('PC.Components.FilePathHeader.expandFileTree')
-            }
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={
-                isFileTreeVisible ? (
-                  <MenuFoldOutlined style={{ fontSize: 16 }} />
-                ) : (
-                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
-                )
+            {/* 文件树展开/折叠按钮 */}
+            <Tooltip
+              title={
+                isFileTreeVisible
+                  ? dict('PC.Components.FilePathHeader.collapseFileTree')
+                  : dict('PC.Components.FilePathHeader.expandFileTree')
               }
-              onClick={onFileTreeToggle}
-              className={cx(styles.fileTreeToggleButton, {
-                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
-              })}
-            />
-          </Tooltip>
-        </div>
-      )}
-
-      {viewMode === 'preview' ? (
-        <div className={styles.fileInfo}>
-          {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
-          {!isFileTreeVisible && fileName && (
-            <div className={styles.fileDetails}>
-              <div className={styles.fileName}>{fileName}</div>
-              {formattedSize && (
-                <span className={styles.fileMeta}>({formattedSize})</span>
-              )}
-            </div>
-          )}
-
-          {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮（html / md / .openui.json） */}
-          {(targetNode?.fileProxyUrl ||
-            (targetNode?.content !== undefined &&
-              targetNode?.content !== null)) &&
-            supportsPreviewCodeToggle(fileName) && (
-              <ConfigProvider
-                theme={{
-                  components: {
-                    Segmented: {
-                      itemSelectedBg: '#fff',
-                      itemSelectedColor: '#5147FF',
-                      itemColor: 'rgba(0, 0, 0, 0.45)',
-                      itemHoverColor: 'rgba(0, 0, 0, 0.65)',
-                      trackBg: 'rgba(12, 20, 102, 0.04)',
-                      trackPadding: 2,
-                    },
-                  },
-                }}
-              >
-                <Segmented
-                  value={viewFileType}
-                  onChange={onViewFileTypeChange}
-                  options={[
-                    {
-                      label: dict('PC.Components.FilePathHeader.preview'),
-                      value: 'preview',
-                    },
-                    {
-                      label: dict('PC.Components.FilePathHeader.code'),
-                      value: 'code',
-                    },
-                  ]}
-                />
-              </ConfigProvider>
-            )}
-        </div>
-      ) : (
-        hasFileInfoContent && (
-          <div className={styles.fileInfo}>
-            <div className={styles['pc-box']}>
-              {vncConnectStatus && (
-                <div
-                  className={styles.vncConnectStatus}
-                  style={{
-                    backgroundColor: getVncConnectStatusColor(vncConnectStatus),
-                  }}
-                />
-              )}
-              <div className={styles.fileName}>
-                {agentSandboxName ||
-                  `${
-                    userInfo?.nickName ||
-                    userInfo?.userName ||
-                    dict('PC.Components.FilePathHeader.remote')
-                  }${dict('PC.Components.FilePathHeader.agentComputerSuffix')}`}
-              </div>
-            </div>
-          </div>
-        )
-      )}
-
-      <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
-        <div className={styles.actionButtons}>
-          {targetNode &&
-            fileName &&
-            isShowExportPdfButton &&
-            (isMarkdownFile(fileName) ||
-              fileName.endsWith('.html') ||
-              fileName.endsWith('.htm')) &&
-            viewMode === 'preview' && (
-              <Tooltip
-                title={
-                  isExportingPdf
-                    ? dict('PC.Components.FilePathHeader.exporting')
-                    : dict('PC.Components.FilePathHeader.exportPdf')
-                }
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<FilePdfOutlined />}
-                  onClick={() => onExportPdf?.(targetNode as FileNode)}
-                  className={styles.actionButton}
-                  loading={isExportingPdf}
-                  disabled={isExportingPdf}
-                />
-              </Tooltip>
-            )}
-
-          {viewMode === 'preview' && <LocalFileActions reference={localFile} />}
-          {(targetNode?.fileProxyUrl || localFile) &&
-            isShowDownloadButton &&
-            viewMode === 'preview' && (
-              <Tooltip
-                placement="bottom"
-                title={
-                  isDownloadingFile
-                    ? dict('PC.Components.FilePathHeader.downloading')
-                    : dict('PC.Components.FilePathHeader.download')
-                }
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={
-                    <SvgIcon
-                      name="icons-common-download"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-                  className={styles.actionButton}
-                  loading={isDownloadingFile}
-                  disabled={isDownloadingFile}
-                />
-              </Tooltip>
-            )}
-
-          {!!targetNode?.content && viewMode === 'preview' && (
-            <Tooltip title={dict('PC.Components.FilePathHeader.copy')}>
+            >
               <Button
                 type="text"
                 size="small"
                 icon={
-                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  isFileTreeVisible ? (
+                    <MenuFoldOutlined style={{ fontSize: 16 }} />
+                  ) : (
+                    <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+                  )
                 }
-                onClick={() => {
-                  copyTextToClipboard(targetNode?.content || '', () => {
-                    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
-                  });
-                }}
-                className={styles.actionButton}
+                onClick={onFileTreeToggle}
+                className={cx(styles.fileTreeToggleButton, {
+                  [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+                })}
               />
             </Tooltip>
-          )}
-        </div>
+          </div>
+        )}
 
-        {showRightActionButtons && (
-          <div className={cx(styles.actionButtons)}>
-            {/* Git 版本记录按钮 */}
-            {showGitVersionButton && onToggleGitVersionPanel && (
-              <Tooltip
-                title={dict(
-                  'PC.Pages.AppDevEditorHeaderRight.gitVersionHistory',
+        {viewMode === 'preview' ? (
+          <div className={styles.fileInfo}>
+            {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+            {!isFileTreeVisible && fileName && (
+              <div className={styles.fileDetails}>
+                <div className={styles.fileName}>{fileName}</div>
+                {formattedSize && (
+                  <span className={styles.fileMeta}>({formattedSize})</span>
                 )}
-                placement="bottom"
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<BranchesOutlined style={{ fontSize: 16 }} />}
-                  onClick={onToggleGitVersionPanel}
-                  className={cx(styles.actionButton)}
-                />
-              </Tooltip>
+              </div>
             )}
+          </div>
+        ) : (
+          hasFileInfoContent && (
+            <div className={styles.fileInfo}>
+              <div className={styles['pc-box']}>
+                {vncConnectStatus && (
+                  <div
+                    className={styles.vncConnectStatus}
+                    style={{
+                      backgroundColor:
+                        getVncConnectStatusColor(vncConnectStatus),
+                    }}
+                  />
+                )}
+                <div className={styles.fileName}>
+                  {agentSandboxName ||
+                    `${
+                      userInfo?.nickName ||
+                      userInfo?.userName ||
+                      dict('PC.Components.FilePathHeader.remote')
+                    }${dict(
+                      'PC.Components.FilePathHeader.agentComputerSuffix',
+                    )}`}
+                </div>
+              </div>
+            </div>
+          )
+        )}
 
-            {afterGitVersionActions}
-
-            {/* 分享按钮 */}
-            {isShowShare &&
-              (viewMode === 'desktop' ||
-                (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+        <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
+          <div className={styles.actionButtons}>
+            {targetNode &&
+              fileName &&
+              isShowExportPdfButton &&
+              (isMarkdownFile(fileName) ||
+                fileName.endsWith('.html') ||
+                fileName.endsWith('.htm')) &&
+              viewMode === 'preview' && (
                 <Tooltip
-                  title={dict('PC.Components.FilePathHeader.share')}
+                  title={
+                    isExportingPdf
+                      ? dict('PC.Components.FilePathHeader.exporting')
+                      : dict('PC.Components.FilePathHeader.exportPdf')
+                  }
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<FilePdfOutlined />}
+                    onClick={() => onExportPdf?.(targetNode as FileNode)}
+                    className={styles.actionButton}
+                    loading={isExportingPdf}
+                    disabled={isExportingPdf}
+                  />
+                </Tooltip>
+              )}
+
+            {viewMode === 'preview' && (
+              <LocalFileActions reference={localFile} />
+            )}
+            {(targetNode?.fileProxyUrl || localFile) &&
+              isShowDownloadButton &&
+              viewMode === 'preview' && (
+                <Tooltip
                   placement="bottom"
+                  title={
+                    isDownloadingFile
+                      ? dict('PC.Components.FilePathHeader.downloading')
+                      : dict('PC.Components.FilePathHeader.download')
+                  }
                 >
                   <Button
                     type="text"
                     size="small"
                     icon={
                       <SvgIcon
-                        name="icons-chat-share"
+                        name="icons-common-download"
                         style={{ fontSize: 16 }}
                       />
                     }
-                    onClick={() => onShareAction(viewMode)}
+                    onClick={() =>
+                      onDownloadFileByUrl?.(targetNode as FileNode)
+                    }
+                    className={styles.actionButton}
+                    loading={isDownloadingFile}
+                    disabled={isDownloadingFile}
+                  />
+                </Tooltip>
+              )}
+
+            {!!targetNode?.content && viewMode === 'preview' && (
+              <Tooltip title={dict('PC.Components.FilePathHeader.copy')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  }
+                  onClick={() => {
+                    copyTextToClipboard(targetNode?.content || '', () => {
+                      message.success(
+                        dict('PC.Toast.Global.copiedSuccessfully'),
+                      );
+                    });
+                  }}
+                  className={styles.actionButton}
+                />
+              </Tooltip>
+            )}
+          </div>
+
+          {showRightActionButtons && (
+            <div className={cx(styles.actionButtons)}>
+              {/* Git 版本记录按钮 */}
+              {showGitVersionButton && onToggleGitVersionPanel && (
+                <Tooltip
+                  title={dict(
+                    'PC.Pages.AppDevEditorHeaderRight.gitVersionHistory',
+                  )}
+                  placement="bottom"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<BranchesOutlined style={{ fontSize: 16 }} />}
+                    onClick={onToggleGitVersionPanel}
+                    className={cx(styles.actionButton)}
+                  />
+                </Tooltip>
+              )}
+
+              {afterGitVersionActions}
+
+              {/* 分享按钮 */}
+              {isShowShare &&
+                (viewMode === 'desktop' ||
+                  (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+                  <Tooltip
+                    title={dict('PC.Components.FilePathHeader.share')}
+                    placement="bottom"
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={
+                        <SvgIcon
+                          name="icons-chat-share"
+                          style={{ fontSize: 16 }}
+                        />
+                      }
+                      onClick={() => onShareAction(viewMode)}
+                      className={styles.actionButton}
+                    />
+                  </Tooltip>
+                )}
+
+              {/* 全屏按钮 */}
+              {(showFullscreenIcon || isFullscreen) && (
+                <Tooltip
+                  title={
+                    isFullscreen
+                      ? dict('PC.Components.FilePathHeader.exitFullscreen')
+                      : dict('PC.Components.FilePathHeader.fullscreen')
+                  }
+                  placement="bottom"
+                  key={isFullscreen ? 'exit' : 'enter'}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={
+                      isFullscreen ? (
+                        <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                      ) : (
+                        <SvgIcon
+                          name="icons-common-fullscreen"
+                          style={{ fontSize: 16 }}
+                        />
+                      )
+                    }
+                    onClick={onFullscreen}
                     className={styles.actionButton}
                   />
                 </Tooltip>
               )}
 
-            {/* 全屏按钮 */}
-            {(showFullscreenIcon || isFullscreen) && (
-              <Tooltip
-                title={
-                  isFullscreen
-                    ? dict('PC.Components.FilePathHeader.exitFullscreen')
-                    : dict('PC.Components.FilePathHeader.fullscreen')
-                }
-                placement="bottom"
-                key={isFullscreen ? 'exit' : 'enter'}
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={
-                    isFullscreen ? (
-                      <FullscreenExitOutlined style={{ fontSize: 16 }} />
-                    ) : (
-                      <SvgIcon
-                        name="icons-common-fullscreen"
-                        style={{ fontSize: 16 }}
-                      />
-                    )
-                  }
-                  onClick={onFullscreen}
-                  className={styles.actionButton}
+              {showMoreActions && (
+                <MoreActionsMenu
+                  onImportProject={onImportProject}
+                  onRestartServer={onRestartServer}
+                  onRestartAgent={onRestartAgent}
+                  onExportProject={onExportProject}
+                  isCloudComputer={isCloudComputer}
                 />
-              </Tooltip>
-            )}
+              )}
 
-            {showMoreActions && (
-              <MoreActionsMenu
-                onImportProject={onImportProject}
-                onRestartServer={onRestartServer}
-                onRestartAgent={onRestartAgent}
-                onExportProject={onExportProject}
-                isCloudComputer={isCloudComputer}
-              />
-            )}
-
-            {onClose && !isFullscreen && (
-              <>
-                <div className={styles.divider} />
-                <Tooltip title={dict('PC.Components.FilePathHeader.close')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CloseOutlined />}
-                    onClick={onClose}
-                    className={styles.actionButton}
-                  />
-                </Tooltip>
-              </>
-            )}
-          </div>
-        )}
+              {onClose && !isFullscreen && (
+                <>
+                  <div className={styles.divider} />
+                  <Tooltip title={dict('PC.Components.FilePathHeader.close')}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CloseOutlined />}
+                      onClick={onClose}
+                      className={styles.actionButton}
+                    />
+                  </Tooltip>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* 「预览 / 代码」切换入口放第二行右侧，避免与文件名、操作按钮挤首行被裁切 */}
+      {showViewToggle && (
+        <div className={styles.viewToggleRow}>
+          <ConfigProvider
+            theme={{
+              components: {
+                Segmented: {
+                  itemSelectedBg: '#fff',
+                  itemSelectedColor: '#5147FF',
+                  itemColor: 'rgba(0, 0, 0, 0.45)',
+                  itemHoverColor: 'rgba(0, 0, 0, 0.65)',
+                  trackBg: 'rgba(12, 20, 102, 0.04)',
+                  trackPadding: 2,
+                },
+              },
+            }}
+          >
+            <Segmented
+              value={viewFileType}
+              onChange={onViewFileTypeChange}
+              options={[
+                {
+                  label: dict('PC.Components.FilePathHeader.preview'),
+                  value: 'preview',
+                },
+                {
+                  label: dict('PC.Components.FilePathHeader.code'),
+                  value: 'code',
+                },
+              ]}
+            />
+          </ConfigProvider>
+        </div>
+      )}
 
       <ShareDesktopModal
         fileProxyUrl={targetNode?.fileProxyUrl || null}
