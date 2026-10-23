@@ -2684,6 +2684,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevIndex.publishComponentSuccessTitle": "コンポーネントとして正常に公開されました",
   "PC.Pages.AppDevIndex.publishFailed": "公開に失敗しました",
   "PC.Pages.AppDevIndex.publishFailedRetryAfterFix": "公開に失敗しました。エラーを修正して再試行してください",
+  "PC.Pages.AppDevIndex.publishBuildFailedBlocked": "プロジェクトのビルドに失敗したため、公開申請の送信を中止しました。コードの問題を修正してから再試行してください",
   "PC.Pages.AppDevIndex.selectedFile": "選択したファイル",
   "PC.Pages.AppDevIndex.selectedFileWithName": "選択したファイル: {0}",
   "PC.Pages.AppDevIndex.selectFile": "ファイルの選択",

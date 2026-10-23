@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
-/** 只在账号栏能容纳两个中文字符时显示姓名；测量不依赖姓名显隐。 */
+/** 只在账号栏能容纳「两个字符 + 省略号」（3em）时显示姓名；测量不依赖姓名显隐。
+ *  阈值取 3em 而非 2em：text-overflow: ellipsis 下 2em 只能显示一个字 + 省略号（U-PC3）。 */
 export function useSidebarUserNameVisibility() {
   const userRowRef = useRef<HTMLDivElement>(null);
   const nameThresholdRef = useRef<HTMLSpanElement>(null);

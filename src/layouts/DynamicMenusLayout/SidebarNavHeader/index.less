@@ -103,8 +103,10 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    // 原型 --icon：默认次级灰，仅选中态提亮为品牌色（hover 不高亮，2026-09-12 定调）
-    color: #94939e;
+    // 原型 --icon：默认次级灰，仅选中态提亮为品牌色（hover 不高亮，2026-09-12 定调）。
+    // NW-166：原写死 #94939e 不随主题，深色主题下细描边图标（伙伴 default_message
+    // 为 8 个默认导航图标中唯一 stroke 型）低对比不可见——改用主题自适应次级灰
+    color: @navSecondMenuAdaptiveTextTertiary;
     font-size: 16px;
   }
 

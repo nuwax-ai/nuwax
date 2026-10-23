@@ -1179,8 +1179,19 @@ const EditAgent: React.FC = () => {
       const debugDetailsMinWidth =
         showType === EditAgentShowType.Debug_Details ? 300 : 0;
       // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
+      const columnsMinWidth =
+        leftMinWidth + rightMinWidth + debugDetailsMinWidth + 24;
+      // 订阅设置/订阅统计页签不渲染分栏，分栏最小宽不适用；订阅设置面板
+      // 自带 min-width 580（右侧开关/取值控件不可裁），窄于 580+24 时以面板为准
+      // 出横向滚动（NW-080 桌面客户端窄窗口右侧控件被裁）
+      const isSubscriptionTab =
+        headerTab === 'subscriptionSetting' || headerTab === 'subscriptionStats';
+      const subscriptionTabMinWidth = 580 + 24;
       setStyle3MinWidth(
-        `${leftMinWidth + rightMinWidth + debugDetailsMinWidth + 24}px`,
+        `${Math.max(
+          columnsMinWidth,
+          isSubscriptionTab ? subscriptionTabMinWidth : 0,
+        )}px`,
       );
       return () => {
         document.documentElement.style.minWidth = '1200px';
@@ -1207,6 +1218,7 @@ const EditAgent: React.FC = () => {
   }, [
     agentConfigInfo?.type,
     agentConfigInfo?.hideChatArea,
+    headerTab,
     pagePreviewData,
     isFileTreeVisible,
     showType,
