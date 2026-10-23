@@ -3,6 +3,7 @@
  * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
  * 组件根不带内边距——间距由使用方经 className 决定。
  */
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/token';
 
 @know-text: @colorText;
@@ -43,6 +44,7 @@
 
 .root-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .root-list {
@@ -75,12 +77,7 @@
 // ---- 横向资料行 ----
 .row {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   box-sizing: border-box;
-  // 稳定行高：40px 图标（与技能卡口径一致）+ 上下 8px 内边距
-  min-height: 56px;
   padding: 8px 14px;
   border: 1px solid @know-border;
   border-radius: 8px;
@@ -89,13 +86,28 @@
   // 同技能卡补 cursor:pointer
   cursor: pointer;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  overflow: hidden;
 
   &:hover {
     border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
     box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
       0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
   }
+}
+
+// 横排内容。宽卡一行；窄卡由容器查询改成纵向，高度随内容增高
+.body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  // 40px 图标 + 上下留白，宽卡大约一行高；不锁死外层高度
+  min-height: 40px;
+}
+
+// 网格卡自己做容器。窄宽度只改内部排列，外层不再锁 56px 行高
+.row-grid {
+  container-type: inline-size;
+  container-name: knowledge-card;
 }
 
 // list 变体行：无边框（border 透明占位防行高抖动）+ 悬停灰底,
@@ -124,7 +136,8 @@
 }
 
 .name {
-  flex: 0 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
   overflow: hidden;
   color: @know-text;
   font-size: 14px;
@@ -138,7 +151,7 @@
 // grid（data-variant='grid'）——list 无悬停按钮,时间常显。root-grid/
 // root-list 仅控制列数,不参与行内行为
 .time-pill {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   margin-left: auto;
   padding: 2px 10px;
   border-radius: 20px;
@@ -148,6 +161,30 @@
   line-height: 17px;
   white-space: nowrap;
   transition: opacity 0.15s ease-in-out;
+}
+
+// 单卡放不下一行时改为纵向：图标和文件名靠左，时间靠右
+@container knowledge-card (max-width: 260px) {
+  .body {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 0;
+  }
+
+  .file-icon {
+    align-self: flex-start;
+  }
+
+  .name {
+    flex: none;
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .time-pill {
+    align-self: flex-end;
+    margin-left: 0;
+  }
 }
 
 .row[data-variant='grid']:hover .time-pill {
@@ -195,12 +232,16 @@
 
 // ---- 简单模式（仅 list 变体）：无背景圆形图标 + 标题单行紧凑行 ----
 .row-simple {
-  // 定高与 @ 弹层顶部 Segmented 切换器同高（controlHeight 32），
-  // 内容垂直居中靠行内 align-items:center；清掉基础行 56px 保底高
+  // 定高与 @ 弹层顶部 Segmented 切换器同高（controlHeight 32）
   height: 32px;
   min-height: 0;
   padding-block: 0;
   padding-inline: 12px;
+
+  .body {
+    align-items: center;
+    min-height: 0;
+  }
 
   .name {
     font-size: @fontSize;

@@ -3,6 +3,7 @@
  * 颜色全部走 token.less（--xagi-* 主题变量），随亮/暗主题自动切换。
  */
 @import '@/styles/token';
+@import '@/styles/scrollbar.less';
 @import '@/styles/nav-item-state';
 
 @capability-accent: @colorPrimary;
@@ -230,6 +231,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 56px;
   padding: 12px 20px;
   box-sizing: border-box;
@@ -242,10 +245,12 @@
   gap: 6px;
   min-width: 0;
   overflow-x: auto;
-  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  // 默认隐藏，鼠标移入才显示横向滚动条
+  .scrollbar-auto-hide(4px);
 
   &::-webkit-scrollbar {
-    display: none;
+    height: 4px;
   }
 }
 
