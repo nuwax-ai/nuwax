@@ -1,0 +1,1 @@
+import{al as t}from"./index-CEApRjK-.js";class n{constructor(){this.userId="",this.displayName="",this.avatar=""}}let s=null,a="";function r(){a!=t()&&(s=null,a=t())}function l(t,a,l){if(r(),0==t.length)return null;const e=new n;e.userId=t,e.displayName=a,e.avatar=l,s=e}function e(){return r(),s}export{e as g,l as s};

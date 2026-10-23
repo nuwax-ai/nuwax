@@ -18,7 +18,7 @@
     <h1 id="title">女娲</h1>
     <p id="desc">在浏览器中打开后，可直接进入女娲 App。</p>
     <p id="wechat" class="hint" style="display:none">当前在微信内无法直接打开 App。请点右上角「···」，选择「在浏览器中打开」。</p>
-    <a class="btn" id="open" href="#">打开女娲 App</a>
+    <a class="btn" id="open" href="#" style="display:none">打开女娲 App</a>
   </div>
   <script>
     var q = new URLSearchParams(location.search);
@@ -44,6 +44,7 @@
     if (inWechat) {
       document.getElementById("wechat").style.display = "block";
     } else {
+      open.style.display = "block";
       setTimeout(function () { location.href = scheme; }, 300);
     }
     if (kind === "file" && sk) {
