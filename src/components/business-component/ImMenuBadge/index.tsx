@@ -19,7 +19,7 @@ const UnreadBadge: React.FC<{ children?: React.ReactNode }> = ({
       count={count}
       overflowCount={99}
       size="small"
-      style={{ flexShrink: 0 }}
+      style={{ flexShrink: 0, color: 'inherit' }}
     >
       {children}
     </Badge>
