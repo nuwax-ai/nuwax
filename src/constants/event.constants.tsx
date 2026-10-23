@@ -12,4 +12,5 @@ export const EVENT_TYPE: Record<string, EventTypeEnum> = {
   ProjectChanged: EventTypeEnum.ProjectChanged,
   CloseMobileMenu: EventTypeEnum.CloseMobileMenu, // 移动端菜单关闭请求（会话行点击）
   CreditSummaryUpdated: EventTypeEnum.CreditSummaryUpdated, // 全局积分轮询拿到最新 summary
+  CreditPurchasePaymentStarted: EventTypeEnum.CreditPurchasePaymentStarted, // 积分套餐已进入支付页
 };
