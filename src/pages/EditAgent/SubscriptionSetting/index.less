@@ -6,6 +6,12 @@
   height: 100%;
   overflow-y: auto;
   padding: 16px;
+  // 窄窗口（桌面客户端 webview）下保证设置行完整可读：
+  // 左侧说明文案（最长 desc 约 264px）+ 右侧控件（输入 120 + 间距 + 保存按钮约 200px）
+  // + 容器/面板/行三层内边距（32+40+32），小于该值时依赖外层
+  // EditAgent 的 .section-scroll 横向滚动，而不是把右侧开关/取值裁掉（NW-080）
+  min-width: 580px;
+  box-sizing: border-box;
 }
 
 .setting-panel {

@@ -140,6 +140,7 @@ import { UserAppDbEnvEnum } from './services/appDb';
 import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
+  apiUserAppTasksActive,
   apiUserAppUpdate,
   getUserAppReadinessUiKind,
   getUserAppTtydProxyWsUrl,
@@ -2052,6 +2053,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       data,
       'modify',
     );
+    // NW-123：文件树滞后/未加载时映射结果为空，files:[] 会被后端以
+    // "files is invalid" 拒绝并弹全局橙色失败——与提交流程的绿色成功提示
+    // 同屏自相矛盾。无可保存内容时直接跳过请求（与防抖单文件保存同口径）。
+    if (updatedFilesList.length === 0) {
+      return false;
+    }
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: updatedFilesList as UpdateFileInfo[],
@@ -3279,7 +3286,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
-   * 未部署等状态下也要等计算容器 running，再调应用 restart。
+   * 开发环境先查 tasks/active。devActionAllowed 为 true 才继续 restart。
+   * 为 false 时，若已有带 taskId 的 dev_restart 任务则直接接日志流；否则提示并返回。
+   * 线上环境不查。未部署等状态下也要等计算容器 running，再调应用 restart。
    */
   const handleRestartPreviewRuntime = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -3292,6 +3301,35 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       appStatus === UserAppReadinessStatusEnum.Stopping
     ) {
       return;
+    }
+    if (envToRestart === UserAppDbEnvEnum.Dev) {
+      if (!appId) {
+        return;
+      }
+      try {
+        const activeResult = await apiUserAppTasksActive(appId);
+        if (dbEnvRef.current !== envToRestart) {
+          return;
+        }
+        if (activeResult?.data?.devActionAllowed !== true) {
+          // 已有进行中的开发重启任务时直接接上日志流，不再重复 restart
+          const restartTask = (activeResult?.data?.tasks || []).find(
+            (item) =>
+              item.taskType === UserAppTaskTypeEnum.DevRestart && !!item.taskId,
+          );
+          if (!restartTask) {
+            message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+            return;
+          }
+          void previewRuntime.attachExistingTask(
+            restartTask,
+            UserAppDbEnvEnum.Dev,
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('[AppDevPro] 重启前查询进行中任务失败', error);
+      }
     }
     if (restartPreviewWaitRef.current) {
       return;
@@ -3317,7 +3355,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       restartPreviewWaitRef.current = false;
       setAwaitingContainerForRestart(false);
     }
-  }, [previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
+  }, [appId, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {

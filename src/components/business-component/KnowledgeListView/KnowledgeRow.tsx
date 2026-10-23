@@ -39,23 +39,29 @@ const KnowledgeRow: React.FC<KnowledgeRowProps> = ({
     <div
       data-knowledge-key={item.key}
       data-variant={variant}
-      className={cx(styles.row, simple && styles['row-simple'])}
+      className={cx(
+        styles.row,
+        variant === 'grid' && styles['row-grid'],
+        simple && styles['row-simple'],
+      )}
       onClick={() => onSelect(item)}
     >
-      <RepoFileIcon
-        fileType={item.fileType}
-        pageType={item.pageType}
-        name={name}
-        className={cx(styles['file-icon'], simple && styles['icon-simple'])}
-      />
-      <span className={cx(styles.name)} title={name}>
-        {name}
-      </span>
-      {variant === 'grid' && !!item.usedTime && (
-        <span className={cx(styles['time-pill'])} title={item.usedTime}>
-          {formatTimeAgo(item.usedTime)}
+      <div className={cx(styles.body)}>
+        <RepoFileIcon
+          fileType={item.fileType}
+          pageType={item.pageType}
+          name={name}
+          className={cx(styles['file-icon'], simple && styles['icon-simple'])}
+        />
+        <span className={cx(styles.name)} title={name}>
+          {name}
         </span>
-      )}
+        {variant === 'grid' && !!item.usedTime && (
+          <span className={cx(styles['time-pill'])} title={item.usedTime}>
+            {formatTimeAgo(item.usedTime)}
+          </span>
+        )}
+      </div>
       {variant === 'grid' && (
         <div className={cx(styles.actions)}>
           {/* 悬停浮现的「选择」按钮（覆盖时间胶囊，不占布局空间；与整行

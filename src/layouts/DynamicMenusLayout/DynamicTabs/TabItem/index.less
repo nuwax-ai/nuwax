@@ -7,7 +7,12 @@
   transition: background-color 0.3s, color 0.3s;
   user-select: none; /* 禁止选中 */
 
+  :global(.ant-badge) {
+    color: inherit;
+  }
+
   .active-icon-container {
+    color: inherit;
     font-size: 20px;
     display: flex;
     justify-content: center;

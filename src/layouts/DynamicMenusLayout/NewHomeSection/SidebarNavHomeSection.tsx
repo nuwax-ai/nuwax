@@ -28,6 +28,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 }) => {
   const location = useLocation();
   const { aiOSCommercialEdition } = useCommercialEdition();
+  const showProjectSection = aiOSCommercialEdition && !shell.projectEmpty;
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表）；NW-149 起记录最后一次
   // 布局，刷新或重开客户端后保持收起。读取失败由偏好模块回退默认展开
@@ -154,7 +155,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       className={cx(styles['section-tabs'], {
         [styles['task-section-tabs']]: options.task,
         [styles['task-section-tabs-with-project']]:
-          options.task && aiOSCommercialEdition,
+          options.task && showProjectSection,
         [styles['section-tabs-collapsed']]: options.collapsed,
         [styles['section-tabs-sticky']]: true,
       })}
@@ -217,14 +218,20 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     >
       {aiOSCommercialEdition && (
         <>
-          {renderSectionHeader({
-            label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
-            collapsed: projectCollapsed,
-            onToggle: handleProjectHeaderClick,
-          })}
+          {/* NW-195：确认真无项目时整组隐藏（标题＋内容），不再占位展示空态。 */}
+          {showProjectSection &&
+            renderSectionHeader({
+              label: dict(
+                'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
+              ),
+              collapsed: projectCollapsed,
+              onToggle: handleProjectHeaderClick,
+            })}
+          {/* hidden 而非卸载：ProjectPanel 必须保持挂载，其他入口新建项目后
+              上报链（计数/空态）才能驱动分组恢复显示。 */}
           <div
             className={cx(styles['project-list-section'])}
-            hidden={projectCollapsed}
+            hidden={projectCollapsed || shell.projectEmpty}
           >
             <ProjectPanel
               ref={projectPanelRef}
@@ -234,6 +241,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
               onConversationClick={shell.handleConversationClick}
               activeConversationId={shell.chatId}
               onActiveChildResolved={shell.setActiveProjectChildId}
+              onEmptyStateChange={shell.handleProjectEmptyChange}
             />
           </div>
         </>
@@ -259,17 +267,20 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
             onFlagChanged={shell.handleConversationFlagChanged}
             onCollectedChanged={shell.handleConversationCollectedChanged}
           />
-          {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。 */}
-          {shell.hasMore && (
-            <button
-              type="button"
-              className={styles['task-load-more']}
-              disabled={shell.loading}
-              onClick={() => shell.refreshList()}
-            >
-              {dict('PC.Components.AgentConversation.viewMore')}
-            </button>
-          )}
+          {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。
+              加载中或尚无数据时不展示查看更多，避免在转圈下方占位。 */}
+          {!shell.loading &&
+            (shell.visibleConversationList?.length ?? 0) > 0 &&
+            shell.hasMore && (
+              <button
+                type="button"
+                className={styles['task-load-more']}
+                disabled={shell.loading}
+                onClick={() => shell.refreshList()}
+              >
+                {dict('PC.Components.AgentConversation.viewMore')}
+              </button>
+            )}
         </div>
       )}
     </div>

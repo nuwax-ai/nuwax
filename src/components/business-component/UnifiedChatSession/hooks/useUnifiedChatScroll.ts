@@ -24,6 +24,68 @@ export interface UseUnifiedChatScrollProps {
   showScrollBtn?: boolean;
 }
 
+/** 上滑加载历史落地后的「安置窗口」时长：覆盖图片/mermaid/气泡折叠等异步高度变化 */
+const HISTORY_SETTLE_WINDOW_MS = 800;
+
+/** 锚点修正的最小阈值(px)：亚像素排版抖动不处理 */
+const SCROLL_ANCHOR_EPSILON = 1;
+
+/** 旧线 adjustScrollPositionAfterDOMUpdate 的活动窗口标记（scrollUtils 写入） */
+const LEGACY_ANCHOR_WINDOW_FLAG = '__legacyScrollAnchorWindow';
+
+interface HistoryScrollAnchor {
+  /** 首条与视口相交的内容子元素（历史插入不重建其 DOM，跨插入稳定） */
+  el: HTMLElement;
+  /** 锚点相对滚动视口顶缘的偏移；用户滚动时实时重录，补偿只认最新阅读位置 */
+  viewportOffset: number;
+}
+
+/**
+ * 选取滚动内容中首条与视口相交的子元素作为上滑加载历史的滚动锚点。
+ * 视口顶缘贴顶（scrollTop≈0）时选中的可能是哨兵/表单等恒不移动的节点，
+ * 历史内容插在其下方 → 偏移不变 → 不补偿，恰好是「顶部读最新一页」的正确表现。
+ */
+const pickHistoryScrollAnchor = (
+  container: HTMLElement,
+): HistoryScrollAnchor | null => {
+  const content = container.firstElementChild;
+  const parent = (content as HTMLElement | null) ?? container;
+  const children = Array.from(parent.children) as HTMLElement[];
+  if (!children.length) return null;
+  const containerTop = container.getBoundingClientRect().top;
+  const containerBottom = containerTop + container.clientHeight;
+  for (const child of children) {
+    if (child.offsetHeight <= 0) continue;
+    const top = child.getBoundingClientRect().top;
+    if (
+      top < containerBottom &&
+      top + child.offsetHeight > containerTop + SCROLL_ANCHOR_EPSILON
+    ) {
+      return { el: child, viewportOffset: top - containerTop };
+    }
+  }
+  return null;
+};
+
+/**
+ * 把锚点推回记录的视口偏移（撑高与收缩一并回推）。
+ * 与浏览器原生 scroll anchoring 幂等：若原生已补偿，delta≈0，本函数不再动作。
+ */
+const restoreHistoryScrollAnchor = (
+  container: HTMLElement,
+  anchor: HistoryScrollAnchor,
+): boolean => {
+  if (!container.contains(anchor.el)) return false;
+  const containerTop = container.getBoundingClientRect().top;
+  const delta =
+    anchor.el.getBoundingClientRect().top -
+    containerTop -
+    anchor.viewportOffset;
+  if (Math.abs(delta) < SCROLL_ANCHOR_EPSILON) return true;
+  container.scrollTop += delta;
+  return true;
+};
+
 export function useUnifiedChatScroll({
   active = true,
   messageList = [],
@@ -62,6 +124,16 @@ export function useUnifiedChatScroll({
   const internalScrollTimeoutRef = useRef<any>(null);
   const scrollTimeoutRef = externalScrollTimeoutRef || internalScrollTimeoutRef;
   const programmaticTimerRef = useRef<any>(null);
+  // —— 上滑加载历史的滚动锚定（NW-062：滚动中旧消息异常浮出/弹出）——
+  // 触发沿记录的「首条可见内容块」锚点；落地沿与安置窗口内持续把锚点推回
+  // 用户最新阅读位置，替代旧的单帧 ΔH 算术补偿。
+  const historyAnchorRef = useRef<HistoryScrollAnchor | null>(null);
+  const settleObserverRef = useRef<ResizeObserver | null>(null);
+  const settleTimerRef = useRef<any>(null);
+  /** 安置窗口的算术兜底基线（锚点丢失时退化为增量 ΔH 补偿） */
+  const settleBaselineRef = useRef<{ height: number; top: number } | null>(
+    null,
+  );
   const [scrollBtnVisible, setScrollBtnVisibleState] =
     useState<boolean>(showScrollBtn);
   const setScrollBtnVisible = useCallback(
@@ -89,6 +161,66 @@ export function useUnifiedChatScroll({
       programmaticTimerRef.current = null;
     }, 100);
   }, []);
+
+  // 安置窗口单次补偿：锚点优先（撑高/收缩都回推），锚点丢失时退化为增量 ΔH（只补撑高）。
+  // 贴底跟随模式（allowAutoScroll）下不干预——置底由尾部跟随逻辑负责。
+  const runHistorySettleTick = useCallback(
+    (element: HTMLElement) => {
+      if (!activeRef.current || allowAutoScrollRef.current) return;
+      if (element.clientHeight === 0) return;
+      const anchor = historyAnchorRef.current;
+      if (anchor && element.contains(anchor.el)) {
+        restoreHistoryScrollAnchor(element, anchor);
+      } else if (settleBaselineRef.current) {
+        const diff = element.scrollHeight - settleBaselineRef.current.height;
+        if (diff > 0) {
+          element.scrollTop = settleBaselineRef.current.top + diff;
+        }
+      }
+      if (settleBaselineRef.current) {
+        settleBaselineRef.current = {
+          height: element.scrollHeight,
+          top: element.scrollTop,
+        };
+      }
+    },
+    [allowAutoScrollRef],
+  );
+
+  const stopHistorySettleWindow = useCallback(() => {
+    settleObserverRef.current?.disconnect();
+    settleObserverRef.current = null;
+    if (settleTimerRef.current) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+    settleBaselineRef.current = null;
+  }, []);
+
+  const startHistorySettleWindow = useCallback(
+    (element: HTMLElement) => {
+      stopHistorySettleWindow();
+      if (
+        typeof ResizeObserver === 'undefined' ||
+        (element as any)[LEGACY_ANCHOR_WINDOW_FLAG]
+      ) {
+        return;
+      }
+      settleBaselineRef.current = {
+        height: element.scrollHeight,
+        top: element.scrollTop,
+      };
+      const observer = new ResizeObserver(() => runHistorySettleTick(element));
+      const content = element.firstElementChild ?? element;
+      observer.observe(content);
+      settleObserverRef.current = observer;
+      settleTimerRef.current = setTimeout(() => {
+        runHistorySettleTick(element);
+        stopHistorySettleWindow();
+      }, HISTORY_SETTLE_WINDOW_MS);
+    },
+    [runHistorySettleTick, stopHistorySettleWindow],
+  );
 
   // 隐藏后 scrollTop 读值为零，只记录可见时的位置。恢复跟随意图与阅读位置
   // 在布局阶段完成，避免后台流式更新或旧滚动检测覆盖用户最后停留的位置。
@@ -118,6 +250,21 @@ export function useUnifiedChatScroll({
     const rememberVisiblePosition = () => {
       if (activeRef.current && element.clientHeight > 0) {
         lastVisibleScrollTopRef.current = element.scrollTop;
+        // 加载历史期间/安置窗口内用户继续滚动（触控板惯性极常见）：
+        // 跟随用户刷新锚点偏移与安置基线，补偿只锚定「最新」阅读位置。
+        // 本补偿自身触发的 scroll 事件会重录到已修正后的偏移，天然幂等。
+        const anchor = historyAnchorRef.current;
+        if (anchor && element.contains(anchor.el)) {
+          anchor.viewportOffset =
+            anchor.el.getBoundingClientRect().top -
+            element.getBoundingClientRect().top;
+        }
+        if (settleBaselineRef.current) {
+          settleBaselineRef.current = {
+            height: element.scrollHeight,
+            top: element.scrollTop,
+          };
+        }
       }
     };
     rememberVisiblePosition();
@@ -296,8 +443,9 @@ export function useUnifiedChatScroll({
       if (programmaticTimerRef.current) {
         clearTimeout(programmaticTimerRef.current);
       }
+      stopHistorySettleWindow();
     };
-  }, []);
+  }, [stopHistorySettleWindow]);
 
   // 安全网：isLoading 从 true → false 时（消息刚完成渲染），补触发多级延迟置底。
   const prevIsLoadingRef = useRef(isLoading);
@@ -380,20 +528,62 @@ export function useUnifiedChatScroll({
 
   useLayoutEffect(() => {
     const element = messageViewRef.current;
-    if (!active || !element || element.clientHeight === 0) return;
-
-    if (prevLoadingMoreRef.current && !loadingMore) {
-      const heightDifference =
-        element.scrollHeight - lastScrollHeightRef.current;
-      if (heightDifference > 0) {
-        element.scrollTop = lastScrollTopRef.current + heightDifference;
+    if (!active || !element || element.clientHeight === 0) {
+      if (!active) {
+        // 隐藏/失活即终止本窗口：锚点与兜底基线随会话切换作废
+        historyAnchorRef.current = null;
+        stopHistorySettleWindow();
       }
+      return;
+    }
+
+    // 旧线 adjustScrollPositionAfterDOMUpdate 窗口活动时整体让位（见 scrollUtils 标记）
+    const legacyWindowActive = Boolean(
+      (element as any)[LEGACY_ANCHOR_WINDOW_FLAG],
+    );
+
+    // 触发沿（false→true）：记录首条可见内容块为锚点
+    if (!prevLoadingMoreRef.current && loadingMore) {
+      historyAnchorRef.current = legacyWindowActive
+        ? null
+        : pickHistoryScrollAnchor(element);
+    }
+
+    // 落地沿（true→false）：锚点推回原偏移；锚点不可用时回退旧的 ΔH 单帧补偿
+    if (prevLoadingMoreRef.current && !loadingMore && !legacyWindowActive) {
+      const anchor = historyAnchorRef.current;
+      let anchored = false;
+      if (anchor) {
+        if (element.contains(anchor.el)) {
+          restoreHistoryScrollAnchor(element, anchor);
+          anchored = true;
+        } else {
+          historyAnchorRef.current = null;
+        }
+      }
+      if (!anchored) {
+        const heightDifference =
+          element.scrollHeight - lastScrollHeightRef.current;
+        if (heightDifference > 0) {
+          element.scrollTop = lastScrollTopRef.current + heightDifference;
+        }
+      }
+      // 历史内容落地后图片/mermaid 撑高、V2 用户气泡先全量挂载再折叠收缩等
+      // 都发生在本帧之后，开有界安置窗口持续补偿
+      startHistorySettleWindow(element);
     }
 
     lastScrollHeightRef.current = element.scrollHeight;
     lastScrollTopRef.current = element.scrollTop;
     prevLoadingMoreRef.current = loadingMore || false;
-  }, [active, messageList, loadingMore]);
+  }, [
+    active,
+    messageList,
+    loadingMore,
+    messageViewRef,
+    startHistorySettleWindow,
+    stopHistorySettleWindow,
+  ]);
 
   // 处理滚动区域 hover 及滚动按钮显示逻辑
   const handleMouseEnter = () => {

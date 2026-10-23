@@ -363,6 +363,61 @@ describe('导航主动校准伙伴未读数', () => {
       expect(mocks.request).not.toHaveBeenCalled();
     },
   );
+
+  it('页面切回前台（visibilitychange/focus）防抖对账，连发事件仅触发单次查询', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.request.mockResolvedValue(success(6));
+      renderNavigation();
+      // 初次挂载已有 1 次查询
+      expect(mocks.request).toHaveBeenCalledTimes(1);
+
+      // 模拟切回前台：连续触发 visibilitychange 与 focus
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      });
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('focus'));
+      });
+
+      // 300ms 计时前不立即发查
+      expect(mocks.request).toHaveBeenCalledTimes(1);
+
+      // 快进防抖时间
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // 防抖后只多触发 1 次，共 2 次
+      expect(mocks.request).toHaveBeenCalledTimes(2);
+      expect(imUnreadState.getSnapshot()).toBe(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('页面不可见时不触发切回前台对账', async () => {
+    vi.useFakeTimers();
+    try {
+      renderNavigation();
+      expect(mocks.request).toHaveBeenCalledTimes(1);
+
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      });
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(mocks.request).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('消息导航未读角标', () => {

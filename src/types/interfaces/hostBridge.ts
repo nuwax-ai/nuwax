@@ -200,6 +200,15 @@ export type CaptureState =
 
 /** 渲染进程侧可见的桥形状。 */
 export interface CaptureBridge {
+  interactive?(options: {
+    action: 'screenshot' | 'mp4' | 'gif';
+    compression?: CaptureCompression;
+    maxDurationMs?: number;
+  }): Promise<CaptureResult>;
+  onShortcut?(listener: {
+    canHandle(): boolean;
+    run(action: 'screenshot' | 'mp4' | 'gif'): void;
+  }): () => void;
   getCapabilities(): Promise<CaptureCapabilities>;
   screenshot(options?: ScreenshotOptions): Promise<CaptureResult>;
   record(options: RecordOptions): Promise<CaptureResult>;

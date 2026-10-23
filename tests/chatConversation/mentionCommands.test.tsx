@@ -318,6 +318,33 @@ describe('编辑器发送协议和历史', () => {
     fireEvent.keyDown(editor, { key: 'Escape' });
     expect(send).not.toHaveBeenCalled();
   });
+  it('有序列表删序号后撤销，光标回到删除点而不是内容末尾（NW-065）', () => {
+    const { container } = render(
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={vi.fn()} />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    // Shift+Enter 多行有序列表的真实 DOM 产物：br 分行的文本节点
+    editor.innerHTML = '1. 甲<br>2. 乙';
+    const text2 = editor.lastChild as Text;
+    caret(text2, 1); // 光标在行 2 序号 "2" 之后
+    editor.focus();
+    fireEvent.input(editor); // 提交快照（含光标）
+
+    // 删除序号字符 "2"：行 2 文本变 ". 乙"，光标停在删除点
+    text2.textContent = '. 乙';
+    caret(text2, 0);
+    fireEvent.input(editor);
+    expect(getSerializedEditorText(editor)).toBe('1. 甲\n. 乙');
+
+    // 撤销删除：内容恢复，光标应回到删除点（行 2 行首、"2" 之前）
+    fireEvent.keyDown(editor, { key: 'z', ctrlKey: true });
+    expect(getSerializedEditorText(editor)).toBe('1. 甲\n2. 乙');
+    const selection = window.getSelection();
+    expect(selection?.anchorNode).toBe(editor.lastChild);
+    expect(selection?.anchorOffset).toBe(0);
+  });
 });
 
 describe('外部技能回填（defaultMentions）', () => {
