@@ -13,15 +13,6 @@
           ]
         },
         {
-          "matcher": "Edit|Write",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "node \"${ZCODE_PROJECT_DIR}/.claude/hooks/plan-gate.mjs\""
-            }
-          ]
-        },
-        {
           "matcher": "Bash",
           "hooks": [
             {

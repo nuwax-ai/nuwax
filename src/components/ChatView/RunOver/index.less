@@ -41,7 +41,10 @@
 }
 
 .pop-content {
-  max-width: 500px;
+  // NW-197: 资料库右侧 AI 面板是 iframe（窄于 500px），浮层挂在 iframe 内 body，
+  // 硬编码 500px 会左右溢出 iframe 视口被裁；取视口宽-24px 与 500px 的较小值。
+  // 主站宽视口场景（>524px）不受影响。
+  max-width: min(500px, calc(100vw - 24px));
   max-height: 300px;
   overflow-y: auto;
   padding: @padding;
