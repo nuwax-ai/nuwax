@@ -33,6 +33,8 @@ interface SubscriptionPlanCardsProps {
   price?: number;
   status?: MySubscriptionStatusEnum;
   period?: MyPlanPeriodEnum;
+  /** 弹窗内嵌时去掉页面级上下外边距 */
+  embedded?: boolean;
 }
 
 const cx = classNames.bind(styles);
@@ -58,7 +60,15 @@ const StarIcon = ({ color = 'currentColor' }: { color?: string }) => (
 );
 
 const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
-  const { data = [], currentPlanId, price, endTime, status, period } = props;
+  const {
+    data = [],
+    currentPlanId,
+    price,
+    endTime,
+    status,
+    period,
+    embedded,
+  } = props;
   const currentPrice = currentPlanId ? price ?? 0 : 0;
 
   const getActionVerb = (planPrice: number) => {
@@ -195,10 +205,16 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
   };
 
   return (
-    <div className={cx(styles['subscription-plans-container'])}>
-      <div className={cx(styles['plans-title'])}>
-        {dict('PC.Pages.MorePage.MySubscriptions.planGrid')}
-      </div>
+    <div
+      className={cx(styles['subscription-plans-container'], {
+        [styles['subscription-plans-embedded']]: embedded,
+      })}
+    >
+      {!embedded && (
+        <div className={cx(styles['plans-title'])}>
+          {dict('PC.Pages.MorePage.MySubscriptions.planGrid')}
+        </div>
+      )}
       <div className={cx(styles['plans-flex-wrapper'])}>
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlanId?.toString();

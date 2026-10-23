@@ -1,0 +1,48 @@
+@import '@/styles/token.less';
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginSm;
+  background: #fbf4e8;
+  color: #9a7344;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.banner-page {
+  flex-shrink: 0;
+  justify-content: center;
+  gap: @margin;
+  padding: @paddingXs @padding;
+}
+
+.banner-input {
+  margin-bottom: 6px;
+  padding: @paddingXs @paddingSm;
+  border-radius: @borderRadius;
+}
+
+.banner-text {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  min-width: 0;
+}
+
+.banner-icon {
+  margin-top: 3px;
+  font-size: @fontSize;
+}
+
+.upgrade-button {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 @paddingSm;
+  border-color: @colorPrimary;
+  border-radius: @borderRadiusOuter;
+  background: @colorPrimary;
+  color: #fff;
+  box-shadow: none;
+}
