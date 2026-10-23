@@ -9,7 +9,8 @@ const { execFileSync } = require('child_process');
 // 注意 npm run 的附加参数只会落到复合命令最后一段（build:prod:m 的尾巴是 deploy-asset-retention），传不到本脚本。
 const MOBILE_DIR_NAME = 'nuwax-mobile';
 const FALLBACK_REPO_URL = 'https://github.com/nuwax-ai/nuwax-mobile.git';
-const DEFAULT_BRANCH = 'feat/nuwa-zhuoda-2026.09.30';
+// const DEFAULT_BRANCH = 'feat/nuwa-zhuoda-2026.09.30';
+const DEFAULT_BRANCH = 'feat/app-share';
 const TARGET_DIR = 'unpackage/dist/build/web';
 const DIST_M_DIR = path.join(__dirname, '../dist/m');
 
