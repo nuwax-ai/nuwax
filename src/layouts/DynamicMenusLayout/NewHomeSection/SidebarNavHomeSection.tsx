@@ -28,6 +28,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 }) => {
   const location = useLocation();
   const { aiOSCommercialEdition } = useCommercialEdition();
+  const showProjectSection = aiOSCommercialEdition && !shell.projectEmpty;
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表）；NW-149 起记录最后一次
   // 布局，刷新或重开客户端后保持收起。读取失败由偏好模块回退默认展开
@@ -154,7 +155,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       className={cx(styles['section-tabs'], {
         [styles['task-section-tabs']]: options.task,
         [styles['task-section-tabs-with-project']]:
-          options.task && aiOSCommercialEdition,
+          options.task && showProjectSection,
         [styles['section-tabs-collapsed']]: options.collapsed,
         [styles['section-tabs-sticky']]: true,
       })}
@@ -218,7 +219,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       {aiOSCommercialEdition && (
         <>
           {/* NW-195：确认真无项目时整组隐藏（标题＋内容），不再占位展示空态。 */}
-          {!shell.projectEmpty &&
+          {showProjectSection &&
             renderSectionHeader({
               label: dict(
                 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
