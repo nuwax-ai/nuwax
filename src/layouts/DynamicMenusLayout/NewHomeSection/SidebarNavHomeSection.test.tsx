@@ -121,7 +121,11 @@ describe('style3 侧栏切回同步', () => {
   });
 
   it('任务首屏未撑出滚动区时可通过查看更多取得下一页', () => {
-    const taskShell = { ...shell, hasMore: true };
+    const taskShell = {
+      ...shell,
+      hasMore: true,
+      visibleConversationList: [{ id: 1, title: 'task 1' } as any],
+    };
     render(<SidebarNavHomeSection shell={taskShell} />);
 
     // 此时没有可滚动容器，也不会触发 scroll；按钮仍应提供分页入口。
@@ -135,19 +139,52 @@ describe('style3 侧栏切回同步', () => {
     expect(refreshList).toHaveBeenCalledWith();
   });
 
-  it('任务加载中或已到末页时不开放查看更多', () => {
+  it('任务加载中、无数据或已到末页时不展示查看更多', () => {
+    // 加载中且有更多时：不展示查看更多（避免在转圈下方占位）
     const view = render(
       <SidebarNavHomeSection
-        shell={{ ...shell, hasMore: true, loading: true }}
+        shell={{
+          ...shell,
+          hasMore: true,
+          loading: true,
+          visibleConversationList: [{ id: 1, title: 'task 1' } as any],
+        }}
       />,
     );
     expect(
-      screen.getByRole('button', {
+      screen.queryByRole('button', {
         name: 'PC.Components.AgentConversation.viewMore',
       }),
-    ).toBeDisabled();
+    ).toBeNull();
 
-    view.rerender(<SidebarNavHomeSection shell={shell} />);
+    // 没有任何数据时：即使 hasMore 为 true 也不展示
+    view.rerender(
+      <SidebarNavHomeSection
+        shell={{
+          ...shell,
+          hasMore: true,
+          loading: false,
+          visibleConversationList: [],
+        }}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: 'PC.Components.AgentConversation.viewMore',
+      }),
+    ).toBeNull();
+
+    // 已到末页时：不展示
+    view.rerender(
+      <SidebarNavHomeSection
+        shell={{
+          ...shell,
+          hasMore: false,
+          loading: false,
+          visibleConversationList: [{ id: 1, title: 'task 1' } as any],
+        }}
+      />,
+    );
     expect(
       screen.queryByRole('button', {
         name: 'PC.Components.AgentConversation.viewMore',

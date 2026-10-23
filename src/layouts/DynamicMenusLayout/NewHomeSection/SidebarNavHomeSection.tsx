@@ -220,7 +220,9 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
           {/* NW-195：确认真无项目时整组隐藏（标题＋内容），不再占位展示空态。 */}
           {!shell.projectEmpty &&
             renderSectionHeader({
-              label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
+              label: dict(
+                'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
+              ),
               collapsed: projectCollapsed,
               onToggle: handleProjectHeaderClick,
             })}
@@ -264,17 +266,20 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
             onFlagChanged={shell.handleConversationFlagChanged}
             onCollectedChanged={shell.handleConversationCollectedChanged}
           />
-          {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。 */}
-          {shell.hasMore && (
-            <button
-              type="button"
-              className={styles['task-load-more']}
-              disabled={shell.loading}
-              onClick={() => shell.refreshList()}
-            >
-              {dict('PC.Components.AgentConversation.viewMore')}
-            </button>
-          )}
+          {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。
+              加载中或尚无数据时不展示查看更多，避免在转圈下方占位。 */}
+          {!shell.loading &&
+            (shell.visibleConversationList?.length ?? 0) > 0 &&
+            shell.hasMore && (
+              <button
+                type="button"
+                className={styles['task-load-more']}
+                disabled={shell.loading}
+                onClick={() => shell.refreshList()}
+              >
+                {dict('PC.Components.AgentConversation.viewMore')}
+              </button>
+            )}
         </div>
       )}
     </div>
