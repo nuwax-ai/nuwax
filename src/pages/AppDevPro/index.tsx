@@ -140,6 +140,7 @@ import { UserAppDbEnvEnum } from './services/appDb';
 import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
+  apiUserAppTasksActive,
   apiUserAppUpdate,
   getUserAppReadinessUiKind,
   getUserAppTtydProxyWsUrl,
@@ -3285,7 +3286,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
-   * 未部署等状态下也要等计算容器 running，再调应用 restart。
+   * 开发环境先查 tasks/active，devActionAllowed 为 true 才继续。
+   * 线上环境不查。未部署等状态下也要等计算容器 running，再调应用 restart。
    */
   const handleRestartPreviewRuntime = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -3298,6 +3300,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       appStatus === UserAppReadinessStatusEnum.Stopping
     ) {
       return;
+    }
+    if (envToRestart === UserAppDbEnvEnum.Dev) {
+      if (!appId) {
+        return;
+      }
+      try {
+        const activeResult = await apiUserAppTasksActive(appId);
+        if (dbEnvRef.current !== envToRestart) {
+          return;
+        }
+        if (activeResult?.data?.devActionAllowed !== true) {
+          message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+          return;
+        }
+      } catch (error) {
+        console.error('[AppDevPro] 重启前查询进行中任务失败', error);
+      }
     }
     if (restartPreviewWaitRef.current) {
       return;
@@ -3323,7 +3342,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       restartPreviewWaitRef.current = false;
       setAwaitingContainerForRestart(false);
     }
-  }, [previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
+  }, [appId, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
