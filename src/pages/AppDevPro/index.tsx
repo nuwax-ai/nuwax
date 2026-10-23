@@ -3286,7 +3286,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
-   * 开发环境先查 tasks/active，devActionAllowed 为 true 才继续。
+   * 开发环境先查 tasks/active。devActionAllowed 为 true 才继续 restart。
+   * 为 false 时，若已有带 taskId 的 dev_restart 任务则直接接日志流；否则提示并返回。
    * 线上环境不查。未部署等状态下也要等计算容器 running，再调应用 restart。
    */
   const handleRestartPreviewRuntime = useCallback(async () => {
@@ -3311,7 +3312,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           return;
         }
         if (activeResult?.data?.devActionAllowed !== true) {
-          message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+          // 已有进行中的开发重启任务时直接接上日志流，不再重复 restart
+          const restartTask = (activeResult?.data?.tasks || []).find(
+            (item) =>
+              item.taskType === UserAppTaskTypeEnum.DevRestart && !!item.taskId,
+          );
+          if (!restartTask) {
+            message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+            return;
+          }
+          void previewRuntime.attachExistingTask(
+            restartTask,
+            UserAppDbEnvEnum.Dev,
+          );
           return;
         }
       } catch (error) {
