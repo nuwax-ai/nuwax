@@ -4,8 +4,8 @@ import type { MessageItemProps } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
-import styles from './index.less';
 import { resolveNotifySenderName } from '../senderDisplayName';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 

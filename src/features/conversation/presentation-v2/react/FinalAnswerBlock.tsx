@@ -5,11 +5,11 @@
 import CopyButton from '@/components/base/CopyButton';
 import ChatBottomDebug from '@/components/ChatView/ChatBottomDebug';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { mapEngineInternalErrorText } from '@/features/conversation/domain/engineErrorFallback';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-import { mapEngineInternalErrorText } from '@/features/conversation/domain/engineErrorFallback';
 import { formatTimeAgo } from '@/utils/common';
 import { message } from 'antd';
 import classNames from 'classnames';

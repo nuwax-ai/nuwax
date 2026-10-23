@@ -121,7 +121,9 @@ describe('官方推荐列表页', () => {
     // 稳定期内请求数不应持续增长（死循环会无限刷请求/渲染直到页面冻结）
     const countAfterFirstPaint = listRequest.mock.calls.length;
     expect(countAfterFirstPaint).toBeGreaterThan(0);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 800);
+    });
     expect(listRequest.mock.calls.length).toBeLessThanOrEqual(
       countAfterFirstPaint + 1,
     );

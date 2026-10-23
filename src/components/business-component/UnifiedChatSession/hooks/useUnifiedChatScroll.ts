@@ -78,7 +78,9 @@ const restoreHistoryScrollAnchor = (
   if (!container.contains(anchor.el)) return false;
   const containerTop = container.getBoundingClientRect().top;
   const delta =
-    anchor.el.getBoundingClientRect().top - containerTop - anchor.viewportOffset;
+    anchor.el.getBoundingClientRect().top -
+    containerTop -
+    anchor.viewportOffset;
   if (Math.abs(delta) < SCROLL_ANCHOR_EPSILON) return true;
   container.scrollTop += delta;
   return true;

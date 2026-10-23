@@ -80,7 +80,7 @@ function createAnchoredScrollElement({
     },
   });
   element.getBoundingClientRect = () =>
-    ({ top: 0, bottom: clientHeight, height: clientHeight }) as DOMRect;
+    ({ top: 0, bottom: clientHeight, height: clientHeight } as DOMRect);
 
   const content = document.createElement('div');
   const anchor = document.createElement('div');
@@ -113,8 +113,10 @@ function createAnchoredScrollElement({
 
 /** 可手动触发回调的 ResizeObserver 桩（jsdom 未实现） */
 function stubResizeObserver() {
-  const instances: { callback: () => void; observe: ReturnType<typeof vi.fn> }[] =
-    [];
+  const instances: {
+    callback: () => void;
+    observe: ReturnType<typeof vi.fn>;
+  }[] = [];
   class ResizeObserverStub {
     callback: () => void;
     observe = vi.fn();

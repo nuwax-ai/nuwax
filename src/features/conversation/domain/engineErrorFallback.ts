@@ -29,11 +29,15 @@ const stripOuterCodeFence = (value: string): string => {
 };
 
 /** 整段文本是否就是一条引擎内部错误（含代码 fence 包裹形态） */
-export function isEngineInternalErrorText(text: string | null | undefined): boolean {
+export function isEngineInternalErrorText(
+  text: string | null | undefined,
+): boolean {
   if (!text) return false;
   const stripped = stripOuterCodeFence(text);
   if (!stripped) return false;
-  return ENGINE_INTERNAL_ERROR_PATTERNS.some((pattern) => pattern.test(stripped));
+  return ENGINE_INTERNAL_ERROR_PATTERNS.some((pattern) =>
+    pattern.test(stripped),
+  );
 }
 
 /**
