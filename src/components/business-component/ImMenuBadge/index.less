@@ -1,19 +1,14 @@
 .im-menu-badge {
   flex-shrink: 0;
   color: inherit;
+  background: transparent !important;
+  background-color: transparent !important;
 
+  // 气泡本体（sup.ant-badge-count）保持纯白文字与纯红圆角胶囊底色
   :global {
     .ant-badge-count {
       color: #fff !important;
       background-color: #f93920 !important;
     }
-  }
-}
-
-:global {
-  .ant-badge.ant-badge-not-a-wrapper.im-menu-badge,
-  .ant-badge-count.im-menu-badge {
-    color: #fff !important;
-    background-color: #f93920 !important;
   }
 }
