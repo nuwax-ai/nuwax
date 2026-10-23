@@ -242,7 +242,6 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           await fileView.tree.handleRefreshFileList();
         },
         onCommitSuccess: async () => {
-          await fileView.preview.saveFiles();
           await fileView.refreshGitList();
           await gitSourceControl?.callbacks?.onCommitSuccess?.();
         },
