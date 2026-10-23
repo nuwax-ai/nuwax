@@ -1,4 +1,3 @@
-import { EVENT_TYPE } from '@/constants/event.constants';
 import { PAYMENT_SETTLEMENT_PATH } from '@/constants/subscription.constants';
 import {
   apiCreateAgentSubscriptionOrder,
@@ -6,7 +5,6 @@ import {
 } from '@/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import { apiCreateCreditOrder } from '@/services/subscriptionService';
-import eventBus from '@/utils/eventBus';
 import {
   preparePaymentWindow,
   type PaymentWindow,
@@ -26,8 +24,6 @@ export const useSubscriptionPurchase = () => {
   const returnUrlRef = useRef<string>('');
   const processingIdRef = useRef<number | string | null>(null);
   const paymentWindowRef = useRef<PaymentWindow | null>(null);
-  /** 当前这单是积分增购。收银台打开后才加快积分轮询，订阅支付不走这条 */
-  const payingCreditsRef = useRef(false);
 
   const closePendingWindow = () => {
     const paymentWindow = paymentWindowRef.current;
@@ -37,7 +33,6 @@ export const useSubscriptionPurchase = () => {
 
   const resetPayment = () => {
     closePendingWindow();
-    payingCreditsRef.current = false;
     processingIdRef.current = null;
     setProcessingId(null);
   };
@@ -64,16 +59,8 @@ export const useSubscriptionPurchase = () => {
   };
 
   const openCashier = async (cashierUrl: string) => {
-    const payingCredits = payingCreditsRef.current;
-    if (await paymentWindowRef.current?.open(cashierUrl)) {
-      // 积分套餐已进入支付页。只打开增购弹窗、尚未点套餐时不会走到这里
-      if (payingCredits) {
-        eventBus.emit(EVENT_TYPE.CreditPurchasePaymentStarted);
-      }
-      resetPayment();
-    } else {
-      failPayment();
-    }
+    if (await paymentWindowRef.current?.open(cashierUrl)) resetPayment();
+    else failPayment();
   };
 
   useEffect(() => closePendingWindow, []);
@@ -218,7 +205,6 @@ export const useSubscriptionPurchase = () => {
     dynamicReturnUrl?: string,
   ) => {
     if (!beginPayment(packageId, dynamicReturnUrl)) return;
-    payingCreditsRef.current = true;
     createCreditOrder({ packageId: Number(packageId) });
   };
 

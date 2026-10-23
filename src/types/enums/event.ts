@@ -22,6 +22,4 @@ export enum EventTypeEnum {
   CloseMobileMenu = 'close_mobile_menu',
   // 全局积分轮询拿到最新 summary：本地事件，余额栏订阅后同步显示
   CreditSummaryUpdated = 'credit_summary_updated',
-  // 积分套餐已进入支付页：summary 轮询临时改为 3 秒，总积分大于 0 后恢复
-  CreditPurchasePaymentStarted = 'credit_purchase_payment_started',
 }
