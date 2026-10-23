@@ -100,9 +100,14 @@ export function reduceTerminalEvent(
   const finalResult = event.data as ConversationFinalResult;
   // 收口必须基于 reconcile 之后的 text：reconciler 会把只在
   // finalResult.componentExecuteResults 里的补投结果以自定义块追加进 text，
-  // 若用 reconcile 前的 currentMessage.text 覆盖，补投块会被整体丢弃。
+  // 若用 reconcile 前 currentMessage.text 覆盖，补投块会被整体丢弃。
   const reconciled = (reconcileFinalMessage(currentMessage, finalResult) ||
     {}) as Partial<MessageInfo>;
+  const taskStatus = resolveTerminalTaskStatus(
+    finalResult?.success,
+    finalResult,
+    event,
+  );
   const message = {
     ...reconciled,
     text: closeThinkBlock(
@@ -110,7 +115,13 @@ export function reduceTerminalEvent(
       reconciled.thinkBlocks?.[reconciled.thinkBlocks.length - 1] || '',
     ),
     thinkingFinished: true,
-    status: MessageStatusEnum.Complete,
+    // 明确失败（success=false / 结构化 error 终态，且非用户取消、非任务冲突）时消息
+    // 透出异常终态：RunOver 状态栏显示「运行出错」，不再被「运行完成」掩盖
+    // （NW-050：失败收尾被当作正常完成，用户无从得知本轮已中断）。
+    status:
+      taskStatus === TaskStatus.FAILED
+        ? MessageStatusEnum.Error
+        : MessageStatusEnum.Complete,
     finalResult,
     requestId: event.requestId,
   } as MessageInfo;
@@ -129,11 +140,7 @@ export function reduceTerminalEvent(
   return {
     messages,
     message: shouldRemove ? undefined : message,
-    taskStatus: resolveTerminalTaskStatus(
-      finalResult?.success,
-      finalResult,
-      event,
-    ),
+    taskStatus,
     removed: shouldRemove,
     applied: true,
   };

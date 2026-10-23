@@ -37,7 +37,7 @@
   margin: 0 auto;
   max-width: 800px;
   gap: @marginXxs;
-  padding: @padding @padding 12px;
+  padding: 12px @padding;
   border-radius: 20px;
   background: @colorBgContainer;
   box-sizing: border-box;
@@ -109,8 +109,8 @@
      编辑器文本经 inlinePrefixWidth 缩进到 pill 之后；pill 本体复用 expert-pill 样式 */
   .input-prefix-pills {
     position: absolute;
-    top: 4px;
-    left: @paddingSm;
+    top: 0;
+    left: 0;
     z-index: 2;
     display: flex;
     align-items: center;

@@ -36,6 +36,8 @@ export interface ConversationSessionProviderProps {
   minConsumeInterval?: number;
   /** 隔离入口的队列上下文覆盖 */
   queueContext?: UnifiedChatQueueContext;
+  /** 停止会话函数（立即发送时若忙碌则调用） */
+  runStopConversation?: (id: any) => void | Promise<unknown>;
 }
 
 export interface ConversationSessionContextValue {
@@ -68,6 +70,7 @@ export function ConversationSessionProvider({
   onSendMessage,
   minConsumeInterval,
   queueContext,
+  runStopConversation,
 }: ConversationSessionProviderProps) {
   const agentModeRef = useRef<AgentMode>('yolo');
   const collectedInterventions = useActiveInterventionQueue(messageList);
@@ -95,6 +98,7 @@ export function ConversationSessionProvider({
       streamActive: modelStreamActive,
       taskExecuting: taskStatus === TaskStatus.EXECUTING,
     },
+    runStopConversation,
   });
 
   const sessionView = useMemo(

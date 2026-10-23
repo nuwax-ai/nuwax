@@ -119,6 +119,26 @@
     box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
       0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
   }
+
+  // 卡片变窄时名称/描述换到图标下一行，避免被开关挤成一个字
+  .card-head {
+    flex-wrap: wrap;
+  }
+
+  .card-heading {
+    flex: 1 1 8em;
+    min-width: min(100%, 8em);
+  }
+
+  .card-name,
+  .card-desc {
+    display: -webkit-box;
+    white-space: normal;
+    text-overflow: unset;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 .card-head {

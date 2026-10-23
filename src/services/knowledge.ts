@@ -25,10 +25,10 @@ import type {
   KnowledgeRawSegmentInfo,
   KnowledgeRawSegmentListParams,
   KnowledgeRawSegmentUpdateParams,
+  KnowledgeTripleDocumentInfo,
   KnowledgeTripleGenerateParams,
   KnowledgeTripleListByKnowledgeParams,
   KnowledgeTripleListParams,
-  KnowledgeTripleListResponse,
   KnowledgeTriplePageResponse,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
@@ -423,7 +423,7 @@ export async function apiKnowledgeTripleGenerate(
 // 知识图谱 - 查询知识图谱列表
 export async function apiKnowledgeTripleList(
   data: KnowledgeTripleListParams,
-): Promise<RequestResponse<KnowledgeTripleListResponse>> {
+): Promise<RequestResponse<KnowledgeTripleDocumentInfo[]>> {
   return request('/api/knowledge/triple/graph/list', {
     method: 'POST',
     data,

@@ -723,16 +723,16 @@ index 0000000..36ba2ec
 +  );
 +}
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index ac9830a..07d775e 100644
+index c32d4fe..f94f7cf 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
-@@ -1,3 +1,5 @@
-+import { captureIntoComposer, getNativeCapture, type NativeCaptureAction } from '../lib/nativeCapture';
+@@ -1,4 +1,5 @@
+ import { captureIntoComposer, getNativeCapture, type NativeCaptureAction } from '../lib/nativeCapture';
 +import { getMessageInputRoot, getMessagePortalRoot, isNativeMessageNotifications, toMessagePortalPoint } from '../hostRuntime';
  import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, CardActionState, Id, MessageDto } from '../api/types';
-@@ -113,6 +115,8 @@ import { useChatStore } from '../store/chat';
+@@ -145,6 +146,8 @@ import { useChatStore } from '../store/chat';
  import ChatAnnouncementPanel from './ChatAnnouncementPanel';
  import ChatDocsPanel from './ChatDocsPanel';
  import ChatFilesPanel from './ChatFilesPanel';
@@ -741,7 +741,7 @@ index ac9830a..07d775e 100644
  import ChatJoinRequestsPanel from './ChatJoinRequestsPanel';
  import ChatMembersPanel from './ChatMembersPanel';
  import ChatPinPanel from './ChatPinPanel';
-@@ -769,8 +773,8 @@ export default function ChatWindow() {
+@@ -1020,8 +1023,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -752,7 +752,7 @@ index ac9830a..07d775e 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -788,8 +792,8 @@ export default function ChatWindow() {
+@@ -1039,8 +1042,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -763,7 +763,7 @@ index ac9830a..07d775e 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1442,7 +1446,7 @@ export default function ChatWindow() {
+@@ -1700,7 +1703,7 @@ export default function ChatWindow() {
    //   ★下面 active 的回退（不在 visibleTabs ⇒ 弹回 ANCHOR_TAB）**自动兜住**
    //   "用户正停在资料库页时切到智能体/自环会话"：那一帧 docs 从可见集消失，
    //   回退逻辑当帧把他带回「消息」，不需要另写 effect。
@@ -772,7 +772,7 @@ index ac9830a..07d775e 100644
    const active = visibleTabs.includes(activeTab) ? activeTab : ANCHOR_TAB;
    /**
     * ★★DEV-256（用户原话「把搜索放到右边去只展示搜索图标」）：
-@@ -1670,13 +1674,13 @@ export default function ChatWindow() {
+@@ -1928,13 +1931,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -792,31 +792,7 @@ index ac9830a..07d775e 100644
      };
    });
  
-@@ -2592,6 +2596,23 @@ export default function ChatWindow() {
-    * 好说 —— 说什么都等于提前告诉用户"你左边没东西可点"，而那正是待证的事实。
-    * 左栏此刻画的是骨架，用户已经知道在等了。
-    */
-+  const nativeCaptureBusy = useRef(false);
-+  const nativeCaptureAlive = useRef(true);
-+  const nativeCaptureRunRef = useRef<(action: NativeCaptureAction, conversation: string | null) => void>(() => {});
-+  nativeCaptureRunRef.current = () => {};
-+  useEffect(() => { nativeCaptureAlive.current = true; return () => { nativeCaptureAlive.current = false; }; }, []);
-+  useEffect(() => {
-+    const native = getNativeCapture();
-+    let claimedConversation: string | null = null;
-+    return native?.onShortcut?.({
-+      canHandle: () => {
-+        claimedConversation = activeConvIdRef.current;
-+        return canUpload && !composerLocked && !!claimedConversation && editorRef.current?.hasFocus() === true;
-+      },
-+      run: action => { nativeCaptureRunRef.current(action, claimedConversation); },
-+    });
-+  }, [canUpload, composerLocked, activeConvId]);
-+
-   if (activeConvId == null || !conv) {
-     if (convListPhase === 'idle' || convListPhase === 'loading') {
-       return <div className="empty-chat" aria-busy="true" />;
-@@ -3648,7 +3669,7 @@ export default function ChatWindow() {
+@@ -4364,7 +4367,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -825,52 +801,7 @@ index ac9830a..07d775e 100644
    };
  
    const removePending = (id: string): void => {
-@@ -3988,11 +4009,32 @@ export default function ChatWindow() {
-    * <p>★用户点"取消"会抛出异常 —— 那是**正常操作**，静默返回即可，
-    * 弹报错会把"我不想截了"说成"截图失败了"。
-    */
--  const captureScreen = async (): Promise<void> => {
-+  const captureScreen = async (action: NativeCaptureAction = 'screenshot', intendedConversation = activeConvIdRef.current): Promise<void> => {
-     if (!canUpload) {
-       toast.warning(MOCK_UPLOAD_HINT);
-       return;
-     }
-+    const native = getNativeCapture();
-+    if (native) {
-+      if (nativeCaptureBusy.current) return;
-+      const conversation = intendedConversation;
-+      if (!conversation) return;
-+      nativeCaptureBusy.current = true;
-+      try {
-+        await captureIntoComposer(native, action, {
-+          isCurrent: () => nativeCaptureAlive.current && activeConvIdRef.current === conversation,
-+          maxBytes: UPLOAD_MAX_MB * 1024 * 1024,
-+          addFiles: files => {
-+            const { images, others } = partitionFiles(files);
-+            for (const image of addInlineImages(images)) editorRef.current?.insertMedia(image.id, image.previewUrl);
-+            if (others.length) addPending(others);
-+          },
-+          onCopied: () => { if (nativeCaptureAlive.current) toast.info('会话已切换，结果已复制到剪贴板'); },
-+        });
-+      } catch (error) { if (nativeCaptureAlive.current) toast.error((error as Error).message); }
-+      finally { nativeCaptureBusy.current = false; }
-+      return;
-+    }
-     const md = navigator.mediaDevices;
-     if (!md || typeof md.getDisplayMedia !== 'function') {
-       toast.warning('当前浏览器不支持屏幕捕获（该能力要求 https 或 localhost）');
-@@ -4039,6 +4081,10 @@ export default function ChatWindow() {
-     }
-   };
- 
-+
-+
-+  nativeCaptureRunRef.current = (action, conversation) => { void captureScreen(action, conversation).catch(() => undefined); };
-+
-   /**
-    * 主动读剪贴板里的图片。
-    *
-@@ -4150,7 +4196,7 @@ export default function ChatWindow() {
+@@ -4973,7 +4976,7 @@ export default function ChatWindow() {
    // ★★DEV-323 ③b：isSelfP2p 同样**必须成对传**（用户拍板口径就是"隐藏标签页**并**
    //   去掉添加菜单里的入口"）—— 只改上面那一处，自聊里的「+」照样能把资料库加回来，
    //   加完顶部什么都不多，正是这条注释警告过的那种死按钮。
@@ -879,7 +810,7 @@ index ac9830a..07d775e 100644
    const plusItems: MenuProps['items'] = [
      {
        key: 'add',
-@@ -4225,6 +4271,8 @@ export default function ChatWindow() {
+@@ -5048,6 +5051,8 @@ export default function ChatWindow() {
        />
      ) : active === 'files' ? (
        <ChatFilesPanel convId={activeConvId} onClose={closeSide} />
@@ -888,7 +819,7 @@ index ac9830a..07d775e 100644
      ) : active === 'search' ? (
        <ChatSearchPanel convId={activeConvId} onGoMessages={closeSide} onClose={closeSide} />
      ) : active === 'announcement' ? (
-@@ -4469,7 +4517,7 @@ export default function ChatWindow() {
+@@ -5292,7 +5297,7 @@ export default function ChatWindow() {
                      ),
                      disabled: notifyToggleDisabled(notifySt),
                    },
@@ -897,7 +828,7 @@ index ac9830a..07d775e 100644
                      key: 'notifyTest',
                      label: '发送测试通知',
                      // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
-@@ -4477,7 +4525,7 @@ export default function ChatWindow() {
+@@ -5300,7 +5305,7 @@ export default function ChatWindow() {
                      //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
                      //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
                      disabled: notifyToggleDisabled(notifySt) || !notifyOn,
@@ -906,7 +837,7 @@ index ac9830a..07d775e 100644
                    // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
                    //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
                    //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
-@@ -5212,7 +5260,7 @@ export default function ChatWindow() {
+@@ -6053,7 +6058,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
@@ -915,7 +846,7 @@ index ac9830a..07d775e 100644
                  onOpenChange={(v) => { if (!v) setImgMenu(null); }}
                  menu={{
                    /* ★★DEV-223：这里原来写死单项，现在走 imgMenuStickerItem ——
-@@ -5283,6 +5331,7 @@ export default function ChatWindow() {
+@@ -6124,6 +6129,7 @@ export default function ChatWindow() {
          /* ★★DEV-265：决定弹窗里**列出哪些项**（单聊不列群专属的那四项）。
             ★DEV-193 的旧口径"只影响标注、不影响能勾什么"已被 DEV-265 推翻。 */
          isGroup={isGroup}
@@ -947,10 +878,10 @@ index 288ae89..c7babdc 100644
    //   它们必须在下一次 onChange 时被**原样补回**偏好里 —— 理由见下面那段（实测得来）。
    const listableKeys = new Set(listable.map((t) => t.key));
 diff --git a/nuwax-im-web/src/components/MessageBubble.tsx b/nuwax-im-web/src/components/MessageBubble.tsx
-index 7f06bd2..6c11529 100644
+index bf67659..eb63abc 100644
 --- a/nuwax-im-web/src/components/MessageBubble.tsx
 +++ b/nuwax-im-web/src/components/MessageBubble.tsx
-@@ -1616,7 +1616,7 @@ function MessageBubble({
+@@ -1755,7 +1755,7 @@ function MessageBubble({
    const viewerIsManager = useChatStore((s) => isOwnerOrManager(s.convs.find((c) => String(c.convId) === String(m.convId)), s.userId));
    const [editing, setEditing] = useState(false);
    const [editText, setEditText] = useState('');
@@ -959,7 +890,7 @@ index 7f06bd2..6c11529 100644
    const self = m.senderId != null && userId != null && String(m.senderId) === String(userId);
    const revoked = isRevokedMsg(m);
    /**
-@@ -2200,7 +2200,7 @@ function MessageBubble({
+@@ -2386,7 +2386,7 @@ function MessageBubble({
  
    const doRevoke = () => {
      if (activeConvId == null) return;
@@ -968,7 +899,7 @@ index 7f06bd2..6c11529 100644
        title: '撤回这条消息？',
        // ★业务失败（如 IM_20001 超撤回时限）必须 toast 出来 ——
        //   静默失败的表现是「弹窗关了但消息还在」，用户会反复重试（S8 E2E 实测教训）
-@@ -2218,7 +2218,7 @@ function MessageBubble({
+@@ -2404,7 +2404,7 @@ function MessageBubble({
     */
    const doDeleteMe = () => {
      if (activeConvId == null) return;
@@ -977,7 +908,7 @@ index 7f06bd2..6c11529 100644
        title: '删除这条消息？',
        content: '仅从你自己的聊天记录中删除，对方的记录不受影响。',
        okText: '删除',
-@@ -2237,7 +2237,7 @@ function MessageBubble({
+@@ -2423,7 +2423,7 @@ function MessageBubble({
     */
    const doDeleteAll = () => {
      if (activeConvId == null) return;
@@ -986,26 +917,6 @@ index 7f06bd2..6c11529 100644
        title: '对全员删除这条消息？',
        content: '将从所有群成员的聊天记录中删除，各端会看到「消息已被管理员删除」占位，不可恢复。',
        okText: '删除',
-diff --git a/nuwax-im-web/src/components/RichEditor.tsx b/nuwax-im-web/src/components/RichEditor.tsx
-index 5d3a7fc..851f25e 100644
---- a/nuwax-im-web/src/components/RichEditor.tsx
-+++ b/nuwax-im-web/src/components/RichEditor.tsx
-@@ -235,6 +235,7 @@ export interface RichEditorProps {
- }
- 
- export interface RichEditorHandle {
-+  hasFocus(): boolean;
-   /** 聚焦（不动光标位置）。 */
-   focus: () => void;
-   /** 聚焦并把光标放到末尾（#6「点对话框任意处都要有光标」的落点）。 */
-@@ -983,6 +984,7 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
-   }, [link, syncEmpty]);
- 
-   useImperativeHandle(ref, () => ({
-+    hasFocus: () => !!editorRef.current && editorRef.current.contains(document.activeElement),
-     focus: () => { editorRef.current?.focus(); },
-     focusEnd: focusEditorEnd,
-     // ★DEV-361：与内容变化通知（scheduleTextNotice）**共用** serializeDoc ——
 diff --git a/nuwax-im-web/src/components/TabIcon.tsx b/nuwax-im-web/src/components/TabIcon.tsx
 index 46598dc..dd10e35 100644
 --- a/nuwax-im-web/src/components/TabIcon.tsx
@@ -1287,7 +1198,7 @@ index 0000000..f3365d9
 +  };
 +}
 diff --git a/nuwax-im-web/src/lib/clipboard.ts b/nuwax-im-web/src/lib/clipboard.ts
-index bc75fe6..e0f8e4a 100644
+index 11e5901..00e34c4 100644
 --- a/nuwax-im-web/src/lib/clipboard.ts
 +++ b/nuwax-im-web/src/lib/clipboard.ts
 @@ -1,3 +1,4 @@
@@ -1295,7 +1206,7 @@ index bc75fe6..e0f8e4a 100644
  /**
   * ★把一段文本写进剪贴板（DEV-197 的「复制群号」）。
   *
-@@ -86,7 +87,7 @@ function domCopy(text: string): boolean {
+@@ -141,7 +142,7 @@ function domCopy(text: string): boolean {
    ta.style.top = '-1000px';
    ta.style.left = '-1000px';
    ta.style.opacity = '0';
@@ -1304,7 +1215,7 @@ index bc75fe6..e0f8e4a 100644
    try {
      ta.select();
      // ★iOS Safari 只认 setSelectionRange，光 select() 选不中。
-@@ -95,6 +96,6 @@ function domCopy(text: string): boolean {
+@@ -150,6 +151,6 @@ function domCopy(text: string): boolean {
    } finally {
      // ★finally：中间任何一步抛了，临时节点都必须走 —— 否则它会一直挂在 body 上
      //   （每次点击泄漏一个，且它会跟着页面被截图/被无障碍树读到）。
@@ -2251,124 +2162,6 @@ index 8ee5552..ccd9ff5 100644
  /**
   * ★安装 {@code window.__im} 桥（业务方从浏览器控制台接入的那扇门）。
   *
-diff --git a/nuwax-im-web/src/lib/nativeCapture.test.ts b/nuwax-im-web/src/lib/nativeCapture.test.ts
-new file mode 100644
-index 0000000..edb9e4b
---- /dev/null
-+++ b/nuwax-im-web/src/lib/nativeCapture.test.ts
-@@ -0,0 +1,49 @@
-+import assert from 'node:assert/strict';
-+import { it } from 'node:test';
-+import { captureIntoComposer, type NativeCaptureBridge } from './nativeCapture';
-+
-+function fixture() {
-+  const calls: string[] = [];
-+  const files: File[] = [];
-+  let current = true;
-+  const result = { success: true as const, resultId: 'owned', mime: 'image/png', bytes: 3 };
-+  const bridge: NativeCaptureBridge = {
-+    screenshot: async () => result, record: async () => result,
-+    interactive: async ({ action }) => { calls.push(action); return result; },
-+    readChunk: async () => new Uint8Array([1, 2, 3]).buffer,
-+    release: async () => { calls.push('release'); },
-+    copy: async () => { calls.push('copy'); return { success: true }; },
-+  };
-+  const target = { isCurrent: () => current, maxBytes: 1024, addFiles: (values: File[]) => { files.push(...values); }, onCopied: () => { calls.push('copied'); } };
-+  return { bridge, target, calls, files, leave: () => { current = false; } };
-+}
-+
-+it('native screenshot and recording entries fill a draft attachment and release the handle', async () => {
-+  for (const action of ['screenshot', 'mp4', 'gif'] as const) {
-+    const f = fixture();
-+    await captureIntoComposer(f.bridge, action, f.target);
-+    assert.equal(f.files.length, 1); assert.equal(f.files[0].type, 'image/png');
-+    assert.deepEqual([...new Uint8Array(await f.files[0].arrayBuffer())], [1, 2, 3]);
-+    assert.deepEqual(f.calls, [action, 'release']);
-+  }
-+});
-+
-+it('switching conversation before completion or during chunk reads copies instead of pasting into another conversation', async () => {
-+  for (const duringRead of [false, true]) {
-+    const f = fixture();
-+    if (duringRead) f.bridge.readChunk = async () => { f.leave(); return new Uint8Array([1, 2, 3]).buffer; };
-+    else f.leave();
-+    await captureIntoComposer(f.bridge, 'screenshot', f.target);
-+    assert.equal(f.files.length, 0);
-+    assert.deepEqual(f.calls, ['screenshot', 'copy', 'copied', 'release']);
-+  }
-+});
-+
-+it('cancel never creates an attachment and incomplete reads always release without pasting', async () => {
-+  const canceled = fixture(); canceled.bridge.interactive = async () => ({ success: false, code: 'canceled' });
-+  await captureIntoComposer(canceled.bridge, 'screenshot', canceled.target);
-+  assert.equal(canceled.files.length, 0); assert.deepEqual(canceled.calls, []);
-+  const broken = fixture(); broken.bridge.readChunk = async () => null;
-+  await assert.rejects(captureIntoComposer(broken.bridge, 'mp4', broken.target), /失效/);
-+  assert.equal(broken.files.length, 0); assert.deepEqual(broken.calls, ['mp4', 'release']);
-+});
-diff --git a/nuwax-im-web/src/lib/nativeCapture.ts b/nuwax-im-web/src/lib/nativeCapture.ts
-new file mode 100644
-index 0000000..cfce611
---- /dev/null
-+++ b/nuwax-im-web/src/lib/nativeCapture.ts
-@@ -0,0 +1,57 @@
-+/** Optional desktop bridge. Browser-only IM keeps its existing display-media fallback. */
-+export type NativeCaptureAction = 'screenshot' | 'mp4' | 'gif';
-+interface NativeCaptureSuccess { success: true; resultId: string; mime: string; bytes: number; exceedsMaxBytes?: boolean }
-+type NativeCaptureResult = NativeCaptureSuccess | { success: false; code: string; error?: string };
-+export interface NativeCaptureBridge {
-+  screenshot(): Promise<NativeCaptureResult>;
-+  record(options: { output: 'mp4' | 'gif' }): Promise<NativeCaptureResult>;
-+  interactive?(options: { action: NativeCaptureAction }): Promise<NativeCaptureResult>;
-+  readChunk(id: string, offset: number, length: number): Promise<ArrayBuffer | null>;
-+  release(id: string): Promise<void>;
-+  copy?(id: string): Promise<{ success: boolean }>;
-+  onShortcut?(listener: { canHandle(): boolean; run(action: NativeCaptureAction): void }): () => void;
-+}
-+export function getNativeCapture(): NativeCaptureBridge | undefined {
-+  if (typeof window === 'undefined') return undefined;
-+  const bridge = (window as unknown as { NuwaClawBridge?: { capture?: NativeCaptureBridge } }).NuwaClawBridge?.capture;
-+  return bridge && ['screenshot', 'record', 'readChunk', 'release'].every(key => typeof bridge[key as keyof NativeCaptureBridge] === 'function') ? bridge : undefined;
-+}
-+
-+const EXTENSIONS: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/webm': 'webm', 'image/gif': 'gif' };
-+
-+/** Add a draft attachment only to the initiating conversation; never send a message. */
-+export async function captureIntoComposer(bridge: NativeCaptureBridge, action: NativeCaptureAction, target: {
-+  isCurrent(): boolean;
-+  maxBytes: number;
-+  addFiles(files: File[]): void;
-+  onCopied(): void;
-+}): Promise<void> {
-+  const result = bridge.interactive ? await bridge.interactive({ action }) : action === 'screenshot'
-+    ? await bridge.screenshot() : await bridge.record({ output: action });
-+  if (!result.success) {
-+    if (result.code === 'canceled' || result.code === 'permission-denied') return;
-+    throw new Error(result.code === 'busy' ? '请先完成当前截图或录屏' : result.code === 'encoder-unavailable' ? '当前设备暂不支持该录屏格式' : '截图或录屏失败，请重试');
-+  }
-+  const copyInstead = async () => {
-+    if (await bridge.copy?.(result.resultId).then(value => value.success).catch(() => false)) target.onCopied();
-+    else throw new Error('原会话已切换，未插入附件；请重新截图或录屏');
-+  };
-+  try {
-+    if (!target.isCurrent()) { await copyInstead(); return; }
-+    if (!Number.isSafeInteger(result.bytes) || result.bytes < 1 || result.bytes > target.maxBytes || result.exceedsMaxBytes) {
-+      throw new Error('截图或录屏超过附件大小限制，请降低画质或缩短录制');
-+    }
-+    const ext = Object.prototype.hasOwnProperty.call(EXTENSIONS, result.mime) ? EXTENSIONS[result.mime] : undefined;
-+    if (!ext) throw new Error('截图或录屏格式不可用');
-+    const parts: ArrayBuffer[] = [];
-+    for (let offset = 0; offset < result.bytes;) {
-+      const length = Math.min(4 * 1024 * 1024, result.bytes - offset);
-+      const bytes = await bridge.readChunk(result.resultId, offset, length);
-+      if (!bytes || bytes.byteLength !== length) throw new Error('截图或录屏结果已失效，请重试');
-+      parts.push(bytes); offset += bytes.byteLength;
-+    }
-+    if (!target.isCurrent()) { await copyInstead(); return; }
-+    const name = `${result.mime.startsWith('video/') || result.mime === 'image/gif' ? '录屏' : '截图'}-${Date.now()}.${ext}`;
-+    target.addFiles([new File(parts, name, { type: result.mime })]);
-+  } finally { await bridge.release(result.resultId).catch(() => undefined); }
-+}
 diff --git a/nuwax-im-web/src/lib/notify.ts b/nuwax-im-web/src/lib/notify.ts
 index cfc84a8..6f6ee5e 100644
 --- a/nuwax-im-web/src/lib/notify.ts
@@ -2632,7 +2425,7 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index 7b0c454..2893119 100644
+index fe7af69..021af37 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
 @@ -1,3 +1,4 @@
@@ -2640,7 +2433,7 @@ index 7b0c454..2893119 100644
  /**
   * ★全局聊天 store（zustand）。
   *
-@@ -211,7 +212,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
+@@ -222,7 +223,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
  // ★DEV-226 需求⑤：桌面通知（判据与出口都在那个文件里，store 只负责"有这么一条消息"）。
  import { notifyContentOf, pushNotify } from '../lib/notify';
  import { isPlatformMode, PLATFORM_LOGIN_URL } from '../authMode';
@@ -2649,7 +2442,7 @@ index 7b0c454..2893119 100644
  import { currentDeviceId, KickReason } from '../ws/protocol';
  // ★DEV-260：通讯录变更帧 → 「该不该打扰、说什么」的纯函数（含单测）。
  //   ★文案与判据<b>都</b>在 lib 层：store 一 import 就拉起 zustand/React/api，
-@@ -284,7 +285,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
+@@ -295,7 +296,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
   * 否则会出现"同一个会话两个 key、合并失效"（而它<b>没有任何症状</b>：
   * 只是偶尔多一个请求，永远不会有人来报）。见 {@code lib/singleFlight.ts}。
   */
@@ -2658,7 +2451,7 @@ index 7b0c454..2893119 100644
  
  /**
   * ★★DEV-247：同一个会话的「资料库」空间<b>并发只建一次</b>。
-@@ -302,7 +303,7 @@ const membersFlight = createSingleFlight<string, void>();
+@@ -313,7 +314,7 @@ const membersFlight = createSingleFlight<string, void>();
   * 会话行上的 {@code spaceId} 判（第 ① 步的短路），不靠这个 Map。
   * ★与 {@code membersFlight} 同一个理由用 {@code String(convId)} 做 key。
   */
@@ -2667,7 +2460,7 @@ index 7b0c454..2893119 100644
  
  /**
   * ★★DEV-347：同一个会话的 tail 拉取<b>并发只发一次</b>。
-@@ -325,7 +326,7 @@ const docsFlight = createSingleFlight<string, Id>();
+@@ -336,7 +337,7 @@ const docsFlight = createSingleFlight<string, Id>();
   * 下一次调用照常真的请求（见 {@code lib/singleFlight.ts} 文件头）。
   * ★key 同样用 {@code String(convId)}：store 各处 {@code messagesByConv} 的口径是字符串。
   */
@@ -2676,7 +2469,7 @@ index 7b0c454..2893119 100644
  
  /**
   * ★★DEV-347：增量同步（含续拉链）<b>并发只跑一条</b>。
-@@ -340,7 +341,7 @@ const tailFlight = createSingleFlight<string, void>();
+@@ -351,7 +352,7 @@ const tailFlight = createSingleFlight<string, void>();
   * 的第二次照常真的同步（这一点很重要：断线期间的新消息正是靠它补的）。
   * 键是常量，因为"增量同步"这件事本身全局只该有一条在飞。
   */
@@ -2685,7 +2478,7 @@ index 7b0c454..2893119 100644
  
  /**
   * ★★DEV-382：上一次"回到前台 / 恢复联网对账"**真的发起**的时刻（模块级，刻意不进 state）。
-@@ -753,9 +754,10 @@ function emptySessionPatch(
+@@ -761,9 +762,10 @@ function emptySessionPatch(
   * 被关的那条再触发客户端重连 —— 线上表现为"页面一直在请求接口"。
   * 收口放在 store 而不是各调用点：调用点会继续增加，单飞只有一处。
   */
@@ -2697,7 +2490,7 @@ index 7b0c454..2893119 100644
    // ---- 登录态
    /** ★{@code IdInput}（string|number）而不是 number：平台模式下 userId 由 whoami 给出，
     *  经 {@code json.ts} 归一化后是 <b>string</b>；mock 模式下是 number。
-@@ -2217,7 +2219,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
+@@ -2236,7 +2238,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
  }
  
  /** 落盘调度器（debounce + maxWait，见 lib/cacheFlush.ts）。 */
@@ -2706,7 +2499,7 @@ index 7b0c454..2893119 100644
  
  /**
   * ★★DEV-173 决策②：冷启动要预展示的那一份快照。
-@@ -2342,7 +2344,33 @@ function preloadSnapshot(): Partial<ChatState> | null {
+@@ -2361,7 +2363,33 @@ function preloadSnapshot(): Partial<ChatState> | null {
    }
  }
  
@@ -2741,7 +2534,7 @@ index 7b0c454..2893119 100644
    // ★★DEV-173 决策②：冷启动预展示。★求值一次，覆盖点只有下面那一处 spread。
    const preload = preloadSnapshot();
    // ------------------------------------------------------------------
-@@ -3152,6 +3180,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3172,6 +3200,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 重连路径是"刚断过线，必须重问一次"。
     */
    async function loadTailFromServer(convId: Id): Promise<void> {
@@ -2749,7 +2542,7 @@ index 7b0c454..2893119 100644
      const key = String(convId);
      // ★★DEV-173：先把磁盘上那一页【同步】贴出来 —— 这一步没有 await，
      //   所以浏览器会在下面那次网络往返期间把聊天记录画出来。
-@@ -3204,6 +3233,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3224,6 +3253,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   "当前水位线之后的最后一页"，续拉（A）把水位线推平之后，
      //   只有再问一次才知道这一页该长什么样。
      const page = await msgApi.history(convId, undefined, MSG_PAGE_SIZE);
@@ -2757,7 +2550,7 @@ index 7b0c454..2893119 100644
      set((s) => {
        const prev = s.messagesByConv[key] ?? [];
        // ★★断层判定（见 lib/convCache.hasSeqGapBetween）：贴出来的那一页是
-@@ -3285,6 +3315,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3305,6 +3335,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 它不是缓存，settle 即清键）。
     */
    function loadTailOnce(convId: Id): Promise<void> {
@@ -2765,7 +2558,7 @@ index 7b0c454..2893119 100644
      return tailFlight.run(String(convId), () => loadTailFromServer(convId));
    }
  
-@@ -3356,6 +3387,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3376,6 +3407,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * （点会话、点智联录），不需要在这里再堆一层重试。
     */
    function catchUpAfterGap(opts?: { full?: boolean }): Promise<void> {
@@ -2773,7 +2566,7 @@ index 7b0c454..2893119 100644
      // ★默认 full（保持 DEV-347/382 既有行为不变）：只有明确传 `full: false` 才降级。
      //   ★写成 `!== false` 而不是 `?? true`：调用方传 `{}` 或 `undefined` 都要落到 full，
      //     而 `{full: undefined}` 这种写法在 JS 里很常见，两种写法对它等价 —— 选前者只是因为
-@@ -3365,6 +3397,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3385,6 +3417,7 @@ export const useChatStore = create<ChatState>((set, get) => {
        .syncIncremental()
        .catch(() => undefined)
        .then(() => {
@@ -2781,7 +2574,7 @@ index 7b0c454..2893119 100644
          const active = get().activeConvId == null ? null : String(get().activeConvId);
          if (active == null) return;
          // ★无条件重问一次（先抹记账再拉）：重连/回前台是"环境变了"的事件，
-@@ -3507,10 +3540,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3527,10 +3560,11 @@ export const useChatStore = create<ChatState>((set, get) => {
     */
    let lookingRetryTimer: ReturnType<typeof setTimeout> | null = null;
    function scheduleLookingRetry(): void {
@@ -2794,7 +2587,7 @@ index 7b0c454..2893119 100644
        if (isLooking(document)) {
          // ★判据翻真了：走正常补报入口（它自己会再查一遍判据，这里不抄近路）
          get().flushPendingRead();
-@@ -3550,7 +3584,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3570,7 +3604,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   于是变成 1 秒一次的连接乒乓，每次重连还顺带拉一份完整会话列表。
      //   ★判据用 imSocket.active（connected/connecting/reconnecting），不是 connected：
      //   两次调用是并发到达的，第一次的 CONNECT_ACK 尚未回来时 state 还是 connecting。
@@ -2803,7 +2596,7 @@ index 7b0c454..2893119 100644
      set({
        userId: opts.userId,
        userName: opts.userName,
-@@ -3578,6 +3612,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3598,6 +3632,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      } catch {
        // 注册失败不阻塞登录（设备表是推送用的辅助数据）
      }
@@ -2811,7 +2604,7 @@ index 7b0c454..2893119 100644
      imSocket.connect(opts.token);
      // ★★DEV-172：这里【必须】吞掉失败，两个理由各自都成立：
      //   ① enterSession 被 probePlatformSession 的 try 包着 —— 会话列表拉取失败冒出去
-@@ -3586,7 +3621,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3606,7 +3641,9 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   ② 本次给"加载失败"做了可见的终态（failed + 重试按钮），不吞的话那条路径
      //      根本走不到：界面在跳登录页，用户永远看不到重试入口。
      await get().loadConversations().catch(() => undefined);
@@ -2821,7 +2614,7 @@ index 7b0c454..2893119 100644
      // ★★DEV-168：默认打开第一个会话（用户需求第三条："直接进去消息对话列表，默认打开第一个会话"）。
      //   ★★为什么放在【这里】而不是 loadConversations 里（这是个真坑，不是风格问题）：
      //   loadConversations 有 8 个调用者（onReconnected / createP2p / createGroup /
-@@ -3598,6 +3635,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3618,6 +3655,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   拉历史消息失败若冒出去，会被那个 catch 当成【鉴权失败】——于是一次网络抖动
      //   会把用户送去登录页。这正是"两个不相干的失败共用一个 catch"的典型事故。
      await openDefaultConv().catch(() => undefined);
@@ -2829,7 +2622,7 @@ index 7b0c454..2893119 100644
      // ★通讯录必须**容错**：新表上线初期、平台侧资料服务抖动都可能让它失败，
      //   而它只是侧栏第二个 Tab 的内容 —— 让它把登录流程整个拖垮
      //   （症状：会话列表已经好了，界面却卡在登录页）是完全不成比例的。
-@@ -3617,7 +3655,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3637,7 +3675,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 这条不是为了单测 —— 判据全在 {@code lib/directOpen.ts}）。
     */
    function currentSearch(): string {
@@ -2838,7 +2631,7 @@ index 7b0c454..2893119 100644
    }
  
    /**
-@@ -3674,8 +3712,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3694,8 +3732,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 这条路径跑在登录链路里，一次"我给了个过期的群号"绝不能让整个 IM 起不来。
     * 用户看得到 {@link DIRECT_OPEN_FAILED_TEXT} 那句提示，而排查细节在 {@code console.warn} 里。
     */
@@ -2848,7 +2641,7 @@ index 7b0c454..2893119 100644
      // ★★DEV-356：邀请链接在场时，{@code ?groupNo=} 必须**让开**。
      //   ★理由只有一条但很硬：那条直达<b>参数一到就提交一条入群申请单</b>，
      //     而邀请链路的拍板是 {@code confirm}（点确认才提交）—— 两个都跑的话，
-@@ -3747,25 +3784,32 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3767,25 +3804,32 @@ export const useChatStore = create<ChatState>((set, get) => {
            if (!get().convs.some((c) => sameId(c.convId, plan.convId))) {
              throw new Error(DIRECT_OPEN_FAILED_TEXT);
            }
@@ -2884,7 +2677,7 @@ index 7b0c454..2893119 100644
            return true;
  
          case 'join': {
-@@ -3773,6 +3817,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3793,6 +3837,7 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   不在就真的提交一条申请。★文案复用 lib/joinGroup 的 joinOutcomeOf，
            //   与「加入群组」弹窗<b>逐字相同</b>（同一句"申请已提交，等待管理员审核"）。
            const dto = await get().applyJoinByGroupNo(plan.groupNo, null);
@@ -2892,7 +2685,7 @@ index 7b0c454..2893119 100644
            const outcome = joinOutcomeOf(dto);
            set({ directOpenNotice: { level: outcome.level, text: outcome.text } });
            // ★★回执里带 convId ≠ 能进（pending / rejected 也带）—— 判据在 joinConvIdOf 里，
-@@ -3784,6 +3829,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3804,6 +3849,7 @@ export const useChatStore = create<ChatState>((set, get) => {
          }
        }
      } catch (e) {
@@ -2900,7 +2693,7 @@ index 7b0c454..2893119 100644
        // ★失败了：留一句 warn（带原始参数，便于排查）+ 落一条提示，然后退回默认会话。
        console.warn('[IM-DIRECT] 直达失败，退回默认会话', req.kind, req.raw, e);
        set({ directOpenNotice: { level: 'error', text: DIRECT_OPEN_FAILED_TEXT } });
-@@ -3808,8 +3854,16 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3828,8 +3874,16 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 再试一遍还是坏的，只会把同一句提示弹两遍。
     */
    let directOpenTask: Promise<boolean> | null = null;
@@ -2918,7 +2711,7 @@ index 7b0c454..2893119 100644
      return directOpenTask;
    }
  
-@@ -3851,7 +3905,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3871,7 +3925,9 @@ export const useChatStore = create<ChatState>((set, get) => {
      //
      //   <p>★返回 true = 参数已经处理掉（成功进了会话）⇒ 默认打开<b>整个跳过</b>；
      //   返回 false = 没参数 / 失败了 ⇒ 照常走默认逻辑（拍板⑤："然后退回默认会话"）。
@@ -2928,7 +2721,7 @@ index 7b0c454..2893119 100644
  
      const st = get();
      let id = pickDefaultConvId(st.convs, st.activeConvId);
-@@ -4639,6 +4695,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4659,6 +4715,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 详见 {@code lib/syncResume.tailKeysToInvalidate}。
     */
    function applySyncResult(r: SyncResult): void {
@@ -2936,7 +2729,7 @@ index 7b0c454..2893119 100644
      if (r.messages) {
        for (const m of r.messages) {
          // ★自发消息不重复：sync 服务端已排除来源端补发语义，前端再按幂等合并兜底
-@@ -4693,6 +4750,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4713,6 +4770,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      let prev: SyncCursor | null = null;
      let rounds = 0;
      for (;;) {
@@ -2944,7 +2737,7 @@ index 7b0c454..2893119 100644
        const r = await syncApi.sync({
          // ★每轮都重算水位线：上一轮刚合并进来的消息会把水位线推高，
          //   服务端据此跳过已补的段（cursor 只决定"这一轮处理哪个会话"）。
-@@ -4703,6 +4761,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4723,6 +4781,7 @@ export const useChatStore = create<ChatState>((set, get) => {
          //   之后每轮都必须带上，否则服务端会把已经补过的会话再算一遍。
          ...(prev == null ? {} : { cursor: prev }),
        });
@@ -2952,7 +2745,7 @@ index 7b0c454..2893119 100644
        applySyncResult(r);
        rounds += 1;
        const step = nextSyncStep(prev, r, rounds);
-@@ -4775,6 +4834,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4795,6 +4854,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -2960,7 +2753,7 @@ index 7b0c454..2893119 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -4816,6 +4876,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4836,6 +4896,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const pendingReportSeq = new Map<string, number>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -2968,7 +2761,7 @@ index 7b0c454..2893119 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -4865,6 +4926,19 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4885,6 +4946,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -2988,7 +2781,7 @@ index 7b0c454..2893119 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -4995,12 +5069,14 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5015,12 +5089,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -3003,7 +2796,7 @@ index 7b0c454..2893119 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -5008,8 +5084,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5028,8 +5104,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -3014,7 +2807,7 @@ index 7b0c454..2893119 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -6191,6 +6268,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -6239,6 +6316,8 @@ export const useChatStore = create<ChatState>((set, get) => {
        return conv.convId;
      },
  
@@ -3023,7 +2816,7 @@ index 7b0c454..2893119 100644
      createP2pWithAgent: async (agentId) => {
        // ★★DEV-354：与上面 createP2p 逐行同款，只差一个入参 —— 服务端负责把
        //   **平台原生 agentId** 换算成 subject id（前端做不了，见 lib/directOpen 文件头）。
-@@ -7242,6 +7321,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7290,6 +7369,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       * （这正是服务端 javadoc 说的"停在中间"—— 本批把它从<b>永久</b>变成<b>下一次</b>）。
       */
      syncIncremental: async () => {
@@ -3031,7 +2824,7 @@ index 7b0c454..2893119 100644
        // ★★DEV-347：并发合并 —— 同一次重连里 {@code onReconnected} 与 WS 的
        //   {@code SYNC_RESP} 帧可能同时触发；没有它，两者会各自把整条续拉链
        //   完整跑一遍（风暴），而它们读的是同一份水位线、写的是同一个 store。
-@@ -7277,6 +7357,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7325,6 +7405,7 @@ export const useChatStore = create<ChatState>((set, get) => {
              await new Promise<void>((resolve) => {
                setTimeout(resolve, waitMs);
              });
@@ -3039,7 +2832,7 @@ index 7b0c454..2893119 100644
            }
          }
        });
-@@ -7376,7 +7457,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7424,7 +7505,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -3052,7 +2845,7 @@ index 7b0c454..2893119 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -7398,7 +7483,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7446,7 +7531,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -3062,7 +2855,7 @@ index 7b0c454..2893119 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -7409,7 +7495,28 @@ useChatStore.subscribe((st, prev) => {
+@@ -7457,7 +7543,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -3092,7 +2885,7 @@ index 7b0c454..2893119 100644
  
  // ======================================================================
  // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
-@@ -7440,7 +7547,8 @@ useChatStore.subscribe((st, prev) => {
+@@ -7488,7 +7595,8 @@ useChatStore.subscribe((st, prev) => {
  // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
  //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
  //   且宿主若用引用比较做变更检测会一直误判成"变了"。
@@ -3102,7 +2895,7 @@ index 7b0c454..2893119 100644
    if (s.unreadTotal !== prev.unreadTotal) {
      emitImUnread(s.unreadTotal);
      setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
-@@ -7459,7 +7567,6 @@ useChatStore.subscribe((s, prev) => {
+@@ -7507,7 +7615,6 @@ useChatStore.subscribe((s, prev) => {
  //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
  //   于是它们永远停在模块默认值（未读 0、未登录）上，
  //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
@@ -3110,7 +2903,7 @@ index 7b0c454..2893119 100644
    const s0 = useChatStore.getState();
    setImBridgeSnapshot({
      connState: s0.connState,
-@@ -7467,7 +7574,9 @@ useChatStore.subscribe((s, prev) => {
+@@ -7515,7 +7622,9 @@ useChatStore.subscribe((s, prev) => {
      unreadTotal: s0.unreadTotal,
      userId: s0.userId == null ? null : String(s0.userId),
    });
@@ -3168,18 +2961,10 @@ index 9d92f0d..8387ffb 100644
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
 diff --git a/nuwax-im-web/tsconfig.test.json b/nuwax-im-web/tsconfig.test.json
-index 6cc6e34..7f366d1 100644
+index 88e4d43..5f3ace6 100644
 --- a/nuwax-im-web/tsconfig.test.json
 +++ b/nuwax-im-web/tsconfig.test.json
-@@ -16,6 +16,7 @@
-   },
-   "include": ["src/types"],
-   "files": [
-+    "src/lib/nativeCapture.test.ts",
-     "src/ws/ImSocket.test.ts",
-     "src/ws/protocol.test.ts",
-     "src/lib/richtext.test.ts",
-@@ -37,6 +38,7 @@
+@@ -38,6 +38,7 @@
      "src/lib/plainText.test.ts",
      "src/lib/dev368Chain.test.ts",
      "src/lib/topTabs.test.ts",

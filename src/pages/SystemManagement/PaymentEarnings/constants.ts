@@ -19,4 +19,10 @@ export const getRevenueTypeMap = () => ({
     color: 'cyan',
     text: dict('PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall'),
   },
+  PROJECT_PAY: {
+    color: 'gold',
+    text: dict(
+      'PC.Pages.SystemManagement.PaymentEarnings.Detail.typeProjectPay',
+    ),
+  },
 });

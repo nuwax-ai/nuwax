@@ -4,6 +4,10 @@ import {
   GitVersionRecordPanel,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
+import {
+  CreditInsufficientPageBanner,
+  CreditInsufficientProvider,
+} from '@/components/business-component/CreditInsufficientNotice';
 import FileTreeGitSourcePanel, {
   useSourceControl,
   type ChangeListSection,
@@ -1039,6 +1043,12 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       data,
       'modify',
     );
+    // NW-123：文件树滞后/未加载时映射结果为空，files:[] 会被后端以
+    // "files is invalid" 拒绝并弹全局橙色失败——与提交流程的绿色成功提示
+    // 同屏自相矛盾。无可保存内容时直接跳过请求（与防抖单文件保存同口径）。
+    if (updatedFilesList.length === 0) {
+      return false;
+    }
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: updatedFilesList as UpdateFileInfo[],
@@ -1934,185 +1944,190 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   // ==================== 主渲染 ====================
   return (
     // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
-      <ConversationAgentHeader
-        agentConfigInfo={agentConfigInfo}
-        onEditAgent={() => setOpenEditAgent(true)}
-        onPublish={() => setOpen(true)}
-        onOpenAdvancedSettings={handleOpenAdvancedSettings}
-        isFileTreeSidebarVisible={isFileTreeIconActive}
-        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-        isTerminalPanelOpen={isTerminalIconActive}
-        onOpenTerminalPanel={handleOpenTerminalPanel}
-        isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isDesktopIconActive}
-        onOpenDesktopPanel={handleOpenDesktopPanel}
-      />
+    <CreditInsufficientProvider>
+      <div className={cx(styles.container, 'flex', 'flex-col')}>
+        <CreditInsufficientPageBanner />
+        {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
+        <ConversationAgentHeader
+          agentConfigInfo={agentConfigInfo}
+          onEditAgent={() => setOpenEditAgent(true)}
+          onPublish={() => setOpen(true)}
+          onOpenAdvancedSettings={handleOpenAdvancedSettings}
+          isFileTreeSidebarVisible={isFileTreeIconActive}
+          onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+          isTerminalPanelOpen={isTerminalIconActive}
+          onOpenTerminalPanel={handleOpenTerminalPanel}
+          isShowDesktop={isShowDesktop}
+          isAgentDesktopOpen={isDesktopIconActive}
+          onOpenDesktopPanel={handleOpenDesktopPanel}
+        />
 
-      {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
-      <section
-        className={cx(
-          'flex',
-          'flex-1',
-          styles.section,
-          `xagi-nav-${navigationStyle}`,
-        )}
-      >
-        <ResizableSplit
-          className={styles['main-row']}
-          style={{ minWidth: 430 + workspaceMinWidth }}
-          minLeftWidth={430}
-          minRightWidth={workspaceMinWidth}
-          defaultLeftWidth={chatPanelWidth}
-          onResizeEnd={saveChatPanelWidthPercent}
-          left={
-            <div className={cx(styles['left-panel'])}>
-              {/* 左侧面板：聊天区域（始终显示） */}
-              <AgentConversationChatPanel
-                routeSnapshot={{
-                  search: routeSearch,
-                  state: routeState,
-                  key: routeKey,
-                  action: routeAction,
-                }}
-                runtimeLine={runtimeLine}
-                selectedComputerId={finalSelectedComputerId}
-                onChangeSelectedComputerId={setSelectedComputerId}
-                onConversationEnd={handleConversationEnd}
-              />
-            </div>
-          }
-          right={
-            <div className={styles['workspace']}>
-              <div
-                className={cx('flex', 'flex-1', styles['content-container'], {
-                  [styles['content-container-fullscreen']]:
-                    fileView.preview.isFullscreen,
-                  // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
-                  // 挂稳定全局类供 styles/immersiveShell.less 做 top/height 补偿
-                  'immersive-shell-fullscreen': fileView.preview.isFullscreen,
-                })}
-              >
-                {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-                {active && isAgentDesktopOpen && queryConversationId ? (
-                  renderAgentDesktopPanel()
-                ) : (
-                  <>
-                    {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
-                    <div
-                      className={cx(styles['middle-panel'], {
-                        [styles['middle-panel-visible']]: canShowFileView,
-                        [styles['middle-panel-hidden']]: !canShowFileView,
-                      })}
-                    >
-                      {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                      <FileTreeGitSourcePanel
-                        className={cx(styles['file-tree-sidebar'], 'w-full')}
-                        showSourceControl={
-                          isVersionControlEnabled &&
-                          workspaceFiles.files.length > 0
-                        }
-                        enableVersionControl={enableVersionControl}
-                        tree={{
-                          ...fileView.tree,
-                          loadedFolderIds: workspaceFiles.loadedFolderIds,
-                          loadingFolderIds: workspaceFiles.loadingFolderIds,
-                          onLoadDirectory: workspaceFiles.onLoadDirectory,
-                          remoteFileSearch: workspaceFiles.remoteFileSearch,
-                          handleFileSelect: async (fileId, options) => {
-                            await workspaceFiles.ensureFallbackDirectory(
-                              options,
-                            );
-                            await fileView.tree.handleFileSelect(
-                              fileId,
-                              options,
-                            );
-                          },
-                        }}
-                        treeClassName="w-full h-full"
-                        onImportProject={handleImportProject}
-                        importProjectLabel={dict(
-                          'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                        )}
-                        isImportingProject={isImportingProject}
-                        sourceControl={{
-                          changeFiles: fileView.changeFiles,
-                          selectedChangeFile:
-                            gitSourceControl.selectedChangeFile,
-                          isCommitting:
-                            gitSourceControl.isCommitting ||
-                            fileView.preview.isSavingFiles,
-                          isRefreshingGitList: fileView.isRefreshingGitList,
-                          onRefreshGitList: fileView.refreshGitList,
-                          onDiffFileSelect: handleGitDiffFileSelect,
-                          onOpenChangeFile:
-                            gitSourceControl.handleOpenChangeFile,
-                          onDiscardChanges:
-                            gitSourceControl.handleDiscardChange,
-                          onStageChanges: gitSourceControl.handleStageChanges,
-                          onUnstageChanges:
-                            gitSourceControl.handleUnstageChanges,
-                          onAddToGitignore: (fileId) => {
-                            void gitSourceControl.handleAddToGitignore(fileId);
-                          },
-                          onCommit: gitSourceControl.handleCommit,
-                        }}
-                      />
-                    </div>
-                    {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
-                    {renderRightPanel()}
-                  </>
-                )}
+        {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
+        <section
+          className={cx(
+            'flex',
+            'flex-1',
+            styles.section,
+            `xagi-nav-${navigationStyle}`,
+          )}
+        >
+          <ResizableSplit
+            className={styles['main-row']}
+            style={{ minWidth: 430 + workspaceMinWidth }}
+            minLeftWidth={430}
+            minRightWidth={workspaceMinWidth}
+            defaultLeftWidth={chatPanelWidth}
+            onResizeEnd={saveChatPanelWidthPercent}
+            left={
+              <div className={cx(styles['left-panel'])}>
+                {/* 左侧面板：聊天区域（始终显示） */}
+                <AgentConversationChatPanel
+                  routeSnapshot={{
+                    search: routeSearch,
+                    state: routeState,
+                    key: routeKey,
+                    action: routeAction,
+                  }}
+                  runtimeLine={runtimeLine}
+                  selectedComputerId={finalSelectedComputerId}
+                  onChangeSelectedComputerId={setSelectedComputerId}
+                  onConversationEnd={handleConversationEnd}
+                />
               </div>
-            </div>
-          }
-        />
+            }
+            right={
+              <div className={styles['workspace']}>
+                <div
+                  className={cx('flex', 'flex-1', styles['content-container'], {
+                    [styles['content-container-fullscreen']]:
+                      fileView.preview.isFullscreen,
+                    // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
+                    // 挂稳定全局类供 styles/immersiveShell.less 做 top/height 补偿
+                    'immersive-shell-fullscreen': fileView.preview.isFullscreen,
+                  })}
+                >
+                  {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
+                  {active && isAgentDesktopOpen && queryConversationId ? (
+                    renderAgentDesktopPanel()
+                  ) : (
+                    <>
+                      {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+                      <div
+                        className={cx(styles['middle-panel'], {
+                          [styles['middle-panel-visible']]: canShowFileView,
+                          [styles['middle-panel-hidden']]: !canShowFileView,
+                        })}
+                      >
+                        {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                        <FileTreeGitSourcePanel
+                          className={cx(styles['file-tree-sidebar'], 'w-full')}
+                          showSourceControl={
+                            isVersionControlEnabled &&
+                            workspaceFiles.files.length > 0
+                          }
+                          enableVersionControl={enableVersionControl}
+                          tree={{
+                            ...fileView.tree,
+                            loadedFolderIds: workspaceFiles.loadedFolderIds,
+                            loadingFolderIds: workspaceFiles.loadingFolderIds,
+                            onLoadDirectory: workspaceFiles.onLoadDirectory,
+                            remoteFileSearch: workspaceFiles.remoteFileSearch,
+                            handleFileSelect: async (fileId, options) => {
+                              await workspaceFiles.ensureFallbackDirectory(
+                                options,
+                              );
+                              await fileView.tree.handleFileSelect(
+                                fileId,
+                                options,
+                              );
+                            },
+                          }}
+                          treeClassName="w-full h-full"
+                          onImportProject={handleImportProject}
+                          importProjectLabel={dict(
+                            'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                          )}
+                          isImportingProject={isImportingProject}
+                          sourceControl={{
+                            changeFiles: fileView.changeFiles,
+                            selectedChangeFile:
+                              gitSourceControl.selectedChangeFile,
+                            isCommitting:
+                              gitSourceControl.isCommitting ||
+                              fileView.preview.isSavingFiles,
+                            isRefreshingGitList: fileView.isRefreshingGitList,
+                            onRefreshGitList: fileView.refreshGitList,
+                            onDiffFileSelect: handleGitDiffFileSelect,
+                            onOpenChangeFile:
+                              gitSourceControl.handleOpenChangeFile,
+                            onDiscardChanges:
+                              gitSourceControl.handleDiscardChange,
+                            onStageChanges: gitSourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              gitSourceControl.handleUnstageChanges,
+                            onAddToGitignore: (fileId) => {
+                              void gitSourceControl.handleAddToGitignore(
+                                fileId,
+                              );
+                            },
+                            onCommit: gitSourceControl.handleCommit,
+                          }}
+                        />
+                      </div>
+                      {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
+                      {renderRightPanel()}
+                    </>
+                  )}
+                </div>
+              </div>
+            }
+          />
 
-        {/* 调试详情抽屉（按需显示） */}
-        <DebugDetails
-          visible={active && showType === EditAgentShowType.Debug_Details}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        <VersionHistory
+          {/* 调试详情抽屉（按需显示） */}
+          <DebugDetails
+            visible={active && showType === EditAgentShowType.Debug_Details}
+            onClose={() => setShowType(EditAgentShowType.Hide)}
+          />
+          <VersionHistory
+            targetId={agentId}
+            targetName={agentConfigInfo?.name}
+            targetType={AgentComponentTypeEnum.Agent}
+            permissions={agentConfigInfo?.permissions || []}
+            visible={active && showType === EditAgentShowType.Version_History}
+            onClose={() => setShowType(EditAgentShowType.Hide)}
+          />
+        </section>
+
+        {/* ==================== 模态弹窗层 ==================== */}
+
+        {/* 发布智能体弹窗 */}
+        <PublishComponentModal
           targetId={agentId}
-          targetName={agentConfigInfo?.name}
-          targetType={AgentComponentTypeEnum.Agent}
-          permissions={agentConfigInfo?.permissions || []}
-          visible={active && showType === EditAgentShowType.Version_History}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
+          open={active && open}
+          spaceId={spaceId}
+          category={agentConfigInfo?.category}
+          onCancel={() => setOpen(false)}
+          onConfirm={handleConfirmPublish}
         />
-      </section>
-
-      {/* ==================== 模态弹窗层 ==================== */}
-
-      {/* 发布智能体弹窗 */}
-      <PublishComponentModal
-        targetId={agentId}
-        open={active && open}
-        spaceId={spaceId}
-        category={agentConfigInfo?.category}
-        onCancel={() => setOpen(false)}
-        onConfirm={handleConfirmPublish}
-      />
-      {/* 编辑智能体基础信息弹窗（名称、图标、描述） */}
-      <CreateAgent
-        type={agentConfigInfo?.type as AgentTypeEnum}
-        spaceId={spaceId}
-        mode={CreateUpdateModeEnum.Update}
-        agentConfigInfo={agentConfigInfo}
-        open={active && openEditAgent}
-        onCancel={() => setOpenEditAgent(false)}
-        onConfirmUpdate={handlerConfirmEditAgent}
-      />
-      {/* 导入项目弹窗 */}
-      <ImportProjectModal
-        open={active && openImportProject}
-        loading={isImportingProject}
-        onCancel={() => setOpenImportProject(false)}
-        onConfirm={handleImportProjectConfirm}
-      />
-    </div>
+        {/* 编辑智能体基础信息弹窗（名称、图标、描述） */}
+        <CreateAgent
+          type={agentConfigInfo?.type as AgentTypeEnum}
+          spaceId={spaceId}
+          mode={CreateUpdateModeEnum.Update}
+          agentConfigInfo={agentConfigInfo}
+          open={active && openEditAgent}
+          onCancel={() => setOpenEditAgent(false)}
+          onConfirmUpdate={handlerConfirmEditAgent}
+        />
+        {/* 导入项目弹窗 */}
+        <ImportProjectModal
+          open={active && openImportProject}
+          loading={isImportingProject}
+          onCancel={() => setOpenImportProject(false)}
+          onConfirm={handleImportProjectConfirm}
+        />
+      </div>
+    </CreditInsufficientProvider>
   );
 };
 

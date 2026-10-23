@@ -23,6 +23,10 @@
 .subscription-plans-container {
   margin: calc(@marginLg * 2) 0;
 
+  &.subscription-plans-embedded {
+    margin: 0;
+  }
+
   .plans-title {
     font-size: @fontSizeLg;
     font-weight: 600;
@@ -188,7 +192,7 @@
 
     .plan-button {
       width: 100%;
-      height: 40px;
+      height: @controlHeightLg;
       font-size: @fontSize;
       font-weight: 600;
       margin-top: @marginXs;
@@ -276,8 +280,8 @@
       width: 100%;
 
       .check-circle {
-        width: 16px;
-        height: 16px;
+        width: @controlHeightXs;
+        height: @controlHeightXs;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -305,7 +309,7 @@
 
         .benefit-tag {
           font-size: calc(@fontSizeSm - 2px);
-          padding: 2px 8px;
+          padding: 2px @paddingXs;
           border-radius: 10px;
           font-weight: 500;
           line-height: 1;

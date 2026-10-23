@@ -288,9 +288,18 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       },
     );
 
-    // 发布智能体前执行的方法函数
+    // 发布前置步骤（项目构建打包等）：返回 false 或抛错时阻断发布申请提交，
+    // 避免 build 失败后仍然提交 publish/apply（错误提示由调用方负责）
     if (onBeforePublishFn) {
-      await onBeforePublishFn();
+      try {
+        const beforeResult = await onBeforePublishFn();
+        if (beforeResult === false) {
+          return;
+        }
+      } catch {
+        // 前置步骤异常（如网络错误）同样阻断，调用方已负责错误提示
+        return;
+      }
     }
 
     const applyPayload = {

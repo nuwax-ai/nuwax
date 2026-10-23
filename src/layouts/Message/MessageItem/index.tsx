@@ -4,6 +4,7 @@ import type { MessageItemProps } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
+import { resolveNotifySenderName } from '../senderDisplayName';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -15,7 +16,7 @@ const cx = classNames.bind(styles);
 // });
 
 // 消息模块
-const MessageItem: React.FC<MessageItemProps> = ({ info }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ info, contactNames }) => {
   return (
     <div className={cx('flex', styles.container)}>
       <img
@@ -24,8 +25,9 @@ const MessageItem: React.FC<MessageItemProps> = ({ info }) => {
         alt=""
       />
       <div className={cx('flex-1', 'flex', 'flex-col')}>
+        {/* NW-094：备注名优先（IM 通讯录 displayName），回退昵称/账号名 */}
         <h6 className={cx(styles.name)}>
-          {info?.sender?.nickName || info?.sender?.userName}
+          {resolveNotifySenderName(info?.sender, contactNames)}
         </h6>
         {!!info?.content && (
           <PureMarkdownRenderer

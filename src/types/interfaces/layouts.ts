@@ -82,4 +82,6 @@ export interface UserOperateAreaItem {
 // 消息模块
 export interface MessageItemProps {
   info: NotifyMessageInfo;
+  /** IM 通讯录「备注优先」显示名映射（NW-094）：未传/未命中回退昵称/账号名 */
+  contactNames?: Map<string, string>;
 }
