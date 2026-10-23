@@ -2,7 +2,11 @@ import { imUnreadState } from '@/services/imEventBridge';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { isImMenu } from '@/utils/imMenuPolicy';
 import { Badge } from 'antd';
+import classNames from 'classnames';
 import React, { useSyncExternalStore } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles || {});
 
 const getServerUnreadCount = () => 0;
 
@@ -19,7 +23,8 @@ const UnreadBadge: React.FC<{ children?: React.ReactNode }> = ({
       count={count}
       overflowCount={99}
       size="small"
-      style={{ flexShrink: 0, color: 'inherit' }}
+      className={cx(styles?.['im-menu-badge'], 'im-menu-badge')}
+      style={{ flexShrink: 0 }}
     >
       {children}
     </Badge>
