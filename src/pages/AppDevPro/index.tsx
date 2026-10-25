@@ -4558,6 +4558,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           onCancelTask={handleCancelDeployTask}
           stopLoading={publishFlow.stopLoading}
           onStopDeploy={handleStopDeploy}
+          disableStopDeploy={publishFlow.startSkipped}
+          allowCloseWhileRunning={publishFlow.startSkipped}
           onClose={handleCloseDeployProgress}
         />
       </div>

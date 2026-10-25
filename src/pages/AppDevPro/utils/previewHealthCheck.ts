@@ -22,6 +22,12 @@ const READINESS_POLL_INTERVAL_MS = 3000;
 /** 就绪接口最多探测次数。到上限仍未就绪时结束，不继续等待。 */
 const READINESS_POLL_MAX_ATTEMPTS = 5;
 
+/** 就绪轮询可选参数，默认沿用模块内的探测次数 */
+export interface PollUserAppReadinessOptions {
+  /** 最大探测次数 */
+  maxAttempts?: number;
+}
+
 /**
  * 启动成功后轮询应用就绪接口。
  * 某一次 ready 为 true 立刻结束；否则继续，直到达到次数上限或调用方要求停止。
@@ -30,18 +36,22 @@ const READINESS_POLL_MAX_ATTEMPTS = 5;
  * @param appId 应用 ID
  * @param env 发起启动的环境
  * @param shouldStop 返回 true 时停止等待
+ * @param options 次数与间隔覆盖项；不传时用默认值
  * @returns 应用已就绪
  */
 export const pollUserAppReadiness = async (
   appId: number,
   env: UserAppDbEnvEnum,
   shouldStop?: () => boolean,
+  options?: PollUserAppReadinessOptions,
 ): Promise<boolean> => {
   if (!appId) {
     return false;
   }
 
-  for (let attempt = 0; attempt < READINESS_POLL_MAX_ATTEMPTS; attempt += 1) {
+  const maxAttempts = options?.maxAttempts ?? READINESS_POLL_MAX_ATTEMPTS;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (shouldStop?.()) {
       return false;
     }
@@ -63,7 +73,7 @@ export const pollUserAppReadiness = async (
     } catch {
       // 单次失败继续等下一次，直到就绪、达到上限或调用方要求停止
     }
-    if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
+    if (shouldStop?.() || attempt >= maxAttempts - 1) {
       return false;
     }
     await sleep(READINESS_POLL_INTERVAL_MS);
