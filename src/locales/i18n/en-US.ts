@@ -2909,6 +2909,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.confirmingDevelopmentHint": "Development will continue after confirmation",
   "PC.Pages.AppDevPro.confirmDeployContent": "This will build the app and deploy it to production.",
   "PC.Pages.AppDevPro.confirmDeployTitle": "Deploy this app?",
+  "PC.Pages.AppDevPro.buildNotAllowed": "Deployment is already in progress. Please try again later",
   "PC.Pages.AppDevPro.confirmStopContent": "The current environment will no longer be previewable after stop. Continue?",
   "PC.Pages.AppDevPro.confirmStopTitle": "Stop the service?",
   "PC.Pages.AppDevPro.containerStarting": "Starting service…",
