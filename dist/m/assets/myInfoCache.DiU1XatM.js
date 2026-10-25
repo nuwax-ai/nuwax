@@ -1,1 +1,0 @@
-import{ai as t}from"./index-xwvmdjMx.js";class n{constructor(){this.userId="",this.displayName="",this.avatar=""}}let s=null,a="";function r(){a!=t()&&(s=null,a=t())}function i(t,a,i){if(r(),0==t.length)return null;const e=new n;e.userId=t,e.displayName=a,e.avatar=i,s=e}function e(){return r(),s}export{e as g,i as s};
