@@ -64,6 +64,7 @@ export const useChatFiles = ({
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       // 文件大小是否超过限制
@@ -110,6 +111,7 @@ export const useChatFiles = ({
                 {
                   contents: '',
                   name: fileNode.id,
+                  localFile: fileNode.localFile,
                   operation: 'delete', // 操作类型
                   isDir: true,
                 },
@@ -128,6 +130,7 @@ export const useChatFiles = ({
               // 构造更新文件操作
               const updateFile: UpdateFileInfo = {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,

@@ -1,7 +1,11 @@
+import type { LocalFileReference } from './localFile';
+
 /**
  * 更新文件信息（用于提交文件修改）
  */
 export interface UpdateFileInfo {
+  /** 保留列表中的本机来源，防止迟到保存借用另一工作区。 */
+  localFile?: LocalFileReference;
   /** 文件名 */
   name: string;
   /** 文件内容 */

@@ -173,6 +173,37 @@ describe('computer static service local routing', () => {
     expect(mocks.request).not.toHaveBeenCalled();
   });
 
+  it('delayed saves after disposal and stale file references after a remote switch cannot become cloud writes', async () => {
+    const api = localApi();
+    mocks.getApi.mockReturnValue(api);
+    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
+    await apiGetStaticFileList(7);
+    clearLocalFilesContexts();
+    const file = {
+      name: 'a.txt',
+      operation: 'modify' as const,
+      contents: 'late',
+    };
+    expect(await apiUpdateStaticFile({ cId: 7, files: [file] })).toMatchObject({
+      success: false,
+      code: 'expired',
+    });
+    registerLocalFilesContext({ cId: 7, sandboxId: 'remote' });
+    expect(
+      await apiUpdateStaticFile({
+        cId: 7,
+        files: [
+          { ...file, localFile: { cId: '7', contextId: 'ctx', path: 'a.txt' } },
+        ],
+      }),
+    ).toMatchObject({ success: false, code: 'expired' });
+    expect(mocks.request).not.toHaveBeenCalled();
+    expect(api.updateFiles).not.toHaveBeenCalled();
+    // A new remote selection still accepts its own files without local provenance.
+    await apiUpdateStaticFile({ cId: 7, files: [file] });
+    expect(mocks.request).toHaveBeenCalledTimes(1);
+  });
+
   it('retains cloud request parameters for browsers and old bridges', async () => {
     await apiGetStaticFileList(7, {
       relativePath: 'docs',

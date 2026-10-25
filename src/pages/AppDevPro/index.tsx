@@ -1929,6 +1929,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -1970,6 +1971,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               {
                 contents: '',
                 name: fileNode.id,
+                localFile: fileNode.localFile,
                 operation: 'delete',
                 isDir: true,
               },
@@ -1986,6 +1988,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
             updatedFilesList = [
               {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,

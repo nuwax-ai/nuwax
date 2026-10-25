@@ -34,6 +34,10 @@ type ContextRecord = {
   grants: Set<string>;
 };
 const contexts = new Map<string, ContextRecord>();
+// Keep bounded provenance after UI disposal so a delayed autosave cannot become
+// a cloud write merely because its local context has already been released.
+const recentLocalSources = new Map<string, string>();
+const MAX_RECENT_LOCAL_SOURCES = 256;
 const listeners = new Set<() => void>();
 let revision = 0;
 const changed = () => {
@@ -139,6 +143,10 @@ function resolveRecord(cId: string, record: ContextRecord) {
       throw new LocalFileAccessError('expired');
     }
     record.knownLocal = true;
+    recentLocalSources.delete(cId);
+    recentLocalSources.set(cId, record.input.sandboxId);
+    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
+      recentLocalSources.delete(recentLocalSources.keys().next().value!);
     record.writable =
       capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
@@ -456,8 +464,19 @@ export async function updateLocalFiles(
   cId: string | number,
   files: UpdateFileInfo[],
 ): Promise<RequestResponse<null> | null> {
+  for (const file of files) {
+    if (file.localFile) {
+      if (file.localFile.cId !== String(cId))
+        throw new LocalFileAccessError('expired');
+      assertLocalFileReferenceCurrent(file.localFile);
+    }
+  }
   const record = contexts.get(String(cId));
-  if (!record) return null;
+  if (!record) {
+    if (recentLocalSources.has(String(cId)))
+      throw new LocalFileAccessError('expired');
+    return null;
+  }
   const generation = record.generation;
   const context = await record.pending;
   if (
@@ -466,7 +485,11 @@ export async function updateLocalFiles(
     contexts.get(String(cId)) !== record
   )
     throw new LocalFileAccessError('expired');
-  if (!context) return null;
+  if (!context) {
+    if (recentLocalSources.get(String(cId)) === record.input.sandboxId)
+      throw new LocalFileAccessError('unavailable');
+    return null;
+  }
   if (!record.writable || !record.api?.updateFiles)
     throw new LocalFileAccessError('unavailable');
   const changes: LocalFileChange[] = files.map((file) => {
