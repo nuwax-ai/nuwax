@@ -55,6 +55,14 @@ const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 const SKIPPED_START_READINESS_MAX_ATTEMPTS = 20;
 
 /**
+ * 承接他处进行中的构建任务时，调 prod/start 前探测线上应用状态的次数与间隔。
+ * 对方构建结束到发起部署之间有间隙，多探几次可等到状态变为启动中，避免重复 start；
+ * active 判定可直接构建（本页签自己发起）时只探一次。
+ */
+const EXISTING_DEPLOY_READINESS_PROBE_ATTEMPTS = 4;
+const EXISTING_DEPLOY_READINESS_PROBE_INTERVAL_MS = 3000;
+
+/**
  * 线上应用处于这些状态时，服务正在启动或停止，部署已在进行中，
  * 部署服务阶段无需再调 prod/start，直接等就绪即可。
  * ready 等其它状态仍需显式 start，也可能是在服务上一个 release，必须切版本。
@@ -63,6 +71,11 @@ const PROD_SERVICE_TRANSITION_STATUSES = new Set<string>([
   UserAppReadinessStatusEnum.Starting,
   UserAppReadinessStatusEnum.Stopping,
 ]);
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
@@ -335,37 +348,58 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
    * 探测线上应用状态，判断是否正在启动 / 停止（部署已在进行）。
    * 只看顶层业务 status，不看容器状态：容器 running 时线上可能仍在服务旧 release，
    * 需显式 start 才会切版本。
-   * 探测失败、业务码非成功或回包没有 status 时返回 false，
+   * 探测失败、业务码非成功或回包没有 status 时按未命中处理，
    * 调用方按原逻辑调用 prod/start，避免因探测异常漏掉启动。
    *
+   * @param maxAttempts 探测次数，默认 1；承接他处部署时多探几次等状态切换
    * @returns 是否可以跳过 prod/start
    */
-  const isProdServiceTransitioning = useCallback(async (): Promise<boolean> => {
-    if (!appId) {
-      return false;
-    }
-    try {
-      const result = await apiUserAppReadiness(appId, UserAppDbEnvEnum.Prod);
-      const codeOk =
-        !result ||
-        typeof result !== 'object' ||
-        !('code' in result) ||
-        result.code === SUCCESS_CODE;
-      if (!codeOk) {
+  const isProdServiceTransitioning = useCallback(
+    async (maxAttempts = 1): Promise<boolean> => {
+      if (!appId) {
         return false;
       }
-      const payload = (
-        result && typeof result === 'object' && 'data' in result
-          ? result.data
-          : result
-      ) as UserAppReadiness | undefined;
-      const status = payload?.status;
-      return !!status && PROD_SERVICE_TRANSITION_STATUSES.has(status);
-    } catch {
-      // 探测自身失败不影响部署，继续走 prod/start
+      const attempts = Math.max(1, maxAttempts);
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        if (cancelledRef.current) {
+          return false;
+        }
+        try {
+          const result = await apiUserAppReadiness(
+            appId,
+            UserAppDbEnvEnum.Prod,
+          );
+          const codeOk =
+            !result ||
+            typeof result !== 'object' ||
+            !('code' in result) ||
+            result.code === SUCCESS_CODE;
+          if (codeOk) {
+            const payload = (
+              result && typeof result === 'object' && 'data' in result
+                ? result.data
+                : result
+            ) as UserAppReadiness | undefined;
+            const status = payload?.status;
+            // 探到启动中 / 停止中立即结束等待，不再往后轮询
+            if (status && PROD_SERVICE_TRANSITION_STATUSES.has(status)) {
+              return true;
+            }
+          }
+        } catch {
+          // 单次探测失败继续下一轮，直到次数用尽后回落 prod/start
+        }
+        if (cancelledRef.current) {
+          return false;
+        }
+        if (attempt < attempts - 1) {
+          await sleep(EXISTING_DEPLOY_READINESS_PROBE_INTERVAL_MS);
+        }
+      }
       return false;
-    }
-  }, [appId]);
+    },
+    [appId],
+  );
 
   /**
    * 构建成功后启动生产服务，并监听启动任务 SSE。
@@ -373,9 +407,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
    * @param options.skipIfServiceTransitioning 为 true 时先探测线上应用状态：
    * starting / stopping 说明服务正在启停（可能来自其他页签），跳过 prod/start。
    * 其它状态（含 ready）仍需显式 start 切版本；历史版本部署不传该参数。
+   * @param options.transitionProbeAttempts 探测次数，默认 1；
+   * 承接他处进行中的部署时传多次，等对方真正发起部署后再判断。
    */
   const submitProdStart = useCallback(
-    async (options?: { skipIfServiceTransitioning?: boolean }) => {
+    async (options?: {
+      skipIfServiceTransitioning?: boolean;
+      transitionProbeAttempts?: number;
+    }) => {
       if (!appId) {
         throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
       }
@@ -387,7 +426,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setStartServices([]);
 
       if (options?.skipIfServiceTransitioning) {
-        const serviceTransitioning = await isProdServiceTransitioning();
+        const serviceTransitioning = await isProdServiceTransitioning(
+          options.transitionProbeAttempts,
+        );
         if (cancelledRef.current) {
           markCancelled();
           return;
@@ -547,6 +588,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
    * 为 false 且已有带 taskId 的 build 任务时，跳过构建接口，直接接该任务的日志流并继续部署。
    * 部署服务前先探测线上应用状态，starting / stopping 则不再调 prod/start，
    * 避免多页签并发或承接他处构建任务时重复发起部署；
+   * 承接他处构建任务时多探几次等对方发起部署，自己构建时只探一次；
    * 其它状态始终显式 prod/start，避免新版本没切到线上。
    * 没有可接入的构建任务时提示并关闭弹窗。
    *
@@ -666,8 +708,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         return true;
       }
 
-      // 线上应用可能已在启动中 / 停止中（其他页签或他处发起的部署），先探测再决定是否调用 prod/start
-      await submitProdStart({ skipIfServiceTransitioning: true });
+      // 线上应用可能已在启动中 / 停止中（其他页签或他处发起的部署），先探测再决定是否调用 prod/start。
+      // 承接他处进行中的构建任务时多探几次，等对方构建结束后真正发起部署；自己发起构建时只探一次。
+      await submitProdStart({
+        skipIfServiceTransitioning: true,
+        transitionProbeAttempts: existingBuildTask
+          ? EXISTING_DEPLOY_READINESS_PROBE_ATTEMPTS
+          : 1,
+      });
 
       if (cancelledRef.current) {
         markCancelled();
