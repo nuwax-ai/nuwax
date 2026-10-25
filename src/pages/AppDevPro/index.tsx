@@ -3493,10 +3493,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       dict('PC.Pages.AppDevPro.confirmDeployTitle'),
       dict('PC.Pages.AppDevPro.confirmDeployContent'),
       () => {
-        void publishFlow.startPublish();
+        void publishFlow.startPublish().then((started) => {
+          // 弹窗打开会停掉 tasks/active；未进入构建就关掉时要恢复轮询
+          if (!started) {
+            resumeTasksActive();
+          }
+        });
       },
     );
-  }, [appId, publishFlow]);
+  }, [appId, publishFlow, resumeTasksActive]);
 
   /**
    * 刷新当前预览页。

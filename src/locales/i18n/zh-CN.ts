@@ -2908,6 +2908,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.confirmingDevelopmentHint": "确定后将继续开发项目",
   "PC.Pages.AppDevPro.confirmDeployContent": "确定后将构建并部署到线上环境。",
   "PC.Pages.AppDevPro.confirmDeployTitle": "确定部署吗？",
+  "PC.Pages.AppDevPro.buildNotAllowed": "项目正在部署中，请稍后再试",
   "PC.Pages.AppDevPro.confirmStopContent": "停止后当前环境将无法继续预览，确认停止？",
   "PC.Pages.AppDevPro.confirmStopTitle": "确认停止服务？",
   "PC.Pages.AppDevPro.containerStarting": "服务启动中…",

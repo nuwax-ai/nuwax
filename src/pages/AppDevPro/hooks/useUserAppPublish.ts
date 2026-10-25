@@ -10,20 +10,22 @@ import {
   apiUserAppProdDeployable,
   apiUserAppProdStart,
   apiUserAppProdStop,
+  apiUserAppTasksActive,
 } from '../services/appDevPro';
 import {
   apiUserAppDomainList,
   normalizeUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from '../services/appDomain';
-import type {
-  UserAppDeployFailedStage,
-  UserAppDevTaskInfo,
-  UserAppInfo,
-  UserAppPublishPhase,
-  UserAppTaskLogEvent,
-  UserAppTaskServiceProgress,
-  UserAppTaskTerminalStatus,
+import {
+  UserAppTaskTypeEnum,
+  type UserAppDeployFailedStage,
+  type UserAppDevTaskInfo,
+  type UserAppInfo,
+  type UserAppPublishPhase,
+  type UserAppTaskLogEvent,
+  type UserAppTaskServiceProgress,
+  type UserAppTaskTerminalStatus,
 } from '../type';
 import { pollUserAppReadiness } from '../utils/previewHealthCheck';
 import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
@@ -437,12 +439,26 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   );
 
   /**
-   * 点击部署：创建构建任务，监听进度，成功后调用生产部署。
+   * 关闭刚打开、尚未进入构建的部署弹窗。
+   * 用于 tasks/active 判定当前不能构建时直接回到页面。
    */
-  const startPublish = useCallback(async () => {
+  const abortPublishBeforeBuild = useCallback(() => {
+    setOpen(false);
+    setPhase('idle');
+  }, []);
+
+  /**
+   * 点击部署：先打开部署弹窗，查 tasks/active。
+   * buildAllowed 为 true 时创建构建任务。
+   * 为 false 且已有带 taskId 的 build 任务时，跳过构建接口，直接接该任务的日志流并继续部署。
+   * 没有可接入的构建任务时提示并关闭弹窗。
+   *
+   * @returns 是否已进入构建。false 表示未开始构建，调用方需恢复 tasks/active 轮询
+   */
+  const startPublish = useCallback(async (): Promise<boolean> => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
-      return;
+      return false;
     }
     if (
       phase === 'starting' ||
@@ -452,18 +468,54 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       phase === 'checkingReadiness'
     ) {
       setOpen(true);
-      return;
+      return true;
     }
 
     resetTaskState();
     setOpen(true);
     setPublishPhase('starting');
 
+    /** buildAllowed 为 false 时，active 里可直接接入的进行中构建任务 */
+    let existingBuildTask: UserAppDevTaskInfo | null = null;
     try {
-      const task = unwrapUserAppResponse(
-        await apiUserAppBuild({ appId }),
-        dict('PC.Pages.AppDevPro.buildStatusFailed'),
-      ) as UserAppDevTaskInfo;
+      const active = unwrapUserAppResponse(
+        await apiUserAppTasksActive(appId),
+        dict('PC.Pages.AppDevPro.buildNotAllowed'),
+      );
+      if (cancelledRef.current) {
+        markCancelled();
+        return true;
+      }
+      if (active?.buildAllowed !== true) {
+        existingBuildTask =
+          (active?.tasks || []).find(
+            (item) =>
+              item.taskType === UserAppTaskTypeEnum.Build && !!item.taskId,
+          ) ?? null;
+        if (!existingBuildTask) {
+          message.warning(dict('PC.Pages.AppDevPro.buildNotAllowed'));
+          abortPublishBeforeBuild();
+          return false;
+        }
+      }
+    } catch (error) {
+      if (cancelledRef.current) {
+        markCancelled();
+        return true;
+      }
+      // 业务失败已由全局 errorHandler 提示，这里只退出部署弹窗
+      console.error('[AppDevPro] Check buildAllowed failed:', error);
+      abortPublishBeforeBuild();
+      return false;
+    }
+
+    try {
+      const task =
+        existingBuildTask ??
+        (unwrapUserAppResponse(
+          await apiUserAppBuild({ appId }),
+          dict('PC.Pages.AppDevPro.buildStatusFailed'),
+        ) as UserAppDevTaskInfo);
 
       const currentTaskId = pickUserAppTaskId(task);
       if (!currentTaskId) {
@@ -475,7 +527,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       if (cancelledRef.current) {
         await apiUserAppBuildCancel(currentTaskId);
         markCancelled();
-        return;
+        return true;
       }
 
       const immediate = getTaskTerminalStatus(task.status);
@@ -486,7 +538,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       }
       if (immediate === 'cancelled') {
         markCancelled();
-        return;
+        return true;
       }
 
       if (immediate !== 'succeeded') {
@@ -494,7 +546,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         const streamResult = await listenBuildProgress(currentTaskId);
         if (streamResult === 'cancelled' || cancelledRef.current) {
           markCancelled();
-          return;
+          return true;
         }
         if (streamResult === 'failed') {
           throw new Error(dict('PC.Pages.AppDevPro.buildStatusFailed'));
@@ -503,7 +555,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       if (!releaseIdRef.current) {
@@ -514,20 +566,20 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       await waitUntilProdDeployable();
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       await submitProdStart();
 
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       const ready = await waitUntilProdReady();
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       setProdReady(ready);
@@ -539,7 +591,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         (error instanceof Error && error.name === 'AbortError')
       ) {
         markCancelled();
-        return;
+        return true;
       }
       const stage: UserAppDeployFailedStage = !buildSucceededRef.current
         ? 'build'
@@ -557,7 +609,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setErrorMessage(text);
       setPhase('failed');
     }
+    return true;
   }, [
+    abortPublishBeforeBuild,
     appId,
     listenBuildProgress,
     markCancelled,
