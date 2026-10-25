@@ -94,13 +94,118 @@ source_conflict_files() {
   git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts' 2>/dev/null || true
 }
 
+# 合并时两侧微应用 pin / gitlink 不一致：不按 ours/theirs 取舍。
+# 2026-10-23 实证：部分克隆（blob:none）读不到合并基线对象时，git 会把本可快进的子模块报成
+# “commits don't follow merge-base”，提测因此整段回滚。登记在 apps.json 里的指针冲突直接对齐
+# 子模块 origin/<branch> 尖端；adapter.json 若还有 pin 以外的字段冲突则返回 1，交给调用方回滚。
+# 返回 0 表示没有这类冲突，或已经把它们暂存好。
+resolve_microapp_pin_conflicts() {
+  [ -f micro-frontends/apps.json ] || return 0
+  local plan adapter source_dir branch tip
+  if ! plan="$(node --input-type=module <<'EOF'
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+
+const gitOut = (args) => execFileSync('git', args, { encoding: 'utf8' });
+const unmerged = new Set(
+  gitOut(['diff', '--name-only', '--diff-filter=U']).split('\n').filter(Boolean),
+);
+const apps = JSON.parse(fs.readFileSync('micro-frontends/apps.json', 'utf8'));
+const lines = [];
+for (const app of apps) {
+  const adapter = app.adapter;
+  let confText = '';
+  if (unmerged.has(adapter)) {
+    let theirsText = '';
+    try {
+      confText = gitOut(['show', `:2:${adapter}`]);
+      theirsText = gitOut(['show', `:3:${adapter}`]);
+    } catch {
+      console.error(`无法读取 ${adapter} 的两侧版本，需人工取舍`);
+      process.exit(2);
+    }
+    let ours;
+    let theirs;
+    try {
+      ours = JSON.parse(confText);
+      theirs = JSON.parse(theirsText);
+    } catch {
+      console.error(`${adapter} 不是合法 JSON，需人工取舍`);
+      process.exit(2);
+    }
+    const keys = new Set([...Object.keys(ours), ...Object.keys(theirs)]);
+    const extra = [...keys].filter(
+      (key) => key !== 'pin' && JSON.stringify(ours[key]) !== JSON.stringify(theirs[key]),
+    );
+    if (extra.length) {
+      console.error(
+        `微应用 adapter 冲突超出 pin 字段，需人工取舍：${adapter}（${extra.join(', ')}）`,
+      );
+      process.exit(2);
+    }
+  } else if (fs.existsSync(adapter)) {
+    confText = fs.readFileSync(adapter, 'utf8');
+  } else {
+    continue;
+  }
+  const conf = JSON.parse(confText);
+  const sourceDir = conf.sourceDir;
+  if (!unmerged.has(adapter) && !(sourceDir && unmerged.has(sourceDir))) continue;
+  if (!sourceDir || !conf.branch) {
+    console.error(`${adapter} 缺少 sourceDir 或 branch，无法对齐最新提交`);
+    process.exit(2);
+  }
+  lines.push([adapter, sourceDir, conf.branch].join('\t'));
+}
+if (lines.length) process.stdout.write(`${lines.join('\n')}\n`);
+EOF
+)"; then
+    return 1
+  fi
+  [ -n "$plan" ] || return 0
+  while IFS=$'\t' read -r adapter source_dir branch; do
+    [ -n "${adapter:-}" ] || continue
+    log "微应用指针冲突，不取两侧版本，拉取 ${source_dir} 的 origin/${branch} 最新"
+    retry_git 3 -C "$source_dir" fetch origin "$branch" || return 1
+    tip="$(git -C "$source_dir" rev-parse "origin/${branch}")" || return 1
+    git -C "$source_dir" checkout -q --detach "$tip" || return 1
+    node --input-type=module -e '
+      import { execFileSync } from "node:child_process";
+      import fs from "node:fs";
+      const adapter = process.argv[1];
+      const tip = process.argv[2];
+      let text;
+      try {
+        text = execFileSync("git", ["show", `:2:${adapter}`], { encoding: "utf8" });
+      } catch {
+        text = fs.readFileSync(adapter, "utf8");
+      }
+      const pin = JSON.parse(text).pin;
+      if (!pin || !text.includes(pin)) {
+        console.error(`${adapter} 找不到可替换的 pin`);
+        process.exit(2);
+      }
+      fs.writeFileSync(adapter, text.split(pin).join(tip));
+    ' "$adapter" "$tip" || return 1
+    git add -- "$adapter" "$source_dir" || return 1
+    log "已对齐 ${source_dir} → ${tip:0:9}"
+  done <<<"$plan"
+}
+
 # merge 冲突自动消化：机器产物冲突无须人工——dist/ 产物文件名带哈希两侧必然各异（随后全量重建）、
-# version.ts 烤哈希两侧各异（构建时统一重写，取本地侧）。仅当冲突全部属于这两类才消化并提交合并；
-# 存在源码冲突则返回 1（调用方 abort 交人工）。调用前提：merge 冲突态尚未 abort。
+# version.ts 烤哈希两侧各异（构建时统一重写，取本地侧）。微应用 pin/gitlink 冲突对齐远端最新。
+# 仅当剩下的冲突全部属于机器产物才消化并提交合并；存在其它源码冲突则返回 1（调用方 abort 交人工）。
+# 调用前提：merge 冲突态尚未 abort。
 resolve_machine_conflicts() { # $1=合并提交信息
   local all nonauto
   all=$(git diff --name-only --diff-filter=U)
   [ -n "$all" ] || return 1
+  resolve_microapp_pin_conflicts || return 1
+  all=$(git diff --name-only --diff-filter=U)
+  if [ -z "$all" ]; then
+    rgit commit --no-verify -m "$1"
+    return 0
+  fi
   nonauto=$(git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts')
   [ -z "$nonauto" ] || return 1
   if git diff --name-only --diff-filter=U -- dist 2>/dev/null | grep -q .; then
@@ -228,32 +333,29 @@ pull_with_heal() { # pull_with_heal <remote> <branch>
 # workspaceDirComputerSwitch 已恢复全绿，不再默认豁免；只接受显式传入的清单。
 KNOWN_BROKEN_TESTS="${KNOWN_BROKEN_TESTS:-}"
 
-# 质量门：跑 test:conversation；失败时解析失败套件，仅当全部命中存量挂清单才放行
-run_test_gate() {
-  if [ "${DRY_RUN:-0}" = "1" ]; then
-    echo "    \$ pnpm run test:conversation"
-    echo "    [dry-run] 已跳过"
-    return 0
+# 全量会话门被机器打满时会成片超时（2026-10-23 实证：7 个失败全是 Test timed out in 5000ms，
+# 隔离复跑全绿）。失败箭头行全部是超时时退避重试；夹杂断言失败则立即停下，避免把真回归重跑掉。
+# GATE_JITTER_RETRIES 是首次失败后的额外次数，GATE_JITTER_BACKOFF 是每次重试前的等待秒数。
+GATE_JITTER_RETRIES="${GATE_JITTER_RETRIES:-1}"
+GATE_JITTER_BACKOFF="${GATE_JITTER_BACKOFF:-15}"
+
+# 只认 vitest 的 “→ ” 原因行。没有原因行（加载崩溃、脚本直接退出）不算抖动。
+gate_failure_is_jitter() { # $1=质量门日志
+  local reasons
+  reasons="$(grep -E '^[[:space:]]*→ ' "$1" 2>/dev/null || true)"
+  [ -n "$reasons" ] || return 1
+  if printf '%s\n' "$reasons" | grep -v 'Test timed out' | grep -q .; then
+    return 1
   fi
-  local log_file failed f unexpected=0
-  # src/.umi 是 gitignored 的生成物，tsconfig.json extends 它；缺失会让 14 个会话测试文件整体加载失败
-  if [ ! -f src/.umi/tsconfig.json ]; then
-    echo "    src/.umi 缺失，先执行 pnpm run setup 生成"
-    pnpm run setup || return 1
-  fi
-  log_file="$(mktemp -t deploy_sync_gate)"
-  if pnpm run test:conversation 2>&1 | tee "$log_file"; then
-    rm -f "$log_file"
-    return 0
-  fi
+  return 0
+}
+
+report_gate_failure() { # $1=日志 $2=失败套件清单（可空）
+  local log_file="$1" failed="$2" f unexpected=0 keep_log
   echo "---- 质量门未全绿，核对失败套件是否全部在存量挂清单内 ----" >&2
-  # 只认 vitest 规范的行首 FAIL 行；用例名含 FAILED 字样的 stdout/stderr 行不得误报
-  failed="$(grep -E '^[[:space:]]*FAIL[[:space:]]+tests/' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
-  # 保留完整日志：终端断言差异一滚而过，落盘后整文件可直接发给同事/AI 定位
-  local keep_log
   keep_log="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/gate-failure.log"
   mkdir -p "$(dirname "$keep_log")"
-  mv "$log_file" "$keep_log"
+  cp "$log_file" "$keep_log"
   echo "完整输出已保存：${keep_log}" >&2
   [ -n "$failed" ] || return 1
   while IFS= read -r f; do
@@ -276,6 +378,78 @@ run_test_gate() {
     return 1
   }
   echo "⚠️  质量门以「仅存量挂」放行（清单：${KNOWN_BROKEN_TESTS}）。请尽快修复存量套件并从清单移除。" >&2
+  return 0
+}
+
+# 跑一轮质量门。成功或「仅存量挂」返回 0；真失败返回 1，并把日志路径、失败套件写到调用方变量。
+run_test_gate_once() { # 写出 GATE_LOG_FILE、GATE_FAILED_FILES
+  local log_file
+  # src/.umi 是 gitignored 的生成物，tsconfig.json extends 它；缺失会让 14 个会话测试文件整体加载失败
+  if [ ! -f src/.umi/tsconfig.json ]; then
+    echo "    src/.umi 缺失，先执行 pnpm run setup 生成"
+    pnpm run setup || return 1
+  fi
+  log_file="$(mktemp -t deploy_sync_gate)"
+  GATE_LOG_FILE="$log_file"
+  GATE_FAILED_FILES=""
+  if pnpm run test:conversation 2>&1 | tee "$log_file"; then
+    rm -f "$log_file"
+    GATE_LOG_FILE=""
+    return 0
+  fi
+  # 只认 vitest 规范的行首 FAIL 行；用例名含 FAILED 字样的 stdout/stderr 行不得误报
+  GATE_FAILED_FILES="$(grep -E '^[[:space:]]*FAIL[[:space:]]+tests/' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
+  return 1
+}
+
+# 质量门：跑 test:conversation；失败时解析失败套件，仅当全部命中存量挂清单才放行。
+# 超时抖动按 GATE_JITTER_RETRIES 重试，重试仍失败才打印人工定位并返回 1。
+run_test_gate() {
+  if [ "${DRY_RUN:-0}" = "1" ]; then
+    echo "    \$ pnpm run test:conversation"
+    echo "    [dry-run] 已跳过"
+    return 0
+  fi
+  local attempt=0 max_attempts=$(( ${GATE_JITTER_RETRIES:-1} + 1 ))
+  while [ "$attempt" -lt "$max_attempts" ]; do
+    attempt=$((attempt + 1))
+    if run_test_gate_once; then
+      return 0
+    fi
+    # 全部命中存量挂清单时直接放行，不占用抖动重试。
+    if [ -n "$GATE_FAILED_FILES" ] && gate_failures_are_known "$GATE_FAILED_FILES"; then
+      report_gate_failure "$GATE_LOG_FILE" "$GATE_FAILED_FILES"
+      rm -f "$GATE_LOG_FILE"
+      return 0
+    fi
+    # 没有失败套件清单（进程崩溃、脚本直接退出）或夹杂断言失败时不重试。
+    if [ "$attempt" -lt "$max_attempts" ] && [ -n "${GATE_LOG_FILE:-}" ] && gate_failure_is_jitter "$GATE_LOG_FILE"; then
+      log "质量门失败均为超时，疑似负载抖动，${GATE_JITTER_BACKOFF}s 后重试（第 ${attempt}/${GATE_JITTER_RETRIES} 次额外尝试）"
+      sleep "$GATE_JITTER_BACKOFF"
+      rm -f "$GATE_LOG_FILE"
+      continue
+    fi
+    if [ -n "${GATE_LOG_FILE:-}" ]; then
+      report_gate_failure "$GATE_LOG_FILE" "$GATE_FAILED_FILES" || true
+    fi
+    rm -f "${GATE_LOG_FILE:-}"
+    return 1
+  done
+  return 1
+}
+
+# 失败套件是否全部在存量挂清单内。清单为空或有任一未登记套件则返回 1。
+gate_failures_are_known() { # $1=失败套件清单
+  local f
+  [ -n "${1:-}" ] || return 1
+  [ -n "${KNOWN_BROKEN_TESTS:-}" ] || return 1
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "|$KNOWN_BROKEN_TESTS|" in
+    *"|$f|"*) ;;
+    *) return 1 ;;
+    esac
+  done <<<"$1"
   return 0
 }
 

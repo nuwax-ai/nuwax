@@ -58,6 +58,10 @@ export interface AppDevPublishProgressModalProps {
   stopDeployTitle?: string;
   /** 停止部署确认内容 */
   stopDeployContent?: string;
+  /** 本次部署跳过了 prod/start（由他处发起），不提供「停止部署」入口 */
+  disableStopDeploy?: boolean;
+  /** 进行中允许关闭：部署由他处发起时，用户可以收起弹窗，页面预览自行恢复 */
+  allowCloseWhileRunning?: boolean;
   /** 关闭弹窗 */
   onClose: () => void;
   /** 弹窗标题 */
@@ -322,6 +326,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   onStopDeploy,
   stopDeployTitle,
   stopDeployContent,
+  disableStopDeploy = false,
+  allowCloseWhileRunning = false,
   onClose,
   title,
   showSteps = true,
@@ -345,8 +351,10 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'starting' ||
     phase === 'building' ||
     phase === 'checkingDeployable';
-  /** 部署服务阶段可停止生产部署 */
-  const canStopDeploy = phase === 'deploying' || phase === 'checkingReadiness';
+  /** 部署服务阶段可停止生产部署；本页签跳过 start 时部署由他处发起，不给停止入口 */
+  const canStopDeploy =
+    (phase === 'deploying' || phase === 'checkingReadiness') &&
+    !disableStopDeploy;
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -559,7 +567,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     );
   };
 
-  /** 进行中点关闭：构建阶段取消任务；部署阶段停止部署；否则直接关弹窗 */
+  /** 进行中点关闭：构建阶段取消任务；部署阶段停止部署；他处部署进行中则直接收起弹窗 */
   const handleCancelModal = () => {
     if (canCancelTask) {
       handleRequestCancel();
@@ -569,7 +577,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       handleRequestStopDeploy();
       return;
     }
-    if (running) {
+    if (running && !allowCloseWhileRunning) {
       return;
     }
     onClose();
@@ -580,7 +588,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       title={title || dict('PC.Pages.AppDevPro.deployTitle')}
       open={open}
       onCancel={handleCancelModal}
-      maskClosable={!running}
+      maskClosable={!running || allowCloseWhileRunning}
       destroyOnHidden
       width={720}
       footer={
@@ -611,7 +619,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
                 key="close"
                 type="primary"
                 onClick={onClose}
-                disabled={running}
+                disabled={running && !allowCloseWhileRunning}
               >
                 {dict('PC.Pages.AppDevPro.close')}
               </Button>,
