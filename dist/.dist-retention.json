@@ -1,17 +1,15 @@
 {
   "version": 1,
   "retainGenerations": 3,
-  "generatedAt": "2026-10-25T08:52:49.819Z",
+  "generatedAt": "2026-10-25T09:06:23.713Z",
   "historicalCssBackfilled": true,
   "files": {
-    "p__AppDevPro__index.4b5857de.async.js": 2,
-    "p__AppDevPro__index.53ba2d96.async.js": 3,
-    "p__AppDevPro__index.e7216b14.async.js": 1,
-    "preload_helper.0b8cc061.js": 2,
-    "preload_helper.a8147098.js": 1,
-    "preload_helper.d4352089.js": 3,
-    "runtime.2b1718c3.js": 3,
-    "runtime.d91c0756.js": 2,
-    "runtime.fc166b07.js": 1
+    "p__AppDevPro__index.4b5857de.async.js": 3,
+    "p__AppDevPro__index.e7216b14.async.js": 2,
+    "preload_helper.0b8cc061.js": 3,
+    "preload_helper.a8147098.js": 2,
+    "runtime.d91c0756.js": 3,
+    "runtime.fc166b07.js": 2,
+    "umi.17ed3054.js": 1
   }
 }
