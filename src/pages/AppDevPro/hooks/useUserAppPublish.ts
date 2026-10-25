@@ -381,12 +381,16 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
                 : result
             ) as UserAppReadiness | undefined;
             const status = payload?.status;
+            // 探到启动中 / 停止中立即结束等待，不再往后轮询
             if (status && PROD_SERVICE_TRANSITION_STATUSES.has(status)) {
               return true;
             }
           }
         } catch {
           // 单次探测失败继续下一轮，直到次数用尽后回落 prod/start
+        }
+        if (cancelledRef.current) {
+          return false;
         }
         if (attempt < attempts - 1) {
           await sleep(EXISTING_DEPLOY_READINESS_PROBE_INTERVAL_MS);
