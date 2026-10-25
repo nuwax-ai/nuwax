@@ -12,6 +12,7 @@ import {
   apiDownloadAllFiles,
   apiGetStaticFileList,
   apiSearchFiles,
+  apiUpdateStaticFile,
 } from './vncDesktop';
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -34,8 +35,9 @@ vi.mock('@/services/i18nRuntime', () => ({ t: (s: string) => s }));
 function localApi() {
   return {
     getCapabilities: vi.fn().mockResolvedValue({
-      apiVersion: 1,
+      apiVersion: 2,
       available: true,
+      writable: true,
       sandboxId: 'local',
     }),
     resolveContext: vi.fn().mockResolvedValue({
@@ -57,6 +59,7 @@ function localApi() {
     preparePreview: vi.fn(),
     openPath: vi.fn(),
     revealInFolder: vi.fn(),
+    updateFiles: vi.fn().mockResolvedValue({ success: true }),
     releaseContext: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -73,6 +76,103 @@ beforeEach(() => {
   mocks.request.mockResolvedValue({ code: '0000', data: { files: [] } });
 });
 describe('computer static service local routing', () => {
+  it('sends create/edit/rename/delete through the native bridge and retains remote writes', async () => {
+    const data = {
+      cId: 7,
+      files: [
+        { name: 'a.txt', operation: 'modify' as const, contents: 'saved' },
+      ],
+    };
+    await apiUpdateStaticFile(data);
+    expect(mocks.request).toHaveBeenCalledWith(
+      '/api/computer/static/files-update',
+      { method: 'POST', data },
+    );
+    mocks.request.mockClear();
+    const api = localApi();
+    mocks.getApi.mockReturnValue(api);
+    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
+    for (const operation of ['create', 'modify', 'rename', 'delete'] as const) {
+      const result = await apiUpdateStaticFile({
+        cId: 7,
+        files: [
+          {
+            name: 'a.txt',
+            operation,
+            contents: 'saved',
+            renameFrom: 'old.txt',
+          },
+        ],
+      });
+      expect(result.code).toBe('0000');
+      expect(api.updateFiles).toHaveBeenLastCalledWith('ctx', [
+        expect.objectContaining({ name: 'a.txt', operation }),
+      ]);
+    }
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
+  it('a local write error or an older read-only native bridge never falls back to cloud writes', async () => {
+    const api = localApi();
+    mocks.getApi.mockReturnValue(api);
+    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
+    api.updateFiles.mockResolvedValueOnce({
+      success: false,
+      code: 'permission-denied',
+    });
+    const data = {
+      cId: 7,
+      files: [{ name: 'a.txt', operation: 'delete' as const }],
+    };
+    await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
+      success: false,
+      code: 'permission-denied',
+    });
+    api.updateFiles.mockRejectedValueOnce(new Error('IPC disconnected'));
+    await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
+      success: false,
+      code: 'failed',
+    });
+    clearLocalFilesContexts();
+    api.getCapabilities.mockResolvedValueOnce({
+      apiVersion: 1,
+      available: true,
+      sandboxId: 'local',
+    });
+    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
+    await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
+      success: false,
+      code: 'unavailable',
+    });
+    expect(mocks.error).toHaveBeenCalledTimes(3);
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
+  it('a context replaced while a native save is pending cannot report success in the new session', async () => {
+    const api = localApi();
+    mocks.getApi.mockReturnValue(api);
+    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
+    let finish!: (result: { success: boolean }) => void;
+    api.updateFiles.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const pending = apiUpdateStaticFile({
+      cId: 7,
+      files: [{ name: 'a.txt', operation: 'modify', contents: 'saved' }],
+    });
+    await vi.waitFor(() => expect(api.updateFiles).toHaveBeenCalled());
+    clearLocalFilesContexts();
+    finish({ success: true });
+    await expect(pending).resolves.toMatchObject({
+      success: false,
+      code: 'expired',
+    });
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
   it('retains cloud request parameters for browsers and old bridges', async () => {
     await apiGetStaticFileList(7, {
       relativePath: 'docs',

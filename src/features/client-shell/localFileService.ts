@@ -1,7 +1,9 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { subscribeComputerServiceState } from '@/services/computerServiceState';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   HostLocalFilesBridge,
+  LocalFileChange,
   LocalFilePreview,
   LocalFilesContext,
   LocalFilesContextInput,
@@ -27,6 +29,7 @@ type ContextRecord = {
   settled: boolean;
   generation: number;
   knownLocal: boolean;
+  writable: boolean;
   owners: Set<symbol>;
   grants: Set<string>;
 };
@@ -136,6 +139,8 @@ function resolveRecord(cId: string, record: ContextRecord) {
       throw new LocalFileAccessError('expired');
     }
     record.knownLocal = true;
+    record.writable =
+      capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
     changed();
     return result.data;
@@ -172,6 +177,7 @@ export function registerLocalFilesContext(
     settled: false,
     generation: 0,
     knownLocal: false,
+    writable: false,
     owners: new Set([owner]),
     grants: new Set(),
   };
@@ -439,6 +445,54 @@ export async function getLocalFileList(
     displayCode: SUCCESS_CODE,
     message: '',
     data: { ...data, files },
+    debugInfo: {},
+    success: true,
+    tid: '',
+  };
+}
+
+/** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */
+export async function updateLocalFiles(
+  cId: string | number,
+  files: UpdateFileInfo[],
+): Promise<RequestResponse<null> | null> {
+  const record = contexts.get(String(cId));
+  if (!record) return null;
+  const generation = record.generation;
+  const context = await record.pending;
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  if (!context) return null;
+  if (!record.writable || !record.api?.updateFiles)
+    throw new LocalFileAccessError('unavailable');
+  const changes: LocalFileChange[] = files.map((file) => {
+    if (!file.operation) throw new LocalFileAccessError('invalid-argument');
+    return {
+      name: file.name,
+      operation: file.operation,
+      contents: file.contents,
+      isDir: file.isDir,
+      binary: file.binary,
+      renameFrom: file.renameFrom,
+    };
+  });
+  value(await record.api.updateFiles(context.contextId, changes));
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  changed();
+  return {
+    code: SUCCESS_CODE,
+    displayCode: SUCCESS_CODE,
+    message: '',
+    data: null,
     debugInfo: {},
     success: true,
     tid: '',
