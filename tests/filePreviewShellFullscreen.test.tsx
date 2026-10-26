@@ -66,7 +66,13 @@ describe('2469 文件预览全屏壳避让', () => {
         <FileTreePreviewPanel
           {...({
             tree: { isFileTreeVisible: false },
-            preview: { isFullscreen, changeFiles: [] },
+            preview: {
+              isFullscreen,
+              changeFiles: [],
+              selectedFileNode: null,
+              filePathHeaderProps: { viewFileType: 'preview' },
+              refreshSelectedFileContent: vi.fn(async () => {}),
+            },
             viewMode: 'preview',
           } as unknown as ComponentProps<typeof FileTreePreviewPanel>)}
         />,
