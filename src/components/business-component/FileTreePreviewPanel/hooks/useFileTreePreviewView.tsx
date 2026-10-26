@@ -32,6 +32,10 @@ import {
 } from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
+import type {
+  FileContentSaveOptions,
+  FileSaveState,
+} from '@/types/interfaces/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils';
 import {
   buildUploadFilePaths,
@@ -283,6 +287,55 @@ export function useFileTreePreviewView(
   changeFilesRef.current = changeFiles;
   const onSaveFileContentRef = useRef(onSaveFileContent);
   onSaveFileContentRef.current = onSaveFileContent;
+  const onSaveFilesRef = useRef(onSaveFiles);
+  onSaveFilesRef.current = onSaveFiles;
+  const saveEpoch = useRef(0);
+  const saveScope = JSON.stringify([
+    targetId,
+    agentSandboxId,
+    staticFileBasePath,
+  ]);
+  const previousSaveScope = useRef(saveScope);
+  const saveAttempt = useRef(0);
+  const latestSaveAttempts = useRef(new Map<string, number>());
+  const editorDrafts = useRef(
+    new Map<string, { content: string; original: string; epoch: number }>(),
+  );
+  const [fileSaveStates, setFileSaveStates] = useState<
+    Record<string, { state: FileSaveState; epoch: number }>
+  >({});
+  const [mutatingPath, setMutatingPath] = useState<string | null>(null);
+  const mutation = useRef<{ path: string; epoch: number } | null>(null);
+  if (previousSaveScope.current !== saveScope) {
+    previousSaveScope.current = saveScope;
+    saveEpoch.current += 1;
+    latestSaveAttempts.current.clear();
+    editorDrafts.current.clear();
+    mutation.current = null;
+  }
+  useEffect(() => {
+    setFileSaveStates({});
+    setMutatingPath(null);
+  }, [saveScope]);
+  useEffect(
+    () => () => {
+      saveEpoch.current += 1;
+      latestSaveAttempts.current.clear();
+      editorDrafts.current.clear();
+      mutation.current = null;
+    },
+    [],
+  );
+  useEffect(() => {
+    const warnUnsaved = (event: BeforeUnloadEvent) => {
+      if (!readOnly && editorDrafts.current.size > 0) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warnUnsaved);
+    return () => window.removeEventListener('beforeunload', warnUnsaved);
+  }, [readOnly]);
 
   // Git 列表刷新进行中
   const [isRefreshingGitList, setIsRefreshingGitList] =
@@ -1591,114 +1644,121 @@ export function useFileTreePreviewView(
   /**
    * 处理重命名操作
    */
-  const handleRenameFile = async (fileNode: FileNode, newName: string) => {
-    if (!newName || !newName?.trim()) {
-      if (fileNode?.status === 'create') {
-        setFiles((prev) => removeNodeByIdFromTree(prev, fileNode.id));
-        setRenamingNode(null);
-      }
-      return;
-    }
-
-    // 备份文件列表,用于重命名失败时恢复文件树
-    const filesBackup = cloneDeep(files);
-
-    try {
-      // 重命名文件失败：找不到文件节点
-      if (!fileNode) {
+  const handleRenameFile = async (fileNode: FileNode, newName: string) =>
+    runFileMutation(fileNode, async () => {
+      const epoch = saveEpoch.current;
+      if (!newName || !newName?.trim()) {
+        if (fileNode?.status === 'create') {
+          setFiles((prev) => removeNodeByIdFromTree(prev, fileNode.id));
+          setRenamingNode(null);
+        }
         return;
       }
 
-      const isNewNode = fileNode.status === 'create';
+      // 备份文件列表,用于重命名失败时恢复文件树
+      const filesBackup = cloneDeep(files);
 
-      // 先立即更新文件树中的显示名字，提供即时反馈
-      const updatedFileTree = updateFileTreeName(
-        files,
-        fileNode.id,
-        newName.trim(),
-      );
-
-      setFiles(updatedFileTree);
-
-      // 如果是新建节点（文件或文件夹），走创建逻辑；否则走重命名逻辑
-      if (isNewNode) {
-        const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
-
-        if (isCreateSuccess) {
-          const trimmedName = newName?.trim();
-          if (!trimmedName) {
-            rollbackFailedCreate(fileNode, filesBackup);
-            return;
-          }
-
-          // 计算新文件的完整路径：父路径 + 新文件名
-          const parentPath = fileNode.parentPath || '';
-          const newPath = parentPath
-            ? `${parentPath}/${trimmedName}`
-            : trimmedName;
-
-          // 记录需要选择的文件路径，等待文件树更新后自动选择
-          pendingSelectFileRef.current = newPath;
-        } else {
-          rollbackFailedCreate(fileNode, filesBackup);
+      try {
+        // 重命名文件失败：找不到文件节点
+        if (!fileNode) {
+          return;
         }
-      } else {
-        // 直接调用现有的重命名文件功能(异步更新文件树)
-        const isChangeSuccess = await onRenameFile?.(fileNode, newName);
-        if (isChangeSuccess) {
-          const trimmedName = newName.trim();
-          const newNodeId = fileNode.parentPath
-            ? `${fileNode.parentPath}/${trimmedName}`
-            : trimmedName;
 
-          onFileRenamed?.(fileNode.id, newNodeId);
+        const isNewNode = fileNode.status === 'create';
 
-          if (fileNode.type === 'folder' && selectedFolderId === fileNode.id) {
-            setSelectedFolderId(newNodeId);
+        // 先立即更新文件树中的显示名字，提供即时反馈
+        const updatedFileTree = updateFileTreeName(
+          files,
+          fileNode.id,
+          newName.trim(),
+        );
+
+        setFiles(updatedFileTree);
+
+        // 如果是新建节点（文件或文件夹），走创建逻辑；否则走重命名逻辑
+        if (isNewNode) {
+          const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
+          if (saveEpoch.current !== epoch) return;
+
+          if (isCreateSuccess) {
+            const trimmedName = newName?.trim();
+            if (!trimmedName) {
+              rollbackFailedCreate(fileNode, filesBackup);
+              return;
+            }
+
+            // 计算新文件的完整路径：父路径 + 新文件名
+            const parentPath = fileNode.parentPath || '';
+            const newPath = parentPath
+              ? `${parentPath}/${trimmedName}`
+              : trimmedName;
+
+            // 记录需要选择的文件路径，等待文件树更新后自动选择
+            pendingSelectFileRef.current = newPath;
+          } else {
+            rollbackFailedCreate(fileNode, filesBackup);
           }
+        } else {
+          // 直接调用现有的重命名文件功能(异步更新文件树)
+          const isChangeSuccess = await onRenameFile?.(fileNode, newName);
+          if (saveEpoch.current !== epoch) return;
+          if (isChangeSuccess) {
+            const trimmedName = newName.trim();
+            const newNodeId = fileNode.parentPath
+              ? `${fileNode.parentPath}/${trimmedName}`
+              : trimmedName;
 
-          // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
-          if (
-            selectedFileNode &&
-            (selectedFileNode.id === fileNode.id ||
-              selectedFileNode.name === fileNode.name)
-          ) {
-            // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
-            const newFileProxyUrl = fileNode?.fileProxyUrl
-              ? updateFileProxyUrl(
-                  fileNode.fileProxyUrl,
-                  trimmedName,
-                  fileNode.parentPath || undefined,
-                )
-              : fileNode?.fileProxyUrl;
+            onFileRenamed?.(fileNode.id, newNodeId);
 
-            setSelectedFileNode((prevNode) =>
-              prevNode
-                ? {
-                    ...prevNode,
-                    name: trimmedName,
-                    id: newNodeId,
-                    path: newNodeId,
-                    fullPath: newNodeId,
-                    fileProxyUrl: newFileProxyUrl, // 更新 fileProxyUrl
-                  }
-                : prevNode,
-            );
+            if (
+              fileNode.type === 'folder' &&
+              selectedFolderId === fileNode.id
+            ) {
+              setSelectedFolderId(newNodeId);
+            }
 
-            setSelectedFileId(newNodeId);
+            // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
+            if (
+              selectedFileNode &&
+              (selectedFileNode.id === fileNode.id ||
+                selectedFileNode.name === fileNode.name)
+            ) {
+              // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
+              const newFileProxyUrl = fileNode?.fileProxyUrl
+                ? updateFileProxyUrl(
+                    fileNode.fileProxyUrl,
+                    trimmedName,
+                    fileNode.parentPath || undefined,
+                  )
+                : fileNode?.fileProxyUrl;
+
+              setSelectedFileNode((prevNode) =>
+                prevNode
+                  ? {
+                      ...prevNode,
+                      name: trimmedName,
+                      id: newNodeId,
+                      path: newNodeId,
+                      fullPath: newNodeId,
+                      fileProxyUrl: newFileProxyUrl, // 更新 fileProxyUrl
+                    }
+                  : prevNode,
+              );
+
+              setSelectedFileId(newNodeId);
+            }
+          } else {
+            setFiles(filesBackup);
           }
+        }
+      } catch {
+        if (fileNode?.status === 'create') {
+          rollbackFailedCreate(fileNode, filesBackup);
         } else {
           setFiles(filesBackup);
         }
       }
-    } catch {
-      if (fileNode?.status === 'create') {
-        rollbackFailedCreate(fileNode, filesBackup);
-      } else {
-        setFiles(filesBackup);
-      }
-    }
-  };
+    });
 
   /**
    * 打开文件/文件夹选择器并上传
@@ -1811,23 +1871,26 @@ export function useFileTreePreviewView(
   /**
    * 处理删除操作
    */
-  const handleDelete = async (node: FileNode) => {
-    // 直接调用现有的删除文件功能，等待返回值
-    const isDeleteSuccess = await onDeleteFile?.(node);
+  const handleDelete = async (node: FileNode) =>
+    runFileMutation(node, async () => {
+      const epoch = saveEpoch.current;
+      // 直接调用现有的删除文件功能，等待返回值
+      const isDeleteSuccess = await onDeleteFile?.(node);
+      if (saveEpoch.current !== epoch) return;
 
-    // 成功删除
-    if (isDeleteSuccess) {
-      // 如果删除的是当前选中的文件节点，则清空选中状态
-      if (node.id === selectedFileNode?.id) {
-        setSelectedFileNode(null);
-        setSelectedFileId('');
+      // 成功删除
+      if (isDeleteSuccess) {
+        // 如果删除的是当前选中的文件节点，则清空选中状态
+        if (node.id === selectedFileNode?.id) {
+          setSelectedFileNode(null);
+          setSelectedFileId('');
+        }
+        if (node.id === selectedFolderId) {
+          setSelectedFolderId('');
+        }
+        onFileDeleted?.(node);
       }
-      if (node.id === selectedFolderId) {
-        setSelectedFolderId('');
-      }
-      onFileDeleted?.(node);
-    }
-  };
+    });
 
   /**
    * 在文件树中指定位置创建一个临时节点，并进入重命名状态
@@ -1932,18 +1995,111 @@ export function useFileTreePreviewView(
     createTempNodeAndStartRename(parentNode, 'folder');
   };
 
-  /**
-   * 处理内容变化：同步本地状态并防抖提交到服务端
-   */
+  const persistContent = useCallback(
+    async (
+      fileId: string,
+      content: string,
+      original: string,
+      options?: FileContentSaveOptions,
+    ): Promise<boolean> => {
+      if (readOnly) return false;
+      const epoch = saveEpoch.current;
+      const attempt = ++saveAttempt.current;
+      latestSaveAttempts.current.set(fileId, attempt);
+      setFileSaveStates((prev) => ({
+        ...prev,
+        [fileId]: { state: 'saving', epoch },
+      }));
+      let saved = false;
+      try {
+        saved =
+          (await (onSaveFileContentRef.current
+            ? onSaveFileContentRef.current(fileId, content, original, options)
+            : onSaveFilesRef.current?.([
+                { fileId, fileContent: content, originalFileContent: original },
+              ]))) === true;
+      } catch {
+        saved = false;
+      }
+      if (
+        saveEpoch.current !== epoch ||
+        latestSaveAttempts.current.get(fileId) !== attempt
+      )
+        return false;
+      setFileSaveStates((prev) => ({
+        ...prev,
+        [fileId]: { state: saved ? 'saved' : 'error', epoch },
+      }));
+      if (saved) {
+        editorDrafts.current.delete(fileId);
+        setChangeFiles((prev) =>
+          prev.filter(
+            (change) =>
+              change.fileId !== fileId || change.fileContent !== content,
+          ),
+        );
+        setFiles((prev) => updateFileTreeContent(fileId, content, prev));
+        setSelectedFileNode((prev) =>
+          prev?.id === fileId ? { ...prev, content } : prev,
+        );
+      }
+      return saved;
+    },
+    [readOnly],
+  );
+
+  const isInMutation = (fileId: string) => {
+    const path = mutation.current?.path;
+    return (
+      path !== undefined && (fileId === path || fileId.startsWith(`${path}/`))
+    );
+  };
+
+  /** 移动/删除前完成该路径下的草稿，避免在途写仍投递到旧文件名。 */
+  const runFileMutation = async (
+    node: FileNode,
+    action: () => Promise<void>,
+  ) => {
+    if (readOnly || mutation.current) return;
+    const ticket = { path: node.id, epoch: saveEpoch.current };
+    mutation.current = ticket;
+    setMutatingPath(node.id);
+    try {
+      const drafts = [...editorDrafts.current].filter(([id]) =>
+        isInMutation(id),
+      );
+      const results = await Promise.all(
+        drafts.map(([id, draft]) =>
+          persistContent(id, draft.content, draft.original, {
+            immediate: true,
+          }),
+        ),
+      );
+      if (saveEpoch.current !== ticket.epoch) return;
+      if (results.some((saved) => !saved)) {
+        message.error(dict('PC.Components.FilePreview.saveState.error'));
+        return;
+      }
+      await action();
+    } catch {
+      if (saveEpoch.current === ticket.epoch)
+        message.error(dict('PC.Common.Global.operationFailed'));
+    } finally {
+      if (mutation.current === ticket) {
+        mutation.current = null;
+        setMutatingPath(null);
+      }
+    }
+  };
+
+  /** 仅编辑器输入属于未保存草稿；Git 的 modified 状态不等于未保存。 */
   const handleContentChange = useCallback(
     (fileId: string, content: string) => {
       const currentFile = findFileNode(fileId, filesRef.current);
+      if (readOnly || currentFile?.isLink || isInMutation(fileId)) return;
       const originalContent = currentFile?.content || '';
-      const existingChange = changeFilesRef.current.find(
-        (item) => item.fileId === fileId,
-      );
-      const originalFileContent =
-        existingChange?.originalFileContent ?? originalContent;
+      const previousDraft = editorDrafts.current.get(fileId);
+      const originalFileContent = previousDraft?.original ?? originalContent;
 
       setFiles((prevFiles) =>
         updateFileTreeContent(fileId, content, prevFiles),
@@ -1979,25 +2135,33 @@ export function useFileTreePreviewView(
         return prevChangeFiles;
       });
 
-      if (content !== originalFileContent && !readOnly) {
-        void onSaveFileContentRef
-          .current?.(fileId, content, originalFileContent)
-          .then((success) => {
-            if (!success) {
-              return;
-            }
-            setChangeFiles((prev) => {
-              const item = prev.find((change) => change.fileId === fileId);
-              if (!item || item.fileContent !== content) {
-                return prev;
-              }
-              return prev.filter((change) => change.fileId !== fileId);
-            });
-          });
+      if (content !== originalFileContent || previousDraft) {
+        const epoch = saveEpoch.current;
+        editorDrafts.current.set(fileId, {
+          content,
+          original: originalFileContent,
+          epoch,
+        });
+        if (onSaveFileContentRef.current)
+          void persistContent(fileId, content, originalFileContent);
+        else
+          setFileSaveStates((prev) => ({
+            ...prev,
+            [fileId]: { state: 'dirty', epoch },
+          }));
       }
     },
-    [readOnly],
+    [readOnly, persistContent],
   );
+
+  const saveCurrentFile = useCallback(async (): Promise<boolean> => {
+    const fileId = selectedFileIdRef.current;
+    const draft = editorDrafts.current.get(fileId);
+    if (!draft || draft.epoch !== saveEpoch.current) return true;
+    return persistContent(fileId, draft.content, draft.original, {
+      immediate: true,
+    });
+  }, [persistContent]);
 
   /**
    * 处理全屏切换
@@ -2068,6 +2232,18 @@ export function useFileTreePreviewView(
       }
 
       setChangeFiles((prev) => prev.filter((item) => item.fileId !== fileId));
+      const draft = editorDrafts.current.get(fileId);
+      if (draft) {
+        latestSaveAttempts.current.delete(fileId);
+        editorDrafts.current.set(fileId, {
+          ...draft,
+          content: changeFile.originalFileContent,
+        });
+        setFileSaveStates((prev) => ({
+          ...prev,
+          [fileId]: { state: 'dirty', epoch: saveEpoch.current },
+        }));
+      }
     },
     [changeFiles, selectedFileId],
   );
@@ -2100,6 +2276,20 @@ export function useFileTreePreviewView(
 
     // 清空已修改文件列表
     setChangeFiles([]);
+    for (const change of changeFiles) {
+      const draft = editorDrafts.current.get(change.fileId);
+      if (draft) {
+        latestSaveAttempts.current.delete(change.fileId);
+        editorDrafts.current.set(change.fileId, {
+          ...draft,
+          content: change.originalFileContent,
+        });
+        setFileSaveStates((prev) => ({
+          ...prev,
+          [change.fileId]: { state: 'dirty', epoch: saveEpoch.current },
+        }));
+      }
+    }
   };
 
   /**
@@ -2663,8 +2853,12 @@ export function useFileTreePreviewView(
         fileId={selectedFileId}
         fileName={fileName}
         filePath={`app/${selectedFileId}`}
-        content={fileContent}
-        readOnly={readOnly || !!selectedFileNode.isLink}
+        content={
+          editorDrafts.current.get(selectedFileId)?.content ?? fileContent
+        }
+        readOnly={
+          readOnly || !!selectedFileNode.isLink || isInMutation(selectedFileId)
+        }
         onContentChange={handleContentChange}
       />
     );
@@ -2754,6 +2948,7 @@ export function useFileTreePreviewView(
       isDynamicTheme,
       onFullscreenPreview,
       handleContentChange,
+      mutatingPath,
       viewFileType,
       staticFileBasePath,
     ],
@@ -2831,6 +3026,16 @@ export function useFileTreePreviewView(
       discardChangeFile,
       refreshSelectedFileContent,
       isSavingFiles,
+      fileSaveState:
+        !readOnly &&
+        !selectedFileNode?.isLink &&
+        (onSaveFileContent || onSaveFiles) &&
+        (viewFileType === 'code' || editorDrafts.current.has(selectedFileId))
+          ? fileSaveStates[selectedFileId]?.epoch === saveEpoch.current
+            ? fileSaveStates[selectedFileId].state
+            : 'saved'
+          : undefined,
+      saveCurrentFile,
     },
   };
 }

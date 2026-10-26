@@ -1274,11 +1274,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           : node,
       ),
     onSaveFiles: handleSaveFiles,
-    onSaveFileContent: async (fileId, content, originalFileContent) => {
+    onSaveFileContent: async (
+      fileId,
+      content,
+      originalFileContent,
+      options,
+    ) => {
       const result = await handleSaveFileContent(
         fileId,
         content,
         originalFileContent,
+        options,
       );
       return result ?? false;
     },

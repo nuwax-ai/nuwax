@@ -1,4 +1,12 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { message } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FileContextMenu from '../FileTreeGitSourcePanel/FileTreePanel/FileContextMenu';
 import LocalFileActions from './LocalFileActions';
@@ -31,10 +39,13 @@ beforeEach(() => {
   api.open.mockResolvedValue(true);
   api.reveal.mockResolvedValue(true);
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('本机文件操作入口', () => {
-  it('只有已验证引用展示系统打开和文件夹定位，并通过adapter调用', () => {
+  it('只有已验证引用展示系统打开和文件夹定位，并通过adapter调用', async () => {
     const { rerender } = render(<LocalFileActions />);
     expect(screen.queryByRole('button')).toBeNull();
     rerender(<LocalFileActions reference={ref} />);
@@ -43,6 +54,13 @@ describe('本机文件操作入口', () => {
         name: 'PC.Components.FilePreview.openInSystem',
       }),
     );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: 'PC.Components.FilePreview.revealInFolder',
+        }),
+      ).not.toBeDisabled(),
+    );
     fireEvent.click(
       screen.getByRole('button', {
         name: 'PC.Components.FilePreview.revealInFolder',
@@ -50,6 +68,78 @@ describe('本机文件操作入口', () => {
     );
     expect(api.open).toHaveBeenCalledWith(ref);
     expect(api.reveal).toHaveBeenCalledWith(ref);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: 'PC.Components.FilePreview.openInSystem',
+        }),
+      ).not.toBeDisabled(),
+    );
+  });
+
+  it('系统操作等待期间不重复投递，失效错误可见并允许重试', async () => {
+    let reject!: (error: unknown) => void;
+    api.open.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, fail) => {
+          reject = fail;
+        }),
+    );
+    const error = vi
+      .spyOn(message, 'error')
+      .mockImplementation(() => (() => {}) as any);
+    render(<LocalFileActions reference={ref} />);
+    const open = screen.getByRole('button', {
+      name: 'PC.Components.FilePreview.openInSystem',
+    });
+    const reveal = screen.getByRole('button', {
+      name: 'PC.Components.FilePreview.revealInFolder',
+    });
+    fireEvent.click(open);
+    fireEvent.click(open);
+    fireEvent.click(reveal);
+    expect(api.open).toHaveBeenCalledOnce();
+    expect(api.reveal).not.toHaveBeenCalled();
+    expect(open).toBeDisabled();
+    await act(async () => reject({ code: 'expired' }));
+    expect(error).toHaveBeenCalledWith(
+      'PC.Components.FilePreview.localSourceChanged',
+    );
+    expect(open).not.toBeDisabled();
+    await act(async () => fireEvent.click(open));
+    expect(api.open).toHaveBeenCalledTimes(2);
+  });
+
+  it('切换文件后旧操作完成不能解除新文件的等待状态', async () => {
+    const finish: Array<(value: boolean) => void> = [];
+    api.open.mockImplementation(
+      () => new Promise<boolean>((resolve) => finish.push(resolve)),
+    );
+    const { rerender } = render(<LocalFileActions reference={ref} />);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Components.FilePreview.openInSystem',
+      }),
+    );
+    rerender(<LocalFileActions reference={{ ...ref, path: 'other.md' }} />);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Components.FilePreview.openInSystem',
+      }),
+    );
+    expect(api.open).toHaveBeenCalledTimes(2);
+    await act(async () => finish[0](true));
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.FilePreview.revealInFolder',
+      }),
+    ).toBeDisabled();
+    await act(async () => finish[1](true));
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.FilePreview.revealInFolder',
+      }),
+    ).not.toBeDisabled();
   });
 
   it('文件树菜单本机显示操作，远端隐藏；点击关闭菜单', () => {
