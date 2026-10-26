@@ -33,6 +33,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
+import { localFileReadErrorMessage } from './localFileActionMessages';
 import { useLocalPreviewSource } from './useLocalPreviewSource';
 import { mountXlsxImageOverlay } from './xlsxImageOverlay';
 import {
@@ -1746,7 +1747,7 @@ const FilePreview: React.FC<FilePreviewProps> = (props) => {
       <Alert
         type="error"
         showIcon
-        message={preview.error.message}
+        message={localFileReadErrorMessage(preview.error, t)}
         action={
           <Button onClick={preview.refresh}>
             {t('PC.Components.FilePreview.retry')}

@@ -203,9 +203,9 @@ const RemoteWorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
     if (!open) return;
     setCurrentPath('');
     cancelEdit();
-    setRecentDirs(loadRecentWorkspaceDirs());
+    setRecentDirs(loadRecentWorkspaceDirs(sandboxId));
     void load('');
-  }, [open, load, cancelEdit]);
+  }, [open, load, cancelEdit, sandboxId]);
 
   // 切换目录时显示路径末端；后续列表更新不打断用户横向回看上层目录。
   useEffect(() => {
@@ -295,6 +295,7 @@ const RemoteWorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
         renameRecentWorkspaceDir(
           renamingPath,
           pathWithNewName(renamingPath, name),
+          sandboxId,
         ),
       );
       if (session !== editSessionRef.current) return;
@@ -319,7 +320,7 @@ const RemoteWorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
 
   const handleConfirm = () => {
     // 记入最近选择（去重置顶），供下次打开快速重选
-    setRecentDirs(addRecentWorkspaceDir(currentPath));
+    setRecentDirs(addRecentWorkspaceDir(currentPath, sandboxId));
     onConfirm(currentPath);
   };
 
@@ -586,7 +587,7 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = (
         } else if (selection.canceled) {
           callbacks.current.onCancel();
         } else {
-          addRecentWorkspaceDir(selection.path);
+          addRecentWorkspaceDir(selection.path, sandboxId);
           callbacks.current.onConfirm(selection.path);
         }
       })

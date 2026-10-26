@@ -690,6 +690,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FilePreview.saveFile": "Save file",
   "PC.Components.FilePreview.saveBeforeRefresh": "Save your changes before refreshing",
   "PC.Components.FilePreview.localSourceChanged": "The local file source has expired. Check the client service and reopen the file.",
+  "PC.Components.FilePreview.localFileMissing": "The file does not exist. It may have been moved, renamed, or deleted. Refresh the file list and try again.",
   "PC.Components.FilePreview.localActionFailed": "Could not complete the action. Check that the file exists and you have permission to access it.",
   "PC.Components.FilePreview.tooltipRefresh": "Refresh",
   "PC.Components.FilePreview.unsupportedType": "This file type is not supported for preview",

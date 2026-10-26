@@ -573,6 +573,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FilePreview.saveFile": "ファイルを保存",
   "PC.Components.FilePreview.saveBeforeRefresh": "更新する前に変更を保存してください",
   "PC.Components.FilePreview.localSourceChanged": "ローカルファイルの参照が無効です。クライアントの状態を確認してファイルを開き直してください。",
+  "PC.Components.FilePreview.localFileMissing": "ファイルが見つかりません。移動、名前の変更、または削除された可能性があります。ファイル一覧を更新して再試行してください。",
   "PC.Components.FilePreview.localActionFailed": "操作に失敗しました。ファイルの存在とアクセス権限を確認してください。",
   "PC.Components.FilePreview.tooltipRefresh": "リフレッシュ",
   "PC.Components.FilePreview.unsupportedType": "このファイル形式はプレビューではサポートされていません",

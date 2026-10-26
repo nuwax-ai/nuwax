@@ -298,6 +298,15 @@ export async function fetchContentOutcome(
     if (localFile) assertLocalFileReferenceCurrent(localFile);
     return { status: 'ok', content };
   } catch (error) {
+    // IPC 在生成预览地址前就可能报告缺文件；权限/来源失效仍是读取错误。
+    if (
+      error instanceof Error &&
+      error.name === 'LocalFileAccessError' &&
+      'code' in error &&
+      error.code === 'not-found'
+    ) {
+      return { status: 'missing' };
+    }
     console.error('Failed to get file content: ', error);
     return { status: 'error' };
   } finally {
