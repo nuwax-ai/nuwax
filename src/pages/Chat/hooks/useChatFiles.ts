@@ -20,6 +20,8 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 
 interface UseChatFilesProps {
   id?: number;
+  /** 导出默认文件名使用会话名；缺省由服务层生成带会话ID的名称。 */
+  conversationName?: string;
   fileTreeData: StaticFileInfo[] | null;
   handleRefreshFileList: (id: number, path?: string) => Promise<void>;
   /** 单文件实时保存成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
@@ -30,6 +32,7 @@ interface UseChatFilesProps {
 
 export const useChatFiles = ({
   id,
+  conversationName,
   fileTreeData,
   handleRefreshFileList,
   onSaveFileContentSuccessRef,
@@ -333,7 +336,7 @@ export const useChatFiles = ({
       return;
     }
 
-    apiDownloadAllFiles(id);
+    await apiDownloadAllFiles(id, conversationName);
   };
 
   return {

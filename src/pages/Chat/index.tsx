@@ -1124,6 +1124,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     handleExportProject,
   } = useChatFiles({
     id,
+    conversationName: conversationInfo?.topic,
     fileTreeData: workspaceDirectoryFiles.files,
     handleRefreshFileList: async (_id, path) =>
       workspaceDirectoryFiles.refresh(path),

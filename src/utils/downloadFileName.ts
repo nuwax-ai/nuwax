@@ -1,3 +1,23 @@
+const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|\x00-\x1f]/g;
+// Windows 设备名带扩展名仍保留，例如 CON.txt.zip 也不能直接使用。
+const WINDOWS_RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
+// 60个码点最多240个UTF-8字节，为扩展名和设备名前缀保留空间。
+const FILE_BASE_NAME_MAX_LEN = 60;
+
+/** 资源展示名转为下载基础名；不可用的名字交给调用方回退。 */
+export const sanitizeDownloadBaseName = (
+  raw: string,
+  maxLen = FILE_BASE_NAME_MAX_LEN,
+): string => {
+  const stripEdges = (value: string) => value.replace(/^[-.\s]+|[-.\s]+$/g, '');
+  const replaced = stripEdges(
+    (raw || '').replace(UNSAFE_FILENAME_CHARS, ' ').replace(/\s+/g, '-'),
+  );
+  const truncated = stripEdges(Array.from(replaced).slice(0, maxLen).join(''));
+  if (!truncated) return '';
+  return WINDOWS_RESERVED_NAMES.test(truncated) ? `_${truncated}` : truncated;
+};
+
 /** 从 Content-Disposition 解析下载文件名，优先使用 UTF-8 filename*。 */
 export const getDownloadFileName = (
   contentDisposition: string | undefined,

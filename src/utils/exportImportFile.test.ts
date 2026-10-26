@@ -21,7 +21,7 @@ beforeEach(() => {
 
 describe('带资源名称的导出回执', () => {
   it('保留中文名称并去除路径分隔符，空名称沿用默认名', () => {
-    expect(buildExportZipName(' 我的技能/测试:*? ')).toBe('我的技能 测试.zip');
+    expect(buildExportZipName(' 我的技能/测试:*? ')).toBe('我的技能-测试.zip');
     expect(buildExportZipName(null)).toBeUndefined();
     expect(buildExportZipName(' / ')).toBeUndefined();
   });
