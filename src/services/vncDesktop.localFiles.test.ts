@@ -137,9 +137,13 @@ describe('computer static service local routing', () => {
     expect(mocks.request).not.toHaveBeenCalled();
   });
 
-  it.each(['v1', 'missing-update', 'read-only-v2'])(
-    'new direct PC Web retains the complete legacy route for %s clients',
-    async (compatibility) => {
+  it.each([
+    { compatibility: 'v1', cId: 71 },
+    { compatibility: 'missing-update', cId: 72 },
+    { compatibility: 'read-only-v2', cId: 73 },
+  ])(
+    'new direct PC Web retains the complete legacy route for $compatibility clients',
+    async ({ compatibility, cId }) => {
       const api = localApi();
       if (compatibility === 'v1')
         api.getCapabilities.mockResolvedValue({ apiVersion: 1, available: true, sandboxId: 'local' });
@@ -148,9 +152,9 @@ describe('computer static service local routing', () => {
       if (compatibility === 'read-only-v2')
         api.getCapabilities.mockResolvedValue({ apiVersion: 2, available: true, writable: false, sandboxId: 'local' });
       mocks.getApi.mockReturnValue(api);
-      registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
-      await apiGetStaticFileList(7);
-      const data = { cId: 7, files: [{ name: 'a.txt', operation: 'modify' as const, contents: 'saved' }] };
+      registerLocalFilesContext({ cId, sandboxId: 'local' });
+      await apiGetStaticFileList(cId);
+      const data = { cId, files: [{ name: 'a.txt', operation: 'modify' as const, contents: 'saved' }] };
       await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({ code: '0000' });
       expect(mocks.request).toHaveBeenLastCalledWith('/api/computer/static/files-update', { method: 'POST', data });
       expect(mocks.request).toHaveBeenCalledTimes(2);
