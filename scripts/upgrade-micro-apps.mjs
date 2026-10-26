@@ -27,13 +27,18 @@ export const upgradeUsage = `用法：npm run upgrade:micro-apps -- <message|rep
   --dry-run                  fetch 和预检，不改变 HEAD、pin 或 index
   --ref <SHA或ref>            单应用选择 main 历史中的快进提交
   --allow-overlay-changes    人工审查后允许上游 overlay 同名文件变化
+  --no-rebase-patch          补丁贴不上时不要三方重算（默认会重算）
   -h / --help                查看帮助
 
-成功升级只暂存所选 gitlink 和 adapter.json；不会 commit、push 或构建。
-升级后运行 npm run build:prod 生成完整 dist，再进行功能验收。`;
+成功升级只暂存所选 gitlink、adapter.json，以及本次重算过的 adapter.patch；
+不会 commit、push 或构建。升级后运行 npm run build:prod 生成完整 dist，再进行功能验收。`;
 
 export function parseUpgradeArguments(argv) {
-  const options = { dryRun: false, allowOverlayChanges: false };
+  const options = {
+    dryRun: false,
+    allowOverlayChanges: false,
+    rebasePatch: true,
+  };
   const setTarget = (target) => {
     if (options.target) throw new Error('只能指定一个应用或 all');
     options.target = target;
@@ -50,6 +55,7 @@ export function parseUpgradeArguments(argv) {
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--allow-overlay-changes')
       options.allowOverlayChanges = true;
+    else if (arg === '--no-rebase-patch') options.rebasePatch = false;
     else if (arg === '--ref') options.ref = value();
     else if (arg === '--app') setTarget(value());
     else if (arg === '--all') setTarget('all');
@@ -214,6 +220,45 @@ async function overlayChanges(git, state, snapshot) {
   return files.split('\0').filter((file) => file && !preserved.has(file));
 }
 
+/** 子仓有旧 blob，空归档没有，贴不上时只能在 worktree 里三方重算。 */
+async function rebasePatchOnto(execute, source, commit, patchFile, workParent) {
+  await fs.mkdir(workParent, { recursive: true });
+  const parent = await fs.mkdtemp(path.join(workParent, 'rebase-'));
+  const work = path.join(parent, 'work');
+  try {
+    await execute(
+      'git',
+      ['worktree', 'add', '--detach', '--quiet', work, commit],
+      { cwd: source, capture: true },
+    );
+    await execute('git', ['apply', '--3way', patchFile], {
+      cwd: work,
+      capture: true,
+    });
+    await execute(
+      'git',
+      ['add', '-A', '--', '.', ':(exclude)*.rej', ':(exclude)*.orig'],
+      { cwd: work, capture: true },
+    );
+    const diff = await execute(
+      'git',
+      ['diff', '--cached', '--binary', '--find-renames'],
+      { cwd: work, capture: true, trim: false },
+    );
+    return Buffer.from(diff.endsWith('\n') ? diff : `${diff}\n`);
+  } finally {
+    try {
+      await execute('git', ['worktree', 'remove', '--force', work], {
+        cwd: source,
+        capture: true,
+      });
+    } catch {
+      /* 预检失败也拆掉 worktree */
+    }
+    await fs.rm(parent, { recursive: true, force: true });
+  }
+}
+
 async function rollback(states, git, root) {
   const errors = [];
   const attempt = async (label, task) => {
@@ -230,6 +275,16 @@ async function rollback(states, git, root) {
       if (contents !== state.oldAdapter && contents !== state.newAdapter)
         throw new Error('文件已被另外修改，保留当前内容');
       await replaceAdapter(state.app.adapterPath, contents, state.oldAdapter);
+    });
+    await attempt(`${state.app.id} patch`, async () => {
+      if (!state.oldPatch || !state.rebasedPatch) return;
+      const contents = await fs.readFile(state.app.patch);
+      if (
+        !contents.equals(state.oldPatch) &&
+        !contents.equals(state.rebasedPatch)
+      )
+        throw new Error('文件已被另外修改，保留当前内容');
+      await fs.writeFile(state.app.patch, state.oldPatch);
     });
     await attempt(`${state.app.id} HEAD`, async () => {
       const current = await git(state.app.source, ['rev-parse', 'HEAD']);
@@ -258,7 +313,9 @@ async function rollback(states, git, root) {
         const owned =
           entry.path === state.app.adapter.sourceDir
             ? state.newPin
-            : state.newAdapterOid;
+            : entry.path === repoRelative(root, state.app.adapterPath)
+              ? state.newAdapterOid
+              : state.newPatchOid;
         if (
           current.mode !== entry.mode ||
           (current.oid !== entry.oid && current.oid !== owned)
@@ -283,6 +340,7 @@ export async function upgradeMicroApps({
   dryRun = false,
   ref,
   allowOverlayChanges = false,
+  rebasePatch = true,
   execute = runCommand,
   log = console.info,
   signal,
@@ -383,11 +441,14 @@ export async function upgradeMicroApps({
         head,
         branch: await branchOf(git, app.source),
         oldAdapter: await fs.readFile(app.adapterPath, 'utf8'),
+        oldPatch: await fs.readFile(app.patch),
         fingerprint: (await adapterFingerprint(app)).sha256,
         index: await Promise.all(
-          [app.adapter.sourceDir, repoRelative(root, app.adapterPath)].map(
-            (file) => indexEntry(git, root, file),
-          ),
+          [
+            app.adapter.sourceDir,
+            repoRelative(root, app.adapterPath),
+            repoRelative(root, app.patch),
+          ].map((file) => indexEntry(git, root, file)),
         ),
       });
     }
@@ -452,7 +513,6 @@ export async function upgradeMicroApps({
       try {
         await checked(working, ['apply', '--check', snapshot.snapshot.patch]);
       } catch (cause) {
-        // 逐文件重放定位冲突文件，把「一句话报错」升级为可直接行动的诊断
         const conflicted = [];
         try {
           const patchText = await fs.readFile(
@@ -477,19 +537,41 @@ export async function upgradeMicroApps({
         } catch {
           /* 逐文件诊断失败不影响主报错 */
         }
-        throw new Error(
-          `${app.id} adapter patch 与候选 main 冲突，请先调整适配` +
-            (conflicted.length
-              ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join('\n')}`
-              : '') +
-            `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(0, 9)}${state.oldPin === state.newPin ? '（本次为本地适配未重制，非上游前进）' : ''}` +
-            `\n处置：微应用适配负责人基于新候选重制 adapter.patch 并随构建提交；` +
-            `其他同事无需本地处理，拉取最新分支（dev/版本分支）后重跑构建即可。` +
-            (cause?.stderr
-              ? `\ngit apply 原始输出：\n${String(cause.stderr).trim()}`
-              : ''),
-          { cause },
-        );
+        const fail = (extra = '') =>
+          new Error(
+            `${app.id} adapter patch 与候选 main 冲突，请先调整适配` +
+              (conflicted.length
+                ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join('\n')}`
+                : '') +
+              `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(0, 9)}${state.oldPin === state.newPin ? '（本次为本地适配未重制，非上游前进）' : ''}` +
+              extra +
+              `\n处置：微应用适配负责人基于新候选重制 adapter.patch 并随构建提交；` +
+              `其他同事无需本地处理，拉取最新分支（dev/版本分支）后重跑构建即可。` +
+              (cause?.stderr
+                ? `\ngit apply 原始输出：\n${String(cause.stderr).trim()}`
+                : ''),
+            { cause },
+          );
+        if (!rebasePatch) throw fail();
+        try {
+          const remade = await rebasePatchOnto(
+            execute,
+            app.source,
+            state.newPin,
+            snapshot.snapshot.patch,
+            path.join(cache, 'patch-rebase'),
+          );
+          const remadePath = path.join(scratch, `${app.id}-rebased.patch`);
+          await fs.writeFile(remadePath, remade);
+          await checked(working, ['apply', '--check', remadePath]);
+          state.rebasedPatch = remade;
+        } catch (rebaseCause) {
+          throw fail(
+            `\n三方自动重算失败：${
+              rebaseCause instanceof Error ? rebaseCause.message : rebaseCause
+            }`,
+          );
+        }
       }
       state.overlayChanged = await overlayChanges(checked, state, snapshot);
       if (state.overlayChanged.length && !allowOverlayChanges)
@@ -500,7 +582,11 @@ export async function upgradeMicroApps({
         );
       log(
         `[upgrade] ${app.id}: ${state.oldPin} -> ${state.newPin}${
-          state.oldPin === state.newPin ? '（无变化）' : ''
+          state.rebasedPatch
+            ? '（适配补丁已自动重算）'
+            : state.oldPin === state.newPin
+              ? '（无变化）'
+              : ''
         }`,
       );
       if (state.overlayChanged.length)
@@ -515,10 +601,13 @@ export async function upgradeMicroApps({
       oldPin: state.oldPin,
       newPin: state.newPin,
       changed: state.oldPin !== state.newPin,
+      patchRebased: Boolean(state.rebasedPatch),
       overlayChanged: state.overlayChanged,
     }));
     if (dryRun) return { status: 'dry-run', apps: summaries };
-    const changed = states.filter((state) => state.oldPin !== state.newPin);
+    const changed = states.filter(
+      (state) => state.oldPin !== state.newPin || state.rebasedPatch,
+    );
     if (!changed.length) return { status: 'unchanged', apps: summaries };
     // 锁不能阻止手工编辑；写入前复核完整适配指纹、HEAD/分支与 index。
     await checkSharedInputs();
@@ -592,6 +681,13 @@ export async function upgradeMicroApps({
         'hash-object',
         state.app.adapterPath,
       ]);
+      if (state.rebasedPatch) {
+        await fs.writeFile(state.app.patch, state.rebasedPatch);
+        state.newPatchOid = await checked(root, [
+          'hash-object',
+          state.app.patch,
+        ]);
+      }
     }
     await checked(root, [
       'add',
@@ -599,6 +695,7 @@ export async function upgradeMicroApps({
       ...changed.flatMap((state) => [
         state.app.adapter.sourceDir,
         repoRelative(root, state.app.adapterPath),
+        ...(state.rebasedPatch ? [repoRelative(root, state.app.patch)] : []),
       ]),
     ]);
     for (const state of changed) {
