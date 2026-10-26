@@ -178,6 +178,7 @@ export const updateFilesListName = (
       {
         contents: '',
         name: newPath, // 更新为新的完整路径
+        localFile: fileNode.localFile,
         renameFrom: oldPath, // 记录重命名前的名字
         operation: 'rename', // 操作类型
         isDir: true,

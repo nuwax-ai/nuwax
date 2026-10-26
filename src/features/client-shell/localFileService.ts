@@ -1,7 +1,9 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { subscribeComputerServiceState } from '@/services/computerServiceState';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   HostLocalFilesBridge,
+  LocalFileChange,
   LocalFilePreview,
   LocalFilesContext,
   LocalFilesContextInput,
@@ -27,10 +29,15 @@ type ContextRecord = {
   settled: boolean;
   generation: number;
   knownLocal: boolean;
+  writable: boolean;
   owners: Set<symbol>;
   grants: Set<string>;
 };
 const contexts = new Map<string, ContextRecord>();
+// Keep bounded provenance after UI disposal so a delayed autosave cannot become
+// a cloud write merely because its local context has already been released.
+const recentLocalSources = new Map<string, string>();
+const MAX_RECENT_LOCAL_SOURCES = 256;
 const listeners = new Set<() => void>();
 let revision = 0;
 const changed = () => {
@@ -136,6 +143,12 @@ function resolveRecord(cId: string, record: ContextRecord) {
       throw new LocalFileAccessError('expired');
     }
     record.knownLocal = true;
+    recentLocalSources.delete(cId);
+    recentLocalSources.set(cId, record.input.sandboxId);
+    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
+      recentLocalSources.delete(recentLocalSources.keys().next().value!);
+    record.writable =
+      capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
     changed();
     return result.data;
@@ -172,6 +185,7 @@ export function registerLocalFilesContext(
     settled: false,
     generation: 0,
     knownLocal: false,
+    writable: false,
     owners: new Set([owner]),
     grants: new Set(),
   };
@@ -439,6 +453,69 @@ export async function getLocalFileList(
     displayCode: SUCCESS_CODE,
     message: '',
     data: { ...data, files },
+    debugInfo: {},
+    success: true,
+    tid: '',
+  };
+}
+
+/** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */
+export async function updateLocalFiles(
+  cId: string | number,
+  files: UpdateFileInfo[],
+): Promise<RequestResponse<null> | null> {
+  for (const file of files) {
+    if (file.localFile) {
+      if (file.localFile.cId !== String(cId))
+        throw new LocalFileAccessError('expired');
+      assertLocalFileReferenceCurrent(file.localFile);
+    }
+  }
+  const record = contexts.get(String(cId));
+  if (!record) {
+    if (recentLocalSources.has(String(cId)))
+      throw new LocalFileAccessError('expired');
+    return null;
+  }
+  const generation = record.generation;
+  const context = await record.pending;
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  if (!context) {
+    if (recentLocalSources.get(String(cId)) === record.input.sandboxId)
+      throw new LocalFileAccessError('unavailable');
+    return null;
+  }
+  if (!record.writable || !record.api?.updateFiles)
+    throw new LocalFileAccessError('unavailable');
+  const changes: LocalFileChange[] = files.map((file) => {
+    if (!file.operation) throw new LocalFileAccessError('invalid-argument');
+    return {
+      name: file.name,
+      operation: file.operation,
+      contents: file.contents,
+      isDir: file.isDir,
+      binary: file.binary,
+      renameFrom: file.renameFrom,
+    };
+  });
+  value(await record.api.updateFiles(context.contextId, changes));
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  changed();
+  return {
+    code: SUCCESS_CODE,
+    displayCode: SUCCESS_CODE,
+    message: '',
+    data: null,
     debugInfo: {},
     success: true,
     tid: '',
