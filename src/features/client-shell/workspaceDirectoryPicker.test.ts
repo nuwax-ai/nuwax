@@ -22,6 +22,24 @@ const pick = (sandboxId = '4418', controller = new AbortController()) =>
   pickLocalWorkspaceDirectory(sandboxId, controller.signal);
 
 describe('工作目录选择的本机与远端分流', () => {
+  it('旧浏览器没有 AbortSignal.throwIfAborted 时仍保留无桥的后端路线', async () => {
+    const controller = new AbortController();
+    Object.defineProperty(controller.signal, 'throwIfAborted', {
+      value: undefined,
+    });
+    mocks.getApi.mockReturnValue(undefined);
+    expect(await pick('4418', controller)).toBeNull();
+  });
+
+  it.each([null, undefined, {}])(
+    '旧桥能力探测返回 %s 时不打开本机目录',
+    async (caps) => {
+      api.getCapabilities.mockResolvedValue(caps);
+      expect(await pick()).toBeNull();
+      expect(api.pickDirectory).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     '/Users/me/工作目录',
     'C:\\Users\\me\\work',

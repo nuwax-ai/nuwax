@@ -89,15 +89,15 @@ function resolveRecord(cId: string, record: ContextRecord) {
   record.pending = (async () => {
     const api = hostBridge.localFiles?.getApi();
     if (
-      !api?.getCapabilities ||
-      !api.resolveContext ||
-      !api.listFiles ||
-      !api.searchFiles ||
-      !api.preparePreview ||
-      !api.saveFile ||
-      !api.exportWorkspace ||
-      !api.openPath ||
-      !api.revealInFolder ||
+      typeof api?.getCapabilities !== 'function' ||
+      typeof api.resolveContext !== 'function' ||
+      typeof api.listFiles !== 'function' ||
+      typeof api.searchFiles !== 'function' ||
+      typeof api.preparePreview !== 'function' ||
+      typeof api.saveFile !== 'function' ||
+      typeof api.exportWorkspace !== 'function' ||
+      typeof api.openPath !== 'function' ||
+      typeof api.revealInFolder !== 'function' ||
       typeof api.updateFiles !== 'function'
     ) {
       if (record.knownLocal) throw new LocalFileAccessError('unavailable');
@@ -119,7 +119,7 @@ function resolveRecord(cId: string, record: ContextRecord) {
       throw new LocalFileAccessError('expired');
     }
     if (
-      !capabilities.available ||
+      !capabilities?.available ||
       !Number.isInteger(capabilities.apiVersion) ||
       capabilities.apiVersion < 2 ||
       capabilities.writable !== true ||

@@ -88,6 +88,26 @@ const bind = (sandboxId = 'local-1') =>
   });
 
 describe('local file routing', () => {
+  it.each([null, undefined, {}])(
+    '旧桥能力返回 %s 时文件操作保留后端路线',
+    async (capabilities) => {
+      mocks.getApi.mockReturnValue({
+        ...api,
+        getCapabilities: vi.fn().mockResolvedValue(capabilities),
+      });
+      bind();
+      expect(await getLocalFileList(12)).toBeNull();
+      expect(api.resolveContext).not.toHaveBeenCalled();
+    },
+  );
+
+  it('旧桥方法不是函数时不能接管文件列表', async () => {
+    mocks.getApi.mockReturnValue({ ...api, listFiles: true });
+    bind();
+    expect(await getLocalFileList(12)).toBeNull();
+    expect(api.resolveContext).not.toHaveBeenCalled();
+  });
+
   it.each([null, ''])(
     '可选会话字段为 %s 时不把非法 scalar 传给原生桥',
     async (empty) => {
