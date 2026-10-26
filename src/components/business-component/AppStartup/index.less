@@ -1,68 +1,233 @@
 .container {
+  --startup-bg: #f6f7fb;
+  --startup-card: #fff;
+  --startup-border: #e7e9f0;
+  --startup-text: #1f2637;
+  --startup-secondary: #697386;
+  --startup-primary: var(--xagi-color-primary, #5147ff);
+  --startup-primary-text: #fff;
+
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 32px;
+  padding: 48px 24px;
   box-sizing: border-box;
-  color: var(--xagi-color-text, #262626);
-  background: var(--xagi-color-bg-layout, #fafafa);
+  color: var(--xagi-color-text, var(--startup-text));
+  background: var(--xagi-color-bg-layout, var(--startup-bg));
 }
 
 .content {
+  box-sizing: border-box;
+  width: 100%;
   max-width: 440px;
+  padding: 36px 32px 28px;
+  border: 1px solid var(--xagi-color-border, var(--startup-border));
+  border-radius: 16px;
+  background: var(--xagi-color-bg-container, var(--startup-card));
+  box-shadow: 0 12px 48px rgb(31 38 55 / 4%);
   text-align: center;
 
   h1 {
-    margin: 20px 0 12px;
-    font-size: 20px;
-    font-weight: 500;
+    margin: 12px 0 10px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.3px;
+  }
+}
+
+.brandMark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 20px;
+  border-radius: 14px;
+  background: var(--startup-primary);
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+}
+
+.logoFallback {
+  color: #fff;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--xagi-color-text-secondary, var(--startup-secondary));
+}
+
+.hint {
+  min-height: 44px;
+  margin: 0 auto;
+  color: var(--xagi-color-text-secondary, var(--startup-secondary));
+  font-size: 14px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.reloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  min-width: 144px;
+  margin-top: 24px;
+  padding: 9px 20px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--startup-primary);
+  color: var(--startup-primary-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 120ms;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
-  p {
-    margin: 0 0 24px;
-    color: var(--xagi-color-text-secondary, #595959);
-    line-height: 1.6;
+  &:hover {
+    opacity: 0.9;
   }
 
-  button {
-    padding: 8px 20px;
-    border: 1px solid var(--xagi-color-border, #d9d9d9);
-    border-radius: 8px;
-    background: var(--xagi-color-bg-container, #fff);
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
+  &:focus-visible {
+    outline: 2px solid var(--startup-primary);
+    outline-offset: 4px;
+  }
 
-    &:focus-visible {
-      outline: 2px solid var(--xagi-color-primary, #1677ff);
-      outline-offset: 3px;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
   }
 }
 
 .spinner {
-  display: inline-block;
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--xagi-color-border, #d9d9d9);
-  border-top-color: var(--xagi-color-primary, #1677ff);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  position: absolute;
+  inset: -6px;
+  border: 2px solid transparent;
+  border-top-color: var(--startup-primary);
+  border-right-color: var(--xagi-color-border, var(--startup-border));
+  border-radius: 20px;
+  animation: startup-spin 1.4s linear infinite;
 }
 
-@keyframes spin {
+.failureMark {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--xagi-color-bg-container, var(--startup-card));
+  border-radius: 50%;
+  background: #fff2de;
+  color: #976016;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.buttonSpinner {
+  animation: startup-spin 1.4s linear infinite;
+}
+
+.diagnostic {
+  margin-top: 24px;
+  color: var(--xagi-color-text-secondary, var(--startup-secondary));
+  font-size: 12px;
+  text-align: left;
+
+  summary {
+    width: fit-content;
+    margin: 0 auto;
+    padding: 4px;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--startup-primary);
+      outline-offset: 3px;
+    }
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 16px;
+    margin: 12px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--xagi-color-border, var(--startup-border));
+  }
+
+  dt {
+    margin: 0;
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+}
+
+:global(html[data-theme='dark']) .container {
+  --startup-bg: #13151b;
+  --startup-card: #1c1f28;
+  --startup-border: #303541;
+  --startup-text: #eef0f6;
+  --startup-secondary: #a4adbf;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(html:not([data-theme])) .container {
+    --startup-bg: #13151b;
+    --startup-card: #1c1f28;
+    --startup-border: #303541;
+    --startup-text: #eef0f6;
+    --startup-secondary: #a4adbf;
+  }
+}
+
+@keyframes startup-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+@media (max-width: 480px) {
+  .container {
+    padding: 36px 16px;
+  }
+
+  .content {
+    padding: 32px 24px 24px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
+  .spinner,
+  .buttonSpinner {
     animation: none;
+  }
+
+  .reloadButton {
+    transition: none;
   }
 }
