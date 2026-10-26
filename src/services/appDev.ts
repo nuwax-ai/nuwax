@@ -24,7 +24,10 @@ import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
 import { parseLogEntry } from '@/utils/devLogParser';
-import { buildExportZipName, exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import {
+  buildExportZipName,
+  exportFileViaBrowserDownload,
+} from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 

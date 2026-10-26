@@ -182,9 +182,7 @@ export const exportConfigFile = async (
 export const buildExportZipName = (
   rawName?: string | null,
 ): string | undefined => {
-  const cleaned = (rawName ?? '')
-    .replace(/[\\/:*?"<>|\r\n\t]/g, ' ')
-    .trim();
+  const cleaned = (rawName ?? '').replace(/[\\/:*?"<>|\r\n\t]/g, ' ').trim();
   return cleaned ? `${cleaned}.zip` : undefined;
 };
 
