@@ -42,8 +42,7 @@ interface HistoryScrollAnchor {
 
 /**
  * 选取滚动内容中首条与视口相交的子元素作为上滑加载历史的滚动锚点。
- * 视口顶缘贴顶（scrollTop≈0）时选中的可能是哨兵/表单等恒不移动的节点，
- * 历史内容插在其下方 → 偏移不变 → 不补偿，恰好是「顶部读最新一页」的正确表现。
+ * 哨兵不随历史前插移动，不能作为阅读锚点，否则贴顶加载时不会补偿。
  */
 const pickHistoryScrollAnchor = (
   container: HTMLElement,
@@ -55,6 +54,11 @@ const pickHistoryScrollAnchor = (
   const containerTop = container.getBoundingClientRect().top;
   const containerBottom = containerTop + container.clientHeight;
   for (const child of children) {
+    if (
+      child.hasAttribute('data-history-scroll-sentinel') ||
+      child.hasAttribute('data-history-scroll-static')
+    )
+      continue;
     if (child.offsetHeight <= 0) continue;
     const top = child.getBoundingClientRect().top;
     if (
