@@ -11,7 +11,10 @@ import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import {
+  buildExportZipName,
+  exportFileViaBrowserDownload,
+} from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
@@ -158,9 +161,13 @@ const SkillDetail: React.FC = ({}) => {
       setLoadingExportProject(true);
       // 获取技能导出文件链接地址
       const linkUrl = `${process.env.BASE_URL}/api/published/skill/export/${skillId}`;
-      // 通过浏览器下载文件
-      exportFileViaBrowserDownload(linkUrl);
-      message.success(dict('PC.Pages.Square.SkillDetail.exportSuccess'));
+      // 通过浏览器下载文件；默认文件名带技能名，避免保存弹窗出现泛名 export.zip（NW-273）
+      const saved = await exportFileViaBrowserDownload(
+        linkUrl,
+        buildExportZipName(skillInfo?.name),
+      );
+      if (saved)
+        message.success(dict('PC.Pages.Square.SkillDetail.exportSuccess'));
     } catch (error) {
       // 处理其他异常
       console.error(

@@ -4,6 +4,8 @@ import GitVersionRecordPanel, {
   type GitVersionRecordPanelHandle,
 } from '@/components/business-component/GitVersionRecordPanel';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useRef } from 'react';
 import { useFileTreePreviewPanel } from './hooks/useFileTreePreviewPanel';
@@ -143,6 +145,32 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
           )}
 
           <div
+            onKeyDownCapture={(event) => {
+              const primary = /mac/i.test(navigator.platform)
+                ? event.metaKey
+                : event.ctrlKey;
+              if (
+                viewMode !== 'desktop' &&
+                !diffFile &&
+                !showGitVersionPanel &&
+                primary &&
+                !event.altKey &&
+                !event.shiftKey &&
+                event.key.toLowerCase() === 's' &&
+                preview.fileSaveState &&
+                preview.saveCurrentFile
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                void preview
+                  .saveCurrentFile()
+                  .catch(() =>
+                    message.error(
+                      dict('PC.Components.FilePreview.saveState.error'),
+                    ),
+                  );
+              }
+            }}
             className={cx(
               'preview-panel',
               'flex',
@@ -161,6 +189,8 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
                 onViewFileTypeChange={
                   preview.filePathHeaderProps.onViewFileTypeChange
                 }
+                saveState={preview.fileSaveState}
+                onSave={preview.saveCurrentFile}
               />
             )}
             {/* 预览内容 */}

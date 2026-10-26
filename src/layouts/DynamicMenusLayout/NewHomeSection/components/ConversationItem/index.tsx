@@ -12,6 +12,7 @@ import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { formatRelativeTime } from '../../utils';
+import { useNow } from '../../useNow';
 import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
 
@@ -56,6 +57,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   // 行内不再提供归档图标；仅从 ⋯ 菜单进入既有二次确认。
   const [archiveArming, setArchiveArming] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  // NW-265：相对时间随共享时钟走表（30s），不再渲染一刻算死
+  const now = useNow();
   // 确认态点击外部取消（2026-09-20 定调）：armed 时点击「确认」以外任意位置
   // （其他行/菜单/空白）回退常规态。capture 阶段监听先于行内 stopPropagation；
   // ref 包容判断豁免确认钮本体，Esc 取消保留
@@ -246,7 +249,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                 )}
                 {item.taskStatus !== TaskStatus.EXECUTING && (
                   <span className={cx(styles['conversation-date'])}>
-                    {formatRelativeTime(item.modified)}
+                    {formatRelativeTime(item.modified, now)}
                   </span>
                 )}
                 {moreButton}

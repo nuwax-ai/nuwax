@@ -5,6 +5,10 @@ import type {
 } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type {
+  FileContentSaveOptions,
+  FileSaveState,
+} from '@/types/interfaces/fileTree';
 import type React from 'react';
 import type { FilePathHeaderProps } from './FilePathHeader/type';
 import type { ChangeFileInfo, IdleDetectionConfig } from './types/file-tree';
@@ -83,6 +87,7 @@ export interface FileTreePreviewViewProps {
     fileId: string,
     content: string,
     originalFileContent: string,
+    options?: FileContentSaveOptions,
   ) => Promise<boolean>;
   /** 用户选择的智能体电脑ID */
   agentSandboxId?: string;
@@ -188,6 +193,8 @@ export interface FileTreePreviewViewPreview {
   refreshSelectedFileContent: () => Promise<void>;
   /** 是否正在保存文件 */
   isSavingFiles: boolean;
+  fileSaveState?: FileSaveState;
+  saveCurrentFile?: () => Promise<boolean>;
 }
 
 /** useFileTreePreviewView 返回值 */
