@@ -19,4 +19,5 @@
 - 截图会话 `1743684` 的实际返回包含 `devTargetId: null`、`devTargetType: null`。前端原先透传 `projectId: null`，触发 Beta.6 原生桥 scalar 校验；现于统一注册边界把可选 null/空串转为 undefined，覆盖所有接入页面。
 - Windows 独立运行与 Beta.6 相同的本机文件生产源码：原始 null 参数复现 invalid-argument；修复后的 PC Web 服务通过真实工作区列出并读取截图中的四个 PDF（73,254 / 22,940 / 14,615 / 11,746 bytes）。该检查使用隔离 IPC owner，不代表安装包 GUI 验收。
 - 相关文件与宿主域 183 项、会话门 1,186 项通过；架构无新增违规；变更路径零类型诊断，全库仍有 280 条既有诊断。
+- 补充旧客户端与浏览器兼容：缺桥、方法缺失/不可调用、能力探测返回空值保留后端路线；不依赖旧浏览器尚未实现的 AbortSignal.throwIfAborted。宿主真实门控、旧桥、文件及目录分流共 123 项回归通过。
 - 用户接手实机及测试环境验收。本轮没有部署或打包；当前改动留在 `/Users/apple/workspace/nuwax` 工作区。
