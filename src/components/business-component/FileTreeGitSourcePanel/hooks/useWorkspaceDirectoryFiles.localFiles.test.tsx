@@ -40,10 +40,15 @@ it('本机迟到ready重拉工作区，旧云端回包不能覆盖本机树或�
   const api = {
     getCapabilities: vi
       .fn()
-      .mockResolvedValueOnce({ apiVersion: 1, available: false })
+      .mockResolvedValueOnce({
+        apiVersion: 2,
+        available: false,
+        writable: false,
+      })
       .mockResolvedValue({
-        apiVersion: 1,
+        apiVersion: 2,
         available: true,
+        writable: true,
         sandboxId: 'local',
       }),
     resolveContext: vi.fn().mockResolvedValue({
@@ -64,6 +69,7 @@ it('本机迟到ready重拉工作区，旧云端回包不能覆盖本机树或�
     exportWorkspace: vi.fn(),
     openPath: vi.fn(),
     revealInFolder: vi.fn(),
+    updateFiles: vi.fn(),
   };
   mocks.getApi.mockReturnValue(api);
   cleanup = initLocalFilesLifecycle();
