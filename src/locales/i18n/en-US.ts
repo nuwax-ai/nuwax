@@ -3051,6 +3051,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Chat.expandNavigation": "Expand navigation",
   "PC.Pages.Chat.exportFailed": "Export failed",
   "PC.Pages.Chat.exportSuccess": "Export successful!",
+  "PC.Pages.Chat.exportAllFilesName": "All files",
   "PC.Components.LocalFiles.workspaceListFailed": "Failed to read project directory",
   "PC.Components.WorkspaceDir.pick": "Working directory",
   "PC.Components.WorkspaceDir.defaultDir": "Default working directory",

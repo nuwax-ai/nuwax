@@ -3050,6 +3050,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Chat.expandNavigation": "展开导航",
   "PC.Pages.Chat.exportFailed": "导出失败",
   "PC.Pages.Chat.exportSuccess": "导出成功！",
+  "PC.Pages.Chat.exportAllFilesName": "全部文件",
   "PC.Components.LocalFiles.workspaceListFailed": "项目目录读取失败",
   "PC.Components.WorkspaceDir.pick": "工作目录",
   "PC.Components.WorkspaceDir.defaultDir": "默认工作目录",

@@ -2970,6 +2970,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Chat.expandNavigation": "展開導航",
   "PC.Pages.Chat.exportFailed": "導出失敗",
   "PC.Pages.Chat.exportSuccess": "導出成功！",
+  "PC.Pages.Chat.exportAllFilesName": "全部文件",
   "PC.Components.LocalFiles.workspaceListFailed": "項目目錄讀取失敗",
   "PC.Components.WorkspaceDir.pick": "工作目錄",
   "PC.Components.WorkspaceDir.defaultDir": "預設工作目錄",

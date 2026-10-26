@@ -2991,6 +2991,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Chat.expandNavigation": "ナビゲーションを展開する",
   "PC.Pages.Chat.exportFailed": "エクスポートに失敗しました",
   "PC.Pages.Chat.exportSuccess": "エクスポートが成功しました。",
+  "PC.Pages.Chat.exportAllFilesName": "全ファイル",
   "PC.Components.LocalFiles.workspaceListFailed": "プロジェクトディレクトリの読み込みに失敗しました",
   "PC.Components.WorkspaceDir.pick": "作業ディレクトリ",
   "PC.Components.WorkspaceDir.defaultDir": "デフォルト作業ディレクトリ",

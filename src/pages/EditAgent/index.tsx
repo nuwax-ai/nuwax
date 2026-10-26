@@ -968,7 +968,7 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    apiDownloadAllFiles(devConversationId);
+    await apiDownloadAllFiles(devConversationId, agentConfigInfo?.name);
   };
 
   // 设置统计信息

@@ -6,7 +6,11 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import { request } from 'umi';
 import { saveWithDesktopHost } from './downloadCompletion';
-import { getDownloadFileName } from './downloadFileName';
+import {
+  getDownloadFileName,
+  sanitizeDownloadBaseName,
+} from './downloadFileName';
+export { sanitizeDownloadBaseName } from './downloadFileName';
 
 /**
  * 导出文件Blob返回类型
@@ -177,12 +181,12 @@ export const exportConfigFile = async (
 
 /**
  * 构建导出 zip 的默认文件名（NW-273）：带上资源名称，避免保存弹窗回落到泛名 export.zip。
- * 名称里的文件系统非法字符替换为空格；为空时返回 undefined，让调用链回落原默认名。
+ * 复用安全基础名规则；为空时返回 undefined，让调用链回落原默认名。
  */
 export const buildExportZipName = (
   rawName?: string | null,
 ): string | undefined => {
-  const cleaned = (rawName ?? '').replace(/[\\/:*?"<>|\r\n\t]/g, ' ').trim();
+  const cleaned = sanitizeDownloadBaseName(rawName ?? '');
   return cleaned ? `${cleaned}.zip` : undefined;
 };
 
@@ -217,6 +221,19 @@ export const exportFileViaBrowserDownload = async (
   // 释放 URL 对象
   window.URL.revokeObjectURL(linkUrl);
   return false;
+};
+
+/** 命名只影响默认文件名；保存成功、取消和失败仍由原下载链路确认。 */
+export const exportNamedDownload = async (
+  linkUrl: string,
+  resourceName?: string,
+  ext = 'zip',
+) => {
+  const base = sanitizeDownloadBaseName(resourceName || '');
+  return exportFileViaBrowserDownload(
+    linkUrl,
+    base ? `${base}.${ext}` : undefined,
+  );
 };
 
 /**

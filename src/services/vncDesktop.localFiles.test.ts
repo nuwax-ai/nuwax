@@ -26,7 +26,7 @@ vi.mock('@/utils/hostBridge', () => ({
   hostBridge: { localFiles: { getApi: mocks.getApi } },
 }));
 vi.mock('@/utils/exportImportFile', () => ({
-  exportFileViaBrowserDownload: mocks.download,
+  exportNamedDownload: mocks.download,
 }));
 vi.mock('antd', () => ({
   message: { success: mocks.success, error: mocks.error },
@@ -76,6 +76,20 @@ beforeEach(() => {
   mocks.request.mockResolvedValue({ code: '0000', data: { files: [] } });
 });
 describe('computer static service local routing', () => {
+  it('云端导出使用会话名，名称不可用时回退带会话ID的名称', async () => {
+    mocks.download.mockResolvedValue(false);
+    await apiDownloadAllFiles(7, '我的/会话');
+    expect(mocks.download).toHaveBeenLastCalledWith(
+      expect.stringContaining('download-all-files?cId=7'),
+      '我的-会话',
+    );
+    await apiDownloadAllFiles(7, '???');
+    expect(mocks.download).toHaveBeenLastCalledWith(
+      expect.stringContaining('download-all-files?cId=7'),
+      'PC.Pages.Chat.exportAllFilesName-7',
+    );
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
   it('sends create/edit/rename/delete through the native bridge and retains remote writes', async () => {
     const data = {
       cId: 7,
