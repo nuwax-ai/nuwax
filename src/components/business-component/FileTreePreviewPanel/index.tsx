@@ -157,6 +157,10 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
               <FilePreviewPathBar
                 fileNode={preview.selectedFileNode}
                 onRefresh={() => preview.refreshSelectedFileContent()}
+                viewFileType={preview.filePathHeaderProps.viewFileType}
+                onViewFileTypeChange={
+                  preview.filePathHeaderProps.onViewFileTypeChange
+                }
               />
             )}
             {/* 预览内容 */}
