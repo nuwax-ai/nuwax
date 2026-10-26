@@ -76,6 +76,40 @@ beforeEach(() => {
   mocks.request.mockResolvedValue({ code: '0000', data: { files: [] } });
 });
 describe('computer static service local routing', () => {
+  it('所选容器不是宿主本机时，列表、搜索、写入和导出仍全部走原接口', async () => {
+    const api = localApi();
+    mocks.getApi.mockReturnValue(api);
+    registerLocalFilesContext({ cId: 7, sandboxId: 'other-computer' });
+    await apiGetStaticFileList(7);
+    await apiSearchFiles({ cId: 7, kw: '报告' });
+    const data = {
+      cId: 7,
+      files: [
+        { name: 'a.txt', operation: 'modify' as const, contents: 'remote' },
+      ],
+    };
+    await apiUpdateStaticFile(data);
+    await apiDownloadAllFiles(7, '其他电脑');
+    expect(mocks.request.mock.calls.map(([url]) => url)).toEqual([
+      '/api/computer/static/file-list',
+      '/api/computer/static/search-files',
+      '/api/computer/static/files-update',
+    ]);
+    expect(mocks.download).toHaveBeenCalledWith(
+      expect.stringContaining('download-all-files?cId=7'),
+      '其他电脑',
+    );
+    for (const method of [
+      api.resolveContext,
+      api.listFiles,
+      api.searchFiles,
+      api.updateFiles,
+      api.exportWorkspace,
+    ]) {
+      expect(method).not.toHaveBeenCalled();
+    }
+  });
+
   it('云端导出使用会话名，名称不可用时回退带会话ID的名称', async () => {
     mocks.download.mockResolvedValue(false);
     await apiDownloadAllFiles(7, '我的/会话');

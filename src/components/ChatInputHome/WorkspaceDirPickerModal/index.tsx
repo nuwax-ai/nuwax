@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { ICON_FOLDER } from '@/constants/fileTreeImages.constants';
+import { pickLocalWorkspaceDirectory } from '@/features/client-shell/workspaceDirectoryPicker';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiBrowseFsChildren,
@@ -142,7 +143,7 @@ const defaultOps = (sandboxId: string): FsDirOps => ({
  * 仅发起会话/创建项目前使用，当前所在目录即选中目录。
  * 子目录视图支持新建目录（fs/mkdir）与目录重命名（fs/rename），行内输入编辑。
  */
-const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
+const RemoteWorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   open,
   sandboxId,
   onCancel,
@@ -562,6 +563,44 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
       </div>
     </Modal>
   );
+};
+
+/** 三个工作目录入口共用路由；本机使用系统选择器，其他电脑保留绝对路径浏览。 */
+const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = (
+  props,
+) => {
+  const { open, sandboxId, browse, ops } = props;
+  const [remoteSandboxId, setRemoteSandboxId] = useState<string | null>(null);
+  const callbacks = useRef(props);
+  callbacks.current = props;
+
+  useEffect(() => {
+    setRemoteSandboxId(null);
+    if (!open || browse || ops) return;
+    const controller = new AbortController();
+    void pickLocalWorkspaceDirectory(sandboxId, controller.signal)
+      .then((selection) => {
+        if (controller.signal.aborted) return;
+        if (selection === null) {
+          setRemoteSandboxId(sandboxId);
+        } else if (selection.canceled) {
+          callbacks.current.onCancel();
+        } else {
+          addRecentWorkspaceDir(selection.path);
+          callbacks.current.onConfirm(selection.path);
+        }
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        message.error(dict('PC.Common.Toast.operationFailed'));
+        callbacks.current.onCancel();
+      });
+    return () => controller.abort();
+  }, [open, sandboxId, browse, ops]);
+
+  return open && (browse || ops || remoteSandboxId === sandboxId) ? (
+    <RemoteWorkspaceDirPickerModal key={sandboxId} {...props} />
+  ) : null;
 };
 
 export default WorkspaceDirPickerModal;

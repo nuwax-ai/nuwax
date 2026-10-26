@@ -88,6 +88,49 @@ const bind = (sandboxId = 'local-1') =>
   });
 
 describe('local file routing', () => {
+  it.each([null, ''])(
+    '可选会话字段为 %s 时不把非法 scalar 传给原生桥',
+    async (empty) => {
+      api.resolveContext.mockImplementationOnce(async (input) => {
+        for (const key of [
+          'projectId',
+          'userId',
+          'workspacePath',
+          'serviceType',
+        ]) {
+          expect(input[key]).toBeUndefined();
+        }
+        return {
+          success: true,
+          data: {
+            contextId: 'ctx-local-1',
+            cId: '12',
+            sandboxId: 'local-1',
+            root: 'C:\\work',
+          },
+        };
+      });
+      registerLocalFilesContext({
+        cId: 12,
+        sandboxId: 'local-1',
+        projectId: empty,
+        userId: empty,
+        workspacePath: empty,
+        serviceType: empty,
+      } as unknown as Parameters<typeof registerLocalFilesContext>[0]);
+      expect((await getLocalFileList(12))?.success).toBe(true);
+      const preview = await prepareLocalFilePreview(
+        '/api/computer/static/12/中文.pdf',
+      );
+      expect(preview?.url).toBe('nuwax-local://grant/a.md');
+      expect(api.preparePreview).toHaveBeenCalledWith({
+        contextId: 'ctx-local-1',
+        cId: '12',
+        path: '中文.pdf',
+      });
+    },
+  );
+
   it('falls back without a real bridge or explicit matching conversation', async () => {
     mocks.getApi.mockReturnValue(undefined);
     bind();
