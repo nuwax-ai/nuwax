@@ -176,6 +176,17 @@ export const exportConfigFile = async (
 };
 
 /**
+ * 构建导出 zip 的默认文件名（NW-273）：带上资源名称，避免保存弹窗回落到泛名 export.zip。
+ * 名称里的文件系统非法字符替换为空格；为空时返回 undefined，让调用链回落原默认名。
+ */
+export const buildExportZipName = (
+  rawName?: string | null,
+): string | undefined => {
+  const cleaned = (rawName ?? '').replace(/[\\/:*?"<>|\r\n\t]/g, ' ').trim();
+  return cleaned ? `${cleaned}.zip` : undefined;
+};
+
+/**
  * 通过浏览器下载文件
  * @param linkUrl 文件链接地址
  * @param fileName 文件名称

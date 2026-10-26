@@ -19,10 +19,13 @@ function ensureTimer() {
 }
 
 export function useNow(): number {
-  const [now, setNow] = useState(sharedNow);
+  const [now, setNow] = useState(() => (timer ? sharedNow : Date.now()));
   useEffect(() => {
+    // 无订阅时会停表，重新订阅必须先校时。
+    if (!timer) sharedNow = Date.now();
     const notify = () => setNow(sharedNow);
     subscribers.add(notify);
+    notify();
     ensureTimer();
     return () => {
       subscribers.delete(notify);
