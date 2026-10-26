@@ -97,7 +97,8 @@ function resolveRecord(cId: string, record: ContextRecord) {
       !api.saveFile ||
       !api.exportWorkspace ||
       !api.openPath ||
-      !api.revealInFolder
+      !api.revealInFolder ||
+      typeof api.updateFiles !== 'function'
     ) {
       if (record.knownLocal) throw new LocalFileAccessError('unavailable');
       return null;
@@ -119,7 +120,9 @@ function resolveRecord(cId: string, record: ContextRecord) {
     }
     if (
       !capabilities.available ||
-      capabilities.apiVersion < 1 ||
+      !Number.isInteger(capabilities.apiVersion) ||
+      capabilities.apiVersion < 2 ||
+      capabilities.writable !== true ||
       !capabilities.sandboxId
     ) {
       if (record.knownLocal) throw new LocalFileAccessError('unavailable');
@@ -142,6 +145,8 @@ function resolveRecord(cId: string, record: ContextRecord) {
       safely(api.releaseContext?.(result.data.contextId));
       throw new LocalFileAccessError('expired');
     }
+    // direct 页面可先于客户端升级。完整读写能力才切换整条路线，
+    // 避免旧只读桥接管列表后又阻止原本可用的保存。
     record.knownLocal = true;
     recentLocalSources.delete(cId);
     recentLocalSources.set(cId, record.input.sandboxId);

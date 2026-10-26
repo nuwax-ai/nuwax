@@ -23,8 +23,9 @@ vi.mock('@/utils/hostBridge', () => ({
 function makeApi() {
   return {
     getCapabilities: vi.fn().mockResolvedValue({
-      apiVersion: 1,
+      apiVersion: 2,
       available: true,
+      writable: true,
       sandboxId: 'local-1',
     }),
     resolveContext: vi.fn().mockImplementation(async (input) => ({
@@ -67,6 +68,7 @@ function makeApi() {
       .mockResolvedValue({ success: true, data: { canceled: false } }),
     openPath: vi.fn().mockResolvedValue({ success: true }),
     revealInFolder: vi.fn().mockResolvedValue({ success: true }),
+    updateFiles: vi.fn().mockResolvedValue({ success: true }),
   };
 }
 let api: ReturnType<typeof makeApi>;
