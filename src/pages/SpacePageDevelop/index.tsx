@@ -328,18 +328,21 @@ const SpacePageDevelop: React.FC = () => {
   /**
    * 处理项目导出
    */
-  const handleExportProject = useCallback(async (projectId: string) => {
-    // 检查项目ID是否有效
-    if (!projectId) {
-      message.warning(
-        dict('PC.Pages.SpacePageDevelop.Index.projectIdInvalidCannotExport'),
-      );
-      return;
-    }
+  const handleExportProject = useCallback(
+    async (projectId: string, projectName?: string) => {
+      // 检查项目ID是否有效
+      if (!projectId) {
+        message.warning(
+          dict('PC.Pages.SpacePageDevelop.Index.projectIdInvalidCannotExport'),
+        );
+        return;
+      }
 
-    // 导出整个项目压缩包
-    exportProject(projectId);
-  }, []);
+      // 导出整个项目压缩包；默认文件名带项目名，避免保存弹窗泛名 export.zip（NW-273）
+      exportProject(projectId, projectName);
+    },
+    [],
+  );
 
   // 域名绑定
   const handleDomainBinding = (info: CustomPageDto) => {
@@ -389,7 +392,7 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 导出项目
       case PageDevelopMoreActionEnum.Export_Project:
-        handleExportProject(info.projectId.toString());
+        handleExportProject(info.projectId.toString(), info.name);
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
