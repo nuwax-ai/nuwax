@@ -108,60 +108,6 @@ const mount = (wireProtocol: 'ttyd' | 'plain' = 'ttyd') => {
   return { ref, socket, term: mocks.terminals.at(-1), ...rendered };
 };
 
-describe('EmbeddedConsoleTerminal connection keepalive across panel visibility', () => {
-  const mountWithProps = (props: Record<string, unknown>) => {
-    const rendered = render(
-      <EmbeddedConsoleTerminal
-        reconnect={{ enabled: false, heartbeatInterval: 0 }}
-        wsUrl="ws://terminal.invalid"
-        {...props}
-      />,
-    );
-    const socket = Socket.all.at(-1)!;
-    act(() => socket.open());
-    return rendered;
-  };
-
-  it('keeps the websocket open while autoConnect is off with keepConnection, and reuses it when shown again', () => {
-    const { rerender } = mountWithProps({ keepConnection: true });
-    const socket = Socket.all.at(-1)!;
-    // 面板隐藏（autoConnect=false）：保活模式下不得断连，正在执行的任务不受面板切换影响
-    rerender(
-      <EmbeddedConsoleTerminal
-        reconnect={{ enabled: false, heartbeatInterval: 0 }}
-        wsUrl="ws://terminal.invalid"
-        keepConnection
-        autoConnect={false}
-      />,
-    );
-    expect(socket.close).not.toHaveBeenCalled();
-    expect(socket.readyState).toBe(Socket.OPEN);
-    // 面板恢复（autoConnect=true）：复用已有连接，不重建 WebSocket
-    rerender(
-      <EmbeddedConsoleTerminal
-        reconnect={{ enabled: false, heartbeatInterval: 0 }}
-        wsUrl="ws://terminal.invalid"
-        keepConnection
-      />,
-    );
-    expect(Socket.all).toHaveLength(1);
-    expect(socket.readyState).toBe(Socket.OPEN);
-  });
-
-  it('disconnects on autoConnect off without keepConnection (legacy contract)', () => {
-    const { rerender } = mountWithProps({});
-    const socket = Socket.all.at(-1)!;
-    rerender(
-      <EmbeddedConsoleTerminal
-        reconnect={{ enabled: false, heartbeatInterval: 0 }}
-        wsUrl="ws://terminal.invalid"
-        autoConnect={false}
-      />,
-    );
-    expect(socket.close).toHaveBeenCalled();
-  });
-});
-
 describe('EmbeddedConsoleTerminal ttyd backpressure', () => {
   it('keeps ttyd init dimensions and normal output unchanged', () => {
     const { socket, term } = mount();

@@ -1755,20 +1755,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     [pageCacheKey],
   );
 
-  /**
-   * 隐藏页只收起终端面板，不卸载终端子树：连接随 EmbeddedConsoleTerminal 的
-   * keepConnection 保活（正在跑的命令/上传不能被页面切换打断，NW-026/027），
-   * 返回时复用同一实例恢复视图；打开意图仍归当前任务，由激活恢复流程重开面板。
-   */
+  // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
   useLayoutEffect(() => {
     if (active) return;
     restoredWorkspaceKeyRef.current = null;
     pendingWorkspaceRestoreRef.current = null;
     setTerminalConsoleVisible(false);
-    // 折叠常驻实例的内部布局，避免切回时面板停在隐藏前的展开态
-    setTerminalConsoleCollapseSignal((n) => n + 1);
+    setHasTerminalConsoleRendered(false);
     setTerminalConsoleLayoutMode('collapsed');
     setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleCollapseSignal(0);
   }, [active, pageCacheKey]);
 
   // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
@@ -1960,13 +1956,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     ],
   );
 
-  /**
-   * 文件树预览区底部终端，仅显示终端 Tab，不展示日志。
-   * 不随页面隐藏卸载（常驻实例隐藏时由外层 display:none 遮挡，切回复用实例），
-   * 面板显隐只走 visible；preserveTerminalConnections 保证收起/切预览不断连。
-   */
+  /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole =
-    conversationInfo?.id === id && hasTerminalConsoleRendered ? (
+    active && conversationInfo?.id === id && hasTerminalConsoleRendered ? (
       <ConversationBottomConsole
         key={`${id}:${finalSelectedId}`}
         className={cx(styles['terminal-console'])}
