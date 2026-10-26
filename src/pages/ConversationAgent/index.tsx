@@ -909,6 +909,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -954,6 +955,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
               {
                 contents: '',
                 name: fileNode.id,
+                localFile: fileNode.localFile,
                 operation: 'delete',
                 isDir: true,
               },
@@ -970,6 +972,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             updatedFilesList = [
               {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,
