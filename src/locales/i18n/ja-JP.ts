@@ -5709,6 +5709,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Utils.Common.monthsAgo": "{0} か月前",
   "PC.Utils.Common.relativeDays": "{0}日",
   "PC.Utils.Common.relativeHours": "{0}時間",
+  "PC.Utils.Common.relativeHoursMinutes": "{0}時間{1}分",
   "PC.Utils.Common.relativeMinutes": "{0}分",
   "PC.Utils.Common.yearsAgo": "{0}年前",
   "PC.Utils.Common.yesterday": "昨日",

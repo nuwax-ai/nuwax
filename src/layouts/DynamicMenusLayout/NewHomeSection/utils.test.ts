@@ -75,6 +75,19 @@ describe('formatRelativeTime', () => {
     );
   });
 
+  it('一天内有余分显示「x小时y分」（NW-265：不丢分钟粗显示）', () => {
+    expect(formatRelativeTime('2026-09-08T08:20:00')).toBe(
+      'PC.Utils.Common.relativeHoursMinutes:3,40',
+    );
+  });
+
+  it('nowMs 入参覆盖当前时刻（NW-265：走表方传入共享时钟）', () => {
+    // 固定时刻 12:00，传入 12:31 的时钟值 → 31 分钟前
+    expect(
+      formatRelativeTime('2026-09-08T12:00:00', new Date('2026-09-08T12:31:00').getTime()),
+    ).toBe('PC.Utils.Common.relativeMinutes:31');
+  });
+
   it('昨天不再特殊化为「昨天」，显示「1天」', () => {
     expect(formatRelativeTime('2026-09-07T12:00:00')).toBe(
       'PC.Utils.Common.relativeDays:1',

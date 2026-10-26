@@ -5879,6 +5879,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Utils.Common.monthsAgo": "{0} 月前",
   "PC.Utils.Common.relativeDays": "{0}天",
   "PC.Utils.Common.relativeHours": "{0}小时",
+  "PC.Utils.Common.relativeHoursMinutes": "{0}小时{1}分",
   "PC.Utils.Common.relativeMinutes": "{0}分",
   "PC.Utils.Common.yearsAgo": "{0}年前",
   "PC.Utils.Common.yesterday": "昨天",

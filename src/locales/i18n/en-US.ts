@@ -5898,6 +5898,7 @@ export const EN_US: SystemLangMap = {
   "PC.Utils.Common.monthsAgo": "{0} months ago",
   "PC.Utils.Common.relativeDays": "{0}d",
   "PC.Utils.Common.relativeHours": "{0}h",
+  "PC.Utils.Common.relativeHoursMinutes": "{0}h {1}m",
   "PC.Utils.Common.relativeMinutes": "{0}m",
   "PC.Utils.Common.yearsAgo": "{0} years ago",
   "PC.Utils.Common.yesterday": "Yesterday",
