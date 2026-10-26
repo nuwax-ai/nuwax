@@ -146,17 +146,36 @@ describe('computer static service local routing', () => {
     async ({ compatibility, cId }) => {
       const api = localApi();
       if (compatibility === 'v1')
-        api.getCapabilities.mockResolvedValue({ apiVersion: 1, available: true, sandboxId: 'local' });
+        api.getCapabilities.mockResolvedValue({
+          apiVersion: 1,
+          available: true,
+          sandboxId: 'local',
+        });
       if (compatibility === 'missing-update')
         delete (api as Partial<typeof api>).updateFiles;
       if (compatibility === 'read-only-v2')
-        api.getCapabilities.mockResolvedValue({ apiVersion: 2, available: true, writable: false, sandboxId: 'local' });
+        api.getCapabilities.mockResolvedValue({
+          apiVersion: 2,
+          available: true,
+          writable: false,
+          sandboxId: 'local',
+        });
       mocks.getApi.mockReturnValue(api);
       registerLocalFilesContext({ cId, sandboxId: 'local' });
       await apiGetStaticFileList(cId);
-      const data = { cId, files: [{ name: 'a.txt', operation: 'modify' as const, contents: 'saved' }] };
-      await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({ code: '0000' });
-      expect(mocks.request).toHaveBeenLastCalledWith('/api/computer/static/files-update', { method: 'POST', data });
+      const data = {
+        cId,
+        files: [
+          { name: 'a.txt', operation: 'modify' as const, contents: 'saved' },
+        ],
+      };
+      await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
+        code: '0000',
+      });
+      expect(mocks.request).toHaveBeenLastCalledWith(
+        '/api/computer/static/files-update',
+        { method: 'POST', data },
+      );
       expect(mocks.request).toHaveBeenCalledTimes(2);
       expect(api.resolveContext).not.toHaveBeenCalled();
       expect(api.listFiles).not.toHaveBeenCalled();
@@ -309,7 +328,11 @@ describe('computer static service local routing', () => {
         sandboxId: 'other-computer',
       });
     if (failure === 'caps-legacy')
-      api.getCapabilities.mockResolvedValue({ apiVersion: 1, available: true, sandboxId: 'local' });
+      api.getCapabilities.mockResolvedValue({
+        apiVersion: 1,
+        available: true,
+        sandboxId: 'local',
+      });
     if (failure === 'bridge-readonly')
       delete (api as Partial<typeof api>).updateFiles;
     if (failure === 'bridge-missing') mocks.getApi.mockReturnValue(undefined);

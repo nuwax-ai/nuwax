@@ -3,24 +3,61 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatFiles } from './useChatFiles';
 
 const mocks = vi.hoisted(() => ({ update: vi.fn() }));
-vi.mock('@/services/vncDesktop', () => ({ apiUpdateStaticFile: mocks.update, apiDownloadAllFiles: vi.fn(), apiUploadFiles: vi.fn() }));
+vi.mock('@/services/vncDesktop', () => ({
+  apiUpdateStaticFile: mocks.update,
+  apiDownloadAllFiles: vi.fn(),
+  apiUploadFiles: vi.fn(),
+}));
 vi.mock('@/services/i18nRuntime', () => ({ t: (key: string) => key }));
 vi.mock('@/utils/ant-custom', () => ({ modalConfirm: vi.fn() }));
 vi.mock('@/utils/index', () => ({ checkFileSizeExceedLimit: vi.fn() }));
 vi.mock('@/utils/fileTree', () => ({
   updateFilesListName: vi.fn(),
-  updateFilesListContent: (_files: unknown, changes: any[]) => changes.map(change => ({ name: change.fileId, contents: change.fileContent, operation: 'modify' })),
+  updateFilesListContent: (_files: unknown, changes: any[]) =>
+    changes.map((change) => ({
+      name: change.fileId,
+      contents: change.fileContent,
+      operation: 'modify',
+    })),
 }));
 vi.mock('antd', () => ({ message: { success: vi.fn(), warning: vi.fn() } }));
 
-const input = { id: 7, fileTreeData: [], handleRefreshFileList: async () => undefined };
-beforeEach(() => { vi.useFakeTimers(); mocks.update.mockReset().mockResolvedValue({ code: '0000' }); });
-afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); });
+const input = {
+  id: 7,
+  fileTreeData: [],
+  handleRefreshFileList: async () => undefined,
+};
+beforeEach(() => {
+  vi.useFakeTimers();
+  mocks.update.mockReset().mockResolvedValue({ code: '0000' });
+});
+afterEach(() => {
+  cleanup();
+  vi.clearAllTimers();
+  vi.useRealTimers();
+});
 
 describe('文件编辑自动保存回执', () => {
+  it('附属 Git 状态刷新失败不能改变已经成功的写入回执', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notify = vi.fn().mockRejectedValue(new Error('git offline'));
+    const { result } = renderHook(() =>
+      useChatFiles({ ...input, onFileMutationSuccessRef: { current: notify } }),
+    );
+    const saved = result.current.handleSaveFileContent('a.txt', 'draft', '');
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    await expect(saved).resolves.toBe(true);
+    expect(notify).toHaveBeenCalledOnce();
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
+  });
   it('返回本次实际写入完成的 Promise，不能把 debounce 的空返回值当成失败', async () => {
     const { result } = renderHook(() => useChatFiles(input));
-    const pending = result.current.handleSaveFileContent('a.txt', 'draft', 'original');
+    const pending = result.current.handleSaveFileContent(
+      'a.txt',
+      'draft',
+      'original',
+    );
     expect(pending).toBeInstanceOf(Promise);
     expect(mocks.update).not.toHaveBeenCalled();
     await act(() => vi.advanceTimersByTimeAsync(500));
@@ -36,7 +73,10 @@ describe('文件编辑自动保存回执', () => {
     await expect(second).resolves.toBe(true);
   });
   it('切换会话取消尚未投递的旧保存，不写入旧会话或新会话', async () => {
-    const { result, rerender } = renderHook(({ id }) => useChatFiles({ ...input, id }), { initialProps: { id: 7 } });
+    const { result, rerender } = renderHook(
+      ({ id }) => useChatFiles({ ...input, id }),
+      { initialProps: { id: 7 } },
+    );
     const pending = result.current.handleSaveFileContent('a.txt', 'draft', '');
     rerender({ id: 8 });
     await act(() => vi.advanceTimersByTimeAsync(500));

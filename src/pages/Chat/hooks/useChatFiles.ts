@@ -12,11 +12,11 @@ import {
   StaticFileInfo,
 } from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
+import { createFileContentSaver } from '@/utils/fileContentSaver';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
 import { message } from 'antd';
-import debounce from 'lodash/debounce';
-import { useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 
 interface UseChatFilesProps {
   id?: number;
@@ -37,12 +37,21 @@ export const useChatFiles = ({
 }: UseChatFilesProps) => {
   const fileTreeDataRef = useRef(fileTreeData);
   fileTreeDataRef.current = fileTreeData;
+  const conversationRef = useRef(id);
+  conversationRef.current = id;
 
   /** 文件树发生写操作后统一刷新 Git status */
   const notifyFileMutationSuccess = () => {
     const callback =
       onFileMutationSuccessRef?.current ?? onSaveFileContentSuccessRef?.current;
-    void callback?.();
+    // Git 刷新失败不改变已经落盘的保存回执。
+    try {
+      void Promise.resolve(callback?.()).catch((error) =>
+        console.error('刷新文件变更状态失败', error),
+      );
+    } catch (error) {
+      console.error('刷新文件变更状态失败', error);
+    }
   };
 
   const handleCreateFileNode = async (
@@ -236,13 +245,13 @@ export const useChatFiles = ({
   /** 编辑器内容变更：防抖实时保存单个文件到服务端 */
   const handleSaveFileContent = useMemo(
     () =>
-      debounce(
+      createFileContentSaver(
         async (
           fileId: string,
           content: string,
           originalFileContent: string,
         ): Promise<boolean> => {
-          if (!id) {
+          if (!id || conversationRef.current !== id) {
             return false;
           }
           const updatedFilesList = updateFilesListContent(
@@ -257,7 +266,7 @@ export const useChatFiles = ({
             cId: id,
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code === SUCCESS_CODE) {
+          if (code === SUCCESS_CODE && conversationRef.current === id) {
             notifyFileMutationSuccess();
           }
           return code === SUCCESS_CODE;
@@ -265,6 +274,11 @@ export const useChatFiles = ({
         500,
       ),
     [id, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
+  );
+
+  useEffect(
+    () => () => handleSaveFileContent.cancel(),
+    [handleSaveFileContent],
   );
 
   /**
