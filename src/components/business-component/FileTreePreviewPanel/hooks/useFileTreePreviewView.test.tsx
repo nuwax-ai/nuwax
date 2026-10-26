@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   assertReference: vi.fn(),
   download: vi.fn(),
   save: vi.fn(),
+  editor: null as any,
 }));
 vi.mock('@/features/client-shell/localFileService', () => ({
   getLocalFileReference: mocks.localReference,
@@ -55,11 +56,14 @@ vi.mock('@/components/business-component/OpenUiArtifactView', () => ({
   OpenUiRuntimeFrame: () => <div data-testid="openui" />,
 }));
 vi.mock('@/components/CodeViewer', () => ({
-  default: ({ content, readOnly }: { content: string; readOnly?: boolean }) => (
-    <div data-testid="code" data-readonly={readOnly}>
-      {content}
-    </div>
-  ),
+  default: (props: any) => {
+    mocks.editor = props;
+    return (
+      <div data-testid="code" data-readonly={props.readOnly}>
+        {props.content}
+      </div>
+    );
+  },
 }));
 vi.mock('@/components/custom/Loading', () => ({ default: () => null }));
 vi.mock('@/pages/AppDev/components', () => ({ ImageViewer: () => null }));
@@ -115,6 +119,7 @@ beforeEach(() => {
   mocks.assertReference.mockReset();
   mocks.download.mockReset();
   mocks.save.mockReset();
+  mocks.editor = null;
   vi.spyOn(Date, 'now').mockReturnValue(1000);
 });
 
@@ -125,6 +130,214 @@ afterEach(() => {
 });
 
 describe('Markdown 文件树刷新', () => {
+  it('切换来源后旧写入回执不能覆盖新来源的编辑状态', async () => {
+    const finishes: Array<(saved: boolean) => void> = [];
+    const save = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
+      );
+    const props = {
+      initViewFileType: 'code' as const,
+      readOnly: false,
+      onSaveFileContent: save,
+    };
+    const { rerender } = render(<Harness {...props} />);
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'old source draft'));
+    rerender(<Harness {...props} targetId="two" originalFiles={[...files]} />);
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'new source draft'));
+    await act(async () => finishes[0](true));
+    expect(view.preview.fileSaveState).toBe('saving');
+    expect(screen.getByTestId('code')).toHaveTextContent('new source draft');
+    await act(async () => finishes[1](true));
+    expect(view.preview.fileSaveState).toBe('saved');
+  });
+
+  it('删除前串行完成草稿，等待期间禁止继续编辑旧路径', async () => {
+    const finishes: Array<(saved: boolean) => void> = [];
+    let deleted!: (success: boolean) => void;
+    const save = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
+      );
+    const remove = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          deleted = resolve;
+        }),
+    );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+        onDeleteFile={remove}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'draft'));
+    let pending!: Promise<void>;
+    act(() => {
+      pending = view.tree.handleDelete(view.preview.selectedFileNode!);
+    });
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      'draft',
+      expect.any(String),
+      { immediate: true },
+    );
+    expect(remove).not.toHaveBeenCalled();
+    expect(mocks.editor.readOnly).toBe(true);
+    act(() => mocks.editor.onContentChange('first.md', 'blocked edit'));
+    expect(save).toHaveBeenCalledTimes(2);
+    await act(async () => finishes.forEach((finish) => finish(true)));
+    expect(remove).toHaveBeenCalledOnce();
+    await act(async () => {
+      deleted(true);
+      await pending;
+    });
+    expect(view.preview.selectedFileNode).toBeNull();
+  });
+
+  it('重命名前保存失败保留草稿并阻止路径变化', async () => {
+    const save = vi.fn().mockResolvedValue(false);
+    const rename = vi.fn();
+    vi.spyOn(message, 'error').mockImplementation(() => (() => {}) as any);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+        onRenameFile={rename}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    await act(async () =>
+      view.tree.handleRenameFile(view.preview.selectedFileNode!, 'new.md'),
+    );
+    expect(rename).not.toHaveBeenCalled();
+    expect(mocks.editor.readOnly).toBe(false);
+    expect(screen.getByTestId('code')).toHaveTextContent('draft');
+    expect(view.preview.fileSaveState).toBe('error');
+  });
+
+  it('保存实际完成前保留草稿，失败显示重试，手动保存走同一回执', async () => {
+    const save = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    expect(view.preview.fileSaveState).toBe('error');
+    expect(screen.getByTestId('code')).toHaveTextContent('draft');
+    expect(
+      view.preview.changeFiles.some((file) => file.fileContent === 'draft'),
+    ).toBe(true);
+    await act(async () => {
+      expect(await view.preview.saveCurrentFile?.()).toBe(true);
+    });
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      'draft',
+      expect.any(String),
+      { immediate: true },
+    );
+    expect(view.preview.fileSaveState).toBe('saved');
+    expect(
+      view.preview.changeFiles.some((file) => file.fileId === 'first.md'),
+    ).toBe(false);
+  });
+  it('旧保存回执不能把较新草稿标为已保存', async () => {
+    const finishes: Array<(value: boolean) => void> = [];
+    const save = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
+      );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'first draft'));
+    act(() => mocks.editor.onContentChange('first.md', 'latest draft'));
+    await act(async () => finishes[0](true));
+    expect(view.preview.fileSaveState).toBe('saving');
+    expect(screen.getByTestId('code')).toHaveTextContent('latest draft');
+    await act(async () => finishes[1](true));
+    expect(view.preview.fileSaveState).toBe('saved');
+  });
+  it('回到初始内容也会覆盖在途旧输入，避免撤销后磁盘仍是旧草稿', async () => {
+    const finishes: Array<(value: boolean) => void> = [];
+    const save = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
+      );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    const original = mocks.editor.content;
+    act(() => mocks.editor.onContentChange('first.md', 'draft'));
+    act(() => mocks.editor.onContentChange('first.md', original));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      original,
+      expect.any(String),
+      undefined,
+    );
+    await act(async () => {
+      finishes.forEach((finish) => finish(true));
+    });
+    expect(view.preview.fileSaveState).toBe('saved');
+    expect(screen.getByTestId('code')).toHaveTextContent(original);
+  });
+  it('写入拒绝保留草稿；刷新页面前有未保存提示，保存后解除提示', async () => {
+    const save = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(true);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    expect(view.preview.fileSaveState).toBe('error');
+    const before = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(before);
+    expect(before.defaultPrevented).toBe(true);
+    await act(async () => {
+      await view.preview.saveCurrentFile?.();
+    });
+    const after = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(after);
+    expect(after.defaultPrevented).toBe(false);
+  });
+
   it('本机链接文件可以预览、刷新和读取代码视图', async () => {
     const reference = { contextId: 'live', cId: '9', path: 'linked.md' };
     render(

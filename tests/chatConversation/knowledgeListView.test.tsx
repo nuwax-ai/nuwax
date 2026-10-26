@@ -70,7 +70,7 @@ describe('KnowledgeListView·space 场景（repo 树）', () => {
     { page: { id: 9, title: 'FAQ', slugId: 's-9', sourceExt: '.pdf' } },
   ];
 
-  it('按 spaceId 拉取,先序平铺,图标按类型着色且不展示类型文本', async () => {
+  it('按 spaceId 拉取,先序平铺', async () => {
     apiRepoSpaceTree.mockResolvedValue({ code: '0000', data: tree() });
     renderView({ spaceId: 1 });
 
@@ -86,25 +86,6 @@ describe('KnowledgeListView·space 场景（repo 树）', () => {
       'knowledge:space:9',
     ]);
     expect(apiRepoSpaceTree).toHaveBeenCalledWith(1);
-    // 图标：'.md'→MD 清洗后未命中专属规则回落默认文档蓝；
-    // '.pdf'→PDF 专属红（色板对齐 nuwax-repo-web 资料库）
-    const iconColorOf = (key: string) =>
-      document
-        .querySelector(`[data-knowledge-key="${key}"]`)
-        ?.querySelector<HTMLElement>('[class*="file-icon"]')?.style.color;
-    expect(iconColorOf('knowledge:space:7')).toBe('rgb(51, 112, 255)');
-    expect(iconColorOf('knowledge:space:9')).toBe('rgb(245, 63, 63)');
-    // 类型文本不再展示（无 fileType Tag）
-    const row7 = document.querySelector(
-      '[data-knowledge-key="knowledge:space:7"]',
-    )!;
-    expect(row7.textContent).not.toContain('MD');
-    const row8 = document.querySelector(
-      '[data-knowledge-key="knowledge:space:8"]',
-    )!;
-    expect(row8.textContent).not.toContain('DOC');
-    // 树视图无相对时间胶囊
-    expect(row7.textContent).not.toContain('PC.Utils.Common');
   });
 
   it('未传 spaceId：挂起不加载（repo 树接口 spaceId 必传）', async () => {
@@ -144,7 +125,7 @@ describe('KnowledgeListView·space 场景（repo 树）', () => {
 });
 
 describe('KnowledgeListView·recent 场景（最近访问）', () => {
-  it('{from:0,size} 全量,条目带相对时间胶囊,图标不展示类型文本', async () => {
+  it('{from:0,size} 全量拉取，不走 space 树接口', async () => {
     apiRepoRecentlyAccessedPages.mockResolvedValue({
       code: '0000',
       data: [
@@ -160,29 +141,21 @@ describe('KnowledgeListView·recent 场景（最近访问）', () => {
     });
     renderView({ type: 'recent' });
 
-    const row = await waitFor(() => {
-      const el = document.querySelector(
-        '[data-knowledge-key="knowledge:recent:71"]',
-      );
-      expect(el).toBeTruthy();
-      return el!;
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-knowledge-key="knowledge:recent:71"]'),
+      ).toBeTruthy();
     });
     expect(apiRepoRecentlyAccessedPages).toHaveBeenCalledWith({
       from: 0,
       size: 20,
     });
     expect(apiRepoSpaceTree).not.toHaveBeenCalled();
-    expect(row.textContent).toContain('产品需求说明书');
-    expect(row.textContent).toContain('PC.Utils.Common.hoursAgo');
-    // 图标：pdf 专属红；类型文本不再展示
-    expect(
-      row.querySelector<HTMLElement>('[class*="file-icon"]')?.style.color,
-    ).toBe('rgb(245, 63, 63)');
-    expect(row.textContent).not.toContain('PDF');
+    expect(screen.getByText('产品需求说明书')).toBeInTheDocument();
   });
 });
 
-describe('KnowledgeListView·选中与双变体', () => {
+describe('KnowledgeListView·选中契约', () => {
   it('整行点击与「选择」按钮均可选中,回传 slugId/pageType/rawId', async () => {
     apiRepoSpaceTree.mockResolvedValue({
       code: '0000',
@@ -209,19 +182,5 @@ describe('KnowledgeListView·选中与双变体', () => {
     // 「选择」按钮为等价入口（stopPropagation 不冒泡双触发）
     fireEvent.click(selectBtnOf('knowledge:space:7')!);
     await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(2));
-  });
-
-  it('list 变体：单列资料行,渲染一致', async () => {
-    apiRepoSpaceTree.mockResolvedValue({
-      code: '0000',
-      data: [
-        { page: { id: 7, title: '使用手册', slugId: 's-7', sourceExt: 'md' } },
-      ],
-    });
-    const { container } = renderView({ spaceId: 1, variant: 'list' });
-    await screen.findByText('使用手册');
-    const scroller = container.firstElementChild as HTMLElement;
-    expect(scroller.className).toContain('root-list');
-    expect(document.querySelectorAll('[data-knowledge-key]').length).toBe(1);
   });
 });

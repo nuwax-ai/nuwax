@@ -26,7 +26,7 @@ vi.mock('@/utils/hostBridge', () => ({
   hostBridge: { localFiles: { getApi: mocks.getApi } },
 }));
 vi.mock('@/utils/exportImportFile', () => ({
-  exportFileViaBrowserDownload: mocks.download,
+  exportNamedDownload: mocks.download,
 }));
 vi.mock('antd', () => ({
   message: { success: mocks.success, error: mocks.error },
@@ -76,6 +76,20 @@ beforeEach(() => {
   mocks.request.mockResolvedValue({ code: '0000', data: { files: [] } });
 });
 describe('computer static service local routing', () => {
+  it('云端导出使用会话名，名称不可用时回退带会话ID的名称', async () => {
+    mocks.download.mockResolvedValue(false);
+    await apiDownloadAllFiles(7, '我的/会话');
+    expect(mocks.download).toHaveBeenLastCalledWith(
+      expect.stringContaining('download-all-files?cId=7'),
+      '我的-会话',
+    );
+    await apiDownloadAllFiles(7, '???');
+    expect(mocks.download).toHaveBeenLastCalledWith(
+      expect.stringContaining('download-all-files?cId=7'),
+      'PC.Pages.Chat.exportAllFilesName-7',
+    );
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
   it('sends create/edit/rename/delete through the native bridge and retains remote writes', async () => {
     const data = {
       cId: 7,
@@ -112,7 +126,7 @@ describe('computer static service local routing', () => {
     expect(mocks.request).not.toHaveBeenCalled();
   });
 
-  it('a local write error or an older read-only native bridge never falls back to cloud writes', async () => {
+  it('a selected local write error never falls back to cloud writes', async () => {
     const api = localApi();
     mocks.getApi.mockReturnValue(api);
     registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
@@ -133,20 +147,55 @@ describe('computer static service local routing', () => {
       success: false,
       code: 'failed',
     });
-    clearLocalFilesContexts();
-    api.getCapabilities.mockResolvedValueOnce({
-      apiVersion: 1,
-      available: true,
-      sandboxId: 'local',
-    });
-    registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
-    await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
-      success: false,
-      code: 'unavailable',
-    });
-    expect(mocks.error).toHaveBeenCalledTimes(3);
+    expect(mocks.error).toHaveBeenCalledTimes(2);
     expect(mocks.request).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { compatibility: 'v1', cId: 71 },
+    { compatibility: 'missing-update', cId: 72 },
+    { compatibility: 'read-only-v2', cId: 73 },
+  ])(
+    'new direct PC Web retains the complete legacy route for $compatibility clients',
+    async ({ compatibility, cId }) => {
+      const api = localApi();
+      if (compatibility === 'v1')
+        api.getCapabilities.mockResolvedValue({
+          apiVersion: 1,
+          available: true,
+          sandboxId: 'local',
+        });
+      if (compatibility === 'missing-update')
+        delete (api as Partial<typeof api>).updateFiles;
+      if (compatibility === 'read-only-v2')
+        api.getCapabilities.mockResolvedValue({
+          apiVersion: 2,
+          available: true,
+          writable: false,
+          sandboxId: 'local',
+        });
+      mocks.getApi.mockReturnValue(api);
+      registerLocalFilesContext({ cId, sandboxId: 'local' });
+      await apiGetStaticFileList(cId);
+      const data = {
+        cId,
+        files: [
+          { name: 'a.txt', operation: 'modify' as const, contents: 'saved' },
+        ],
+      };
+      await expect(apiUpdateStaticFile(data)).resolves.toMatchObject({
+        code: '0000',
+      });
+      expect(mocks.request).toHaveBeenLastCalledWith(
+        '/api/computer/static/files-update',
+        { method: 'POST', data },
+      );
+      expect(mocks.request).toHaveBeenCalledTimes(2);
+      expect(api.resolveContext).not.toHaveBeenCalled();
+      expect(api.listFiles).not.toHaveBeenCalled();
+      expect(mocks.error).not.toHaveBeenCalled();
+    },
+  );
 
   it('a context replaced while a native save is pending cannot report success in the new session', async () => {
     const api = localApi();
@@ -268,6 +317,8 @@ describe('computer static service local routing', () => {
   it.each([
     'caps-unavailable',
     'caps-id-mismatch',
+    'caps-legacy',
+    'bridge-readonly',
     'bridge-missing',
     'resolve-unavailable',
     'resolve-unresolved',
@@ -285,10 +336,19 @@ describe('computer static service local routing', () => {
       });
     if (failure === 'caps-id-mismatch')
       api.getCapabilities.mockResolvedValue({
-        apiVersion: 1,
+        apiVersion: 2,
         available: true,
+        writable: true,
         sandboxId: 'other-computer',
       });
+    if (failure === 'caps-legacy')
+      api.getCapabilities.mockResolvedValue({
+        apiVersion: 1,
+        available: true,
+        sandboxId: 'local',
+      });
+    if (failure === 'bridge-readonly')
+      delete (api as Partial<typeof api>).updateFiles;
     if (failure === 'bridge-missing') mocks.getApi.mockReturnValue(undefined);
     if (failure === 'resolve-unavailable')
       api.resolveContext.mockResolvedValue({

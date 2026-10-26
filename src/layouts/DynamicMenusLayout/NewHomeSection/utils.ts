@@ -46,14 +46,16 @@ export const formatModifiedTime = (timeStr?: string) => {
 
 /**
  * 列表条目相对时间（2026-09-08 定调，对照原型截图）:
- * 刚刚 / x分 / x小时 / x天（不带「前」字），超过 30 天回退具体日期。
+ * 刚刚 / x分 / x小时y分 / x天（不带「前」字），超过 30 天回退具体日期。
+ * nowMs 供走表方传入共享时钟值（NW-265），缺省取当前时刻。
  */
-export const formatRelativeTime = (timeStr?: string) => {
+export const formatRelativeTime = (timeStr?: string, nowMs?: number) => {
   if (!timeStr) return '';
   const d = dayjs(timeStr);
   if (!d.isValid()) return '';
 
-  const diffMs = dayjs().valueOf() - d.valueOf();
+  const diffMs =
+    (typeof nowMs === 'number' ? nowMs : dayjs().valueOf()) - d.valueOf();
   if (diffMs < 60 * 1000) {
     return dict('PC.Utils.Common.justNow');
   }
@@ -64,10 +66,14 @@ export const formatRelativeTime = (timeStr?: string) => {
     );
   }
   if (diffMs < 24 * 60 * 60 * 1000) {
-    return dict(
-      'PC.Utils.Common.relativeHours',
-      Math.floor(diffMs / (60 * 60 * 1000)),
+    const hours = Math.floor(diffMs / (60 * 60 * 1000));
+    const restMinutes = Math.floor(
+      (diffMs % (60 * 60 * 1000)) / (60 * 1000),
     );
+    // 整点保留「x小时」；有余分带出（NW-265：避免「11小时」丢分钟粗显示）
+    return restMinutes > 0
+      ? dict('PC.Utils.Common.relativeHoursMinutes', hours, restMinutes)
+      : dict('PC.Utils.Common.relativeHours', hours);
   }
   if (diffMs < 30 * 24 * 60 * 60 * 1000) {
     return dict(

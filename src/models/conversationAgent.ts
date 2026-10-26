@@ -78,7 +78,6 @@ import {
   type MessagePerfLifecycle,
 } from '@/utils/hostBridge/perfTracker';
 import { conversationErrorTerminalLogger } from '@/utils/logger';
-import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
@@ -284,11 +283,6 @@ export default () => {
     const firstMessage = messageList?.[0] as MessageInfo;
     const currentIndex = firstMessage?.index || 0;
 
-    // 记录加载前的滚动高度和位置，用于保持滚动位置
-    const messageView = messageViewRef.current;
-    const oldScrollHeight = messageView?.scrollHeight || 0;
-    const oldScrollTop = messageView?.scrollTop || 0;
-
     setLoadingMore(true);
     try {
       const { code, data } = await runQueryConversationMessageList({
@@ -311,13 +305,11 @@ export default () => {
           } else {
             setIsMoreMessage(true);
           }
-          // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
-          // 使用MutationObserver监听DOM变化，确保所有元素都渲染完成后再调整滚动位置
-          adjustScrollPositionAfterDOMUpdate(
-            messageView,
-            oldScrollTop,
-            oldScrollHeight,
-          );
+          // 滚动位置保持由 UnifiedChatSession 的 loadingMore 锚定负责
+          // （useUnifiedChatScroll 触发沿记录锚点、落地沿恢复+安置窗口）。
+          // 不在此调旧线 adjustScrollPositionAfterDOMUpdate：其活动窗口标记
+          // 会让新线锚定整体让位，只剩单帧 ΔH+600ms 兜底且不跟随用户滚动，
+          // prepend 后视口跳位/断档（NW-254）。
         } else {
           // 如果查询到的消息数量为0，则表示没有更多消息
           setIsMoreMessage(false);

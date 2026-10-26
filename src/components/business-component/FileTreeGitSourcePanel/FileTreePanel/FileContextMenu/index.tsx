@@ -1,3 +1,4 @@
+import { localFileActionErrorKey } from '@/components/business-component/FilePreview/localFileActionMessages';
 import {
   getLocalFileReference,
   openLocalFile,
@@ -59,9 +60,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   const localAction = (operation: typeof openLocalFile) => {
     if (!localFile) return;
     handleMenuItemClick(() => {
-      void operation(localFile).catch((error) =>
-        message.error(error instanceof Error ? error.message : String(error)),
-      );
+      void operation(localFile)
+        .then((done) => {
+          if (done === false)
+            message.error(dict('PC.Components.FilePreview.localActionFailed'));
+        })
+        .catch((error) => message.error(dict(localFileActionErrorKey(error))));
     });
   };
 

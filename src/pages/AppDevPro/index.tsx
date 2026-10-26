@@ -2308,7 +2308,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         await handleUploadMultipleFiles(files, filePaths);
       },
       onExportProject: async () => {
-        await apiDownloadAllFiles(queryConversationId);
+        await apiDownloadAllFiles(queryConversationId, conversationInfo?.topic);
       },
       /** 导入项目 */
       onImportProject: handleImportProject,
@@ -2434,6 +2434,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
+    conversationInfo?.topic,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,

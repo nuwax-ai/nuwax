@@ -1332,7 +1332,10 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       },
       onExportProject: async () => {
         if (queryConversationId) {
-          await apiDownloadAllFiles(queryConversationId);
+          await apiDownloadAllFiles(
+            queryConversationId,
+            conversationInfo?.topic,
+          );
         }
       },
       /** 导入项目 */
@@ -1468,6 +1471,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
+    conversationInfo?.topic,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,

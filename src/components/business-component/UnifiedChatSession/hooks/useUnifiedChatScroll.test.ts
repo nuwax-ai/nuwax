@@ -337,6 +337,42 @@ describe('useUnifiedChatScroll', () => {
 
   // ---- NW-062：上滑加载历史时旧消息「弹出」与滚动失锚 ----
 
+  it.each(['data-history-scroll-sentinel', 'data-history-scroll-static'])(
+    'NW-254 %s 仍在视口时锚定实际消息，历史前插不能把阅读位置留在新页',
+    (attribute) => {
+      const { element, anchorDocTop, setScrollHeight, setUserScrollTop } =
+        createAnchoredScrollElement({ scrollTop: 25, anchorDocTop: 40 });
+      const sentinel = document.createElement('div');
+      sentinel.setAttribute(attribute, '');
+      Object.defineProperty(sentinel, 'offsetHeight', { get: () => 28 });
+      sentinel.getBoundingClientRect = () =>
+        ({
+          top: -element.scrollTop,
+          bottom: 28 - element.scrollTop,
+          height: 28,
+        } as DOMRect);
+      element.firstElementChild!.prepend(sentinel);
+      const messageViewRef = { current: element };
+      const allowAutoScrollRef = { current: false };
+      const { rerender } = renderHook(
+        ({ loadingMore }) =>
+          useUnifiedChatScroll({
+            externalMessageViewRef: messageViewRef,
+            externalAllowAutoScrollRef: allowAutoScrollRef,
+            messageList: [{ id: 'old' }],
+            loadingMore,
+          }),
+        { initialProps: { loadingMore: false } },
+      );
+      rerender({ loadingMore: true });
+      act(() => setUserScrollTop(15));
+      anchorDocTop.current += 300;
+      setScrollHeight(1300);
+      rerender({ loadingMore: false });
+      expect(element.scrollTop).toBe(315);
+    },
+  );
+
   it('NW-062 加载期间用户继续上滚：落地补偿锚定最新阅读位置而非触发时刻（旧实现会拽回 420）', () => {
     const { element, anchorDocTop, setScrollHeight, setUserScrollTop } =
       createAnchoredScrollElement({ scrollTop: 120, anchorDocTop: 200 });
