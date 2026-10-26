@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import HomeIcon from '../HomeIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -148,19 +149,16 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
                 title={prompt.title?.trim() || prompt.content}
                 onClick={() => onQuestionClick?.(prompt.content)}
               >
-                {prompt.icon ? (
-                  <img
-                    className={styles.icon}
-                    src={prompt.icon}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <ArrowDownOutlined
-                    className={styles['guid-arrow']}
-                    aria-hidden="true"
-                  />
-                )}
+                <HomeIcon
+                  className={styles.icon}
+                  src={prompt.icon}
+                  fallback={
+                    <ArrowDownOutlined
+                      className={styles['guid-arrow']}
+                      aria-hidden="true"
+                    />
+                  }
+                />
                 <span className={styles.label}>
                   {prompt.title?.trim() || prompt.content}
                 </span>
@@ -210,14 +208,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
                   }
                 }}
               >
-                {item.icon && (
-                  <img
-                    className={cx(styles.icon)}
-                    src={item.icon}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                )}
+                <HomeIcon className={cx(styles.icon)} src={item.icon} />
                 <span className={cx(styles.label)}>{item.label}</span>
               </button>
             );
