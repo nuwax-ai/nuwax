@@ -174,7 +174,17 @@ export function registerLocalFilesContext(
   const cId = String(input.cId);
   const owner = Symbol('local-files-context');
   const previous = contexts.get(cId);
-  const normalizedInput = { ...input, cId };
+  // 后端 DTO 的可选字段可能为 null/空串；原生桥的可选 scalar 只接受值或 undefined。
+  const optional = <T extends string | number>(value: T | null | undefined) =>
+    value === null || value === '' ? undefined : value;
+  const normalizedInput = {
+    ...input,
+    cId,
+    workspacePath: optional(input.workspacePath),
+    projectId: optional(input.projectId),
+    serviceType: optional(input.serviceType),
+    userId: optional(input.userId),
+  };
   if (
     previous &&
     JSON.stringify(previous.input) === JSON.stringify(normalizedInput)
@@ -464,6 +474,12 @@ export async function getLocalFileList(
   };
 }
 
+export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
+  const record = contexts.get(ref.cId);
+  if (!record || record.disposed || record.context?.contextId !== ref.contextId)
+    throw new LocalFileAccessError('expired');
+}
+
 /** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */
 export async function updateLocalFiles(
   cId: string | number,
@@ -553,11 +569,6 @@ export async function prepareLocalFilePreview(
       safely(target.api.releasePreview?.(preview.grantId));
     },
   };
-}
-export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
-  const record = contexts.get(ref.cId);
-  if (!record || record.disposed || record.context?.contextId !== ref.contextId)
-    throw new LocalFileAccessError('expired');
 }
 export async function saveLocalFile(
   input: string | LocalFileReference,
