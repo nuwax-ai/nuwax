@@ -2,6 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FilePreview, {
   FileType,
 } from '@/components/business-component/FilePreview';
+import { localFileReadErrorMessage } from '@/components/business-component/FilePreview/localFileActionMessages';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
   buildChangeFilesFromGitStatus,
@@ -526,7 +527,7 @@ export function useFileTreePreviewView(
         ) {
           setLocalContentError({
             fileId,
-            message: error instanceof Error ? error.message : String(error),
+            message: localFileReadErrorMessage(error, dict),
           });
           if (rejectLocalFailure) throw error;
         }
@@ -1641,6 +1642,103 @@ export function useFileTreePreviewView(
     setRenamingNode(null);
   };
 
+  const persistContent = useCallback(
+    async (
+      fileId: string,
+      content: string,
+      original: string,
+      options?: FileContentSaveOptions,
+    ): Promise<boolean> => {
+      if (readOnly) return false;
+      const epoch = saveEpoch.current;
+      const attempt = ++saveAttempt.current;
+      latestSaveAttempts.current.set(fileId, attempt);
+      setFileSaveStates((prev) => ({
+        ...prev,
+        [fileId]: { state: 'saving', epoch },
+      }));
+      let saved = false;
+      try {
+        saved =
+          (await (onSaveFileContentRef.current
+            ? onSaveFileContentRef.current(fileId, content, original, options)
+            : onSaveFilesRef.current?.([
+                { fileId, fileContent: content, originalFileContent: original },
+              ]))) === true;
+      } catch {
+        saved = false;
+      }
+      if (
+        saveEpoch.current !== epoch ||
+        latestSaveAttempts.current.get(fileId) !== attempt
+      )
+        return false;
+      setFileSaveStates((prev) => ({
+        ...prev,
+        [fileId]: { state: saved ? 'saved' : 'error', epoch },
+      }));
+      if (saved) {
+        editorDrafts.current.delete(fileId);
+        setChangeFiles((prev) =>
+          prev.filter(
+            (change) =>
+              change.fileId !== fileId || change.fileContent !== content,
+          ),
+        );
+        setFiles((prev) => updateFileTreeContent(fileId, content, prev));
+        setSelectedFileNode((prev) =>
+          prev?.id === fileId ? { ...prev, content } : prev,
+        );
+      }
+      return saved;
+    },
+    [readOnly],
+  );
+
+  const isInMutation = (fileId: string) => {
+    const path = mutation.current?.path;
+    return (
+      path !== undefined && (fileId === path || fileId.startsWith(`${path}/`))
+    );
+  };
+
+  /** 移动/删除前完成该路径下的草稿，避免在途写仍投递到旧文件名。 */
+  const runFileMutation = async (
+    node: FileNode,
+    action: () => Promise<void>,
+  ) => {
+    if (readOnly || mutation.current) return;
+    const ticket = { path: node.id, epoch: saveEpoch.current };
+    mutation.current = ticket;
+    setMutatingPath(node.id);
+    try {
+      const drafts = [...editorDrafts.current].filter(([id]) =>
+        isInMutation(id),
+      );
+      const results = await Promise.all(
+        drafts.map(([id, draft]) =>
+          persistContent(id, draft.content, draft.original, {
+            immediate: true,
+          }),
+        ),
+      );
+      if (saveEpoch.current !== ticket.epoch) return;
+      if (results.some((saved) => !saved)) {
+        message.error(dict('PC.Components.FilePreview.saveState.error'));
+        return;
+      }
+      await action();
+    } catch {
+      if (saveEpoch.current === ticket.epoch)
+        message.error(dict('PC.Common.Global.operationFailed'));
+    } finally {
+      if (mutation.current === ticket) {
+        mutation.current = null;
+        setMutatingPath(null);
+      }
+    }
+  };
+
   /**
    * 处理重命名操作
    */
@@ -1995,103 +2093,6 @@ export function useFileTreePreviewView(
     createTempNodeAndStartRename(parentNode, 'folder');
   };
 
-  const persistContent = useCallback(
-    async (
-      fileId: string,
-      content: string,
-      original: string,
-      options?: FileContentSaveOptions,
-    ): Promise<boolean> => {
-      if (readOnly) return false;
-      const epoch = saveEpoch.current;
-      const attempt = ++saveAttempt.current;
-      latestSaveAttempts.current.set(fileId, attempt);
-      setFileSaveStates((prev) => ({
-        ...prev,
-        [fileId]: { state: 'saving', epoch },
-      }));
-      let saved = false;
-      try {
-        saved =
-          (await (onSaveFileContentRef.current
-            ? onSaveFileContentRef.current(fileId, content, original, options)
-            : onSaveFilesRef.current?.([
-                { fileId, fileContent: content, originalFileContent: original },
-              ]))) === true;
-      } catch {
-        saved = false;
-      }
-      if (
-        saveEpoch.current !== epoch ||
-        latestSaveAttempts.current.get(fileId) !== attempt
-      )
-        return false;
-      setFileSaveStates((prev) => ({
-        ...prev,
-        [fileId]: { state: saved ? 'saved' : 'error', epoch },
-      }));
-      if (saved) {
-        editorDrafts.current.delete(fileId);
-        setChangeFiles((prev) =>
-          prev.filter(
-            (change) =>
-              change.fileId !== fileId || change.fileContent !== content,
-          ),
-        );
-        setFiles((prev) => updateFileTreeContent(fileId, content, prev));
-        setSelectedFileNode((prev) =>
-          prev?.id === fileId ? { ...prev, content } : prev,
-        );
-      }
-      return saved;
-    },
-    [readOnly],
-  );
-
-  const isInMutation = (fileId: string) => {
-    const path = mutation.current?.path;
-    return (
-      path !== undefined && (fileId === path || fileId.startsWith(`${path}/`))
-    );
-  };
-
-  /** 移动/删除前完成该路径下的草稿，避免在途写仍投递到旧文件名。 */
-  const runFileMutation = async (
-    node: FileNode,
-    action: () => Promise<void>,
-  ) => {
-    if (readOnly || mutation.current) return;
-    const ticket = { path: node.id, epoch: saveEpoch.current };
-    mutation.current = ticket;
-    setMutatingPath(node.id);
-    try {
-      const drafts = [...editorDrafts.current].filter(([id]) =>
-        isInMutation(id),
-      );
-      const results = await Promise.all(
-        drafts.map(([id, draft]) =>
-          persistContent(id, draft.content, draft.original, {
-            immediate: true,
-          }),
-        ),
-      );
-      if (saveEpoch.current !== ticket.epoch) return;
-      if (results.some((saved) => !saved)) {
-        message.error(dict('PC.Components.FilePreview.saveState.error'));
-        return;
-      }
-      await action();
-    } catch {
-      if (saveEpoch.current === ticket.epoch)
-        message.error(dict('PC.Common.Global.operationFailed'));
-    } finally {
-      if (mutation.current === ticket) {
-        mutation.current = null;
-        setMutatingPath(null);
-      }
-    }
-  };
-
   /** 仅编辑器输入属于未保存草稿；Git 的 modified 状态不等于未保存。 */
   const handleContentChange = useCallback(
     (fileId: string, content: string) => {
@@ -2343,7 +2344,7 @@ export function useFileTreePreviewView(
         getLocalFileReference(node, targetId) ||
         (error instanceof Error && error.name === 'LocalFileAccessError')
       ) {
-        message.error(error instanceof Error ? error.message : String(error));
+        message.error(localFileReadErrorMessage(error, dict));
       }
       setIsDownloadingFile(false);
       setCurrentDownloadingFileId('');

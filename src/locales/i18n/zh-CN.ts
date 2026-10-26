@@ -697,6 +697,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.FilePreview.saveFile": "保存文件",
   "PC.Components.FilePreview.saveBeforeRefresh": "请先保存当前更改",
   "PC.Components.FilePreview.localSourceChanged": "本机文件来源已失效，请确认客户端服务正常后重新打开文件。",
+  "PC.Components.FilePreview.localFileMissing": "文件不存在，可能已被移动、重命名或删除。请刷新文件列表后重试。",
   "PC.Components.FilePreview.localActionFailed": "操作失败，请检查文件是否存在以及访问权限。",
   "PC.Components.FilePreview.tooltipRefresh": "刷新",
   "PC.Components.FilePreview.unsupportedType": "暂不支持预览此文件类型",
