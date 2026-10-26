@@ -297,6 +297,7 @@ async function assertPinned(f, id, expected) {
 test('CLI 解析显式目标、dry-run、commitish、人工审核 overlay 与帮助', () => {
   assert.equal(parseUpgradeArguments(['repo']).target, 'repo');
   assert.equal(parseUpgradeArguments(['repo']).dryRun, false);
+  assert.equal(parseUpgradeArguments(['repo']).rebasePatch, true);
   const options = parseUpgradeArguments([
     'message',
     '--dry-run',
@@ -308,6 +309,11 @@ test('CLI 解析显式目标、dry-run、commitish、人工审核 overlay 与帮
   assert.equal(options.dryRun, true);
   assert.equal(options.ref, 'origin/main~1');
   assert.equal(options.allowOverlayChanges, true);
+  assert.equal(options.rebasePatch, true);
+  assert.equal(
+    parseUpgradeArguments(['repo', '--no-rebase-patch']).rebasePatch,
+    false,
+  );
   assert.equal(parseUpgradeArguments(['--help']).help, true);
 });
 
@@ -1226,4 +1232,172 @@ test('runCommand 中止后等待真实 child close，不能提前启动 Git 回�
     await fs.readFile(closed, 'utf8'),
     'child completed termination',
   );
+});
+
+/** 模拟真实 chat.ts 冲突：适配在 windowMs 后插入一行，上游在附近插入大段上下文。 */
+function contextDriftSource(kind) {
+  const insert = Array.from({ length: 12 }, (_, index) => `inserted-${index}`)
+    .join('\n')
+    .concat('\n');
+  if (kind === 'base') {
+    return 'pendingReportSeq\nreadReportSender\nwindowMs\nfire\n';
+  }
+  if (kind === 'adapted') {
+    return 'pendingReportSeq\nreadReportSender\nwindowMs\nclock\nfire\n';
+  }
+  return `pendingReportSeq\n${insert}readReportSender\nwindowMs\nfire\n`;
+}
+
+/**
+ * 把 message 的 pin/补丁改成「直接 apply 失败、三方合并能成功」的布局。
+ * pinToDrifted 时 gitlink 已到最新 main，只留过期补丁，对应 test 分支撕裂现场。
+ */
+async function retargetMessageContextDrift(f, { pinToDrifted = false } = {}) {
+  const app = f.apps.message;
+  const relative = app.projectDir
+    ? path.join(app.projectDir, 'source.txt')
+    : 'source.txt';
+  const upstreamFile = path.join(app.upstream, relative);
+  await fs.writeFile(upstreamFile, contextDriftSource('base'));
+  const basePin = await commit(app.upstream, 'context base');
+  await fs.writeFile(upstreamFile, contextDriftSource('adapted'));
+  const patch = `${await git(app.upstream, ['diff'])}\n`.replace(/\n+$/, '\n');
+  await git(app.upstream, ['checkout', '--', relative]);
+  await fs.writeFile(upstreamFile, contextDriftSource('drifted'));
+  const driftedPin = await commit(app.upstream, 'context drift');
+  await fs.writeFile(path.join(app.adapterRoot, 'adapter.patch'), patch);
+  const pin = pinToDrifted ? driftedPin : basePin;
+  const adapterFile = path.join(f.root, app.adapterRelative);
+  const adapter = JSON.parse(await fs.readFile(adapterFile, 'utf8'));
+  adapter.pin = pin;
+  await fs.writeFile(
+    adapterFile,
+    `${JSON.stringify(adapter, null, 4)}\n`,
+  );
+  await git(app.source, ['fetch', 'origin']);
+  await git(app.source, ['checkout', '--detach', pin]);
+  await git(f.root, [
+    'add',
+    '--',
+    app.sourceDir,
+    app.adapterRelative,
+    path.posix.join(path.posix.dirname(app.adapterRelative), 'adapter.patch'),
+  ]);
+  await commit(f.root, 'retarget context drift');
+  app.oldPin = pin;
+  app.newPin = driftedPin;
+  app.basePin = basePin;
+  return { basePin, driftedPin, patch };
+}
+
+test('上下文漂移时默认三方重算补丁并暂存', async (t) => {
+  const f = await fixture(t);
+  const app = f.apps.message;
+  const { driftedPin } = await retargetMessageContextDrift(f);
+  const beforePatch = await fs.readFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    'utf8',
+  );
+  const logs = [];
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    log: (message) => logs.push(String(message)),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].newPin, driftedPin);
+  assert.equal(result.apps[0].patchRebased, true);
+  const adapter = JSON.parse(
+    await fs.readFile(path.join(f.root, app.adapterRelative), 'utf8'),
+  );
+  assert.equal(adapter.pin, driftedPin);
+  assert.equal(await git(app.source, ['rev-parse', 'HEAD']), driftedPin);
+  assert.doesNotMatch(
+    await fs.readFile(
+      path.join(app.source, app.projectDir, 'source.txt'),
+      'utf8',
+    ),
+    /clock/,
+    '适配 patch 不得应用到共享子仓',
+  );
+  const remade = await fs.readFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    'utf8',
+  );
+  assert.notEqual(remade, beforePatch);
+  assert.match(remade, /^\+clock$/m);
+  const staged = await git(f.root, [
+    'diff',
+    '--cached',
+    '--name-only',
+    '--',
+    path.posix.join(path.posix.dirname(app.adapterRelative), 'adapter.patch'),
+  ]);
+  assert.equal(
+    staged,
+    path.posix.join(path.posix.dirname(app.adapterRelative), 'adapter.patch'),
+  );
+  assert.ok(logs.some((line) => /自动重算/.test(line)));
+});
+
+test('pin 已是最新但补丁过期时只重算补丁', async (t) => {
+  const f = await fixture(t);
+  const app = f.apps.message;
+  const { driftedPin } = await retargetMessageContextDrift(f, {
+    pinToDrifted: true,
+  });
+  const beforeAdapter = await fs.readFile(
+    path.join(f.root, app.adapterRelative),
+  );
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].changed, false);
+  assert.equal(result.apps[0].patchRebased, true);
+  assert.equal(result.apps[0].oldPin, driftedPin);
+  assert.equal(result.apps[0].newPin, driftedPin);
+  const adapter = JSON.parse(
+    await fs.readFile(path.join(f.root, app.adapterRelative), 'utf8'),
+  );
+  assert.equal(adapter.pin, driftedPin);
+  assert.deepEqual(
+    await fs.readFile(path.join(f.root, app.adapterRelative)),
+    beforeAdapter,
+  );
+  const remade = await fs.readFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    'utf8',
+  );
+  assert.match(remade, /^\+clock$/m);
+});
+
+test('--no-rebase-patch 时上下文漂移仍按冲突失败并保持现场', async (t) => {
+  const f = await fixture(t);
+  await retargetMessageContextDrift(f);
+  const before = await snapshot(f);
+  await assert.rejects(
+    upgradeMicroApps({
+      root: f.root,
+      target: 'message',
+      rebasePatch: false,
+    }),
+    /message.*patch.*冲突/,
+  );
+  assert.deepEqual(await snapshot(f), before);
+});
+
+test('dry-run 遇到可重算补丁时不写回 adapter.patch', async (t) => {
+  const f = await fixture(t);
+  await retargetMessageContextDrift(f);
+  const before = await snapshot(f);
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    dryRun: true,
+  });
+  assert.equal(result.status, 'dry-run');
+  assert.equal(result.apps[0].patchRebased, true);
+  assert.deepEqual(await snapshot(f), before);
 });
