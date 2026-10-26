@@ -4,6 +4,8 @@ import {
   exportLocalWorkspace,
   getLocalFileList,
   getLocalFilesContextKey,
+  LocalFileAccessError,
+  updateLocalFiles,
 } from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -162,10 +164,35 @@ export async function apiGetStaticFileDetail(
 export async function apiUpdateStaticFile(
   data: IUpdateStaticFileParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/computer/static/files-update', {
-    method: 'POST',
-    data,
-  });
+  try {
+    const local = await updateLocalFiles(data.cId, data.files);
+    if (local) return local;
+  } catch (error) {
+    // Existing create/autosave callbacks consume response codes; keep dirty data
+    // on failure instead of leaking a rejected UI promise or retrying in cloud.
+    const code = error instanceof LocalFileAccessError ? error.code : 'failed';
+    const text = t('PC.Common.Toast.operationFailed');
+    message.error(text);
+    return {
+      code,
+      displayCode: code,
+      message: text,
+      data: null,
+      debugInfo: {},
+      success: false,
+      tid: '',
+    };
+  }
+  const contextKey = getLocalFilesContextKey(data.cId);
+  const response: RequestResponse<null> = await request(
+    '/api/computer/static/files-update',
+    {
+      method: 'POST',
+      data,
+    },
+  );
+  assertLocalFilesContextUnchanged(data.cId, contextKey);
+  return response;
 }
 
 // 上传技能文件

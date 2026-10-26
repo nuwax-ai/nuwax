@@ -1,9 +1,12 @@
 import { AgentComponentTypeEnum, AllowCopyEnum } from '../enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '../enums/common';
 import { AgentStatisticsInfo, CreatorInfo } from './agent';
+import type { LocalFileReference } from './localFile';
 
 // 技能文件
 export interface SkillFileInfo {
+  /** 开发会话文件保留本机来源；发布技能文件不要求此字段。 */
+  localFile?: LocalFileReference;
   // 文件ID (自定义，初始值时name的值)
   fileId?: string;
   // 文件名称
