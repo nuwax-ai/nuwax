@@ -3427,16 +3427,45 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     restartPreviewWaitRef.current = true;
     setAwaitingContainerForRestart(true);
     try {
-      const containerRunningPromise =
-        serviceReadinessRef.current.waitUntilContainerRunning(
-          envToRestart,
-          () => dbEnvRef.current !== envToRestart,
-          { acceptCached: true },
-        );
+      const envChanged = () => dbEnvRef.current !== envToRestart;
+      // 重启前先拿一轮最新 readiness 看容器与应用状态，不用陈旧缓存下结论
       resumeReadinessWatch();
-      const containerRunning = await containerRunningPromise;
-      if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      const latest = await serviceReadinessRef.current.waitForNextPoll(
+        envToRestart,
+        envChanged,
+      );
+      if (!latest || envChanged()) {
         return;
+      }
+      const containerStatus = latest.container?.status;
+      if (containerStatus !== UserAppContainerStatusEnum.Running) {
+        // 容器没在运行不能干等：过渡中（starting / restarting / stopping）
+        // 不重复拉起，等它自己落定；其余状态（stopped / missing / failed
+        // 等）主动 ensure 把容器拉起来，再等 readiness 确认 running 后
+        // 才重启应用。
+        if (
+          !containerStatus ||
+          !CONTAINER_TRANSITION_STATUSES.has(containerStatus)
+        ) {
+          const accepted = await ensureEnvPodRef.current(envToRestart, true, {
+            reensure: true,
+            deferRunning: true,
+          });
+          if (!accepted || envChanged()) {
+            return;
+          }
+        }
+        resumeReadinessWatch();
+        const containerRunning =
+          await serviceReadinessRef.current.waitUntilContainerRunning(
+            envToRestart,
+            envChanged,
+          );
+        if (!containerRunning || envChanged()) {
+          return;
+        }
+        // 本地 pod 状态不用在这里同步：readiness 报容器 running 时已有
+        // effect 统一 confirm 本地状态，这里再调是重复。
       }
       setPreviewStoppedForEnv(envToRestart, false);
       setPreviewIframeUrl(appPreviewUrlRef.current);
