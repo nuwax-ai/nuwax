@@ -34,7 +34,7 @@ export interface SendCode extends ImageCaptchaParams {
 
 // 验证码登录请求参数
 export interface CodeLogin {
-  phone: string;
+  phoneOrEmail: string;
   code: string;
 }
 

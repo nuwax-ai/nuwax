@@ -43,7 +43,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.MicroAppHost.loading': '正在加载',
   'PC.Components.MicroAppHost.loadFailed': '暂时无法加载，请重试。',
   'PC.Components.MicroAppHost.retry': '重新加载',
-  "PC.Components.AppStartup.loading": "正在打开 Nuwax…",
+  "PC.Components.AppStartup.loading": "正在启动…",
   "PC.Components.AppStartup.loadingHint": "正在准备页面，请稍候。",
   "PC.Components.AppStartup.waiting": "加载时间有点久",
   "PC.Components.AppStartup.waitingHint": "你可以继续等待，或重新加载页面。",
