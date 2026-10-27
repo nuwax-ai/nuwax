@@ -1767,7 +1767,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 只在刚进入 stopped 时调一次。用户主动停止或页面已经打开时不重启。
    */
   useEffect(() => {
-    const status = serviceReadiness.readinessByEnv[dbEnv]?.status ?? null;
+    const readinessData = serviceReadiness.readinessByEnv[dbEnv];
+    const status = readinessData?.status ?? null;
     const prev = prevReadinessStatusRef.current[dbEnv];
     if (prev === status) {
       return;
@@ -1776,9 +1777,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // 本页签主动停止后，readiness 又切到 starting：说明服务已被其他页签重新拉起，
     // 本地「用户已停止」标记作废，后续 starting 展示与 ready 打开预览不再被它压制。
     // 停止过程中的 stopping / stopped 不清，避免刚点停止就被旧状态误清。
+    // 轮询也可能错过 starting、从 stopping/stopped 直接跳到就绪，同样说明服务
+    // 已被重新拉起，一并清标记，否则面板会一直停在停止中过渡态打不开预览。
     if (
-      status === UserAppReadinessStatusEnum.Starting &&
-      previewUserStoppedByEnvRef.current[dbEnv]
+      previewUserStoppedByEnvRef.current[dbEnv] &&
+      (status === UserAppReadinessStatusEnum.Starting ||
+        (isUserAppReadinessAccessible(readinessData) &&
+          (prev === UserAppReadinessStatusEnum.Stopping ||
+            prev === UserAppReadinessStatusEnum.Stopped)))
     ) {
       setPreviewStoppedForEnv(dbEnv, false);
     }
