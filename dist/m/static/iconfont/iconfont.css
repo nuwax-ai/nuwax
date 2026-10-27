@@ -388,3 +388,28 @@
   content: "\e614";
 }
 
+/* 消息长按面板专属字形（2026-10-27，见 constants/iconfont.constants.uts） */
+.icon-msg-quote:before {
+  content: "\e8b2";
+}
+
+.icon-msg-pin:before {
+  content: "\e8b3";
+}
+
+.icon-msg-revoke:before {
+  content: "\e8b4";
+}
+
+.icon-msg-download:before {
+  content: "\e8b5";
+}
+
+.icon-msg-voice-text:before {
+  content: "\e8b6";
+}
+
+.icon-msg-voice-text-off:before {
+  content: "\e8b7";
+}
+

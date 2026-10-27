@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- 取消转文字：转文字图标 + 斜杠，同原 PNG 形态 -->
+  <g fill="none" stroke="#292832" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M350 130H674A220 220 0 0 1 894 350V674A220 220 0 0 1 674 894H350A220 220 0 0 1 130 674V350A220 220 0 0 1 350 130Z"/>
+    <path d="M490 300L566 358"/>
+    <path d="M320 430H704"/>
+    <path d="M600 460Q520 650 300 760"/>
+    <path d="M430 460Q520 650 740 760"/>
+    <path d="M150 150L874 874"/>
+  </g>
+</svg>
