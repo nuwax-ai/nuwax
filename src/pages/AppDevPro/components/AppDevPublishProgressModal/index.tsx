@@ -207,7 +207,12 @@ const StepStatusLine: React.FC<{
   kind: 'process' | 'finish' | 'error' | 'cancel';
   text: string;
 }> = ({ kind, text }) => (
-  <div className={cx(styles.phaseText)}>
+  <div
+    className={cx(
+      styles.phaseText,
+      kind === 'cancel' && styles.cancelPhaseText,
+    )}
+  >
     {kind === 'process' ? <LoadingOutlined /> : null}
     {kind === 'finish' ? (
       <CheckCircleFilled className={cx(styles.successIcon)} />
