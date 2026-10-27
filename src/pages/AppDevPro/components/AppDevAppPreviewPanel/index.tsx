@@ -482,9 +482,14 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 容器未 running 时下方 containerStatus 分支会先于本提示返回，不受影响。
    */
   const readinessLifecycleHero =
-    // 本页签主动停止后 readiness 切到 starting，说明已被其他页签重新拉起，
-    // 本地停止标记不再压制启动中展示；stopping / stopped 仍按 suppress 走原有停止态
-    (!suppressReadinessStatus || readinessKind === 'starting') &&
+    // 本页签主动停止后，readiness 切到 starting 说明已被其他页签重新拉起；
+    // 切到 stopping 说明 stop 接口虽已成功、服务还在真正下线中——这两种状态
+    // 都不再被本地停止标记压制，按 readiness 展示（stopping 显示停止中，
+    // 不提前落到已停止）。stopped 仍按 suppress 走本地停止态，保持操作页签
+    // 「主动停止后用 restart 重新拉起」的按钮语义。
+    (!suppressReadinessStatus ||
+      readinessKind === 'starting' ||
+      readinessKind === 'stopping') &&
     !isStarting &&
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
