@@ -23,6 +23,7 @@ import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
 import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
+import { useRequest } from 'ahooks';
 import { Button, Input, InputRef, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -32,16 +33,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  history,
-  useLocation,
-  useModel,
-  useRequest,
-  useSearchParams,
-} from 'umi';
+import { history, useLocation, useModel, useSearchParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const loginWithCode = async (params: CodeLogin) =>
+  (await apiLoginCode(params)).data;
 
 const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
@@ -128,9 +126,10 @@ const VerifyCode: React.FC = () => {
   };
 
   // 验证码登录
-  const { run: runLoginCode } = useRequest(apiLoginCode, {
+  // 使用会消费 run 拒绝的版本；旧 Umi hook 的防抖分支会额外泄漏一个内部拒绝。
+  const { run: runLoginCode } = useRequest(loginWithCode, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
       const {
         resetPass,
@@ -150,7 +149,7 @@ const VerifyCode: React.FC = () => {
           return;
         }
         localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phone);
+        localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {
           const latestUserInfo = await UserService.refreshUserInfo();
           await syncLangFromUserInfo(latestUserInfo);
