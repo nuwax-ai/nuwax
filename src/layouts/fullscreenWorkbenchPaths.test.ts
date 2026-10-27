@@ -89,3 +89,50 @@ describe('工作台页历史栈兜底判定（shouldSeedWorkbenchHistoryBase）'
     ).toBe(true);
   });
 });
+
+describe('壳链条目垫栈判定（桌面壳启动链，NW-167）', () => {
+  it.each(workbenchPaths)(
+    '壳中间条目垫在栈前（栈长 ≥2 且路由 idx=0）仍需垫栈底：%s',
+    (pathname) => {
+      expect(shouldSeedWorkbenchHistoryBase(pathname, 2, { idx: 0 })).toBe(
+        true,
+      );
+      expect(shouldSeedWorkbenchHistoryBase(pathname, 3, { idx: 0, key: 'x' })).toBe(
+        true,
+      );
+    },
+  );
+
+  it('正常路由压栈进入（idx ≥1）不垫栈底', () => {
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/app-dev/9352423779995648', 2, {
+        idx: 1,
+      }),
+    ).toBe(false);
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/agent-dev', 4, { idx: 2 }),
+    ).toBe(false);
+  });
+
+  it('state 无 idx（非 router 写入 / 旧环境）退化为仅按栈长判定', () => {
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/app-dev/9352423779995648', 2, null),
+    ).toBe(false);
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/workflow/351', 2, { foo: 1 }),
+    ).toBe(false);
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/workflow/351', 2, { idx: '0' }),
+    ).toBe(false);
+  });
+
+  it('栈长 ≤1 优先于 state 判定（直开场景不受 state 干扰）', () => {
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/agent-dev', 1, { idx: 5 }),
+    ).toBe(true);
+  });
+
+  it('非工作台路径即使 idx=0 也不垫栈底', () => {
+    expect(shouldSeedWorkbenchHistoryBase('/home', 2, { idx: 0 })).toBe(false);
+  });
+});
