@@ -30,7 +30,7 @@ const Layout: React.FC = () => {
   // 单栏工作台页历史栈补网：启动后才变成栈首的路径（/login redirect、直开
   // /home/chat 被 Chat 页 replace 成工作台页）boot 种子覆盖不到，这里按最终
   // 生效形态补一条 /home 栈底，保证 back 有路可退。经典风格 bare 形态不触发
-  //（variant 非 page），行为不变；垫栈后 length 变 2，本 effect 自然自限。
+  //（variant 非 page），行为不变；垫栈后当前条目 idx>0，本 effect 自然自限。
   // 桌面壳启动链场景（壳中间条目垫在栈前，window 栈长 ≥2 但路由 idx=0）由
   // historyState 判定覆盖：router 创建后当前条目已带 idx，此时垫栈把 /home
   // 插在壳条目与工作台页之间，back 不再消耗壳条目。

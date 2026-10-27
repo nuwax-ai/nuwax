@@ -84,9 +84,9 @@ describe('工作台页历史栈兜底判定（shouldSeedWorkbenchHistoryBase）'
   );
 
   it('历史栈长度为 0（异常兜底）按需垫栈底', () => {
-    expect(
-      shouldSeedWorkbenchHistoryBase('/space/752/app-pro/29/42', 0),
-    ).toBe(true);
+    expect(shouldSeedWorkbenchHistoryBase('/space/752/app-pro/29/42', 0)).toBe(
+      true,
+    );
   });
 });
 
@@ -97,9 +97,9 @@ describe('壳链条目垫栈判定（桌面壳启动链，NW-167）', () => {
       expect(shouldSeedWorkbenchHistoryBase(pathname, 2, { idx: 0 })).toBe(
         true,
       );
-      expect(shouldSeedWorkbenchHistoryBase(pathname, 3, { idx: 0, key: 'x' })).toBe(
-        true,
-      );
+      expect(
+        shouldSeedWorkbenchHistoryBase(pathname, 3, { idx: 0, key: 'x' }),
+      ).toBe(true);
     },
   );
 
@@ -116,13 +116,19 @@ describe('壳链条目垫栈判定（桌面壳启动链，NW-167）', () => {
 
   it('state 无 idx（非 router 写入 / 旧环境）退化为仅按栈长判定', () => {
     expect(
-      shouldSeedWorkbenchHistoryBase('/space/752/app-dev/9352423779995648', 2, null),
+      shouldSeedWorkbenchHistoryBase(
+        '/space/752/app-dev/9352423779995648',
+        2,
+        null,
+      ),
     ).toBe(false);
     expect(
       shouldSeedWorkbenchHistoryBase('/space/752/workflow/351', 2, { foo: 1 }),
     ).toBe(false);
     expect(
-      shouldSeedWorkbenchHistoryBase('/space/752/workflow/351', 2, { idx: '0' }),
+      shouldSeedWorkbenchHistoryBase('/space/752/workflow/351', 2, {
+        idx: '0',
+      }),
     ).toBe(false);
   });
 

@@ -20,8 +20,8 @@ export const isFullscreenWorkbenchPath = (pathname: string): boolean =>
 
 /**
  * 是否需要为当前工作台页垫历史栈底（workbenchHistoryBase 的判定核心）：
- * 是全屏工作台页，且标签页历史栈没有可退条目（length 只统计本 tab 的
- * 条目；≤1 即栈首无路可退，back 会表现为「点击无反应」）。
+ * 是全屏工作台页，且标签页历史栈没有可退条目，或路由仍处于 idx=0 的栈首。
+ * 原生栈长可能包含壳启动中转页，不能只靠 length 判断是否有应用内返回入口。
  * 纯函数无副作用，供启动期种子与 layout 层补网共用。
  */
 export const shouldSeedWorkbenchHistoryBase = (

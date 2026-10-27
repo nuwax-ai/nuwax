@@ -906,13 +906,6 @@ function unwrapLatexInlineCode(text: string): string {
 }
 
 /**
- * 保护不会被 \(...\) / \[...\] 转换逻辑扫描的片段：
- * - base64 data URL
- * - Markdown 围栏代码块 / 行内代码（避免代码示例里的括号被改写）
- * - 已有的 $...$ / $$...$$ 公式（避免 ds-markdown 宽松正则误伤
- *   如 $\sqrt[3]{x}$、$f'(x)$ 中的 [] / ()）
- */
-/**
  * 把公式内未转义的 % 补成 \%（NW-228）。
  * LaTeX 里 % 是注释符：如 `\frac{\%\Delta Q}{%\Delta P}` 第二处 % 未转义时，
  * KaTeX 会把 `%\Delta P}` 整段当注释吞掉，宏参数括号未闭合导致公式渲染失败。
@@ -952,6 +945,13 @@ function escapeBarePercentInFormula(formula: string): string {
   return out;
 }
 
+/**
+ * 保护不会被 \(...\) / \[...\] 转换逻辑扫描的片段：
+ * - base64 data URL
+ * - Markdown 围栏代码块 / 行内代码（避免代码示例里的括号被改写）
+ * - 已有的 $...$ / $$...$$ 公式（避免 ds-markdown 宽松正则误伤
+ *   如 $\sqrt[3]{x}$、$f'(x)$ 中的 [] / ()）
+ */
 function protectMathBracketSafeRegions(text: string): {
   text: string;
   restore: (input: string) => string;
@@ -1430,8 +1430,8 @@ function collapseTerminalProcesses(text: string): string {
 export {
   EMPHASIS_FLANKING_ZWSP,
   collapseTerminalProcesses,
-  escapeBarePercentInFormula,
   ensureBlockFormulaListLayout,
+  escapeBarePercentInFormula,
   extractTableToMarkdown,
   fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
