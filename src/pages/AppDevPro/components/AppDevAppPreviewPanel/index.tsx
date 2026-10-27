@@ -17,7 +17,7 @@ import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import {
   getUserAppReadinessUiKind,
   UserAppContainerStatusEnum,
-  type UserAppReadinessStatusEnum,
+  UserAppReadinessStatusEnum,
 } from '../../services/appDevPro';
 import type {
   UserAppPublishPhase,
@@ -127,9 +127,11 @@ export interface AppDevAppPreviewPanelProps {
   previewAlreadyPresented?: boolean;
   /**
    * 本页签主动停止过当前环境（父页面本地停止标记）。
-   * 展示已改为直接跟随 readiness，本标记在面板里只剩未部署空项目提示
-   * 这一处用来避免把停止态误报成「暂无可预览的项目」，勿再用它压制
-   * starting / stopping / stopped / ready 的展示。
+   * 生命周期展示跟随 readiness；本标记只在 stop 成功但 readiness 还停在
+   * ready 的滞后窗口里拦下 iframe 并显示停止中过渡（stopPendingReadiness），
+   * 另在未部署空项目提示里避免把停止态误报成「暂无可预览的项目」。
+   * readiness 经过 starting（或从 stopping/stopped 跳到就绪）后父页面会
+   * 清掉本标记，ready 即可正常打开。
    */
   suppressReadinessStatus?: boolean;
   /** iframe 已正常打开，通知页面记住这个环境已经渲染过 */
@@ -424,12 +426,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 本地 running 只代表本页签 runtime 的视角：多页签下服务是其他页签拉起的，
    * 本页签 running 可能仍为 false，不能因此挡住已就绪的预览。
    * 本页签的本地停止标记（suppress / 父页面 previewUserStopped）只用于防自动
-   * 拉起和决定再启动走 start 还是 restart，不再决定展示：stop 成功后同样
-   * 直接按 readiness 判断，readiness 说可访问就打开，说 stopping 就停止中。
+   * 拉起和决定再启动走 start 还是 restart。展示按 readiness 判断，但本地刚
+   * stop 成功、readiness 还停在 ready 的滞后窗口除外：此时服务其实正在下线，
+   * 挂 iframe 只会打到预览代理返回的后端「服务已停止」页（见下方
+   * stopPendingReadiness 的停止中过渡）。被其他页签重新拉起时，父页面会在
+   * readiness 经过 starting（或从 stopping/stopped 跳到就绪）时清掉本地标记，
+   * 之后 readiness 说可访问就正常打开。
    * 容器未 running 时不打开，应用状态不作数。
    */
   const readinessAccessible =
-    readinessKind === 'access' && !!previewUrl && containerRunningForReadiness;
+    readinessKind === 'access' &&
+    !!previewUrl &&
+    !suppressReadinessStatus &&
+    containerRunningForReadiness;
   // 容器未 running 时一律不挂 iframe，避免打到还没起来的预览域名
   const canShowIframe =
     ((!!previewUrl && running) || readinessAccessible) &&
@@ -602,6 +611,29 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     </div>
   ) : null;
 
+  /**
+   * 本页签刚 stop 成功、readiness 还没跟上的过渡态：后端其实已经在下线，
+   * readiness 却还停在 ready（滞后一两轮轮询）。这段时间不能按 ready 挂
+   * iframe，否则会加载到预览代理返回的后端「服务已停止」页；也不能先报
+   * 已停止。统一显示停止中，等 readiness 走到 stopping / stopped 再切换。
+   * ready 但 ready 标记已先掉（kind 为 null）同理。
+   */
+  const stopPendingReadiness =
+    suppressReadinessStatus &&
+    !isStarting &&
+    (readinessKind === 'access' ||
+      (readinessStatus === UserAppReadinessStatusEnum.Ready &&
+        readinessReady !== true));
+  const stopPendingHero = stopPendingReadiness ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        spinning
+        title={dict('PC.Pages.AppDevPro.previewStopping')}
+        hint={dict('PC.Pages.AppDevPro.previewStoppingHint')}
+      />
+    </div>
+  ) : null;
+
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
     setLoadedInstanceKey((prev) =>
@@ -686,6 +718,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         </div>
       </div>
     );
+  }
+
+  if (stopPendingHero) {
+    return stopPendingHero;
   }
 
   if (readinessHero) {
