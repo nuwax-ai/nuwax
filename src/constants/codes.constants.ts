@@ -34,6 +34,17 @@ export const AGENT_AI_CHAT_ERROR = '9999';
  */
 
 /**
+ * userapp 错误状态码 --start
+ */
+
+// start / restart 已有操作进行中（多为其他页签已发起）：不弹全局提示
+export const USERAPP_OPERATION_IN_PROGRESS = 'ERR_OPERATION_IN_PROGRESS';
+
+/**
+ * userapp 错误状态码 --end
+ */
+
+/**
  * 工作流错误状态码 --start
  */
 

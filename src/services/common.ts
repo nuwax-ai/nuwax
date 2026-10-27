@@ -5,6 +5,7 @@ import {
   SANDBOX_TEST_ERROR,
   SUCCESS_CODE,
   USER_NO_LOGIN,
+  USERAPP_OPERATION_IN_PROGRESS,
 } from '@/constants/codes.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -139,6 +140,14 @@ const errorThrower = (res: RequestResponse<null>) => {
   }
 };
 
+/** userapp 启动 / 重启接口：已有操作进行中时不弹全局提示 */
+const USERAPP_START_RESTART_URLS = [
+  '/api/userapp/dev/start',
+  '/api/userapp/dev/restart',
+  '/api/userapp/prod/start',
+  '/api/userapp/prod/restart',
+];
+
 /**
  * 全局错误处理器
  * 处理所有请求的错误情况，并显示适当的错误消息
@@ -184,6 +193,17 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
+        throw error;
+      }
+
+      // userapp start / restart 已有操作进行中（多为其他页签已发起同一
+      // 操作）：发起方会按进行中状态继续处理，不弹全局提示；错误仍抛给
+      // 上层，面板等该展示的地方不受影响。
+      if (
+        code === USERAPP_OPERATION_IN_PROGRESS &&
+        !!url &&
+        USERAPP_START_RESTART_URLS.some((item) => url.includes(item))
+      ) {
         throw error;
       }
 
