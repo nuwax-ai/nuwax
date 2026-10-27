@@ -125,7 +125,12 @@ export interface AppDevAppPreviewPanelProps {
    * 为 true 时不再用就绪状态提示替换正在看的页面。
    */
   previewAlreadyPresented?: boolean;
-  /** 用户主动停止当前环境时，不展示「将自动重启」这类就绪提示 */
+  /**
+   * 本页签主动停止过当前环境（父页面本地停止标记）。
+   * 展示已改为直接跟随 readiness，本标记在面板里只剩未部署空项目提示
+   * 这一处用来避免把停止态误报成「暂无可预览的项目」，勿再用它压制
+   * starting / stopping / stopped / ready 的展示。
+   */
   suppressReadinessStatus?: boolean;
   /** iframe 已正常打开，通知页面记住这个环境已经渲染过 */
   onPreviewPresented?: () => void;
@@ -418,14 +423,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * readiness 已确认可访问（status 为 ready 且 ready 为 true）时以它为准打开预览。
    * 本地 running 只代表本页签 runtime 的视角：多页签下服务是其他页签拉起的，
    * 本页签 running 可能仍为 false，不能因此挡住已就绪的预览。
-   * 本页签主动停止（suppress）时除外，仍保留停止态不自动打开。
+   * 本页签的本地停止标记（suppress / 父页面 previewUserStopped）只用于防自动
+   * 拉起和决定再启动走 start 还是 restart，不再决定展示：stop 成功后同样
+   * 直接按 readiness 判断，readiness 说可访问就打开，说 stopping 就停止中。
    * 容器未 running 时不打开，应用状态不作数。
    */
   const readinessAccessible =
-    readinessKind === 'access' &&
-    !!previewUrl &&
-    !suppressReadinessStatus &&
-    containerRunningForReadiness;
+    readinessKind === 'access' && !!previewUrl && containerRunningForReadiness;
   // 容器未 running 时一律不挂 iframe，避免打到还没起来的预览域名
   const canShowIframe =
     ((!!previewUrl && running) || readinessAccessible) &&
@@ -445,7 +449,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     startFailed &&
     readinessKind === 'access' &&
     !!previewUrl &&
-    !suppressReadinessStatus &&
     containerRunningForReadiness;
   /**
    * 页面还没正常打开时，才用就绪状态替换预览。
@@ -473,8 +476,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     (readinessKind === 'starting' && containerRunningForReadiness);
   /**
    * starting / stopping / stopped 是 readiness 明确给出的应用生命周期状态：
-   * 只要本页签没有主动停止（suppress）、本地没有正在跑的启动 stream，
-   * 就直接按它展示，不再被「是否展示过预览」和本地陈旧的 startFailed 挡住。
+   * 只要本地没有正在跑的启动 stream，就直接按它展示，不再被「是否展示
+   * 过预览」、本地陈旧的 startFailed 和本地停止标记挡住。
    * 多页签下其他页签启停时，本页签 runtime 的 phase 可能是上一次重复 start
    * 失败留下的 failed，若仍要求 !startFailed，启动中提示永远挂不出来，
    * 页面会一直停在已停止空态（顶栏徽标已是启动中，预览区却不变）。
@@ -482,14 +485,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 容器未 running 时下方 containerStatus 分支会先于本提示返回，不受影响。
    */
   const readinessLifecycleHero =
-    // 本页签主动停止后，readiness 切到 starting 说明已被其他页签重新拉起；
-    // 切到 stopping 说明 stop 接口虽已成功、服务还在真正下线中——这两种状态
-    // 都不再被本地停止标记压制，按 readiness 展示（stopping 显示停止中，
-    // 不提前落到已停止）。stopped 仍按 suppress 走本地停止态，保持操作页签
-    // 「主动停止后用 restart 重新拉起」的按钮语义。
-    (!suppressReadinessStatus ||
-      readinessKind === 'starting' ||
-      readinessKind === 'stopping') &&
+    // 展示直接跟随 readiness：stop 接口成功只是受理，服务可能还在下线中，
+    // 本地停止标记不再压制任何生命周期状态——stopping 显示停止中、
+    // stopped 才显示已停止、starting 显示启动中。再启动走 start 还是
+    // restart 由父页面按本地停止标记选 onStart，与展示无关。
     !isStarting &&
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
@@ -497,7 +496,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const showReadinessHero =
     readinessLifecycleHero ||
     ((!previewAlreadyPresented || readinessRegressed) &&
-      !suppressReadinessStatus &&
       !startFailed &&
       !isStarting &&
       (showProvisioning ||
