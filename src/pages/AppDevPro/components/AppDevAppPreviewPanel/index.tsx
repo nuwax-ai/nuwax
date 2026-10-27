@@ -403,13 +403,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   /**
    * 判断应用状态前先看容器：容器还没 running 时应用层无从谈起，
    * 预览区走容器启动提示（下方 containerStatus 分支），不按 starting / ready 判断应用。
-   * 优先看页面层容器状态（与下方容器分支同一口径）；没有页面层状态时
-   * 退回 readiness 回包里的 container.status，两者都没有时视为不拦。
+   * 只看页面层容器状态（containerStatus，与下方容器分支同一口径）：
+   * readiness 回包里的 container.status 是观测值，可能滞后于应用 status，
+   * 实测 starting / ready 时它仍不是 running，若拿它当门闩会把启动中提示和
+   * 就绪预览一起挡死在已停止空态；没有页面层容器状态时视为不拦。
    */
   const containerRunningForReadiness = containerStatus
     ? containerStatus === 'running'
-    : readinessContainerStatus
-    ? readinessContainerStatus === UserAppContainerStatusEnum.Running
     : true;
   /**
    * readiness 已确认可访问（status 为 ready 且 ready 为 true）时以它为准打开预览。
@@ -468,21 +468,37 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessKind === 'stopping' ||
     readinessKind === 'stopped' ||
     (readinessKind === 'starting' && containerRunningForReadiness);
-  const showReadinessHero =
-    (!previewAlreadyPresented || readinessRegressed) &&
-    !suppressReadinessStatus &&
-    !startFailed &&
+  /**
+   * starting / stopping / stopped 是 readiness 明确给出的应用生命周期状态：
+   * 只要本页签没有主动停止（suppress）、本地没有正在跑的启动 stream，
+   * 就直接按它展示，不再被「是否展示过预览」和本地陈旧的 startFailed 挡住。
+   * 多页签下其他页签启停时，本页签 runtime 的 phase 可能是上一次重复 start
+   * 失败留下的 failed，若仍要求 !startFailed，启动中提示永远挂不出来，
+   * 页面会一直停在已停止空态（顶栏徽标已是启动中，预览区却不变）。
+   * 其余状态（provisioning / notDeployed / failed / incomplete）维持原有条件。
+   * 容器未 running 时下方 containerStatus 分支会先于本提示返回，不受影响。
+   */
+  const readinessLifecycleHero =
+    // 本页签主动停止后 readiness 切到 starting，说明已被其他页签重新拉起，
+    // 本地停止标记不再压制启动中展示；stopping / stopped 仍按 suppress 走原有停止态
+    (!suppressReadinessStatus || readinessKind === 'starting') &&
     !isStarting &&
-    ((readinessKind === 'starting' && containerRunningForReadiness) ||
-      showProvisioning ||
+    (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
-      readinessKind === 'stopped' ||
-      (readinessKind === 'notDeployed' &&
-        hasValidProjectFiles === true &&
-        !conversationInProgress &&
-        readinessContainerStatus !== UserAppContainerStatusEnum.Running) ||
-      readinessKind === 'failed' ||
-      readinessKind === 'incomplete');
+      readinessKind === 'stopped');
+  const showReadinessHero =
+    readinessLifecycleHero ||
+    ((!previewAlreadyPresented || readinessRegressed) &&
+      !suppressReadinessStatus &&
+      !startFailed &&
+      !isStarting &&
+      (showProvisioning ||
+        (readinessKind === 'notDeployed' &&
+          hasValidProjectFiles === true &&
+          !conversationInProgress &&
+          readinessContainerStatus !== UserAppContainerStatusEnum.Running) ||
+        readinessKind === 'failed' ||
+        readinessKind === 'incomplete'));
   const readinessTitle = (() => {
     switch (readinessKind) {
       case 'provisioning':
