@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collapseTerminalProcesses,
   EMPHASIS_FLANKING_ZWSP,
+  escapeBarePercentInFormula,
   fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
   looksLikeLatex,
@@ -614,5 +615,58 @@ describe('collapseTerminalProcesses', () => {
     expect(result).toContain('terminal="true"');
     const groupEnd = result.indexOf('</markdown-custom-process-group>');
     expect(result.indexOf('最终回答')).toBeGreaterThan(groupEnd);
+  });
+});
+
+describe('escapeBarePercentInFormula（NW-228）', () => {
+  it('NW-228 目标 case：第二处 % 补转义，已转义的 \\% 不动', () => {
+    expect(escapeBarePercentInFormula('\\frac{\\%\\Delta Q}{%\\Delta P}')).toBe(
+      '\\frac{\\%\\Delta Q}{\\%\\Delta P}',
+    );
+  });
+
+  it('裸 % 直接补转义', () => {
+    expect(escapeBarePercentInFormula('a % b')).toBe('a \\% b');
+    expect(escapeBarePercentInFormula('50%')).toBe('50\\%');
+  });
+
+  it('已转义的 \\% 不重复补', () => {
+    expect(escapeBarePercentInFormula('50\\%')).toBe('50\\%');
+  });
+
+  it('偶数个连续反斜杠后的 % 视为裸 %（\\\\ 是换行）', () => {
+    expect(escapeBarePercentInFormula('a\\\\%b')).toBe('a\\\\\\%b');
+  });
+
+  it('不含 % 或空串原样返回', () => {
+    expect(escapeBarePercentInFormula('\\frac{a}{b}')).toBe('\\frac{a}{b}');
+    expect(escapeBarePercentInFormula('')).toBe('');
+  });
+});
+
+describe('replaceMathBracket 裸 % 转义（NW-228 集成）', () => {
+  it('$...$ 公式内的裸 % 被补转义', () => {
+    expect(replaceMathBracket('弹性 $\\frac{\\%\\Delta Q}{%\\Delta P}$ 更大')).toBe(
+      '弹性 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 更大',
+    );
+  });
+
+  it('$$...$$ 块级公式内的裸 % 被补转义', () => {
+    expect(replaceMathBracket('$$E = \\frac{\\%\\Delta Q}{%\\Delta P}$$')).toBe(
+      '$$E = \\frac{\\%\\Delta Q}{\\%\\Delta P}$$',
+    );
+  });
+
+  it('\\(...\\) 定界公式内的裸 % 被补转义', () => {
+    expect(replaceMathBracket('公式 \\(\\frac{\\%\\Delta Q}{%\\Delta P}\\) 尾')).toBe(
+      '公式 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 尾',
+    );
+  });
+
+  it('正文与行内代码里的 % 不受影响', () => {
+    expect(replaceMathBracket('提价 10% 即可')).toBe('提价 10% 即可');
+    expect(replaceMathBracket('宽度 `width: 50%` 设置')).toBe(
+      '宽度 `width: 50%` 设置',
+    );
   });
 });

@@ -27,7 +27,17 @@ export const isFullscreenWorkbenchPath = (pathname: string): boolean =>
 export const shouldSeedWorkbenchHistoryBase = (
   pathname: string,
   historyLength: number,
-): boolean => isFullscreenWorkbenchPath(pathname) && historyLength <= 1;
+  historyState?: unknown,
+): boolean => {
+  if (!isFullscreenWorkbenchPath(pathname)) return false;
+  if (historyLength <= 1) return true;
+  // 桌面壳启动链（loading / bridge / 深链中转）会把原生中间条目压在本条之前：
+  // window 栈长 ≥2，但当前条目仍是路由栈首（umi/react-router 写入的 state.idx
+  // 为 0，壳条目没有 idx）。此时 back 消耗的是壳条目而非应用内返回，同样需要
+  // 垫栈。idx 缺失（非 router 写入 / 旧环境）退化为仅按栈长判定，web 行为不变。
+  const idx = (historyState as { idx?: unknown } | null)?.idx;
+  return typeof idx === 'number' && idx <= 0;
+};
 
 export interface SidebarShellLayoutPolicy {
   variant: 'page' | 'bare';
