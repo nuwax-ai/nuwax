@@ -20,6 +20,11 @@ import {
 } from './features/client-shell';
 import useEventPolling from './hooks/useEventPolling';
 import {
+  getAppStartupDiagnostic,
+  recordAppStartupFailure,
+  type AppStartupStage,
+} from './services/appStartupDiagnostics';
+import {
   BRAND_PRIMARY,
   initBrandTheme,
   isDefaultBrandThemeActive,
@@ -68,11 +73,14 @@ export interface InitialStateType {
  * 这里加载菜单数据，确保在任何页面刷新时都能获取到菜单权限
  */
 export async function getInitialState(): Promise<InitialStateType> {
-  // 必须在首个会话组件挂载前完成，避免首屏先读到旧偏好。
-  migrateConversationDefaultsToV2();
+  let stage: AppStartupStage = 'preferences';
   try {
+    // 必须在首个会话组件挂载前完成，避免首屏先读到旧偏好。
+    migrateConversationDefaultsToV2();
+    stage = 'language';
     await initI18n();
 
+    stage = 'session';
     const hostSessionReady = await restoreBusinessAuthSession();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
@@ -103,10 +111,13 @@ export async function getInitialState(): Promise<InitialStateType> {
       return { menuData: [] };
     }
     if (!isPublicPath && !isConversationMockPage()) {
+      stage = 'user';
       const userInfo = await UserService.getUserInfo();
+      stage = 'profile-language';
       await syncLangFromUserInfo(userInfo);
 
       if (userInfo?.id) {
+        stage = 'menu';
         const res = await apiQueryMenus();
         if (res.code === SUCCESS_CODE && res.data) {
           // 菜单请求已确认登录有效，路由鉴权复用结果，避免首屏再次加载和请求。
@@ -126,7 +137,7 @@ export async function getInitialState(): Promise<InitialStateType> {
     }
     // 请求层可能无 reason 地 reject；必须给 Umi 一个可识别的错误态。
     // 不把原始服务 payload、宿主凭据或请求信息渲染到错误界面。
-    throw error instanceof Error ? error : new Error('App startup failed');
+    throw recordAppStartupFailure(error, stage);
   }
 }
 
@@ -436,7 +447,11 @@ const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
   return (
     <>
       <DesktopShellPreviewChrome />
-      {error ? <AppStartup failed /> : children}
+      {error ? (
+        <AppStartup failed diagnostic={getAppStartupDiagnostic(error)} />
+      ) : (
+        children
+      )}
     </>
   );
 };
