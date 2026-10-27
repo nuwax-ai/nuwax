@@ -1747,6 +1747,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       return;
     }
     prevReadinessStatusRef.current[dbEnv] = status;
+    // 本页签主动停止后，readiness 又切到 starting：说明服务已被其他页签重新拉起，
+    // 本地「用户已停止」标记作废，后续 starting 展示与 ready 打开预览不再被它压制。
+    // 停止过程中的 stopping / stopped 不清，避免刚点停止就被旧状态误清。
+    if (
+      status === UserAppReadinessStatusEnum.Starting &&
+      previewUserStoppedByEnvRef.current[dbEnv]
+    ) {
+      setPreviewStoppedForEnv(dbEnv, false);
+    }
     // 切到线上的流程会自己判断预览还是 start，这里再 restart 会打重
     if (dbEnv === UserAppDbEnvEnum.Prod && prodSwitchPreviewActiveRef.current) {
       return;
