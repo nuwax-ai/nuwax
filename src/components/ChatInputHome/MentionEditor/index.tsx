@@ -55,6 +55,7 @@ import type {
   MentionItem,
 } from '../MentionPopup/types';
 import styles from './index.less';
+import { resolvePasteAction } from './resolvePasteAction';
 
 const cx = classNames.bind(styles);
 
@@ -2166,34 +2167,36 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /**
      * 处理粘贴事件
-     * - 如果剪贴板中包含文件：交给外部 onPaste（用于上传附件），不处理文本
-     * - 如果只有文本/DOM：阻止默认粘贴行为，只按纯文本插入，去掉所有原始 DOM 属性/样式
+     * - 分诊规则见 resolvePasteAction（NW-128：Word/PPT 等复制文字时剪贴板
+     *   常带渲染快照图，文字优先，不再整体转图片上传）
+     * - 上传附件：交给外部 onPaste，由其决定是否 preventDefault
+     * - 纯文本：阻止默认粘贴行为，只按纯文本插入，去掉所有原始 DOM 属性/样式
      */
     const handlePasteEvent = useCallback(
       (e: React.ClipboardEvent<HTMLDivElement>) => {
         const clipboardData = e.clipboardData;
+        const text = clipboardData?.getData('text/plain') ?? '';
 
-        // 1. 先检查是否包含文件，如果有文件则交给外部 onPaste 处理上传
-        if (clipboardData?.items) {
-          let hasFile = false;
-          for (let i = 0; i < clipboardData.items.length; i += 1) {
-            if (clipboardData.items[i].kind === 'file') {
-              hasFile = true;
-              break;
-            }
-          }
+        const action = resolvePasteAction({
+          items: clipboardData?.items
+            ? Array.from(clipboardData.items, (item) => ({
+                kind: item.kind,
+                type: item.type,
+              }))
+            : null,
+          text,
+        });
 
-          if (hasFile) {
-            onPaste(e);
-            // 不要在这里 preventDefault，让外层 onPaste 自行决定是否阻止默认行为
-            return;
-          }
+        // 1. 附件上传（纯图片截图 / 复制的文件实体）：交给外部 onPaste
+        if (action === 'upload-files') {
+          onPaste(e);
+          // 不要在这里 preventDefault，让外层 onPaste 自行决定是否阻止默认行为
+          return;
         }
 
-        // 2. 没有文件时，按纯文本方式粘贴，去掉所有样式/属性
+        // 2. 纯文本方式粘贴（无文件，或文字优先/显式 Shift+V），去掉所有样式/属性
         e.preventDefault();
 
-        const text = clipboardData?.getData('text/plain') ?? '';
         if (!text) return;
 
         if (!editorRef.current) return;
