@@ -15,7 +15,10 @@ import type {
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
 import { modalConfirm } from '@/utils/ant-custom';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import {
+  buildExportZipName,
+  exportFileViaBrowserDownload,
+} from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import dayjs from 'dayjs';
@@ -289,11 +292,19 @@ export const useSkillFiles = ({
     try {
       setLoadingExportProject(true);
       const linkUrl = `${process.env.BASE_URL}/api/skill/export/${skillId}`;
-      const saved = await exportFileViaBrowserDownload(linkUrl);
+      // 默认文件名带技能名，避免保存弹窗出现泛名 export.zip（NW-273）
+      const saved = await exportFileViaBrowserDownload(
+        linkUrl,
+        buildExportZipName(skillInfo?.name),
+      );
       if (saved) message.success(t('PC.Pages.SkillDetails.exportSuccess'));
     } catch (error) {
       console.error('Failed to export project:', error);
-      message.error(error instanceof Error ? error.message : t('PC.Utils.ExportImport.exportFailed'));
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('PC.Utils.ExportImport.exportFailed'),
+      );
     } finally {
       setLoadingExportProject(false);
     }

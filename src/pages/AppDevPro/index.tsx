@@ -1246,6 +1246,32 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
 
+  /**
+   * readiness 实测当前环境容器已 running 时，把本地 pod 状态同步成 running。
+   * 本页签 ensure 报错（如切线上时）会留下 error，若没人恢复，预览会一直钉在
+   * 「服务启动失败」、Header 的重启/停止也一直禁用，哪怕容器已是其他页签拉起的。
+   * confirm 内部对已 running 且保活中会直接返回，重复触发无副作用。
+   */
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    if (!isUserAppContainerRunning(serviceReadiness.readinessByEnv[dbEnv])) {
+      return;
+    }
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      prodPod.confirmContainerRunning();
+    } else {
+      devPod.confirmContainerRunning();
+    }
+  }, [
+    active,
+    dbEnv,
+    devPod.confirmContainerRunning,
+    prodPod.confirmContainerRunning,
+    serviceReadiness.readinessByEnv,
+  ]);
+
   /** 日志：仅当前环境容器 running 且应用 ready 时轮询；开发 / 线上分开 */
   const devLogs = useConversationAgentDevLogs(appId, {
     enabled:
@@ -1741,12 +1767,27 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 只在刚进入 stopped 时调一次。用户主动停止或页面已经打开时不重启。
    */
   useEffect(() => {
-    const status = serviceReadiness.readinessByEnv[dbEnv]?.status ?? null;
+    const readinessData = serviceReadiness.readinessByEnv[dbEnv];
+    const status = readinessData?.status ?? null;
     const prev = prevReadinessStatusRef.current[dbEnv];
     if (prev === status) {
       return;
     }
     prevReadinessStatusRef.current[dbEnv] = status;
+    // 本页签主动停止后，readiness 又切到 starting：说明服务已被其他页签重新拉起，
+    // 本地「用户已停止」标记作废，后续 starting 展示与 ready 打开预览不再被它压制。
+    // 停止过程中的 stopping / stopped 不清，避免刚点停止就被旧状态误清。
+    // 轮询也可能错过 starting、从 stopping/stopped 直接跳到就绪，同样说明服务
+    // 已被重新拉起，一并清标记，否则面板会一直停在停止中过渡态打不开预览。
+    if (
+      previewUserStoppedByEnvRef.current[dbEnv] &&
+      (status === UserAppReadinessStatusEnum.Starting ||
+        (isUserAppReadinessAccessible(readinessData) &&
+          (prev === UserAppReadinessStatusEnum.Stopping ||
+            prev === UserAppReadinessStatusEnum.Stopped)))
+    ) {
+      setPreviewStoppedForEnv(dbEnv, false);
+    }
     // 切到线上的流程会自己判断预览还是 start，这里再 restart 会打重
     if (dbEnv === UserAppDbEnvEnum.Prod && prodSwitchPreviewActiveRef.current) {
       return;
@@ -1929,6 +1970,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -1970,6 +2012,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               {
                 contents: '',
                 name: fileNode.id,
+                localFile: fileNode.localFile,
                 operation: 'delete',
                 isDir: true,
               },
@@ -1986,6 +2029,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
             updatedFilesList = [
               {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,
@@ -2305,7 +2349,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         await handleUploadMultipleFiles(files, filePaths);
       },
       onExportProject: async () => {
-        await apiDownloadAllFiles(queryConversationId);
+        await apiDownloadAllFiles(queryConversationId, conversationInfo?.topic);
       },
       /** 导入项目 */
       onImportProject: handleImportProject,
@@ -2431,6 +2475,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
+    conversationInfo?.topic,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,
@@ -3276,13 +3321,58 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void rebuildDevPreviewAfterWorkspaceChange();
   };
 
-  /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
-  const handleStartPreviewRuntime = useCallback(() => {
+  /**
+   * 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
+   * 开发环境调 start 前先查 tasks/active：
+   * devActionAllowed 为 true 才调 start；
+   * 为 false 时，若 tasks 里已有带 taskId 的开发启动 / 重启任务，直接接上它的日志流，不重复 start；
+   * 没有对应任务时不再调 start，解除本页签停止标记并刷新 readiness，
+   * 由 readiness 的 starting 状态展示「服务正在启动中」（与 stream 页签之外的其他页签一致）。
+   * 线上环境不查，直接 start。
+   */
+  const handleStartPreviewRuntime = useCallback(async () => {
     const envToStart = dbEnv;
+    if (envToStart === UserAppDbEnvEnum.Dev && appId) {
+      try {
+        const activeResult = await apiUserAppTasksActive(appId);
+        if (dbEnvRef.current !== envToStart) {
+          return;
+        }
+        if (activeResult?.data && activeResult.data.devActionAllowed !== true) {
+          const startTask = (activeResult.data.tasks || []).find(
+            (item) =>
+              (item.taskType === UserAppTaskTypeEnum.DevStart ||
+                item.taskType === UserAppTaskTypeEnum.DevRestart) &&
+              !!item.taskId,
+          );
+          setPreviewStoppedForEnv(envToStart, false);
+          setPreviewIframeUrl(appPreviewUrlRef.current);
+          if (startTask) {
+            void previewRuntime.attachExistingTask(
+              startTask,
+              UserAppDbEnvEnum.Dev,
+            );
+            return;
+          }
+          // 查不到可接的任务：多半是其他页签刚发起启动、任务还没落到 active，
+          // 不重复调 start，等 readiness 切到 starting 后展示启动中
+          resumeReadinessWatch();
+          return;
+        }
+      } catch (error) {
+        console.error('[AppDevPro] 启动前查询进行中任务失败', error);
+      }
+    }
     setPreviewStoppedForEnv(envToStart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.start(envToStart);
-  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
+  }, [
+    appId,
+    dbEnv,
+    previewRuntime,
+    resumeReadinessWatch,
+    setPreviewStoppedForEnv,
+  ]);
 
   /**
    * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
@@ -3337,16 +3427,73 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     restartPreviewWaitRef.current = true;
     setAwaitingContainerForRestart(true);
     try {
-      const containerRunningPromise =
-        serviceReadinessRef.current.waitUntilContainerRunning(
-          envToRestart,
-          () => dbEnvRef.current !== envToRestart,
-          { acceptCached: true },
-        );
+      const envChanged = () => dbEnvRef.current !== envToRestart;
+      // 重启前先拿一轮最新 readiness 看容器与应用状态，不用陈旧缓存下结论
       resumeReadinessWatch();
-      const containerRunning = await containerRunningPromise;
-      if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      const latest = await serviceReadinessRef.current.waitForNextPoll(
+        envToRestart,
+        envChanged,
+      );
+      if (!latest || envChanged()) {
         return;
+      }
+      const containerStatus = latest.container?.status;
+      // 线上：容器已 running、应用正在 starting，说明其他页签正在重启
+      // （或启动）这个应用。再调 restart 只会被后端以「操作进行中」
+      // 拒绝，直接进入跟随状态：清掉本地停止标记，接下来按 readiness
+      // 展示启动中，ready 后自动打开预览，不再重复发起。
+      if (
+        envToRestart === UserAppDbEnvEnum.Prod &&
+        containerStatus === UserAppContainerStatusEnum.Running &&
+        latest.status === UserAppReadinessStatusEnum.Starting
+      ) {
+        setPreviewStoppedForEnv(envToRestart, false);
+        return;
+      }
+      if (containerStatus !== UserAppContainerStatusEnum.Running) {
+        // 容器在过渡中（starting / restarting / stopping）先等它落定：
+        // stopping 的终点是 stopped 而不是 running，直接等 running 会
+        // 永远等不到，重启被吞掉且等待标记一直占着，后续点击也没用。
+        let settledContainerStatus: string | undefined = containerStatus;
+        while (
+          settledContainerStatus &&
+          CONTAINER_TRANSITION_STATUSES.has(settledContainerStatus) &&
+          !envChanged()
+        ) {
+          const next = await serviceReadinessRef.current.waitForNextPoll(
+            envToRestart,
+            envChanged,
+          );
+          if (!next || envChanged()) {
+            return;
+          }
+          settledContainerStatus = next.container?.status;
+        }
+        if (envChanged()) {
+          return;
+        }
+        // 落定后仍不是 running（stopped / missing / failed 等）：主动
+        // ensure 把容器拉起来，再等 readiness 确认 running 后才重启应用。
+        if (settledContainerStatus !== UserAppContainerStatusEnum.Running) {
+          const accepted = await ensureEnvPodRef.current(envToRestart, true, {
+            reensure: true,
+            deferRunning: true,
+          });
+          if (!accepted || envChanged()) {
+            return;
+          }
+          resumeReadinessWatch();
+          const containerRunning =
+            await serviceReadinessRef.current.waitUntilContainerRunning(
+              envToRestart,
+              envChanged,
+            );
+          if (!containerRunning || envChanged()) {
+            return;
+          }
+        }
+        // 本地 pod 状态不用在这里同步：readiness 报容器 running 时已有
+        // effect 统一 confirm 本地状态，这里再调是重复。
       }
       setPreviewStoppedForEnv(envToRestart, false);
       setPreviewIframeUrl(appPreviewUrlRef.current);
@@ -3362,14 +3509,30 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     const envToStop = dbEnv;
     const appStatus =
       serviceReadinessRef.current.readinessByEnvRef.current[envToStop]?.status;
-    // 应用启动中时停止不可点。只看当前环境，另一侧的 starting 不挡这边。
-    if (appStatus === UserAppReadinessStatusEnum.Starting) {
+    // 应用启动中、停止中或已停止时停止不可点（按钮禁用之外的兜底，
+    // 覆盖其他页签刚把服务停掉、本页签状态已同步的情形）。
+    // 只看当前环境，另一侧的状态不挡这边。
+    if (
+      appStatus === UserAppReadinessStatusEnum.Starting ||
+      appStatus === UserAppReadinessStatusEnum.Stopping ||
+      appStatus === UserAppReadinessStatusEnum.Stopped
+    ) {
       return;
     }
     modalConfirm(
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
+        // 确认框打开期间可能已被其他页签停掉，执行前再查一次
+        const latestStatus =
+          serviceReadinessRef.current.readinessByEnvRef.current[envToStop]
+            ?.status;
+        if (
+          latestStatus === UserAppReadinessStatusEnum.Stopping ||
+          latestStatus === UserAppReadinessStatusEnum.Stopped
+        ) {
+          return;
+        }
         setPreviewStoppedForEnv(envToStop, true);
         void previewRuntime.stop(envToStop).then((stopped) => {
           if (!stopped) {
@@ -3961,6 +4124,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
         readinessContainerStatus={
           serviceReadiness.readinessByEnv[dbEnv]?.container?.status
+        }
+        readinessContainerOperationAction={
+          serviceReadiness.readinessByEnv[dbEnv]?.container?.operation?.action
         }
         holdPreview={computerRestartHoldEnv === dbEnv}
         previewAlreadyPresented={previewPresentedByEnv[dbEnv]}

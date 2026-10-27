@@ -5,6 +5,7 @@ import {
   SANDBOX_TEST_ERROR,
   SUCCESS_CODE,
   USER_NO_LOGIN,
+  USERAPP_OPERATION_IN_PROGRESS,
 } from '@/constants/codes.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -18,6 +19,7 @@ import {
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
+import { humanizeLoginError } from '@/utils/loginErrorHumanize';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -175,6 +177,15 @@ const errorHandler = (error: any, opts: any) => {
     return;
   }
 
+  // 已有操作进行中（多为其他页签已发起同一操作）：不论哪个接口、
+  // 本处理器被第几次调用，都不弹全局提示。错误仍抛给上层，
+  // 面板等该展示的地方不受影响。
+  // 放在 BizError / HTTP 分支之前统一判断，两种错误形态都能认到 code。
+  const bizCode = error?.info?.code ?? error?.response?.data?.code;
+  if (bizCode === USERAPP_OPERATION_IN_PROGRESS) {
+    throw error;
+  }
+
   if (error.name === 'BizError') {
     // 处理业务错误
     const errorInfo: RequestResponse<null> | undefined = error.info;
@@ -239,14 +250,18 @@ const errorHandler = (error: any, opts: any) => {
           throw error;
 
         // 默认错误处理
-        default:
+        default: {
+          // 登录链路验证码失效类报错（如「校验参数异常」）对用户不可理解，
+          // 转成引导重发的提示；其余接口保持后端原文案。
+          const humanizedTip = humanizeLoginError(url, errorMessage);
           // 只有当请求不在过滤列表中才显示错误消息
           // 使用去重机制避免短时间内重复显示相同的错误消息
-          if (shouldShowErrorMessage(errorMessage)) {
-            message.warning(errorMessage);
+          if (shouldShowErrorMessage(humanizedTip ?? errorMessage)) {
+            message.warning(humanizedTip ? dict(humanizedTip) : errorMessage);
           }
           // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
           throw error;
+        }
       }
     }
   } else if (error.response) {

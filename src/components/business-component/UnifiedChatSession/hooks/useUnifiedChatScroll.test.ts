@@ -116,19 +116,22 @@ function stubResizeObserver() {
   const instances: {
     callback: () => void;
     observe: ReturnType<typeof vi.fn>;
+    disconnect: ReturnType<typeof vi.fn>;
   }[] = [];
   class ResizeObserverStub {
     callback: () => void;
     observe = vi.fn();
+    disconnect = vi.fn();
     constructor(callback: () => void) {
       this.callback = callback;
       instances.push(this as any);
     }
-    disconnect() {}
     unobserve() {}
   }
   vi.stubGlobal('ResizeObserver', ResizeObserverStub as any);
   return {
+    /** 全部观察者实例（含 observe/disconnect spy，供连续翻页断言） */
+    instances,
     /** 触发最近创建的安置窗口观察者回调（模拟图片加载等撑高内容） */
     fireLatest: () => {
       const latest = instances[instances.length - 1];
@@ -336,6 +339,42 @@ describe('useUnifiedChatScroll', () => {
   });
 
   // ---- NW-062：上滑加载历史时旧消息「弹出」与滚动失锚 ----
+
+  it.each(['data-history-scroll-sentinel', 'data-history-scroll-static'])(
+    'NW-254 %s 仍在视口时锚定实际消息，历史前插不能把阅读位置留在新页',
+    (attribute) => {
+      const { element, anchorDocTop, setScrollHeight, setUserScrollTop } =
+        createAnchoredScrollElement({ scrollTop: 25, anchorDocTop: 40 });
+      const sentinel = document.createElement('div');
+      sentinel.setAttribute(attribute, '');
+      Object.defineProperty(sentinel, 'offsetHeight', { get: () => 28 });
+      sentinel.getBoundingClientRect = () =>
+        ({
+          top: -element.scrollTop,
+          bottom: 28 - element.scrollTop,
+          height: 28,
+        } as DOMRect);
+      element.firstElementChild!.prepend(sentinel);
+      const messageViewRef = { current: element };
+      const allowAutoScrollRef = { current: false };
+      const { rerender } = renderHook(
+        ({ loadingMore }) =>
+          useUnifiedChatScroll({
+            externalMessageViewRef: messageViewRef,
+            externalAllowAutoScrollRef: allowAutoScrollRef,
+            messageList: [{ id: 'old' }],
+            loadingMore,
+          }),
+        { initialProps: { loadingMore: false } },
+      );
+      rerender({ loadingMore: true });
+      act(() => setUserScrollTop(15));
+      anchorDocTop.current += 300;
+      setScrollHeight(1300);
+      rerender({ loadingMore: false });
+      expect(element.scrollTop).toBe(315);
+    },
+  );
 
   it('NW-062 加载期间用户继续上滚：落地补偿锚定最新阅读位置而非触发时刻（旧实现会拽回 420）', () => {
     const { element, anchorDocTop, setScrollHeight, setUserScrollTop } =
@@ -559,6 +598,99 @@ describe('useUnifiedChatScroll', () => {
       fireLatest();
     });
     expect(element.scrollTop).toBe(360);
+  });
+
+  // ---- NW-254 验收反馈：C01 一轮前插偏差 0.44px / 连续翻页 ----
+
+  it('NW-254 落地沿全额修正亚像素残差：0.44px 不再被 1px 死区吞掉（旧实现留存偏差）', () => {
+    const { element, anchorDocTop, setScrollHeight } =
+      createAnchoredScrollElement({ scrollTop: 120, anchorDocTop: 200 });
+    const messageViewRef: MutableRefObject<HTMLDivElement | null> = {
+      current: element,
+    };
+    const allowAutoScrollRef = { current: false };
+
+    const { rerender } = renderHook(
+      ({ loadingMore, messageList }) =>
+        useUnifiedChatScroll({
+          externalMessageViewRef: messageViewRef,
+          externalAllowAutoScrollRef: allowAutoScrollRef,
+          loadingMore,
+          messageList,
+        }),
+      {
+        initialProps: {
+          loadingMore: false,
+          messageList: [{ id: 'old-2' }],
+        },
+      },
+    );
+
+    // 触发加载（锚点 viewportOffset = 80），历史落地后锚点只被多推了 0.44px
+    rerender({ loadingMore: true, messageList: [{ id: 'old-2' }] });
+    anchorDocTop.current = 500.44;
+    setScrollHeight(1300);
+    rerender({
+      loadingMore: false,
+      messageList: [{ id: 'old-1' }, { id: 'old-2' }],
+    });
+
+    // 全额修正：scrollTop 精确到位（含 0.44 小数）；旧实现 |0.44|<1 死区跳过 → 420
+    expect(element.scrollTop).toBeCloseTo(420.44, 5);
+  });
+
+  it('NW-254 连续第二轮加载：触发沿停掉上一轮安置窗口，旧 ResizeObserver 不再补偿', () => {
+    const { instances } = stubResizeObserver();
+    const { element, anchorDocTop, setScrollHeight, setUserScrollTop } =
+      createAnchoredScrollElement({ scrollTop: 120, anchorDocTop: 200 });
+    const messageViewRef: MutableRefObject<HTMLDivElement | null> = {
+      current: element,
+    };
+    const allowAutoScrollRef = { current: false };
+
+    const { rerender } = renderHook(
+      ({ loadingMore, messageList }) =>
+        useUnifiedChatScroll({
+          externalMessageViewRef: messageViewRef,
+          externalAllowAutoScrollRef: allowAutoScrollRef,
+          loadingMore,
+          messageList,
+        }),
+      {
+        initialProps: {
+          loadingMore: false,
+          messageList: [{ id: 'old-2' }],
+        },
+      },
+    );
+
+    // 第一轮：触发 → 落地（开启安置窗口，创建 RO#1）
+    rerender({ loadingMore: true, messageList: [{ id: 'old-2' }] });
+    anchorDocTop.current = 500;
+    setScrollHeight(1300);
+    rerender({
+      loadingMore: false,
+      messageList: [{ id: 'old-1' }, { id: 'old-2' }],
+    });
+    expect(element.scrollTop).toBe(420);
+    const firstObserver = instances[instances.length - 1];
+
+    // 用户上滚进入第二轮：触发沿必须先停旧窗口（旧锚点补偿与新拾取基准互打）
+    setUserScrollTop(300);
+    rerender({
+      loadingMore: true,
+      messageList: [{ id: 'old-1' }, { id: 'old-2' }],
+    });
+    expect(firstObserver.disconnect).toHaveBeenCalled();
+
+    // 第二轮落地：再插 200px（anchorDocTop 500→700），锚定用户最新位置 300 + 200
+    anchorDocTop.current = 700;
+    setScrollHeight(1500);
+    rerender({
+      loadingMore: false,
+      messageList: [{ id: 'old-0' }, { id: 'old-1' }, { id: 'old-2' }],
+    });
+    expect(element.scrollTop).toBe(500);
   });
 
   it('hover 到可滚动且未到底部的聊天区时显示回到底部按钮', () => {

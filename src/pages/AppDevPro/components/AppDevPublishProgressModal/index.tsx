@@ -5,6 +5,7 @@ import {
   CheckCircleFilled,
   CloseCircleFilled,
   CopyOutlined,
+  InfoCircleFilled,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Button, Collapse, Modal, Steps, Tag } from 'antd';
@@ -138,7 +139,8 @@ const getStepsStatus = (
     return 'finish';
   }
   if (phase === 'cancelled') {
-    return 'error';
+    // 并发部署挤掉本窗口：中性提示，不再标红失败（NW-287）
+    return 'wait';
   }
   return 'process';
 };
@@ -195,23 +197,31 @@ const getServiceStatusLabel = (
 };
 
 /**
- * 步骤下方的检测状态：进行中 / 成功 / 失败。
+ * 步骤下方的检测状态：进行中 / 成功 / 失败 / 已取消（中性，非失败）。
  *
  * @param props.kind 状态
  * @param props.text 文案
  * @returns 状态行
  */
 const StepStatusLine: React.FC<{
-  kind: 'process' | 'finish' | 'error';
+  kind: 'process' | 'finish' | 'error' | 'cancel';
   text: string;
 }> = ({ kind, text }) => (
-  <div className={cx(styles.phaseText)}>
+  <div
+    className={cx(
+      styles.phaseText,
+      kind === 'cancel' && styles.cancelPhaseText,
+    )}
+  >
     {kind === 'process' ? <LoadingOutlined /> : null}
     {kind === 'finish' ? (
       <CheckCircleFilled className={cx(styles.successIcon)} />
     ) : null}
     {kind === 'error' ? (
       <CloseCircleFilled className={cx(styles.errorIcon)} />
+    ) : null}
+    {kind === 'cancel' ? (
+      <InfoCircleFilled className={cx(styles.cancelIcon)} />
     ) : null}
     {text}
   </div>
@@ -452,11 +462,16 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       : failedStage === 'check'
       ? dict('PC.Pages.AppDevPro.checkDeployableFailed')
       : dict('PC.Pages.AppDevPro.buildStatusFailed'));
+  /** 并发部署挤掉本窗口属正常业务流，中性文案而非失败文案（NW-287） */
   const cancelText =
-    cancelledText || dict('PC.Pages.AppDevPro.publishCancelled');
+    cancelledText ||
+    dict('PC.Pages.AppDevPro.publishCancelledByConcurrentDeploy');
 
   /** 各步骤自己的状态行，挂在对应步骤标题下，不放步骤条下方总览 */
-  const buildStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const buildStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'starting'
       ? {
           kind: 'process',
@@ -469,7 +484,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
         }
       : isTerminalPhase && failedStage === 'build'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.buildStatusOk') };
@@ -478,12 +493,15 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
    * 检测可部署：轮询中 / 本步失败 / 本步取消。
    * 已进入部署则视为检测通过。
    */
-  const checkStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const checkStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'checkingDeployable'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.checkingDeployable') }
       : isTerminalPhase && failedStage === 'check'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.checkDeployableOk') };
@@ -492,14 +510,17 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
    * 部署服务：prod/start 进行中 / 本步失败 / 本步取消。
    * 部署成功后视为本步完成。
    */
-  const startStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const startStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'deploying'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.deploying') }
       : phase === 'checkingReadiness'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.previewChecking') }
       : isTerminalPhase && failedStage === 'deploy'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : {

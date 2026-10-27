@@ -1,7 +1,9 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { subscribeComputerServiceState } from '@/services/computerServiceState';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   HostLocalFilesBridge,
+  LocalFileChange,
   LocalFilePreview,
   LocalFilesContext,
   LocalFilesContextInput,
@@ -27,10 +29,15 @@ type ContextRecord = {
   settled: boolean;
   generation: number;
   knownLocal: boolean;
+  writable: boolean;
   owners: Set<symbol>;
   grants: Set<string>;
 };
 const contexts = new Map<string, ContextRecord>();
+// Keep bounded provenance after UI disposal so a delayed autosave cannot become
+// a cloud write merely because its local context has already been released.
+const recentLocalSources = new Map<string, string>();
+const MAX_RECENT_LOCAL_SOURCES = 256;
 const listeners = new Set<() => void>();
 let revision = 0;
 const changed = () => {
@@ -82,15 +89,16 @@ function resolveRecord(cId: string, record: ContextRecord) {
   record.pending = (async () => {
     const api = hostBridge.localFiles?.getApi();
     if (
-      !api?.getCapabilities ||
-      !api.resolveContext ||
-      !api.listFiles ||
-      !api.searchFiles ||
-      !api.preparePreview ||
-      !api.saveFile ||
-      !api.exportWorkspace ||
-      !api.openPath ||
-      !api.revealInFolder
+      typeof api?.getCapabilities !== 'function' ||
+      typeof api.resolveContext !== 'function' ||
+      typeof api.listFiles !== 'function' ||
+      typeof api.searchFiles !== 'function' ||
+      typeof api.preparePreview !== 'function' ||
+      typeof api.saveFile !== 'function' ||
+      typeof api.exportWorkspace !== 'function' ||
+      typeof api.openPath !== 'function' ||
+      typeof api.revealInFolder !== 'function' ||
+      typeof api.updateFiles !== 'function'
     ) {
       if (record.knownLocal) throw new LocalFileAccessError('unavailable');
       return null;
@@ -111,8 +119,10 @@ function resolveRecord(cId: string, record: ContextRecord) {
       throw new LocalFileAccessError('expired');
     }
     if (
-      !capabilities.available ||
-      capabilities.apiVersion < 1 ||
+      !capabilities?.available ||
+      !Number.isInteger(capabilities.apiVersion) ||
+      capabilities.apiVersion < 2 ||
+      capabilities.writable !== true ||
       !capabilities.sandboxId
     ) {
       if (record.knownLocal) throw new LocalFileAccessError('unavailable');
@@ -135,7 +145,15 @@ function resolveRecord(cId: string, record: ContextRecord) {
       safely(api.releaseContext?.(result.data.contextId));
       throw new LocalFileAccessError('expired');
     }
+    // direct 页面可先于客户端升级。完整读写能力才切换整条路线，
+    // 避免旧只读桥接管列表后又阻止原本可用的保存。
     record.knownLocal = true;
+    recentLocalSources.delete(cId);
+    recentLocalSources.set(cId, record.input.sandboxId);
+    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
+      recentLocalSources.delete(recentLocalSources.keys().next().value!);
+    record.writable =
+      capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
     changed();
     return result.data;
@@ -156,7 +174,17 @@ export function registerLocalFilesContext(
   const cId = String(input.cId);
   const owner = Symbol('local-files-context');
   const previous = contexts.get(cId);
-  const normalizedInput = { ...input, cId };
+  // 后端 DTO 的可选字段可能为 null/空串；原生桥的可选 scalar 只接受值或 undefined。
+  const optional = <T extends string | number>(value: T | null | undefined) =>
+    value === null || value === '' ? undefined : value;
+  const normalizedInput = {
+    ...input,
+    cId,
+    workspacePath: optional(input.workspacePath),
+    projectId: optional(input.projectId),
+    serviceType: optional(input.serviceType),
+    userId: optional(input.userId),
+  };
   if (
     previous &&
     JSON.stringify(previous.input) === JSON.stringify(normalizedInput)
@@ -172,6 +200,7 @@ export function registerLocalFilesContext(
     settled: false,
     generation: 0,
     knownLocal: false,
+    writable: false,
     owners: new Set([owner]),
     grants: new Set(),
   };
@@ -445,6 +474,75 @@ export async function getLocalFileList(
   };
 }
 
+export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
+  const record = contexts.get(ref.cId);
+  if (!record || record.disposed || record.context?.contextId !== ref.contextId)
+    throw new LocalFileAccessError('expired');
+}
+
+/** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */
+export async function updateLocalFiles(
+  cId: string | number,
+  files: UpdateFileInfo[],
+): Promise<RequestResponse<null> | null> {
+  for (const file of files) {
+    if (file.localFile) {
+      if (file.localFile.cId !== String(cId))
+        throw new LocalFileAccessError('expired');
+      assertLocalFileReferenceCurrent(file.localFile);
+    }
+  }
+  const record = contexts.get(String(cId));
+  if (!record) {
+    if (recentLocalSources.has(String(cId)))
+      throw new LocalFileAccessError('expired');
+    return null;
+  }
+  const generation = record.generation;
+  const context = await record.pending;
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  if (!context) {
+    if (recentLocalSources.get(String(cId)) === record.input.sandboxId)
+      throw new LocalFileAccessError('unavailable');
+    return null;
+  }
+  if (!record.writable || !record.api?.updateFiles)
+    throw new LocalFileAccessError('unavailable');
+  const changes: LocalFileChange[] = files.map((file) => {
+    if (!file.operation) throw new LocalFileAccessError('invalid-argument');
+    return {
+      name: file.name,
+      operation: file.operation,
+      contents: file.contents,
+      isDir: file.isDir,
+      binary: file.binary,
+      renameFrom: file.renameFrom,
+    };
+  });
+  value(await record.api.updateFiles(context.contextId, changes));
+  if (
+    record.disposed ||
+    record.generation !== generation ||
+    contexts.get(String(cId)) !== record
+  )
+    throw new LocalFileAccessError('expired');
+  changed();
+  return {
+    code: SUCCESS_CODE,
+    displayCode: SUCCESS_CODE,
+    message: '',
+    data: null,
+    debugInfo: {},
+    success: true,
+    tid: '',
+  };
+}
+
 export async function prepareLocalFilePreview(
   input: string | LocalFileReference,
 ): Promise<(LocalFilePreview & { release(): void }) | null> {
@@ -471,11 +569,6 @@ export async function prepareLocalFilePreview(
       safely(target.api.releasePreview?.(preview.grantId));
     },
   };
-}
-export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
-  const record = contexts.get(ref.cId);
-  if (!record || record.disposed || record.context?.contextId !== ref.contextId)
-    throw new LocalFileAccessError('expired');
 }
 export async function saveLocalFile(
   input: string | LocalFileReference,

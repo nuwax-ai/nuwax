@@ -75,12 +75,14 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { FC } from 'react';
 import { history } from 'umi';
 import {
   readCollapsedProjectKeys,
   writeCollapsedProjectKeys,
 } from '../../collapsePreference';
 import { formatRelativeTime } from '../../utils';
+import { useNow } from '../../useNow';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
 import styles from './index.less';
@@ -97,6 +99,21 @@ import {
 } from './projectPagination';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 子会话行时间格（NW-265）：非执行态随共享时钟走表（30s 重算相对时间）。
+ * 执行中条目不在此显示——运行中没有可信的起点字段（列表数据无
+ * startedAt），静止的「x分」会被误读为运行时长（列表 26 分 vs 详情 40 分）。
+ */
+const ChildTime: FC<{ modified?: string }> = ({ modified }) => {
+  const now = useNow();
+  if (!modified) return null;
+  return (
+    <span className={cx(styles['child-time'])}>
+      {formatRelativeTime(modified, now)}
+    </span>
+  );
+};
 
 /**
  * created 项目有界重拉的间隔与轮数（bug 2407 / 2413）。
@@ -1942,10 +1959,10 @@ const ProjectPanel = forwardRef<
                             {executingText}
                           </span>
                         )}
-                      {child.modified && (
-                        <span className={cx(styles['child-time'])}>
-                          {formatRelativeTime(child.modified)}
-                        </span>
+                      {/* NW-265：执行中不显示静止相对时间（会被误读为运行
+                          时长），对齐 ConversationItem 的 EXECUTING 排除 */}
+                      {child.taskStatus !== TaskStatus.EXECUTING && (
+                        <ChildTime modified={child.modified} />
                       )}
                       <div className={styles['child-actions']}>
                         {childDeleteArmed ? (

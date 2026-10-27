@@ -23,8 +23,9 @@ vi.mock('@/utils/hostBridge', () => ({
 function makeApi() {
   return {
     getCapabilities: vi.fn().mockResolvedValue({
-      apiVersion: 1,
+      apiVersion: 2,
       available: true,
+      writable: true,
       sandboxId: 'local-1',
     }),
     resolveContext: vi.fn().mockImplementation(async (input) => ({
@@ -67,6 +68,7 @@ function makeApi() {
       .mockResolvedValue({ success: true, data: { canceled: false } }),
     openPath: vi.fn().mockResolvedValue({ success: true }),
     revealInFolder: vi.fn().mockResolvedValue({ success: true }),
+    updateFiles: vi.fn().mockResolvedValue({ success: true }),
   };
 }
 let api: ReturnType<typeof makeApi>;
@@ -86,6 +88,69 @@ const bind = (sandboxId = 'local-1') =>
   });
 
 describe('local file routing', () => {
+  it.each([null, undefined, {}])(
+    '旧桥能力返回 %s 时文件操作保留后端路线',
+    async (capabilities) => {
+      mocks.getApi.mockReturnValue({
+        ...api,
+        getCapabilities: vi.fn().mockResolvedValue(capabilities),
+      });
+      bind();
+      expect(await getLocalFileList(12)).toBeNull();
+      expect(api.resolveContext).not.toHaveBeenCalled();
+    },
+  );
+
+  it('旧桥方法不是函数时不能接管文件列表', async () => {
+    mocks.getApi.mockReturnValue({ ...api, listFiles: true });
+    bind();
+    expect(await getLocalFileList(12)).toBeNull();
+    expect(api.resolveContext).not.toHaveBeenCalled();
+  });
+
+  it.each([null, ''])(
+    '可选会话字段为 %s 时不把非法 scalar 传给原生桥',
+    async (empty) => {
+      api.resolveContext.mockImplementationOnce(async (input) => {
+        for (const key of [
+          'projectId',
+          'userId',
+          'workspacePath',
+          'serviceType',
+        ]) {
+          expect(input[key]).toBeUndefined();
+        }
+        return {
+          success: true,
+          data: {
+            contextId: 'ctx-local-1',
+            cId: '12',
+            sandboxId: 'local-1',
+            root: 'C:\\work',
+          },
+        };
+      });
+      registerLocalFilesContext({
+        cId: 12,
+        sandboxId: 'local-1',
+        projectId: empty,
+        userId: empty,
+        workspacePath: empty,
+        serviceType: empty,
+      } as unknown as Parameters<typeof registerLocalFilesContext>[0]);
+      expect((await getLocalFileList(12))?.success).toBe(true);
+      const preview = await prepareLocalFilePreview(
+        '/api/computer/static/12/中文.pdf',
+      );
+      expect(preview?.url).toBe('nuwax-local://grant/a.md');
+      expect(api.preparePreview).toHaveBeenCalledWith({
+        contextId: 'ctx-local-1',
+        cId: '12',
+        path: '中文.pdf',
+      });
+    },
+  );
+
   it('falls back without a real bridge or explicit matching conversation', async () => {
     mocks.getApi.mockReturnValue(undefined);
     bind();

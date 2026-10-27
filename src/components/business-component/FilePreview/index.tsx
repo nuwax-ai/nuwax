@@ -33,6 +33,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
+import { localFileReadErrorMessage } from './localFileActionMessages';
 import { useLocalPreviewSource } from './useLocalPreviewSource';
 import { mountXlsxImageOverlay } from './xlsxImageOverlay';
 import {
@@ -74,6 +75,38 @@ const FILE_PREVIEW_REHYPE_PLUGINS: Parameters<
   rehypeRaw,
   [rehypeKatex, { throwOnError: false, strict: 'ignore' }],
 ];
+
+/** PDF 插件会按当前容器计算页宽，隐藏面板的零尺寸不能用于初始化。 */
+const waitForPdfLayout = (
+  container: HTMLElement,
+  signal: AbortSignal,
+): Promise<number> =>
+  new Promise((resolve, reject) => {
+    let observer: ResizeObserver | undefined;
+    const cleanup = () => {
+      observer?.disconnect();
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      signal.removeEventListener('abort', onAbort);
+    };
+    function onAbort() {
+      cleanup();
+      reject(new DOMException('PDF preview was aborted.', 'AbortError'));
+    }
+    const checkLayout = () => {
+      // 插件内部另减去 20px 页边距；宽度必须足够且面板已占据布局。
+      if (container.clientWidth <= 20 || container.clientHeight <= 0) return;
+      cleanup();
+      resolve(container.clientWidth);
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    observer = new ResizeObserver(checkLayout);
+    observer.observe(container);
+    checkLayout();
+  });
 
 /** 递归提取 ReactMarkdown pre>code 子树里的纯文本（code 的 children 可能是字符串数组） */
 const extractMarkdownCodeText = (node: React.ReactNode): string => {
@@ -1056,7 +1089,7 @@ const FilePreviewContent: React.FC<
       if (
         localPreview &&
         typeof src === 'string' &&
-        ['docx', 'xlsx', 'pdf'].includes(type)
+        ['docx', 'xlsx'].includes(type)
       ) {
         const controller = new AbortController();
         pptxAbortControllerRef.current = controller;
@@ -1069,7 +1102,7 @@ const FilePreviewContent: React.FC<
         if (!isCurrentRequest() || controller.signal.aborted) return;
       }
 
-      if (src instanceof File && type !== 'pptx') {
+      if (src instanceof File && !['pptx', 'pdf'].includes(type)) {
         previewSrc = await src.arrayBuffer();
       }
 
@@ -1143,9 +1176,26 @@ const FilePreviewContent: React.FC<
           }
           break;
         }
-        case 'pdf':
+        case 'pdf': {
+          if (!src) return;
+          const controller = new AbortController();
+          pptxAbortControllerRef.current = controller;
+          const { loadFilePreviewBuffer } = await import(
+            '@/services/filePreview'
+          );
+          // URL 读取与其他文档共用鉴权、取消和手动刷新逻辑，插件只负责渲染。
+          previewSrc = await loadFilePreviewBuffer(src, {
+            signal: controller.signal,
+            refresh: options.refreshPptx || refreshKey !== undefined,
+            // 本机授权沿用已有容量保护，其余来源保留原 PDF 插件的容量口径。
+            ...(localPreview ? {} : { maxBytes: Number.MAX_SAFE_INTEGER }),
+          });
+          if (!isCurrentRequest() || controller.signal.aborted) return;
+          const container = containerRef.current;
+          const pdfWidth = await waitForPdfLayout(container, controller.signal);
+          if (!isCurrentRequest() || controller.signal.aborted) return;
           previewer = jsPreviewPdf.init(containerRef.current, {
-            width: containerRef.current.clientWidth || undefined,
+            width: pdfWidth,
             onError: (e: any) => {
               if (!isCurrentRequest()) return;
               setStatus('error');
@@ -1158,8 +1208,10 @@ const FilePreviewContent: React.FC<
               onRendered?.();
             },
           });
+          previewerRef.current = previewer;
           await previewer.preview(previewSrc);
           break;
+        }
         case 'pptx': {
           if (!src) return;
           const controller = new AbortController();
@@ -1746,7 +1798,7 @@ const FilePreview: React.FC<FilePreviewProps> = (props) => {
       <Alert
         type="error"
         showIcon
-        message={preview.error.message}
+        message={localFileReadErrorMessage(preview.error, t)}
         action={
           <Button onClick={preview.refresh}>
             {t('PC.Components.FilePreview.retry')}

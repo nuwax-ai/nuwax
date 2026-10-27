@@ -6,7 +6,11 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import { request } from 'umi';
 import { saveWithDesktopHost } from './downloadCompletion';
-import { getDownloadFileName } from './downloadFileName';
+import {
+  getDownloadFileName,
+  sanitizeDownloadBaseName,
+} from './downloadFileName';
+export { sanitizeDownloadBaseName } from './downloadFileName';
 
 /**
  * 导出文件Blob返回类型
@@ -176,36 +180,73 @@ export const exportConfigFile = async (
 };
 
 /**
- * 通过浏览器下载文件
- * @param linkUrl 文件链接地址
- * @param fileName 文件名称
- * fileProxyUrl 拼上 BASE_URL 后需与页面同源，download 才生效
+ * 构建导出 zip 的默认文件名（NW-273）：带上资源名称，避免保存弹窗回落到泛名 export.zip。
+ * 复用安全基础名规则；为空时返回 undefined，让调用链回落原默认名。
  */
-export const exportFileViaBrowserDownload = async (
+export const buildExportZipName = (
+  rawName?: string | null,
+): string | undefined => {
+  const cleaned = sanitizeDownloadBaseName(rawName ?? '');
+  return cleaned ? `${cleaned}.zip` : undefined;
+};
+
+async function downloadExportFile(
   linkUrl: string,
   fileName?: string,
-) => {
+  preserveBrowserName = false,
+) {
   const localSaved = await saveLocalFile(linkUrl, fileName);
   if (localSaved !== undefined) return localSaved;
   const saved = await saveWithDesktopHost(linkUrl, fileName || 'export.zip');
   if (saved !== undefined) return saved;
+
+  let objectUrl: string | undefined;
+  if (preserveBrowserName && fileName) {
+    // 服务端 Content-Disposition 会覆盖 a.download。命名导出先通过统一请求层
+    // 读取归档，再下载 Blob，才能保留资源名称并识别 JSON 业务失败。
+    const result = await apiExportFileBlob(linkUrl);
+    if (!result.success || !result.data) {
+      throw new Error(
+        result.error?.message || dict('PC.Utils.ExportImport.exportFailed'),
+      );
+    }
+    objectUrl = window.URL.createObjectURL(result.data);
+  }
+
   // 浏览器只能确认触发，不能据此提示文件保存成功。
   const link = document.createElement('a');
-  // 设置链接地址
-  link.href = linkUrl;
+  link.href = objectUrl || linkUrl;
   link.style.display = 'none';
   link.target = '_blank';
-  // 设置下载文件的名称
   link.download = fileName || '';
-  // 添加到 body 中
-  document.body.appendChild(link);
-  // 模拟点击下载
-  link.click();
-  // 移除 a 标签
-  document.body.removeChild(link);
-  // 释放 URL 对象
-  window.URL.revokeObjectURL(linkUrl);
+  try {
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    link.remove();
+    if (objectUrl) {
+      // 等下载导航接管 Blob 后释放，避免同步撤销使浏览器取消下载。
+      const urlToRevoke = objectUrl;
+      window.setTimeout(() => window.URL.revokeObjectURL(urlToRevoke), 0);
+    }
+  }
   return false;
+}
+
+/** 普通文件下载保留原链接及响应头语义；资源归档使用 exportNamedDownload。 */
+export const exportFileViaBrowserDownload = (
+  linkUrl: string,
+  fileName?: string,
+) => downloadExportFile(linkUrl, fileName);
+
+/** 命名只影响默认文件名；保存成功、取消和失败仍由原下载链路确认。 */
+export const exportNamedDownload = async (
+  linkUrl: string,
+  resourceName?: string,
+  ext = 'zip',
+) => {
+  const base = sanitizeDownloadBaseName(resourceName || '');
+  return downloadExportFile(linkUrl, base ? `${base}.${ext}` : undefined, true);
 };
 
 /**

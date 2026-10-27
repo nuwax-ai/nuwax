@@ -2,13 +2,37 @@
  * 业务页面与桌面宿主的桥契约；不依赖 Electron 或父仓，前端可独立构建。
  * 客户端通过 scripts/sync-host-bridge-contract.mjs 生成本文件的只读快照。
  */
+/** 宿主打开指定会话的扩展指令载荷。 */
+export interface OpenConversationCommand {
+  type: 'open-conversation';
+  /** 会话全局唯一 ID（核心通用主键） */
+  convId: string;
+  /** 会话类别：1=单聊/私信(P2P), 2=自建群(GROUP), 3=系统会话(SYSTEM), 4=团队群(TEAM) */
+  convType?: number;
+  /** 发送者类型：1=真人(HUMAN), 2=智能体/机器人(BOT), 3=系统(SYSTEM) */
+  senderType?: number;
+  /** 消息内容类型：text, rich_text, image, file, card, merge_forward... */
+  msgType?: string;
+  /** 关联空间 ID（若属于空间团队群） */
+  spaceId?: string;
+  /** 智能体 ID（智能体会话） */
+  agentId?: string;
+  /** 对端用户 ID（单聊/私信） */
+  userId?: string;
+  /** 具体消息 ID（供未来扩展定位到具体消息气泡、高亮滚动） */
+  msgId?: string;
+  /** 扩展自定义业务参数 */
+  extra?: Record<string, unknown>;
+}
+
 export type HostCommand =
   | { type: 'toggle-second-menu'; collapsed: boolean }
   | { type: 'new-task' }
   | { type: 'open-search' }
   | { type: 'host-activity'; visible: boolean }
   | { type: 'computer-service-state'; phase: string; sandboxId?: string }
-  | { type: 'set-lang'; lang: string };
+  | { type: 'set-lang'; lang: string }
+  | OpenConversationCommand;
 
 /** 宿主提供的当前鉴权域信息，不包含凭据。 */
 export interface HostAuthContext {
@@ -234,6 +258,8 @@ export type LocalFilesErrorCode =
   | 'context-unresolved'
   | 'expired'
   | 'not-found'
+  | 'already-exists'
+  | 'conflict'
   | 'permission-denied'
   | 'file-service-unavailable'
   | 'canceled'
@@ -245,6 +271,7 @@ export interface LocalFilesCapabilities {
   apiVersion: number;
   available: boolean;
   sandboxId?: string;
+  writable?: boolean;
 }
 export interface LocalFilesContextInput {
   cId: string | number;
@@ -315,6 +342,14 @@ export interface LocalFileSaved {
   canceled: boolean;
   path?: string;
 }
+export interface LocalFileChange {
+  name: string;
+  operation: 'create' | 'modify' | 'rename' | 'delete';
+  contents?: string;
+  isDir?: boolean;
+  binary?: boolean;
+  renameFrom?: string;
+}
 export interface HostLocalFilesBridge {
   pickDirectory(): Promise<{ canceled: boolean; paths: string[] }>;
   getCapabilities(): Promise<LocalFilesCapabilities>;
@@ -337,6 +372,11 @@ export interface HostLocalFilesBridge {
   releasePreview(grantId: string): Promise<void>;
   openPath(target: LocalFileTarget): Promise<LocalFilesResult<void>>;
   revealInFolder(target: LocalFileTarget): Promise<LocalFilesResult<void>>;
+  /** API v2；旧本机只读桥不支持时，不能将写请求转到云端。 */
+  updateFiles?(
+    contextId: string,
+    changes: LocalFileChange[],
+  ): Promise<LocalFilesResult<void>>;
   saveFile(
     target: LocalFileTarget,
     options?: LocalFileSaveOptions,

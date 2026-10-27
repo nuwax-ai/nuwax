@@ -186,7 +186,13 @@ describe('WebVersionBadge', () => {
     expect(mocks.reload).not.toHaveBeenCalled();
   });
 
-  it.each(['available', 'downloading', 'downloaded', 'error'] as const)(
+  it.each([
+    'available',
+    'downloading',
+    'downloaded',
+    'installing',
+    'error',
+  ] as const)(
     'gives a known client update priority during %s, then restores the web entry',
     (status) => {
       mocks.available = true;
@@ -243,6 +249,32 @@ describe('WebVersionBadge', () => {
     expect(screen.queryByRole('button', { name: '更新' })).toBeNull();
     publishClient({ status: 'not-available' });
     expect(screen.getByText('v3.0.11')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument();
+  });
+
+  it('keeps web refresh hidden while the client is restarting, including without target-version metadata', () => {
+    mocks.available = true;
+    mocks.clientState = {
+      hostVersion: '3.0.23-beta.6',
+      version: '3.0.23-beta.8',
+      status: 'downloaded',
+    };
+    render(
+      <>
+        <ClientVersionBadge />
+        <WebVersionBadge />
+      </>,
+    );
+    publishClient({ status: 'installing' });
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ClientUpdate.installing',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '更新' })).toBeNull();
+    expect(mocks.reload).not.toHaveBeenCalled();
+
+    publishClient({ status: 'not-available' });
     expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument();
   });
 

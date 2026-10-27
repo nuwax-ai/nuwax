@@ -746,6 +746,7 @@ const EditAgent: React.FC = () => {
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -793,6 +794,7 @@ const EditAgent: React.FC = () => {
                 {
                   contents: '',
                   name: fileNode.relativePath || fileNode.path || fileNode.id,
+                  localFile: fileNode.localFile,
                   operation: 'delete', // 操作类型
                   isDir: true,
                 },
@@ -813,6 +815,7 @@ const EditAgent: React.FC = () => {
               updatedFilesList = [
                 {
                   name: currentFile.name,
+                  localFile: currentFile.localFile,
                   binary: currentFile.binary,
                   sizeExceeded: currentFile.sizeExceeded,
                   isDir: currentFile.isDir,
@@ -965,7 +968,7 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    apiDownloadAllFiles(devConversationId);
+    await apiDownloadAllFiles(devConversationId, agentConfigInfo?.name);
   };
 
   // 设置统计信息

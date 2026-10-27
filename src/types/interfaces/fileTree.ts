@@ -1,7 +1,17 @@
+import type { LocalFileReference } from './localFile';
+
+export interface FileContentSaveOptions {
+  /** 手动保存跳过防抖等待，仍与同文件的在途写入串行。 */
+  immediate?: boolean;
+}
+export type FileSaveState = 'dirty' | 'saving' | 'saved' | 'error';
+
 /**
  * 更新文件信息（用于提交文件修改）
  */
 export interface UpdateFileInfo {
+  /** 保留列表中的本机来源，防止迟到保存借用另一工作区。 */
+  localFile?: LocalFileReference;
   /** 文件名 */
   name: string;
   /** 文件内容 */

@@ -4,6 +4,8 @@ import {
   exportLocalWorkspace,
   getLocalFileList,
   getLocalFilesContextKey,
+  LocalFileAccessError,
+  updateLocalFiles,
 } from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -20,7 +22,8 @@ import type {
   RestartPodResponse,
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import { sanitizeDownloadBaseName } from '@/utils/downloadFileName';
+import { exportNamedDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
@@ -162,10 +165,35 @@ export async function apiGetStaticFileDetail(
 export async function apiUpdateStaticFile(
   data: IUpdateStaticFileParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/computer/static/files-update', {
-    method: 'POST',
-    data,
-  });
+  try {
+    const local = await updateLocalFiles(data.cId, data.files);
+    if (local) return local;
+  } catch (error) {
+    // Existing create/autosave callbacks consume response codes; keep dirty data
+    // on failure instead of leaking a rejected UI promise or retrying in cloud.
+    const code = error instanceof LocalFileAccessError ? error.code : 'failed';
+    const text = t('PC.Common.Toast.operationFailed');
+    message.error(text);
+    return {
+      code,
+      displayCode: code,
+      message: text,
+      data: null,
+      debugInfo: {},
+      success: false,
+      tid: '',
+    };
+  }
+  const contextKey = getLocalFilesContextKey(data.cId);
+  const response: RequestResponse<null> = await request(
+    '/api/computer/static/files-update',
+    {
+      method: 'POST',
+      data,
+    },
+  );
+  assertLocalFilesContextUnchanged(data.cId, contextKey);
+  return response;
 }
 
 // 上传技能文件
@@ -213,7 +241,10 @@ export async function apiUploadFiles(
 }
 
 // 下载全部文件
-export async function apiDownloadAllFiles(cId: number): Promise<void> {
+export async function apiDownloadAllFiles(
+  cId: number,
+  conversationName?: string,
+): Promise<void> {
   try {
     const localSaved = await exportLocalWorkspace(cId);
     if (localSaved !== undefined) {
@@ -222,8 +253,11 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
     }
     // 获取导出文件链接地址
     const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
-    // 通过浏览器下载文件
-    const saved = await exportFileViaBrowserDownload(linkUrl);
+    // 优先会话名；无可用名称时仍用带会话ID的稳定名称，便于区分多个归档。
+    const name =
+      sanitizeDownloadBaseName(conversationName || '') ||
+      `${t('PC.Pages.Chat.exportAllFilesName')}-${cId}`;
+    const saved = await exportNamedDownload(linkUrl, name);
     if (saved) message.success(t('PC.Pages.Chat.exportSuccess'));
   } catch (error) {
     console.error('Failed to export project:', error);

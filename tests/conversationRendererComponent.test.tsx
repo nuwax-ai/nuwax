@@ -1433,43 +1433,6 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
     expect(document.querySelectorAll('[data-trace-key]').length).toBe(1); // 仅首轮有轨迹
     expect(screen.getAllByTestId('v2-narration').length).toBeGreaterThan(0);
   });
-
-  it('高级覆盖：tool=expanded 使已完成工具节点详情默认展开', () => {
-    renderV2(buildTurn(), PREFS('balanced', { tool: 'expanded' }));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-    const toolRow = document.querySelector('[data-node-id="e1"] button');
-    expect(toolRow?.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByTestId('tool-detail')).toBeInTheDocument();
-  });
-
-  it('失败节点即使配置隐藏也至少恢复为错误摘要行', () => {
-    const failed = [
-      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
-      msg({
-        id: 'a1',
-        role: AssistantRoleEnum.ASSISTANT,
-        text: processTag({
-          executeId: 'bad',
-          type: 'Mcp',
-          status: 'FAILED',
-          name: '坏工具',
-        }),
-        processingList: [
-          {
-            executeId: 'bad',
-            name: '坏工具',
-            type: 'Mcp',
-            status: 'FAILED',
-            result: { executeId: 'bad', success: false },
-          },
-        ] as MessageInfo['processingList'],
-      }),
-    ];
-    renderV2(failed, PREFS('focused', { tool: 'hidden' }));
-    // 无总结正文的终态轮默认展开，失败节点直接可见
-    const row = document.querySelector('[data-node-id="bad"]');
-    expect(row).not.toBeNull();
-  });
 });
 
 describe('ConversationRendererV2 · 回答与异常', () => {

@@ -78,6 +78,7 @@ vi.mock('@/pages/403', () => ({
 }));
 
 import { getInitialState, innerProvider } from '@/app';
+import { getAppStartupDiagnostic } from '@/services/appStartupDiagnostics';
 import AuthWithLoading from '@/wrappers/authWithLoading';
 
 beforeEach(() => {
@@ -132,6 +133,21 @@ describe('首屏初始数据失败可恢复', () => {
       const failure = new Error('server payload must not appear in UI');
       mocks[step].mockRejectedValue(failure);
       await expect(getInitialState()).rejects.toBe(failure);
+      const diagnostic = getAppStartupDiagnostic(failure);
+      expect(diagnostic?.code).toBe(
+        {
+          getUserInfo: 'STARTUP_USER',
+          syncLangFromUserInfo: 'STARTUP_PROFILE_LANGUAGE',
+          queryMenus: 'STARTUP_MENU',
+        }[step],
+      );
+      expect(Object.keys(diagnostic ?? {}).sort()).toEqual([
+        'code',
+        'id',
+        'occurredAt',
+        'version',
+      ]);
+      expect(JSON.stringify(diagnostic)).not.toContain(failure.message);
       expect(localStorage.getItem('ACCESS_TOKEN')).toBeNull();
       expect(mocks.setLoginStatusToCache).not.toHaveBeenCalled();
     },
@@ -171,7 +187,7 @@ describe('首屏初始数据失败可恢复', () => {
   it('Umi 初始状态错误遮挡业务页面但不展示服务 payload', () => {
     mocks.initialState.mockReturnValue({ error: new Error('private payload') });
     render(innerProvider(React.createElement('div', null, 'business page')));
-    expect(screen.getByRole('alert')).toHaveTextContent('应用加载失败');
+    expect(screen.getByRole('alert')).toHaveTextContent('应用暂时未能启动');
     expect(screen.queryByText('private payload')).not.toBeInTheDocument();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
   });
@@ -213,7 +229,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     expect(mocks.setLoginStatusToCache).toHaveBeenCalledWith(true);
     const html = renderToStaticMarkup(React.createElement(AuthWithLoading));
     expect(html).toContain('business page');
-    expect(html).not.toContain('正在加载应用');
+    expect(html).not.toContain('正在启动');
 
     render(React.createElement(AuthWithLoading));
     expect(screen.getByText('business page')).toBeInTheDocument();
@@ -225,7 +241,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     mocks.loginStatus = true;
     const html = renderToStaticMarkup(React.createElement(AuthWithLoading));
     expect(html).toContain('business page');
-    expect(html).not.toContain('正在加载应用');
+    expect(html).not.toContain('正在启动');
     expect(html).not.toContain('PC.Common.Global.loading');
   });
 
@@ -239,7 +255,7 @@ describe('首屏启动与鉴权加载衔接', () => {
         }),
     );
     render(React.createElement(AuthWithLoading));
-    expect(screen.getByRole('status')).toHaveTextContent('正在加载应用');
+    expect(screen.getByRole('status')).toHaveTextContent('正在启动');
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
 
     await act(async () => resolve({ id: 1 }));
@@ -268,7 +284,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     await act(async () => {});
     expect(mocks.clearLoginStatusCache).not.toHaveBeenCalled();
     expect(mocks.redirectToLogin).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('应用加载失败');
+    expect(screen.getByRole('alert')).toHaveTextContent('应用暂时未能启动');
     expect(
       screen.getByRole('button', { name: '重新加载' }),
     ).toBeInTheDocument();
