@@ -1,4 +1,7 @@
-import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  SUCCESS_CODE,
+  USERAPP_OPERATION_IN_PROGRESS,
+} from '@/constants/codes.constants';
 import {
   apiEnsurePod,
   apiKeepalivePod,
@@ -7,6 +10,27 @@ import {
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { UserAppDbEnvEnum } from '../services/appDb';
+
+/**
+ * ensure 被后端以「已有操作进行中」拒绝（BizError 的 info 或 HTTP 响应体）。
+ * 这不是容器失败：容器正在被别的操作（如其他页签发起的 restart）处理。
+ *
+ * @param error ensure 抛出的异常
+ * @returns 是否为操作进行中
+ */
+const isOperationInProgressError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const record = error as {
+    info?: { code?: string };
+    response?: { data?: { code?: string } };
+  };
+  return (
+    (record.info?.code ?? record.response?.data?.code) ===
+    USERAPP_OPERATION_IN_PROGRESS
+  );
+};
 
 /** 指定环境容器接入状态 */
 export type UserAppEnvPodStatus = 'idle' | 'starting' | 'running' | 'error';
@@ -145,12 +169,20 @@ export function useUserAppEnvPod(
               ? acceptWithoutRunning()
               : markRunningAndKeepAlive();
           }
+          // 已有操作进行中：容器正在被别的操作处理，按已受理对待，
+          // 保持 starting 等 readiness 给真实状态，不能标成失败。
+          if (code === USERAPP_OPERATION_IN_PROGRESS) {
+            return acceptWithoutRunning();
+          }
           statusRef.current = 'error';
           setStatus('error');
           return false;
         } catch (error) {
           if (generation !== generationRef.current) {
             return false;
+          }
+          if (isOperationInProgressError(error)) {
+            return acceptWithoutRunning();
           }
           if (isEnsurePodThrottledError(error)) {
             return deferRunning
