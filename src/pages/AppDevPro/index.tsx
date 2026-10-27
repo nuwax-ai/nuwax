@@ -1246,6 +1246,32 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
 
+  /**
+   * readiness 实测当前环境容器已 running 时，把本地 pod 状态同步成 running。
+   * 本页签 ensure 报错（如切线上时）会留下 error，若没人恢复，预览会一直钉在
+   * 「服务启动失败」、Header 的重启/停止也一直禁用，哪怕容器已是其他页签拉起的。
+   * confirm 内部对已 running 且保活中会直接返回，重复触发无副作用。
+   */
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    if (!isUserAppContainerRunning(serviceReadiness.readinessByEnv[dbEnv])) {
+      return;
+    }
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      prodPod.confirmContainerRunning();
+    } else {
+      devPod.confirmContainerRunning();
+    }
+  }, [
+    active,
+    dbEnv,
+    devPod.confirmContainerRunning,
+    prodPod.confirmContainerRunning,
+    serviceReadiness.readinessByEnv,
+  ]);
+
   /** 日志：仅当前环境容器 running 且应用 ready 时轮询；开发 / 线上分开 */
   const devLogs = useConversationAgentDevLogs(appId, {
     enabled:
