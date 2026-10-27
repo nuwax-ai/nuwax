@@ -43,7 +43,7 @@ export const EN_US: SystemLangMap = {
   'PC.Components.MicroAppHost.loading': 'Loading',
   'PC.Components.MicroAppHost.loadFailed': 'Unable to load. Please try again.',
   'PC.Components.MicroAppHost.retry': 'Reload',
-  "PC.Components.AppStartup.loading": "Opening Nuwax…",
+  "PC.Components.AppStartup.loading": "Starting…",
   "PC.Components.AppStartup.loadingHint": "Preparing the page. Please wait.",
   "PC.Components.AppStartup.waiting": "This is taking a little longer",
   "PC.Components.AppStartup.waitingHint": "You can keep waiting or reload the page.",
