@@ -1,4 +1,7 @@
-import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  SUCCESS_CODE,
+  USERAPP_OPERATION_IN_PROGRESS,
+} from '@/constants/codes.constants';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserAppDbEnvEnum } from '../services/appDb';
@@ -81,6 +84,40 @@ describe('useUserAppEnvPod 常驻实例可见性', () => {
     expect(result.current.status).toBe('running');
     expect(mockRunKeepalive).toHaveBeenCalledTimes(1);
     expect(mockRunKeepalive).toHaveBeenCalledWith(7001);
+  });
+
+  it('ensure 回包是操作进行中时按已受理处理，不标失败', async () => {
+    mockEnsurePod.mockResolvedValue({
+      code: USERAPP_OPERATION_IN_PROGRESS,
+    });
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Prod),
+    );
+
+    await act(async () => {
+      expect(await result.current.ensure(true, { deferRunning: true })).toBe(
+        true,
+      );
+    });
+    expect(result.current.status).toBe('starting');
+  });
+
+  it('ensure 抛操作进行中异常时同样按已受理处理，不标失败', async () => {
+    mockEnsurePod.mockRejectedValue(
+      Object.assign(new Error('应用存在未完成的操作（restart）'), {
+        info: { code: USERAPP_OPERATION_IN_PROGRESS },
+      }),
+    );
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Prod),
+    );
+
+    await act(async () => {
+      expect(await result.current.ensure(true, { deferRunning: true })).toBe(
+        true,
+      );
+    });
+    expect(result.current.status).toBe('starting');
   });
 
   it('启动中可以先保活，确认 running 后不重复启动轮询', async () => {

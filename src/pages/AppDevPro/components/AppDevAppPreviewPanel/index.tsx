@@ -743,11 +743,24 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   // 容器启动失败时展示失败提示。资源准备中且容器已 running 时改走下面的就绪提示。
   // readiness 已实测容器 running 时，本地 error/starting 是过期状态（多页签下容器
   // 是其他页签拉起的），不展示失败，跟随 readiness 的应用状态走。
+  // readiness 已给出明确的应用生命周期（启动中 / 停止中 / 已停止），或容器
+  // 正在过渡中时同样让行：本地容器状态可能只是 ensure 被「操作进行中」
+  // 拒绝留下的误报，展示必须跟随 readiness，不能被本地错误盖住。
+  const readinessLifecycleActive =
+    readinessKind === 'starting' ||
+    readinessKind === 'stopping' ||
+    readinessKind === 'stopped';
+  const readinessContainerInTransition =
+    readinessContainerStatus === UserAppContainerStatusEnum.Starting ||
+    readinessContainerStatus === UserAppContainerStatusEnum.Restarting ||
+    readinessContainerStatus === UserAppContainerStatusEnum.Stopping;
   if (
     containerStatus &&
     containerStatus !== 'running' &&
     !showProvisioning &&
-    !readinessContainerRunning
+    !readinessContainerRunning &&
+    !readinessLifecycleActive &&
+    !readinessContainerInTransition
   ) {
     return (
       <AppDevServiceStartStatus
