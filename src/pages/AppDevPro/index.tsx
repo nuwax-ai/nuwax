@@ -3366,14 +3366,30 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     const envToStop = dbEnv;
     const appStatus =
       serviceReadinessRef.current.readinessByEnvRef.current[envToStop]?.status;
-    // 应用启动中时停止不可点。只看当前环境，另一侧的 starting 不挡这边。
-    if (appStatus === UserAppReadinessStatusEnum.Starting) {
+    // 应用启动中、停止中或已停止时停止不可点（按钮禁用之外的兜底，
+    // 覆盖其他页签刚把服务停掉、本页签状态已同步的情形）。
+    // 只看当前环境，另一侧的状态不挡这边。
+    if (
+      appStatus === UserAppReadinessStatusEnum.Starting ||
+      appStatus === UserAppReadinessStatusEnum.Stopping ||
+      appStatus === UserAppReadinessStatusEnum.Stopped
+    ) {
       return;
     }
     modalConfirm(
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
+        // 确认框打开期间可能已被其他页签停掉，执行前再查一次
+        const latestStatus =
+          serviceReadinessRef.current.readinessByEnvRef.current[envToStop]
+            ?.status;
+        if (
+          latestStatus === UserAppReadinessStatusEnum.Stopping ||
+          latestStatus === UserAppReadinessStatusEnum.Stopped
+        ) {
+          return;
+        }
         setPreviewStoppedForEnv(envToStop, true);
         void previewRuntime.stop(envToStop).then((stopped) => {
           if (!stopped) {

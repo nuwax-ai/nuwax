@@ -74,10 +74,15 @@ const pickHistoryScrollAnchor = (
 /**
  * 把锚点推回记录的视口偏移（撑高与收缩一并回推）。
  * 与浏览器原生 scroll anchoring 幂等：若原生已补偿，delta≈0，本函数不再动作。
+ * force=true 时不受 epsilon 死区约束：历史落地沿是一次性对齐，亚像素残差也
+ * 全额修正——死区只属于安置窗口的高频补偿（防 ResizeObserver 逐帧抖动）。
+ * NW-254 验收 C01 实测一轮前插偏差 0.44px 恰被 1px 死区吞掉，连续翻页同向
+ * 累积（N×0.44px）后肉眼可见。
  */
 const restoreHistoryScrollAnchor = (
   container: HTMLElement,
   anchor: HistoryScrollAnchor,
+  force = false,
 ): boolean => {
   if (!container.contains(anchor.el)) return false;
   const containerTop = container.getBoundingClientRect().top;
@@ -85,7 +90,7 @@ const restoreHistoryScrollAnchor = (
     anchor.el.getBoundingClientRect().top -
     containerTop -
     anchor.viewportOffset;
-  if (Math.abs(delta) < SCROLL_ANCHOR_EPSILON) return true;
+  if (!force && Math.abs(delta) < SCROLL_ANCHOR_EPSILON) return true;
   container.scrollTop += delta;
   return true;
 };
@@ -546,20 +551,24 @@ export function useUnifiedChatScroll({
       (element as any)[LEGACY_ANCHOR_WINDOW_FLAG],
     );
 
-    // 触发沿（false→true）：记录首条可见内容块为锚点
+    // 触发沿（false→true）：停掉上一轮安置窗口（其 ResizeObserver 会在请求
+    // 飞行期按旧锚点补偿，与新锚点的拾取基准互打——连续翻页时尤其明显），
+    // 再记录当前首条可见内容块为锚点。
     if (!prevLoadingMoreRef.current && loadingMore) {
+      stopHistorySettleWindow();
       historyAnchorRef.current = legacyWindowActive
         ? null
         : pickHistoryScrollAnchor(element);
     }
 
-    // 落地沿（true→false）：锚点推回原偏移；锚点不可用时回退旧的 ΔH 单帧补偿
+    // 落地沿（true→false）：锚点推回原偏移（force 全额修正，含亚像素残差）；
+    // 锚点不可用时回退旧的 ΔH 单帧补偿
     if (prevLoadingMoreRef.current && !loadingMore && !legacyWindowActive) {
       const anchor = historyAnchorRef.current;
       let anchored = false;
       if (anchor) {
         if (element.contains(anchor.el)) {
-          restoreHistoryScrollAnchor(element, anchor);
+          restoreHistoryScrollAnchor(element, anchor, true);
           anchored = true;
         } else {
           historyAnchorRef.current = null;
