@@ -2988,6 +2988,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.confirmStopDeployContent": "停止后将中断当前生产部署，确认停止？",
   "PC.Pages.AppDevPro.stopDeploySuccess": "已停止部署",
   "PC.Pages.AppDevPro.publishCancelled": "已取消部署",
+  "PC.Pages.AppDevPro.publishCancelledByConcurrentDeploy": "当前应用已在新窗口重新部署，你的操作已被取消",
   "PC.Pages.AppDevPro.publishFailed": "发布失败",
   "PC.Pages.AppDevPro.appPublishing": "应用部署中",
   "PC.Pages.AppDevPro.publishNoApp": "请先创建或选择应用",
