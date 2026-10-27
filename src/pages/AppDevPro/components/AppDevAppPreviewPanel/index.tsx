@@ -121,6 +121,12 @@ export interface AppDevAppPreviewPanelProps {
    */
   readinessContainerStatus?: string | null;
   /**
+   * readiness 回包里容器当前意图操作的类型，如 restart / stop。
+   * 线上 start / restart 都会先重启容器：容器还在过渡中时用它区分
+   * 「重启容器」与普通应用启动，让非操作页签与操作页签展示一致。
+   */
+  readinessContainerOperationAction?: string | null;
+  /**
    * 当前环境的预览是否已经正常渲染过。
    * 为 true 时不再用就绪状态提示替换正在看的页面。
    */
@@ -393,6 +399,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   readinessStatus = null,
   readinessReady = null,
   readinessContainerStatus = null,
+  readinessContainerOperationAction = null,
   previewAlreadyPresented = false,
   suppressReadinessStatus = false,
   onPreviewPresented,
@@ -423,6 +430,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }, []);
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
+  /**
+   * stream 开始或结束时把日志展开状态重置回默认隐藏：展开只有打开、没有
+   * 收起入口，不重置的话用户点过一次「查看详情」后，本次失败日志和后续
+   * 每次 stream 都会一直摊开，只能刷新页面恢复。成功、失败、取消都算结束。
+   */
+  const prevIsStartingRef = useRef(isStarting);
+  useEffect(() => {
+    if (prevIsStartingRef.current === isStarting) {
+      return;
+    }
+    prevIsStartingRef.current = isStarting;
+    setLogDetailOpen(false);
+  }, [isStarting]);
   const startFailed = phase === 'failed' || phase === 'cancelled';
   /** 仅真正失败时把「启动失败」标红，取消启动不算失败 */
   const startError = phase === 'failed';
@@ -675,6 +695,33 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     </div>
   ) : null;
 
+  /**
+   * 线上 start / restart 都会先重启容器、再启动应用：容器还在 stopping 等
+   * 过渡状态时，应用层 readiness 会先报 starting。操作页签靠本地 restarting
+   * 显示「正在重启服务」，其他页签若只按应用状态会显示「服务正在启动中」，
+   * 两边不一致。容器处于重启过渡（容器 stopping / restarting，或容器意图
+   * 操作是 restart 且容器还没回到 running）且应用在 starting 时，非操作
+   * 页签统一改为与操作页签相同的重启提示；容器回到 running 后再按应用
+   * 状态展示启动中。本页签正在跑本地任务时不介入，走本地流程自己的提示。
+   */
+  const readinessContainerRestarting =
+    directPreview &&
+    !isStarting &&
+    readinessKind === 'starting' &&
+    readinessContainerStatus !== UserAppContainerStatusEnum.Running &&
+    (readinessContainerStatus === UserAppContainerStatusEnum.Stopping ||
+      readinessContainerStatus === UserAppContainerStatusEnum.Restarting ||
+      readinessContainerOperationAction === 'restart');
+  const containerRestartHero = readinessContainerRestarting ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        spinning
+        title={dict('PC.Pages.AppDevPro.previewRestarting')}
+        hint={dict('PC.Pages.AppDevPro.previewRestartingHint')}
+      />
+    </div>
+  ) : null;
+
   if (prodUndeployed) {
     return (
       <div className={cx(styles.container, styles.stage)}>
@@ -751,6 +798,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
 
   if (stopPendingHero) {
     return stopPendingHero;
+  }
+
+  if (containerRestartHero) {
+    return containerRestartHero;
   }
 
   if (readinessHero) {
