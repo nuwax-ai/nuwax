@@ -400,17 +400,20 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessStatus,
     readinessReady,
   );
+  /** readiness 实测的容器状态：回包里 container.status 为 running */
+  const readinessContainerRunning =
+    readinessContainerStatus === UserAppContainerStatusEnum.Running;
   /**
    * 判断应用状态前先看容器：容器还没 running 时应用层无从谈起，
    * 预览区走容器启动提示（下方 containerStatus 分支），不按 starting / ready 判断应用。
-   * 只看页面层容器状态（containerStatus，与下方容器分支同一口径）：
-   * readiness 回包里的 container.status 是观测值，可能滞后于应用 status，
-   * 实测 starting / ready 时它仍不是 running，若拿它当门闩会把启动中提示和
-   * 就绪预览一起挡死在已停止空态；没有页面层容器状态时视为不拦。
+   * 以页面层容器状态（containerStatus）为准；但 readiness 已实测容器 running 时，
+   * 本地容器状态（尤其其他页签 ensure 成功前本页签留下的 error）视为过期，
+   * 不再挡住应用状态判断与就绪预览。没有页面层容器状态时视为不拦。
    */
-  const containerRunningForReadiness = containerStatus
-    ? containerStatus === 'running'
-    : true;
+  const containerRunningForReadiness =
+    !containerStatus ||
+    containerStatus === 'running' ||
+    readinessContainerRunning;
   /**
    * readiness 已确认可访问（status 为 ready 且 ready 为 true）时以它为准打开预览。
    * 本地 running 只代表本页签 runtime 的视角：多页签下服务是其他页签拉起的，
@@ -627,7 +630,14 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }
 
   // 容器启动失败时展示失败提示。资源准备中且容器已 running 时改走下面的就绪提示。
-  if (containerStatus && containerStatus !== 'running' && !showProvisioning) {
+  // readiness 已实测容器 running 时，本地 error/starting 是过期状态（多页签下容器
+  // 是其他页签拉起的），不展示失败，跟随 readiness 的应用状态走。
+  if (
+    containerStatus &&
+    containerStatus !== 'running' &&
+    !showProvisioning &&
+    !readinessContainerRunning
+  ) {
     return (
       <AppDevServiceStartStatus
         failed={containerStatus === 'error'}
