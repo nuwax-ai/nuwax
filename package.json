@@ -137,6 +137,7 @@
     "mermaid": "9.4.3",
     "monaco-editor": "0.53.0",
     "monaco-editor-webpack-plugin": "7.0.1",
+    "pdfjs-dist": "4.7.76",
     "pptx-preview": "1.0.7",
     "prismjs": "^1.30.0",
     "qiankun": "2.10.17-beta.0",
@@ -198,5 +199,11 @@
   "packageManager": "pnpm@10.27.0",
   "engines": {
     "node": "> 18.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "pdfjs-dist@4.7.76>canvas": "-",
+      "pdfjs-dist@4.7.76>path2d": "-"
+    }
   }
 }

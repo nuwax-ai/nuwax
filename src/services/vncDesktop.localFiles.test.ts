@@ -288,7 +288,8 @@ describe('computer static service local routing', () => {
   });
 
   it('retains cloud request parameters for browsers and old bridges', async () => {
-    await apiGetStaticFileList(7, {
+    // 使用未识别为本机的来源；本机来源的历史在 UI 释放后仍需防止迟到请求换源。
+    await apiGetStaticFileList(99, {
       relativePath: 'docs',
       type: 'file',
       limit: 100,
@@ -298,7 +299,7 @@ describe('computer static service local routing', () => {
       {
         method: 'GET',
         params: {
-          cId: 7,
+          cId: 99,
           relativePath: 'docs',
           recursive: false,
           type: 'file',
@@ -429,6 +430,7 @@ describe('computer static service local routing', () => {
     expect(mocks.request).toHaveBeenCalledOnce();
   });
   it('a delayed cloud response cannot replace a newly registered local context', async () => {
+    registerLocalFilesContext({ cId: 7, sandboxId: 'other-computer' });
     let complete!: (response: unknown) => void;
     mocks.request.mockReturnValueOnce(
       new Promise((resolve) => {
@@ -438,6 +440,7 @@ describe('computer static service local routing', () => {
     const request = apiGetStaticFileList(7);
     await Promise.resolve();
     await Promise.resolve();
+    await vi.waitFor(() => expect(mocks.request).toHaveBeenCalledOnce());
     mocks.getApi.mockReturnValue(localApi());
     registerLocalFilesContext({ cId: 7, sandboxId: 'local' });
     complete({ code: '0000', data: { files: [{ name: 'remote.txt' }] } });

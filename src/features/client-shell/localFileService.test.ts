@@ -79,32 +79,66 @@ beforeEach(() => {
   mocks.getApi.mockReturnValue(api);
 });
 afterEach(() => clearLocalFilesContexts());
-const bind = (sandboxId = 'local-1') =>
+// 生命周期清理刻意保留来源；旧桥首次接入场景使用新的会话，避免借用其他用例的本机历史。
+let freshCId = 100;
+const bind = (sandboxId = 'local-1', cId = 12) =>
   registerLocalFilesContext({
-    cId: 12,
+    cId,
     sandboxId,
     workspacePath: '/work',
     userId: 9,
   });
 
 describe('local file routing', () => {
+  it('已知本机来源在上下文释放后不会凭兼容 URL 退回云端', async () => {
+    const release = bind();
+    await getLocalFileList(12);
+    release();
+    await expect(
+      prepareLocalFilePreview('/api/computer/static/12/a.md'),
+    ).rejects.toMatchObject({ code: 'expired' });
+    await expect(getLocalFileList(12)).rejects.toMatchObject({
+      code: 'expired',
+    });
+    await expect(exportLocalWorkspace(12)).rejects.toMatchObject({
+      code: 'expired',
+    });
+    expect(api.preparePreview).not.toHaveBeenCalled();
+  });
+  it.each(['unavailable', 'context-unresolved'] as const)(
+    '同机上下文重新注册后，%s 不能将预览、列表和导出改为云端来源',
+    async (code) => {
+      const release = bind();
+      await getLocalFileList(12);
+      release();
+      api.resolveContext.mockResolvedValueOnce({ success: false, code });
+      bind();
+      await expect(getLocalFileList(12)).rejects.toMatchObject({ code });
+      await expect(
+        prepareLocalFilePreview('/api/computer/static/12/a.md'),
+      ).rejects.toMatchObject({ code });
+      await expect(exportLocalWorkspace(12)).rejects.toMatchObject({ code });
+    },
+  );
   it.each([null, undefined, {}])(
     '旧桥能力返回 %s 时文件操作保留后端路线',
     async (capabilities) => {
+      const cId = freshCId++;
       mocks.getApi.mockReturnValue({
         ...api,
         getCapabilities: vi.fn().mockResolvedValue(capabilities),
       });
-      bind();
-      expect(await getLocalFileList(12)).toBeNull();
+      bind('local-1', cId);
+      expect(await getLocalFileList(cId)).toBeNull();
       expect(api.resolveContext).not.toHaveBeenCalled();
     },
   );
 
   it('旧桥方法不是函数时不能接管文件列表', async () => {
+    const cId = freshCId++;
     mocks.getApi.mockReturnValue({ ...api, listFiles: true });
-    bind();
-    expect(await getLocalFileList(12)).toBeNull();
+    bind('local-1', cId);
+    expect(await getLocalFileList(cId)).toBeNull();
     expect(api.resolveContext).not.toHaveBeenCalled();
   });
 
@@ -152,9 +186,10 @@ describe('local file routing', () => {
   );
 
   it('falls back without a real bridge or explicit matching conversation', async () => {
+    const cId = freshCId++;
     mocks.getApi.mockReturnValue(undefined);
-    bind();
-    expect(await getLocalFileList(12)).toBeNull();
+    bind('local-1', cId);
+    expect(await getLocalFileList(cId)).toBeNull();
     expect(
       await prepareLocalFilePreview('/api/computer/static/99/a.md'),
     ).toBeNull();
@@ -194,12 +229,13 @@ describe('local file routing', () => {
     });
   });
   it('only unresolved local context falls back; determined local read failures propagate', async () => {
+    const cId = freshCId++;
     api.resolveContext.mockResolvedValueOnce({
       success: false,
       code: 'context-unresolved',
     });
-    bind();
-    expect(await getLocalFileList(12)).toBeNull();
+    bind('local-1', cId);
+    expect(await getLocalFileList(cId)).toBeNull();
     clearLocalFilesContexts();
     bind();
     api.listFiles.mockResolvedValueOnce({
@@ -270,15 +306,18 @@ describe('local file routing', () => {
     expect(api.releaseContext).toHaveBeenCalledWith('ctx-local-1');
   });
   it('re-resolves unavailable capabilities when the local service becomes ready', async () => {
+    const cId = freshCId++;
     const dispose = initLocalFilesLifecycle();
     api.getCapabilities.mockResolvedValueOnce({
       apiVersion: 1,
       available: false,
     });
-    bind();
-    expect(await getLocalFileList(12)).toBeNull();
+    bind('local-1', cId);
+    expect(await getLocalFileList(cId)).toBeNull();
     handleComputerServiceStatePayload({ phase: 'ready', sandboxId: 'local-1' });
-    expect((await getLocalFileList(12))?.data.files[0].localFile).toBeDefined();
+    expect(
+      (await getLocalFileList(cId))?.data.files[0].localFile,
+    ).toBeDefined();
     dispose();
   });
   it('starting 到 ready 或重复 ready 不撤销当前预览，停服后明确失败并允许恢复', async () => {

@@ -57,6 +57,12 @@ export class LocalFileAccessError extends Error {
     this.name = 'LocalFileAccessError';
   }
 }
+function findContext(cId: string): ContextRecord | undefined {
+  const record = contexts.get(cId);
+  if (!record && recentLocalSources.has(cId))
+    throw new LocalFileAccessError('expired');
+  return record;
+}
 function value<T>(result: LocalFilesResult<T>): T {
   if (!result.success)
     throw new LocalFileAccessError(result.code, result.error);
@@ -199,7 +205,8 @@ export function registerLocalFilesContext(
     disposed: false,
     settled: false,
     generation: 0,
-    knownLocal: false,
+    // 同一电脑的 UI 重新挂载不代表来源改变；仅显式换电脑可以恢复远端路线。
+    knownLocal: recentLocalSources.get(cId) === normalizedInput.sandboxId,
     writable: false,
     owners: new Set([owner]),
     grants: new Set(),
@@ -392,7 +399,7 @@ async function resolveTarget(input: string | LocalFileReference): Promise<{
   if (isLocalPreviewUrl(input)) return null;
   const parsed = parseStaticUrl(input);
   if (!parsed) return null;
-  const record = contexts.get(parsed.cId);
+  const record = findContext(parsed.cId);
   if (!record) return null;
   const generation = record.generation;
   const context = await record.pending;
@@ -414,7 +421,7 @@ export async function getLocalFileList(
   options: LocalFilesListOptions = {},
   search?: LocalFilesSearchOptions,
 ): Promise<RequestResponse<StaticFileListResponse> | null> {
-  const record = contexts.get(String(cId));
+  const record = findContext(String(cId));
   if (!record) return null;
   const generation = record.generation;
   const context = await record.pending;
@@ -492,12 +499,8 @@ export async function updateLocalFiles(
       assertLocalFileReferenceCurrent(file.localFile);
     }
   }
-  const record = contexts.get(String(cId));
-  if (!record) {
-    if (recentLocalSources.has(String(cId)))
-      throw new LocalFileAccessError('expired');
-    return null;
-  }
+  const record = findContext(String(cId));
+  if (!record) return null;
   const generation = record.generation;
   const context = await record.pending;
   if (
@@ -584,7 +587,7 @@ export async function saveLocalFile(
 export async function exportLocalWorkspace(
   cId: string | number,
 ): Promise<boolean | undefined> {
-  const record = contexts.get(String(cId));
+  const record = findContext(String(cId));
   if (!record) return undefined;
   const generation = record.generation;
   const context = await record.pending;
