@@ -4068,6 +4068,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         readinessContainerStatus={
           serviceReadiness.readinessByEnv[dbEnv]?.container?.status
         }
+        readinessContainerOperationAction={
+          serviceReadiness.readinessByEnv[dbEnv]?.container?.operation?.action
+        }
         holdPreview={computerRestartHoldEnv === dbEnv}
         previewAlreadyPresented={previewPresentedByEnv[dbEnv]}
         suppressReadinessStatus={previewUserStopped}
