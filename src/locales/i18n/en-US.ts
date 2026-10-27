@@ -2989,6 +2989,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.confirmStopDeployContent": "This will interrupt the current production deployment. Continue?",
   "PC.Pages.AppDevPro.stopDeploySuccess": "Deployment stopped",
   "PC.Pages.AppDevPro.publishCancelled": "Deploy cancelled",
+  "PC.Pages.AppDevPro.publishCancelledByConcurrentDeploy": "This app was redeployed in another window, so this operation was cancelled",
   "PC.Pages.AppDevPro.publishFailed": "Publish failed",
   "PC.Pages.AppDevPro.appPublishing": "Deploying application",
   "PC.Pages.AppDevPro.publishNoApp": "Please create or select an app first",
