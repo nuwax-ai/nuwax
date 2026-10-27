@@ -45,11 +45,6 @@ const changed = () => {
   listeners.forEach((listener) => listener());
 };
 const safely = (task?: Promise<unknown>) => task?.catch(() => undefined);
-const fallbackCodes = new Set<LocalFilesErrorCode>([
-  'unavailable',
-  'not-local',
-  'context-unresolved',
-]);
 
 export class LocalFileAccessError extends Error {
   constructor(public readonly code: LocalFilesErrorCode, detail?: string) {
@@ -138,9 +133,15 @@ function resolveRecord(cId: string, record: ContextRecord) {
       if (record.knownLocal) throw new LocalFileAccessError('not-local');
       return null;
     }
+    // 完整读写桥已确认宿主就是所选电脑，根目录解析失败也不能改走云端。
+    // 旧只读桥仍在前面的能力检查中保留兼容路线。
+    record.knownLocal = true;
+    recentLocalSources.delete(cId);
+    recentLocalSources.set(cId, record.input.sandboxId);
+    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
+      recentLocalSources.delete(recentLocalSources.keys().next().value!);
     const result = await api.resolveContext(record.input);
     if (!result.success) {
-      if (!record.knownLocal && fallbackCodes.has(result.code)) return null;
       throw new LocalFileAccessError(result.code, result.error);
     }
     if (
@@ -151,13 +152,6 @@ function resolveRecord(cId: string, record: ContextRecord) {
       safely(api.releaseContext?.(result.data.contextId));
       throw new LocalFileAccessError('expired');
     }
-    // direct 页面可先于客户端升级。完整读写能力才切换整条路线，
-    // 避免旧只读桥接管列表后又阻止原本可用的保存。
-    record.knownLocal = true;
-    recentLocalSources.delete(cId);
-    recentLocalSources.set(cId, record.input.sandboxId);
-    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
-      recentLocalSources.delete(recentLocalSources.keys().next().value!);
     record.writable =
       capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
