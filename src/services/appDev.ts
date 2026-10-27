@@ -24,10 +24,7 @@ import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
 import { parseLogEntry } from '@/utils/devLogParser';
-import {
-  buildExportZipName,
-  exportFileViaBrowserDownload,
-} from '@/utils/exportImportFile';
+import { exportNamedDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
@@ -483,10 +480,7 @@ export async function exportProject(
       )}`;
 
     // 通过浏览器下载文件；默认文件名带项目名
-    const saved = await exportFileViaBrowserDownload(
-      linkUrl,
-      buildExportZipName(projectName),
-    );
+    const saved = await exportNamedDownload(linkUrl, projectName);
     if (saved) message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
   } catch (error) {
     // 改进错误处理，兼容不同的错误格式

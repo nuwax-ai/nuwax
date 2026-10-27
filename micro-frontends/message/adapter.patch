@@ -2961,7 +2961,7 @@ index 9d92f0d..8387ffb 100644
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
 diff --git a/nuwax-im-web/tsconfig.test.json b/nuwax-im-web/tsconfig.test.json
-index 933a70a..b679325 100644
+index cc4ecf8..91c36b9 100644
 --- a/nuwax-im-web/tsconfig.test.json
 +++ b/nuwax-im-web/tsconfig.test.json
 @@ -38,6 +38,7 @@

@@ -428,8 +428,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const conversationInProgress =
     isGeneratingFiles || isWaitingForUserConfirmation;
+  /**
+   * 已展示过预览的环境，服务明确停止/重启中，或容器确非 running 的启动中，
+   * 就绪提示要重新挂回来：服务端侧重启（先停后起）不会走「电脑重启」
+   * 复位 previewAlreadyPresented，不补这块 iframe 会直出 503 英文原文（NW-286）。
+   * 容器仍 running 的瞬时 starting 抖动不算退化，继续保留原「探测抖动不盖已打开页面」的防抖。
+   */
+  const readinessRegressed =
+    readinessKind === 'stopping' ||
+    readinessKind === 'stopped' ||
+    (readinessKind === 'starting' &&
+      readinessContainerStatus !== UserAppContainerStatusEnum.Running);
   const showReadinessHero =
-    !previewAlreadyPresented &&
+    (!previewAlreadyPresented || readinessRegressed) &&
     !suppressReadinessStatus &&
     !startFailed &&
     !isStarting &&
