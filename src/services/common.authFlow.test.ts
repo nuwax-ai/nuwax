@@ -379,7 +379,7 @@ describe('匿名登录步骤的全局认证错误处理', () => {
     },
   );
 
-  describe('userapp start / restart 操作进行中不弹全局提示', () => {
+  describe('操作进行中（ERR_OPERATION_IN_PROGRESS）不弹全局提示', () => {
     it.each(entryPoints)(
       '%s 对四个 start / restart 接口的 ERR_OPERATION_IN_PROGRESS 只抛错不提示',
       async (entryPoint) => {
@@ -409,8 +409,20 @@ describe('匿名登录步骤的全局认证错误处理', () => {
       },
     );
 
+    it('第几次调用、opts 里有没有请求信息，都不提示', () => {
+      const error = requestConfig.errorConfig!.errorThrower!({
+        code: USERAPP_OPERATION_IN_PROGRESS,
+        message: '应用存在未完成的操作',
+        success: false,
+        data: null,
+      } as any);
+      expectErrorHandlerToThrow(error, {});
+      expect(mocks.warning).not.toHaveBeenCalled();
+      expect(mocks.error).not.toHaveBeenCalled();
+    });
+
     it.each(entryPoints)(
-      '%s 对其他接口的 ERR_OPERATION_IN_PROGRESS 仍提示',
+      '%s 对其他接口的 ERR_OPERATION_IN_PROGRESS 同样不提示',
       async (entryPoint) => {
         await expect(
           handleBusinessError(
@@ -420,7 +432,8 @@ describe('匿名登录步骤的全局认证错误处理', () => {
             '应用存在未完成的操作',
           ),
         ).rejects.toMatchObject({ name: 'BizError' });
-        expect(mocks.warning).toHaveBeenCalledWith('应用存在未完成的操作');
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
       },
     );
 

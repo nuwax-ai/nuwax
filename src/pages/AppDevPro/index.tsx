@@ -3439,14 +3439,30 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       }
       const containerStatus = latest.container?.status;
       if (containerStatus !== UserAppContainerStatusEnum.Running) {
-        // 容器没在运行不能干等：过渡中（starting / restarting / stopping）
-        // 不重复拉起，等它自己落定；其余状态（stopped / missing / failed
-        // 等）主动 ensure 把容器拉起来，再等 readiness 确认 running 后
-        // 才重启应用。
-        if (
-          !containerStatus ||
-          !CONTAINER_TRANSITION_STATUSES.has(containerStatus)
+        // 容器在过渡中（starting / restarting / stopping）先等它落定：
+        // stopping 的终点是 stopped 而不是 running，直接等 running 会
+        // 永远等不到，重启被吞掉且等待标记一直占着，后续点击也没用。
+        let settledContainerStatus: string | undefined = containerStatus;
+        while (
+          settledContainerStatus &&
+          CONTAINER_TRANSITION_STATUSES.has(settledContainerStatus) &&
+          !envChanged()
         ) {
+          const next = await serviceReadinessRef.current.waitForNextPoll(
+            envToRestart,
+            envChanged,
+          );
+          if (!next || envChanged()) {
+            return;
+          }
+          settledContainerStatus = next.container?.status;
+        }
+        if (envChanged()) {
+          return;
+        }
+        // 落定后仍不是 running（stopped / missing / failed 等）：主动
+        // ensure 把容器拉起来，再等 readiness 确认 running 后才重启应用。
+        if (settledContainerStatus !== UserAppContainerStatusEnum.Running) {
           const accepted = await ensureEnvPodRef.current(envToRestart, true, {
             reensure: true,
             deferRunning: true,
@@ -3454,15 +3470,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           if (!accepted || envChanged()) {
             return;
           }
-        }
-        resumeReadinessWatch();
-        const containerRunning =
-          await serviceReadinessRef.current.waitUntilContainerRunning(
-            envToRestart,
-            envChanged,
-          );
-        if (!containerRunning || envChanged()) {
-          return;
+          resumeReadinessWatch();
+          const containerRunning =
+            await serviceReadinessRef.current.waitUntilContainerRunning(
+              envToRestart,
+              envChanged,
+            );
+          if (!containerRunning || envChanged()) {
+            return;
+          }
         }
         // 本地 pod 状态不用在这里同步：readiness 报容器 running 时已有
         // effect 统一 confirm 本地状态，这里再调是重复。
