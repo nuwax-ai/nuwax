@@ -228,14 +228,16 @@ describe('local file routing', () => {
       timeoutMs: 2000,
     });
   });
-  it('only unresolved local context falls back; determined local read failures propagate', async () => {
+  it('首次确认本机身份后，工作区未解析及读取失败均不退云端', async () => {
     const cId = freshCId++;
     api.resolveContext.mockResolvedValueOnce({
       success: false,
       code: 'context-unresolved',
     });
     bind('local-1', cId);
-    expect(await getLocalFileList(cId)).toBeNull();
+    await expect(getLocalFileList(cId)).rejects.toMatchObject({
+      code: 'context-unresolved',
+    });
     clearLocalFilesContexts();
     bind();
     api.listFiles.mockResolvedValueOnce({
