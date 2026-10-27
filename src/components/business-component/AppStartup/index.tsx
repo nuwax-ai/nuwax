@@ -116,7 +116,6 @@ const AppStartup: React.FC<AppStartupProps> = ({
               currentTarget.hidden = true;
             }}
           />
-          {!isFailure && <span className={styles.spinner} />}
           {isFailure && <span className={styles.failureMark}>!</span>}
         </div>
         <p className={styles.brandName}>{brand.name}</p>
