@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collapseTerminalProcesses,
   EMPHASIS_FLANKING_ZWSP,
+  ensureBlockFormulaListLayout,
   escapeBarePercentInFormula,
   fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
@@ -16,6 +17,22 @@ import {
   replaceMathBracket,
   unwrapLatexInlineCode,
 } from '../utils';
+
+describe('HTML 包装后的列表边界', () => {
+  it.each([
+    '- 项目一\n- 项目二',
+    '1. 项目一\n2. 项目二',
+    '3. 项目一\n4. 项目二',
+  ])('包装内的列表不被当作纯 HTML 文本：%s', (items) => {
+    expect(
+      ensureBlockFormulaListLayout(`<div>补充说明：\n${items}\n</div>`),
+    ).toContain(`补充说明：\n\n${items.split('\n')[0]}`);
+  });
+  it('围栏中的 HTML 与列表示例保持原样', () => {
+    const code = '```html\n<div>说明\n- 字面示例\n</div>\n```';
+    expect(ensureBlockFormulaListLayout(code)).toBe(code);
+  });
+});
 
 /** 构造一个合法的 base64 data URL（仅长度可配置，内容不要求是真实图片） */
 const makeDataUrl = (bodyLen = 100) =>
@@ -646,9 +663,9 @@ describe('escapeBarePercentInFormula（NW-228）', () => {
 
 describe('replaceMathBracket 裸 % 转义（NW-228 集成）', () => {
   it('$...$ 公式内的裸 % 被补转义', () => {
-    expect(replaceMathBracket('弹性 $\\frac{\\%\\Delta Q}{%\\Delta P}$ 更大')).toBe(
-      '弹性 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 更大',
-    );
+    expect(
+      replaceMathBracket('弹性 $\\frac{\\%\\Delta Q}{%\\Delta P}$ 更大'),
+    ).toBe('弹性 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 更大');
   });
 
   it('$$...$$ 块级公式内的裸 % 被补转义', () => {
@@ -658,9 +675,9 @@ describe('replaceMathBracket 裸 % 转义（NW-228 集成）', () => {
   });
 
   it('\\(...\\) 定界公式内的裸 % 被补转义', () => {
-    expect(replaceMathBracket('公式 \\(\\frac{\\%\\Delta Q}{%\\Delta P}\\) 尾')).toBe(
-      '公式 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 尾',
-    );
+    expect(
+      replaceMathBracket('公式 \\(\\frac{\\%\\Delta Q}{%\\Delta P}\\) 尾'),
+    ).toBe('公式 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 尾');
   });
 
   it('正文与行内代码里的 % 不受影响', () => {

@@ -171,12 +171,15 @@ export function parseMessageSegments(
 export function stripCustomTags(input: string | undefined | null): string {
   const text = typeof input === 'string' ? input : '';
   if (!text) return '';
-  return text
-    .replace(
-      /(?:\s*<(?:div|p)>\s*)?<markdown-custom-(?:process|think)\b[^>]*>(?:<\/markdown-custom-(?:process|think)>)?(?:\s*<\/(?:div|p)>\s*)?/g,
-      '\n\n',
-    )
-    .replace(/(?:\s*<(?:div|p)>\s*|\s*<\/(?:div|p)>\s*)/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return (
+    text
+      .replace(
+        /(?:\s*<(?:div|p)>\s*)?<markdown-custom-(?:process|think)\b[^>]*>(?:<\/markdown-custom-(?:process|think)>)?(?:\s*<\/(?:div|p)>\s*)?/g,
+        '\n\n',
+      )
+      // 包装是块边界，不能连同相邻换行一起删掉，否则首个列表项会粘回引导段落。
+      .replace(/(?:\s*<(?:div|p)>\s*|\s*<\/(?:div|p)>\s*)/g, '\n\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
