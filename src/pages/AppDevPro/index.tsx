@@ -3280,13 +3280,58 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void rebuildDevPreviewAfterWorkspaceChange();
   };
 
-  /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
-  const handleStartPreviewRuntime = useCallback(() => {
+  /**
+   * 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
+   * 开发环境调 start 前先查 tasks/active：
+   * devActionAllowed 为 true 才调 start；
+   * 为 false 时，若 tasks 里已有带 taskId 的开发启动 / 重启任务，直接接上它的日志流，不重复 start；
+   * 没有对应任务时不再调 start，解除本页签停止标记并刷新 readiness，
+   * 由 readiness 的 starting 状态展示「服务正在启动中」（与 stream 页签之外的其他页签一致）。
+   * 线上环境不查，直接 start。
+   */
+  const handleStartPreviewRuntime = useCallback(async () => {
     const envToStart = dbEnv;
+    if (envToStart === UserAppDbEnvEnum.Dev && appId) {
+      try {
+        const activeResult = await apiUserAppTasksActive(appId);
+        if (dbEnvRef.current !== envToStart) {
+          return;
+        }
+        if (activeResult?.data && activeResult.data.devActionAllowed !== true) {
+          const startTask = (activeResult.data.tasks || []).find(
+            (item) =>
+              (item.taskType === UserAppTaskTypeEnum.DevStart ||
+                item.taskType === UserAppTaskTypeEnum.DevRestart) &&
+              !!item.taskId,
+          );
+          setPreviewStoppedForEnv(envToStart, false);
+          setPreviewIframeUrl(appPreviewUrlRef.current);
+          if (startTask) {
+            void previewRuntime.attachExistingTask(
+              startTask,
+              UserAppDbEnvEnum.Dev,
+            );
+            return;
+          }
+          // 查不到可接的任务：多半是其他页签刚发起启动、任务还没落到 active，
+          // 不重复调 start，等 readiness 切到 starting 后展示启动中
+          resumeReadinessWatch();
+          return;
+        }
+      } catch (error) {
+        console.error('[AppDevPro] 启动前查询进行中任务失败', error);
+      }
+    }
     setPreviewStoppedForEnv(envToStart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.start(envToStart);
-  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
+  }, [
+    appId,
+    dbEnv,
+    previewRuntime,
+    resumeReadinessWatch,
+    setPreviewStoppedForEnv,
+  ]);
 
   /**
    * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
