@@ -23,9 +23,13 @@
   color: @colorError;
 }
 
-/* 并发部署挤掉本窗口：中性提示图标，非失败（NW-287） */
+/* 并发部署挤掉本窗口：取消文案加粗提示，图标用 warning 色（非失败红） */
 .cancelIcon {
-  color: @colorTextSecondary;
+  color: @colorWarning;
+}
+
+.cancelPhaseText {
+  font-weight: 600;
 }
 
 .stepLogs {
