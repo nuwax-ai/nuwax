@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- 撤回：左向回转箭头（undo），同原 PNG 形态 -->
+  <g fill="none" stroke="#292832" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 340L150 480L300 620"/>
+    <path d="M150 480H590A200 200 0 0 1 790 680V810"/>
+  </g>
+</svg>
