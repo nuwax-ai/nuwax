@@ -2926,6 +2926,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.confirmStopDeployContent": "停止すると現在の本番デプロイが中断されます。続行しますか？",
   "PC.Pages.AppDevPro.stopDeploySuccess": "デプロイを停止しました",
   "PC.Pages.AppDevPro.publishCancelled": "デプロイをキャンセルしました",
+  "PC.Pages.AppDevPro.publishCancelledByConcurrentDeploy": "このアプリは別のウィンドウで再デプロイされたため、この操作はキャンセルされました",
   "PC.Pages.AppDevPro.publishFailed": "公開に失敗しました",
   "PC.Pages.AppDevPro.appPublishing": "アプリをデプロイ中",
   "PC.Pages.AppDevPro.publishNoApp": "先にアプリを作成または選択してください",
