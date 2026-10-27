@@ -210,6 +210,34 @@ describe('FilePreview 本机流式预览', () => {
     expect(screen.queryByText('旧缓存')).not.toBeInTheDocument();
   });
 
+  it('本机 Markdown 内的同会话静态图片也改走授权来源', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        '![本机](/api/computer/static/9/images/a.png)\n![绝对](https://business.example/api/computer/static/9/images/b.png)',
+      ),
+    );
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        fileType="markdown"
+      />,
+    );
+    await settlePreview();
+    expect(screen.getByAltText('本机')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/a.png',
+    );
+    expect(screen.getByAltText('绝对')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/b.png',
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      grant.url,
+      expect.objectContaining({ credentials: 'omit' }),
+    );
+  });
+
   it('下载取消由宿主消费，不创建浏览器下载或错误', async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
     const onError = vi.fn();

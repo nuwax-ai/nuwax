@@ -737,7 +737,12 @@ function looksLikeLatex(code: string): boolean {
  * 在标题、编号项前补空行，让每条公式成为独立列表项。
  */
 function ensureBlockFormulaListLayout(text: string): string {
-  if (!text || (!text.includes('**') && !/^\d+\.\s+/m.test(text))) {
+  if (
+    !text ||
+    (!text.includes('**') &&
+      !/^\d+\.\s+/m.test(text) &&
+      !/^\s*<\/?(?:div|p)\b/im.test(text))
+  ) {
     return text;
   }
 
@@ -753,14 +758,19 @@ function ensureBlockFormulaListLayout(text: string): string {
 
   const lines = protectedText.split('\n');
   const out: string[] = [];
+  let htmlBlock = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
+    if (!trimmed) htmlBlock = false;
+    if (/^<\/?(?:div|p)\b/i.test(trimmed)) htmlBlock = true;
+    const listAfterHtml = htmlBlock && /^(?:[-+*]|\d+[.)])\s+\S/.test(trimmed);
     const isNumberedItem = /^\d+\.\s+\S/.test(trimmed);
     const isBoldOnlyHeading = /^\*\*[^*\n]+\*\*$/.test(trimmed);
     const isAtxHeading = /^#{1,6}\s+\S/.test(trimmed);
-    const needsBlockBreak = isNumberedItem || isBoldOnlyHeading || isAtxHeading;
+    const needsBlockBreak =
+      isNumberedItem || isBoldOnlyHeading || isAtxHeading || listAfterHtml;
 
     if (
       needsBlockBreak &&
@@ -770,6 +780,8 @@ function ensureBlockFormulaListLayout(text: string): string {
       out.push('');
     }
     out.push(line);
+    // CommonMark 的 HTML 块只在空行结束；列表前补边界，让流式残留包装内的列表重新参与解析。
+    if (listAfterHtml) htmlBlock = false;
   }
 
   return out
