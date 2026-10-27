@@ -1,11 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { Blob } from 'node:buffer';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  exportFileViaBrowserDownload,
   exportNamedDownload,
   sanitizeDownloadBaseName,
 } from './exportImportFile';
 
 const desktop = vi.hoisted(() => ({
   save: vi.fn(),
+  request: vi.fn(),
 }));
 
 vi.mock('./downloadCompletion', () => ({
@@ -20,7 +23,12 @@ vi.mock('@/services/i18nRuntime', () => ({ dict: (k: string) => k }));
 vi.mock('antd', () => ({
   message: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
 }));
-vi.mock('umi', () => ({ request: vi.fn() }));
+vi.mock('umi', () => ({ request: desktop.request }));
+
+beforeEach(() => {
+  desktop.save.mockReset().mockResolvedValue(undefined);
+  desktop.request.mockReset();
+});
 
 describe('sanitizeDownloadBaseName', () => {
   it.each([
@@ -61,6 +69,7 @@ describe('exportNamedDownload', () => {
       '/api/skill/export/1',
       '我的-技能-名.zip',
     );
+    expect(desktop.request).not.toHaveBeenCalled();
   });
 
   it('keeps the default naming when the resource name is unusable', async () => {
@@ -76,5 +85,104 @@ describe('exportNamedDownload', () => {
     desktop.save.mockResolvedValueOnce(true);
     await exportNamedDownload('/api/export/1', '报表', 'xlsx');
     expect(desktop.save).toHaveBeenCalledWith('/api/export/1', '报表.xlsx');
+  });
+});
+
+describe('浏览器命名归档下载', () => {
+  const createObjectURL = vi.fn();
+  const revokeObjectURL = vi.fn();
+  let downloads: { href: string; name: string }[];
+  const archive = new Blob(['zip bytes'], { type: 'application/zip' });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    downloads = [];
+    createObjectURL.mockReset().mockReturnValue('blob:https://nuwax.test/zip');
+    revokeObjectURL.mockReset();
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloads.push({ href: this.href, name: this.download });
+    });
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('响应头仍为数字文件名时，用 Blob 下载保留资源名且不假报落盘成功', async () => {
+    desktop.request.mockResolvedValue({
+      data: archive,
+      headers: {
+        'content-type': 'application/zip',
+        'content-disposition': 'attachment; filename="project_123.zip"',
+      },
+    });
+    await expect(
+      exportNamedDownload('/api/export/123', '项目/名称'),
+    ).resolves.toBe(false);
+    expect(desktop.request).toHaveBeenCalledWith('/api/export/123', {
+      method: 'GET',
+      responseType: 'blob',
+      getResponse: true,
+      skipErrorHandler: true,
+    });
+    expect(createObjectURL).toHaveBeenCalledWith(archive);
+    expect(downloads).toEqual([
+      { href: 'blob:https://nuwax.test/zip', name: '项目-名称.zip' },
+    ]);
+    expect(document.querySelector('a[download]')).toBeNull();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.runOnlyPendingTimers();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:https://nuwax.test/zip');
+  });
+
+  it('业务错误不下载伪归档，错误交调用方消费，随后可以重试', async () => {
+    desktop.request
+      .mockResolvedValueOnce({
+        data: new Blob([
+          JSON.stringify({ success: false, message: '导出失败，请重试' }),
+        ]),
+        headers: { 'content-type': 'application/json' },
+      })
+      .mockResolvedValueOnce({
+        data: archive,
+        headers: { 'content-type': 'application/zip' },
+      });
+    await expect(exportNamedDownload('/export', '会话')).rejects.toThrow(
+      '导出失败，请重试',
+    );
+    expect(downloads).toEqual([]);
+    expect(createObjectURL).not.toHaveBeenCalled();
+    await expect(exportNamedDownload('/export', '会话')).resolves.toBe(false);
+    expect(downloads[0].name).toBe('会话.zip');
+  });
+
+  it('请求失败不触发下载', async () => {
+    desktop.request.mockRejectedValue(new Error('network offline'));
+    await expect(exportNamedDownload('/export', '会话')).rejects.toThrow(
+      'network offline',
+    );
+    expect(downloads).toEqual([]);
+  });
+
+  it('无可用资源名称时保留服务端默认命名，不额外读取归档', async () => {
+    await expect(exportNamedDownload('/export', '???')).resolves.toBe(false);
+    expect(desktop.request).not.toHaveBeenCalled();
+    expect(downloads[0].name).toBe('');
+    expect(downloads[0].href).toMatch(/\/export$/);
+  });
+
+  it('普通 JSON 文件下载继续使用原链接，不把文件正文当业务错误', async () => {
+    await expect(
+      exportFileViaBrowserDownload('/files/config.json', 'config.json'),
+    ).resolves.toBe(false);
+    expect(desktop.request).not.toHaveBeenCalled();
+    expect(downloads[0].name).toBe('config.json');
+    expect(downloads[0].href).toMatch(/\/files\/config.json$/);
   });
 });
