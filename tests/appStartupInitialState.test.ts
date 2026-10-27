@@ -229,7 +229,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     expect(mocks.setLoginStatusToCache).toHaveBeenCalledWith(true);
     const html = renderToStaticMarkup(React.createElement(AuthWithLoading));
     expect(html).toContain('business page');
-    expect(html).not.toContain('正在打开 Nuwax');
+    expect(html).not.toContain('正在启动');
 
     render(React.createElement(AuthWithLoading));
     expect(screen.getByText('business page')).toBeInTheDocument();
@@ -241,7 +241,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     mocks.loginStatus = true;
     const html = renderToStaticMarkup(React.createElement(AuthWithLoading));
     expect(html).toContain('business page');
-    expect(html).not.toContain('正在打开 Nuwax');
+    expect(html).not.toContain('正在启动');
     expect(html).not.toContain('PC.Common.Global.loading');
   });
 
@@ -255,7 +255,7 @@ describe('首屏启动与鉴权加载衔接', () => {
         }),
     );
     render(React.createElement(AuthWithLoading));
-    expect(screen.getByRole('status')).toHaveTextContent('正在打开 Nuwax');
+    expect(screen.getByRole('status')).toHaveTextContent('正在启动');
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
 
     await act(async () => resolve({ id: 1 }));

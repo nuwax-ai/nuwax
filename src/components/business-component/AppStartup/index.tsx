@@ -1,11 +1,11 @@
-import logoUrl from '@/assets/images/logo.png';
 import {
   getAppStartupDiagnostic,
   recordAppStartupFailure,
   type AppStartupDiagnostic,
 } from '@/services/appStartupDiagnostics';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
+import { getStartupBrand } from './startupBrand';
 import { startupText } from './startupText';
 
 export const STARTUP_WAIT_NOTICE_MS = 15_000;
@@ -24,6 +24,7 @@ const AppStartup: React.FC<AppStartupProps> = ({
   diagnostic,
   onReload = reloadDocument,
 }) => {
+  const brand = useMemo(() => getStartupBrand(), []);
   const [waitingTooLong, setWaitingTooLong] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [reloadFailure, setReloadFailure] = useState<AppStartupDiagnostic>();
@@ -107,9 +108,9 @@ const AppStartup: React.FC<AppStartupProps> = ({
         aria-busy={reloading}
       >
         <div className={styles.brandMark} aria-hidden="true">
-          <span className={styles.logoFallback}>N</span>
+          <span className={styles.logoFallback}>{brand.fallbackLetter}</span>
           <img
-            src={logoUrl}
+            src={brand.logoUrl}
             alt=""
             onError={({ currentTarget }) => {
               currentTarget.hidden = true;
@@ -118,7 +119,7 @@ const AppStartup: React.FC<AppStartupProps> = ({
           {!isFailure && <span className={styles.spinner} />}
           {isFailure && <span className={styles.failureMark}>!</span>}
         </div>
-        <p className={styles.brandName}>Nuwax</p>
+        <p className={styles.brandName}>{brand.name}</p>
         <h1>{startupText(`PC.Components.AppStartup.${titleKey}`)}</h1>
         <p className={styles.hint}>
           {startupText(`PC.Components.AppStartup.${hintKey}`)}

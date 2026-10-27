@@ -43,7 +43,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Components.MicroAppHost.loading': '読み込み中',
   'PC.Components.MicroAppHost.loadFailed': '読み込めませんでした。もう一度お試しください。',
   'PC.Components.MicroAppHost.retry': '再読み込み',
-  "PC.Components.AppStartup.loading": "Nuwax を開いています…",
+  "PC.Components.AppStartup.loading": "起動しています…",
   "PC.Components.AppStartup.loadingHint": "ページを準備しています。しばらくお待ちください。",
   "PC.Components.AppStartup.waiting": "読み込みに少し時間がかかっています",
   "PC.Components.AppStartup.waitingHint": "そのまま待つか、ページを再読み込みしてください。",

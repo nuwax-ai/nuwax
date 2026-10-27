@@ -15,7 +15,7 @@ describe('首屏启动反馈', () => {
   it('立即反馈加载，15s 后明确等待过久但不自动重试', () => {
     const reload = vi.fn();
     render(<AppStartup onReload={reload} />);
-    expect(screen.getByRole('status')).toHaveTextContent('正在打开 Nuwax');
+    expect(screen.getByRole('status')).toHaveTextContent('正在启动');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     act(() => vi.advanceTimersByTime(STARTUP_WAIT_NOTICE_MS - 1));
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
@@ -77,5 +77,38 @@ describe('首屏启动反馈', () => {
     expect(vi.getTimerCount()).toBe(0);
     act(() => vi.advanceTimersByTime(STARTUP_WAIT_NOTICE_MS));
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('优先展示本地租户配置中的品牌名称与自定义 Logo', () => {
+    localStorage.setItem(
+      'TENANT_CONFIG_INFO',
+      JSON.stringify({
+        siteName: '定制企业平台',
+        siteLogo: 'https://example.com/custom-logo.png',
+      }),
+    );
+    try {
+      const { container } = render(<AppStartup />);
+      expect(screen.getByText('定制企业平台')).toBeInTheDocument();
+      const img = container.querySelector('img');
+      expect(img).toHaveAttribute('src', 'https://example.com/custom-logo.png');
+    } finally {
+      localStorage.removeItem('TENANT_CONFIG_INFO');
+    }
+  });
+
+  it('桌面客户端宿主注入的显示名可作为第二优先级展示', () => {
+    (window as any).NuwaClawBridge = {
+      host: {
+        getDisplayName: () => '女娲Nuwax',
+        getProduct: () => 'nuwax',
+      },
+    };
+    try {
+      render(<AppStartup />);
+      expect(screen.getByText('女娲Nuwax')).toBeInTheDocument();
+    } finally {
+      delete (window as any).NuwaClawBridge;
+    }
   });
 });
