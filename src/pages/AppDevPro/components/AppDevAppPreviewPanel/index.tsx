@@ -444,7 +444,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     setLogDetailOpen(false);
   }, [isStarting]);
   const startFailed = phase === 'failed' || phase === 'cancelled';
-  /** 仅真正失败时把「启动失败」标红，取消启动不算失败 */
+  /** 真正失败（不含用户主动取消）：不显示失败标题、直接展开日志详情 */
   const startError = phase === 'failed';
   const loadErrorText = previewLoadError.trim();
   /** 启动已成功但页面打不开：不要复用进度流日志板 */
@@ -961,25 +961,24 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }
 
   if ((isStarting || startFailed) && !previewReadyDespiteFailedStream) {
-    const headText = startFailed
-      ? phase === 'cancelled'
+    // 启动失败不再单独显示「启动失败」标题：下方日志会直接展开，失败原因
+    // 就在日志里，标题纯属重复。取消是用户主动操作，保留「启动已取消」。
+    const headText =
+      phase === 'cancelled'
         ? dict('PC.Pages.AppDevPro.startCancelled')
-        : dict('PC.Pages.AppDevPro.startFailed')
-      : dict('PC.Pages.AppDevPro.startingService');
+        : startFailed
+        ? ''
+        : dict('PC.Pages.AppDevPro.startingService');
+    // 失败时主动展开日志详情，不用再手动点「查看详情」
+    const showLogDetail = logDetailOpen || startError;
 
     return (
       <div className={cx(styles.container, styles.stage)}>
         <div className={cx(styles.logBoard)}>
           <div className={cx(styles.logHead)}>
             {!startFailed ? <LoadingOutlined /> : null}
-            <span
-              className={cx(
-                styles.logHeadText,
-                startError && styles.logHeadTextError,
-              )}
-            >
-              {headText}
-            </span>
+            {/* 失败时 headText 为空，保留占位让右侧按钮位置不变 */}
+            <span className={cx(styles.logHeadText)}>{headText}</span>
             {isStarting && onCancelTask ? (
               <Button
                 size="small"
@@ -1012,7 +1011,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Tooltip>
             ) : null}
           </div>
-          {logDetailOpen ? (
+          {showLogDetail ? (
             <PreviewStartLogBoard
               logs={logs}
               waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
