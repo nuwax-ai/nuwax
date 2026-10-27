@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- PIN/置顶：图钉（平顶圆角帽 + 横梁 + 针），同原 PNG 形态 -->
+  <g fill="none" stroke="#292832" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M260 470V370A160 160 0 0 1 420 210H604A160 160 0 0 1 764 370V470"/>
+    <path d="M180 470H844"/>
+    <path d="M512 470V860"/>
+  </g>
+</svg>
