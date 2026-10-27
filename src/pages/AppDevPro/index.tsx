@@ -3438,6 +3438,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         return;
       }
       const containerStatus = latest.container?.status;
+      // 线上：容器已 running、应用正在 starting，说明其他页签正在重启
+      // （或启动）这个应用。再调 restart 只会被后端以「操作进行中」
+      // 拒绝，直接进入跟随状态：清掉本地停止标记，接下来按 readiness
+      // 展示启动中，ready 后自动打开预览，不再重复发起。
+      if (
+        envToRestart === UserAppDbEnvEnum.Prod &&
+        containerStatus === UserAppContainerStatusEnum.Running &&
+        latest.status === UserAppReadinessStatusEnum.Starting
+      ) {
+        setPreviewStoppedForEnv(envToRestart, false);
+        return;
+      }
       if (containerStatus !== UserAppContainerStatusEnum.Running) {
         // 容器在过渡中（starting / restarting / stopping）先等它落定：
         // stopping 的终点是 stopped 而不是 running，直接等 running 会
