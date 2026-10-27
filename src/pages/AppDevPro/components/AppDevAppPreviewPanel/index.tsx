@@ -403,13 +403,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   /**
    * 判断应用状态前先看容器：容器还没 running 时应用层无从谈起，
    * 预览区走容器启动提示（下方 containerStatus 分支），不按 starting / ready 判断应用。
-   * 优先看 readiness 回包里的 container.status；旧回包没有 container 字段时
-   * 退回页面层容器状态，都没有容器层时视为不拦。
+   * 优先看页面层容器状态（与下方容器分支同一口径）；没有页面层状态时
+   * 退回 readiness 回包里的 container.status，两者都没有时视为不拦。
    */
-  const containerRunningForReadiness = readinessContainerStatus
-    ? readinessContainerStatus === UserAppContainerStatusEnum.Running
-    : containerStatus
+  const containerRunningForReadiness = containerStatus
     ? containerStatus === 'running'
+    : readinessContainerStatus
+    ? readinessContainerStatus === UserAppContainerStatusEnum.Running
     : true;
   /**
    * readiness 已确认可访问（status 为 ready 且 ready 为 true）时以它为准打开预览。
@@ -519,10 +519,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
           readinessKind !== 'notDeployed'
         }
         error={readinessIsError}
-        title={readinessStopped ? undefined : readinessTitle}
+        title={
+          readinessStopped
+            ? undefined
+            : readinessKind === 'stopping'
+            ? // 与本页签停止中的提示同一套文案，避免多页签下 stopping 阶段展示不一致
+              dict('PC.Pages.AppDevPro.previewStopping')
+            : readinessTitle
+        }
         hint={
           readinessStopped
             ? dict('PC.Pages.AppDevPro.previewStartHint')
+            : readinessKind === 'stopping'
+            ? dict('PC.Pages.AppDevPro.previewStoppingHint')
             : undefined
         }
         action={
