@@ -554,12 +554,17 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 其余状态（provisioning / notDeployed / failed / incomplete）维持原有条件。
    * 容器未 running 时下方 containerStatus 分支会先于本提示返回，不受影响。
    */
+  // checking 是 stream 已成功、等应用可访问的收尾阶段：本地 phase 还停在
+  // building，但展示要跟随 readiness 各状态本身，不能因为本地 stream
+  // 还没收尾就把状态提示挡住，更不能提前盖 iframe 加载动画——加载动画
+  // 只在应用 ready 后、iframe 加载出来之前出现（PreviewIframeFrame 内部）。
+  const streamBlockingHero = isStarting && !checking;
   const readinessLifecycleHero =
     // 展示直接跟随 readiness：stop 接口成功只是受理，服务可能还在下线中，
     // 本地停止标记不再压制任何生命周期状态——stopping 显示停止中、
     // stopped 才显示已停止、starting 显示启动中。再启动走 start 还是
     // restart 由父页面按本地停止标记选 onStart，与展示无关。
-    !isStarting &&
+    !streamBlockingHero &&
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
       readinessKind === 'stopped');
@@ -567,7 +572,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessLifecycleHero ||
     ((!previewAlreadyPresented || readinessRegressed) &&
       !startFailed &&
-      !isStarting &&
+      !streamBlockingHero &&
       (showProvisioning ||
         (readinessKind === 'notDeployed' &&
           hasValidProjectFiles === true &&
@@ -706,7 +711,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const readinessContainerRestarting =
     directPreview &&
-    !isStarting &&
+    !streamBlockingHero &&
     readinessKind === 'starting' &&
     readinessContainerStatus !== UserAppContainerStatusEnum.Running &&
     (readinessContainerStatus === UserAppContainerStatusEnum.Stopping ||
@@ -795,20 +800,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     return emptyProjectHero;
   }
 
-  // 启动 stream 已成功，应用还不能访问：只显示 iframe 加载动画，先不放域名。
-  // 放在就绪提示前面，避免探测先返回 failed 等状态把等待盖住。
-  if (checking) {
-    return (
-      <div className={cx(styles.container)}>
-        <div className={cx(styles.iframeWrap)}>
-          <div className={cx(styles.loadingOverlay)}>
-            <PreviewIframeLoading />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (stopPendingHero) {
     return stopPendingHero;
   }
@@ -855,8 +846,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       return previewLoadErrorHero;
     }
 
-    // readiness 已就绪时不看本地 running，直接落到下面的 iframe
-    if (!running && !readinessAccessible && allowStoppedHero) {
+    // readiness 已就绪时不看本地 running，直接落到下面的 iframe。
+    // checking 收尾期间不展示已停止：应用还在启动路上，只是探测还没回。
+    if (!running && !readinessAccessible && allowStoppedHero && !checking) {
       return (
         <div className={cx(styles.container, styles.stage)}>
           <PreviewHero
