@@ -265,6 +265,61 @@ const PreviewIframeLoading: React.FC = () => (
 );
 
 /**
+ * 预览 iframe 展示框：挂载即未加载，先盖应用加载动画，iframe 真实 load 后
+ * 才收起动画展示页面；加载失败时收起动画，露 AppDevProIframe 自己的失败提示。
+ * 加载状态只活在本组件内：被状态提示替换（卸载）后重新挂载，动画必然重新
+ * 出现，不再有跨挂载残留的「已加载」标记把动画跳过、只剩白屏。
+ * 地址或刷新计数变化时由父级换 key 重挂，同样重新走动画。
+ *
+ * @param props.src 预览地址
+ * @param props.iframeKey iframe 重挂标记（地址 + 刷新计数）
+ * @param props.title 无障碍标题
+ * @param props.onPreviewPresented iframe 首次真实加载完成时通知父级
+ * @returns 带加载动画的 iframe 展示框
+ */
+const PreviewIframeFrame: React.FC<{
+  src: string;
+  iframeKey: string;
+  title: string;
+  onPreviewPresented?: () => void;
+}> = ({ src, iframeKey, title, onPreviewPresented }) => {
+  const [loaded, setLoaded] = useState(false);
+  const onPreviewPresentedRef = useRef(onPreviewPresented);
+  onPreviewPresentedRef.current = onPreviewPresented;
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+    onPreviewPresentedRef.current?.();
+  }, []);
+  /** 加载失败时收起动画，露出 iframe 自己的失败提示与刷新按钮 */
+  const handleError = useCallback(() => {
+    setLoaded(true);
+  }, []);
+  /** 点刷新重试时重新盖上动画 */
+  const handleRetry = useCallback(() => {
+    setLoaded(false);
+  }, []);
+
+  return (
+    <div className={cx(styles.iframeWrap)}>
+      <AppDevProIframe
+        src={src}
+        iframeKey={iframeKey}
+        title={title}
+        onLoad={handleLoad}
+        onError={handleError}
+        onRetry={handleRetry}
+      />
+      {!loaded ? (
+        <div className={cx(styles.loadingOverlay)}>
+          <PreviewIframeLoading />
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+/**
  * 居中提示（准备中 / 启动预览）。
  *
  * @param props.title 标题
@@ -361,18 +416,11 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     }
     return lines;
   }, [errorMessage, services]);
-  /**
-   * 用地址 + 刷新计数标记当前预览实例。
-   * 换地址时当帧就判定未加载，避免 effect 晚一拍时空白 iframe 先露出来。
-   */
-  const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
-  const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
   /** 启动日志默认收起，点击「查看详情」后展开日志流 */
   const [logDetailOpen, setLogDetailOpen] = useState(false);
   const openStartLogs = useCallback(() => {
     setLogDetailOpen(true);
   }, []);
-  const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
   const startFailed = phase === 'failed' || phase === 'cancelled';
@@ -395,13 +443,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       />
     </div>
   ) : null;
-
-  const handleIframeLoad = useCallback(() => {
-    setLoadedInstanceKey((prev) =>
-      prev === previewInstanceKey ? prev : previewInstanceKey,
-    );
-    onPreviewPresented?.();
-  }, [onPreviewPresented, previewInstanceKey]);
 
   const readinessKind = getUserAppReadinessUiKind(
     readinessStatus,
@@ -634,18 +675,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     </div>
   ) : null;
 
-  /** iframe 加载失败时收起加载遮罩，露出失败提示 */
-  const handleIframeError = useCallback(() => {
-    setLoadedInstanceKey((prev) =>
-      prev === previewInstanceKey ? prev : previewInstanceKey,
-    );
-  }, [previewInstanceKey]);
-
-  /** 刷新 iframe 时重新展示加载遮罩 */
-  const handleIframeRetry = useCallback(() => {
-    setLoadedInstanceKey('');
-  }, []);
-
   if (prodUndeployed) {
     return (
       <div className={cx(styles.container, styles.stage)}>
@@ -810,21 +839,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     if (previewUrl) {
       return (
         <div className={cx(styles.container)}>
-          <div className={cx(styles.iframeWrap)}>
-            <AppDevProIframe
-              src={previewUrl}
-              iframeKey={`${previewUrl}-${refreshKey}`}
-              title={dict('PC.Pages.AppDevPro.appPreview')}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              onRetry={handleIframeRetry}
-            />
-            {!iframeLoaded ? (
-              <div className={cx(styles.loadingOverlay)}>
-                <PreviewIframeLoading />
-              </div>
-            ) : null}
-          </div>
+          <PreviewIframeFrame
+            key={`${previewUrl}-${refreshKey}`}
+            src={previewUrl}
+            iframeKey={`${previewUrl}-${refreshKey}`}
+            title={dict('PC.Pages.AppDevPro.appPreview')}
+            onPreviewPresented={onPreviewPresented}
+          />
         </div>
       );
     }
@@ -968,21 +989,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   if (canShowIframe || previewReadyDespiteFailedStream) {
     return (
       <div className={cx(styles.container)}>
-        <div className={cx(styles.iframeWrap)}>
-          <AppDevProIframe
-            src={previewUrl}
-            iframeKey={`${previewUrl}-${refreshKey}`}
-            title={dict('PC.Pages.AppDevPro.appPreview')}
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-            onRetry={handleIframeRetry}
-          />
-          {!iframeLoaded ? (
-            <div className={cx(styles.loadingOverlay)}>
-              <PreviewIframeLoading />
-            </div>
-          ) : null}
-        </div>
+        <PreviewIframeFrame
+          key={`${previewUrl}-${refreshKey}`}
+          src={previewUrl}
+          iframeKey={`${previewUrl}-${refreshKey}`}
+          title={dict('PC.Pages.AppDevPro.appPreview')}
+          onPreviewPresented={onPreviewPresented}
+        />
       </div>
     );
   }
