@@ -62,6 +62,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     handleRefreshFileList,
     handleDelete,
     handleRenameFromMenu,
+    handleMoveFromMenu,
     handleUploadMultipleFiles,
     handleUploadFolder,
     handleCreateFile,
@@ -118,6 +119,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onClose={closeContextMenu}
         onDelete={handleDelete}
         onRename={handleRenameFromMenu}
+        onMove={handleMoveFromMenu}
         onUploadFiles={handleUploadMultipleFiles}
         onUploadFolder={handleUploadFolder}
         onCreateFile={handleCreateFile}

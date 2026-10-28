@@ -2,6 +2,7 @@ import {
   getLocalFileReference,
   getLocalFilesContextKey,
   prepareLocalFilePreview,
+  retryLocalFilesContext,
   useLocalFilesRevision,
   type LocalFileReference,
 } from '@/features/client-shell/localFileService';
@@ -87,6 +88,9 @@ export function useLocalPreviewSource(
     localFile: state?.key === key ? state.localFile : reference,
     loading: Boolean(candidate && state?.key !== key),
     error: state?.key === key ? state.error : undefined,
-    refresh: useCallback(() => setRetry((value) => value + 1), []),
+    refresh: useCallback(() => {
+      retryLocalFilesContext(candidate);
+      setRetry((value) => value + 1);
+    }, [candidate]),
   };
 }
