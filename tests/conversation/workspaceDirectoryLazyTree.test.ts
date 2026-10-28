@@ -479,6 +479,145 @@ describe('工作区文件树异步懒加载', () => {
     ).toEqual(['src']);
   });
 
+  it('加载途中收到多次文件变更通知，完成后合并补刷一次，显示新增和更新文件', async () => {
+    let finish!: (response: unknown) => void;
+    apiGetStaticFileList
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      )
+      .mockResolvedValue({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [
+            { name: 'existing.txt', isDir: false, contents: 'updated' },
+            { name: 'new.txt', isDir: false },
+          ],
+        },
+      });
+    const { result } = renderHook(() => useWorkspaceDirectoryFiles(2592));
+    await waitFor(() => expect(apiGetStaticFileList).toHaveBeenCalledTimes(1));
+    act(() => {
+      result.current.refreshAllLoaded();
+      result.current.refreshAllLoaded();
+    });
+    expect(apiGetStaticFileList).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      finish({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [{ name: 'existing.txt', isDir: false, contents: 'old' }],
+        },
+      }),
+    );
+    await waitFor(() =>
+      expect(result.current.files.map((item) => item.name)).toContain(
+        'new.txt',
+      ),
+    );
+    expect(
+      result.current.files.find((item) => item.name === 'existing.txt')
+        ?.contents,
+    ).toBe('updated');
+    expect(apiGetStaticFileList).toHaveBeenCalledTimes(2);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it.each([false, true])(
+    '子目录加载期间收到变更通知也会补刷（之前已加载：%s）',
+    async (loaded) => {
+      let finish!: (response: unknown) => void;
+      let childRequests = 0;
+      const pendingRequest = loaded ? 2 : 1;
+      apiGetStaticFileList.mockImplementation(async (_id, options) => {
+        if (!options.relativePath)
+          return {
+            code: '0000',
+            data: { recursive: false, files: [{ name: 'src', isDir: true }] },
+          };
+        childRequests += 1;
+        if (childRequests === pendingRequest)
+          return new Promise((resolve) => {
+            finish = resolve;
+          });
+        return {
+          code: '0000',
+          data: {
+            recursive: false,
+            files: [
+              {
+                name: childRequests === 1 ? 'src/old.txt' : 'src/new.txt',
+                isDir: false,
+              },
+            ],
+          },
+        };
+      });
+      const { result } = renderHook(() => useWorkspaceDirectoryFiles(2592));
+      await waitFor(() => expect(result.current.files).toHaveLength(1));
+      if (loaded) await act(async () => result.current.loadDirectory('src'));
+      act(() => result.current.navigate('src'));
+      await waitFor(() => expect(childRequests).toBe(pendingRequest));
+      act(() => result.current.refreshAllLoaded());
+      await act(async () =>
+        finish({
+          code: '0000',
+          data: {
+            recursive: false,
+            files: [{ name: 'src/old.txt', isDir: false }],
+          },
+        }),
+      );
+      await waitFor(() =>
+        expect(result.current.files.map((item) => item.name)).toContain(
+          'src/new.txt',
+        ),
+      );
+      expect(childRequests).toBe(pendingRequest + 1);
+      expect(result.current.files.map((item) => item.name)).not.toContain(
+        'src/old.txt',
+      );
+    },
+  );
+
+  it.each(['切换会话', '卸载面板'])(
+    '%s 后不补发旧工作区排队的刷新',
+    async (action) => {
+      let finish!: (response: unknown) => void;
+      apiGetStaticFileList
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              finish = resolve;
+            }),
+        )
+        .mockResolvedValue({
+          code: '0000',
+          data: { recursive: false, files: [] },
+        });
+      const { result, rerender, unmount } = renderHook(
+        ({ id }) => useWorkspaceDirectoryFiles(id),
+        { initialProps: { id: 2592 } },
+      );
+      await waitFor(() =>
+        expect(apiGetStaticFileList).toHaveBeenCalledTimes(1),
+      );
+      act(() => result.current.refreshAllLoaded());
+      if (action === '切换会话') rerender({ id: 2593 });
+      else unmount();
+      await act(async () =>
+        finish({ code: '0000', data: { recursive: false, files: [] } }),
+      );
+      expect(
+        apiGetStaticFileList.mock.calls.filter(([id]) => id === 2592),
+      ).toHaveLength(1);
+    },
+  );
+
   it('下级已在树上时展开不再进入 loading，并后台请求这一层', async () => {
     apiGetStaticFileList.mockResolvedValue({
       code: '0000',

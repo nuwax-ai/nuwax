@@ -516,7 +516,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       ? {
           cId: id,
           sandboxId: String(finalSelectedId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,
