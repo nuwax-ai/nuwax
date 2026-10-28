@@ -31,6 +31,8 @@ type ContextRecord = {
   pending: Promise<LocalFilesContext | null>;
   disposed: boolean;
   settled: boolean;
+  recovering?: boolean;
+  resolutionError?: LocalFilesErrorCode;
   generation: number;
   knownLocal: boolean;
   writable: boolean;
@@ -89,8 +91,13 @@ function releaseOwner(cId: string, owner: symbol) {
   record.owners.delete(owner);
   if (!record.owners.size) disposeRecord(cId, record);
 }
-function resolveRecord(cId: string, record: ContextRecord) {
-  const generation = ++record.generation;
+function resolveRecord(cId: string, record: ContextRecord, recovering = false) {
+  // 未得到工作区时没有可撤销的授权；访问触发的恢复沿用代次，失败不能
+  // 改变 context key，否则文件树会因 key 变化重新请求，形成无限重试。
+  const generation = recovering ? record.generation : ++record.generation;
+  record.recovering = recovering;
+  record.resolutionError = undefined;
+  record.settled = false;
   record.pending = (async () => {
     const api = hostBridge.localFiles?.getApi();
     if (
@@ -169,17 +176,34 @@ function resolveRecord(cId: string, record: ContextRecord) {
     record.writable =
       capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
-    changed();
     return result.data;
-  })().finally(() => {
-    if (record.generation === generation) {
-      record.settled = true;
-      changed();
-    }
-  });
+  })()
+    .catch((error) => {
+      if (record.generation === generation && !record.disposed) {
+        record.resolutionError =
+          error instanceof LocalFileAccessError ? error.code : undefined;
+      }
+      throw error;
+    })
+    .finally(() => {
+      if (record.generation === generation) {
+        record.settled = true;
+        record.recovering = false;
+        if (!recovering || record.context) changed();
+      }
+    });
   // 页面注册本身不显示错误；实际文件操作消费同一个拒绝。
   safely(record.pending);
-  changed();
+  if (!recovering) changed();
+}
+
+function contextForAccess(cId: string, record: ContextRecord) {
+  // 自定义目录在首次 chat 建立 ACP 会话后才可解析。只重试该暂态失败，
+  // 并发的列表、搜索及 task-result 预览共用一次解析，不要求退出会话。
+  if (record.settled && record.resolutionError === 'context-unresolved') {
+    resolveRecord(cId, record, true);
+  }
+  return record.pending;
 }
 /** 页面明确注册会话与电脑绑定；禁止以全局电脑选择推断另一个 cId。 */
 export function registerLocalFilesContext(
@@ -293,7 +317,9 @@ export function getLocalFilesContextKey(cId?: string | number): string {
   const record = cId === undefined ? undefined : contexts.get(String(cId));
   return record
     ? `${record.input.sandboxId}:${record.generation}:${
-        record.settled ? record.context?.contextId || 'remote' : 'pending'
+        record.settled || record.recovering
+          ? record.context?.contextId || 'remote'
+          : 'pending'
       }`
     : '';
 }
@@ -427,7 +453,7 @@ async function resolveTarget(input: string | LocalFileReference): Promise<{
   const record = findContext(parsed.cId);
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(parsed.cId, record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -449,7 +475,7 @@ export async function getLocalFileList(
   const record = findContext(String(cId));
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -517,7 +543,7 @@ export async function resolveLocalFilesAccess(cId: string | number) {
   const record = findContext(String(cId));
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   const assertCurrent = () => {
     if (
       record.disposed ||
@@ -545,7 +571,7 @@ export async function updateLocalFiles(
   const record = findContext(String(cId));
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -633,7 +659,7 @@ export async function exportLocalWorkspace(
   const record = findContext(String(cId));
   if (!record) return undefined;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (record.disposed || record.generation !== generation)
     throw new LocalFileAccessError('expired');
   if (!context) return undefined;
