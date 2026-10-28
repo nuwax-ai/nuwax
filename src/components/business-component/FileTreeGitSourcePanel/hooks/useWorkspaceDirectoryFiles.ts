@@ -99,6 +99,11 @@ export function useWorkspaceDirectoryFiles(
     async (path: string, loadOptions?: { silent?: boolean }): Promise<void> => {
       if (!conversationId) return;
       const contextEpoch = contextEpochRef.current;
+      // 常驻页可能已暂停渲染；授权释放先于下一次 effect，不能只看旧页面代次。
+      const isCurrentRequest = () =>
+        conversationIdRef.current === conversationId &&
+        contextEpochRef.current === contextEpoch &&
+        getLocalFilesContextKey(conversationId) === localContextKey;
       const silent = loadOptions?.silent === true;
       // 工作区相对路径，去掉首尾斜杠；根目录是空字符串
       const requestPath = path.replace(/^\/+|\/+$/g, '');
@@ -135,8 +140,7 @@ export function useWorkspaceDirectoryFiles(
         });
         // 会话已切换，或同目录有更新的请求：不再写入，避免串数据
         if (
-          conversationIdRef.current !== conversationId ||
-          contextEpochRef.current !== contextEpoch ||
+          !isCurrentRequest() ||
           directoryRequestTokensRef.current.get(requestPath) !== token
         ) {
           return;
@@ -213,10 +217,7 @@ export function useWorkspaceDirectoryFiles(
           return next;
         });
       } catch (error) {
-        if (
-          conversationIdRef.current === conversationId &&
-          contextEpochRef.current === contextEpoch
-        ) {
+        if (isCurrentRequest()) {
           message.error(
             error instanceof Error && error.message
               ? error.message
@@ -225,10 +226,7 @@ export function useWorkspaceDirectoryFiles(
         }
       } finally {
         // 只结束当前代次的加载状态；清理不能覆盖请求原本的返回或异常。
-        if (
-          conversationIdRef.current === conversationId &&
-          contextEpochRef.current === contextEpoch
-        ) {
+        if (isCurrentRequest()) {
           if (!silent) {
             const loadingCount = Math.max(
               0,
