@@ -1,0 +1,1 @@
+import{cK as a,dH as t}from"./index-D-7KF3HF.js";function s(s,c,n){if(0==s.length)return n(),null;const e="".concat(s);a({data:e,showToast:!1,success:()=>{t(new UTSJSONObject({success:a=>{(null!=a.data?"".concat(a.data):"").length>0?c():n()},fail:()=>{c()}}))},fail:()=>{n()}})}export{s as w};
