@@ -436,7 +436,7 @@ const EditAgent: React.FC = () => {
       ? {
           cId: devConversationId,
           sandboxId: String(finalSelectedComputerId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,
