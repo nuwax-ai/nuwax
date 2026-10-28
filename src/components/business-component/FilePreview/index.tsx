@@ -33,7 +33,10 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
-import { localFileReadErrorMessage } from './localFileActionMessages';
+import {
+  isExpiredLocalFileError,
+  localFileReadErrorMessage,
+} from './localFileActionMessages';
 import { bundledPdfResources } from './pdfCharacterMaps';
 import { useLocalPreviewSource } from './useLocalPreviewSource';
 import { mountXlsxImageOverlay } from './xlsxImageOverlay';
@@ -836,8 +839,14 @@ const FilePreviewContent: React.FC<
       try {
         await saveLocalFile(localFile, fileName);
       } catch (error) {
-        message.error(error instanceof Error ? error.message : String(error));
-        setErrorMessage(getLocalizedErrorMessage(String(error), resolvedType));
+        if (!isExpiredLocalFileError(error)) {
+          message.error(error instanceof Error ? error.message : String(error));
+        }
+        setErrorMessage(
+          isExpiredLocalFileError(error)
+            ? localFileReadErrorMessage(error, t)
+            : getLocalizedErrorMessage(String(error), resolvedType),
+        );
         onError?.(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setDownloading(false);
