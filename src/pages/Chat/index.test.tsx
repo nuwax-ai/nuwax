@@ -34,6 +34,7 @@ const {
   mockResizableSplit,
   mockInitSelectedComponentList,
   mockUseConversationRuntimeSession,
+  mockUseLocalFilesContext,
   mockRuntimeSend,
   mockRegisterClientConversationRenderer,
   mockStyle3PcKeepAliveEnabled,
@@ -58,6 +59,7 @@ const {
   mockResizableSplit: vi.fn(),
   mockInitSelectedComponentList: vi.fn(),
   mockUseConversationRuntimeSession: vi.fn(),
+  mockUseLocalFilesContext: vi.fn(),
   mockRuntimeSend: vi.fn(),
   mockRegisterClientConversationRenderer: vi.fn(),
   mockStyle3PcKeepAliveEnabled: { current: false },
@@ -100,6 +102,13 @@ vi.mock('umi', () => ({
 vi.mock('@/services/i18nRuntime', () => ({
   t: (k: string) => k,
   dict: (k: string) => k,
+}));
+
+vi.mock('@/features/client-shell/localFileService', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@/features/client-shell/localFileService')
+  >()),
+  useLocalFilesContext: mockUseLocalFilesContext,
 }));
 
 vi.mock('@/hooks/useStyle3PcKeepAliveEnabled', () => ({
@@ -577,6 +586,29 @@ describe('ChatCore / ChatPage', () => {
     localStorage.clear();
     window.history.replaceState(null, '', '/');
   });
+
+  it.each(['/backend/文件目录', undefined, null, ''])(
+    '本机文件上下文只使用后端 fileWorkspacePath（%s），不借用执行目录或旧字段',
+    async (fileWorkspacePath) => {
+      conversationInfoState.current = {
+        id: 100,
+        fileWorkspacePath,
+        workspacePath: '/legacy/wrong-root',
+        agentWorkspacePath: '/agent/wrong-root',
+        agent: { name: 'A', type: AgentTypeEnum.TaskAgent },
+        messageList: [],
+      };
+      render(<ChatCore id={100} agentId={200} active />);
+      await waitFor(() =>
+        expect(mockUseLocalFilesContext).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            cId: 100,
+            workspacePath: fileWorkspacePath || undefined,
+          }),
+        ),
+      );
+    },
+  );
 
   it('终端按任务保存：A 隐藏释放连接，B 首次关闭，返回 A 恢复打开', async () => {
     conversationInfoState.current = {
