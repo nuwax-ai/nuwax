@@ -154,6 +154,10 @@ describe('FilePreview PDF 首次打开与恢复', () => {
     });
     expect(mocks.init).toHaveBeenCalledTimes(1);
     expect(mocks.init.mock.calls[0][1].width).toBe(800);
+    expect(mocks.init.mock.calls[0][1]).toMatchObject({
+      CMapReaderFactory: expect.any(Function),
+      useWorkerFetch: false,
+    });
     expect(previews[0]).toHaveBeenCalledWith(buffer);
     expect(container.querySelector('.previewContent')).toHaveStyle({
       display: 'block',

@@ -34,6 +34,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onClose,
   onDelete,
   onRename,
+  onMove,
   onUploadFiles,
   onUploadFolder,
   onCreateFile,
@@ -460,6 +461,16 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
         ]
       : [];
   const menuItems = [
+    ...(targetNode && onMove && !disabledDelete
+      ? [
+          {
+            key: 'move',
+            label: dict('PC.Components.FileContextMenu.move'),
+            icon: <FolderOpenOutlined />,
+            onClick: () => handleMenuItemClick(() => onMove(targetNode)),
+          },
+        ]
+      : []),
     ...localMenuItems,
     ...(disabledDelete
       ? allMenuItems.filter(
