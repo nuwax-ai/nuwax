@@ -431,7 +431,10 @@ describe('Markdown 文件树刷新', () => {
     },
   ];
   const expired = () =>
-    Object.assign(new Error('expired'), { name: 'LocalFileAccessError' });
+    Object.assign(new Error('expired'), {
+      name: 'LocalFileAccessError',
+      code: 'expired',
+    });
   it.each(['clear', 'switch'])(
     '代码视图刷新在 %s 后仍携带旧引用，错误不换成云端或新root正文',
     async (change) => {
@@ -470,14 +473,16 @@ describe('Markdown 文件树刷新', () => {
         '/api/computer/static/9/first.md',
         oldReference,
       );
-      expect(screen.getByText('expired')).toBeInTheDocument();
+      expect(
+        screen.getByText('PC.Components.FilePreview.localSourceChanged'),
+      ).toBeInTheDocument();
       expect(cloudOrNewRootRead).not.toHaveBeenCalled();
       expect(screen.queryByText('新root正文')).toBeNull();
     },
   );
 
   it.each(['clear', 'switch'])(
-    'PDF导出在 %s 后拒绝旧引用并提示expired，不继续空正文转换',
+    'PDF导出在 %s 后静默拒绝旧引用，不继续空正文转换',
     async (change) => {
       const toast = vi
         .spyOn(message, 'error')
@@ -500,11 +505,11 @@ describe('Markdown 文件树刷新', () => {
       expect(mocks.assertReference).toHaveBeenCalledWith(oldReference);
       expect(mocks.fetchContent).not.toHaveBeenCalled();
       expect(mocks.download).not.toHaveBeenCalled();
-      expect(toast).toHaveBeenCalledWith('expired');
+      expect(toast).not.toHaveBeenCalled();
     },
   );
 
-  it('PDF读取期间失效会停止导出并提示expired，不把失败转为空文档', async () => {
+  it('PDF读取期间失效会静默停止导出，不把失败转为空文档', async () => {
     const toast = vi
       .spyOn(message, 'error')
       .mockImplementation(() => undefined as never);
@@ -522,7 +527,7 @@ describe('Markdown 文件树刷新', () => {
       oldReference,
     );
     expect(mocks.download).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('expired');
+    expect(toast).not.toHaveBeenCalled();
   });
   it('确定本机的代码读取失败直接显示权限错误，不显示空编辑器', async () => {
     const error = new Error('权限不足');
