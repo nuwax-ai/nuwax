@@ -10,14 +10,16 @@ const useCountDown = () => {
     timer.current = 0;
   };
 
-  const handleCount = () => {
-    let startCount = COUNT_DOWN_LEN;
-    setCountDown(startCount);
+  const handleCount = (startCount = COUNT_DOWN_LEN) => {
+    onClearTimer();
+    let current = Math.max(0, Math.ceil(startCount));
+    setCountDown(current);
+    if (current <= 0) return;
 
-    timer.current = setInterval(() => {
-      startCount--;
-      setCountDown(startCount);
-      if (startCount === 0) {
+    timer.current = window.setInterval(() => {
+      current -= 1;
+      setCountDown(current);
+      if (current <= 0) {
         onClearTimer();
       }
     }, 1000);
