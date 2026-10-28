@@ -22,7 +22,11 @@ import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
 import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
-import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
+import {
+  isVerifyCodePageReload,
+  navigateAfterLogin,
+  replaceLoginStep,
+} from '@/utils/loginNavigation';
 import { useRequest } from 'ahooks';
 import { Button, Input, InputRef, message, Spin } from 'antd';
 import classNames from 'classnames';
@@ -35,6 +39,11 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useSearchParams } from 'umi';
 import styles from './index.less';
+import {
+  clearVerifyCodeSent,
+  getVerifyCodeCooldownRemaining,
+  markVerifyCodeSent,
+} from './sendCooldown';
 
 const cx = classNames.bind(styles);
 
@@ -51,6 +60,8 @@ const VerifyCode: React.FC = () => {
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  /** 本轮点击隐藏按钮的 performance.now()，用来等这轮验证码资源结束再 send */
+  const captchaRoundAtRef = useRef(0);
   const {
     phoneOrEmail,
     areaCode,
@@ -85,6 +96,8 @@ const VerifyCode: React.FC = () => {
   const [resendBusy, setResendBusy] = useState<boolean>(false);
   const resendBusyRef = useRef<boolean>(false);
   const resendBusyTimerRef = useRef<number | null>(null);
+  // 刷新后自动拉起验证码时，保证 init 与点击间隔 ≥2s，等 SDK 资源预加载完
+  const captchaDelayTimerRef = useRef<number | null>(null);
 
   const releaseResendBusy = useCallback(() => {
     if (resendBusyTimerRef.current !== null) {
@@ -253,6 +266,15 @@ const VerifyCode: React.FC = () => {
 
   // 发送验证码
   const handleSendCode = (captchaVerifyParam: string) => {
+    const account = phoneOrEmail || '';
+    // 刷新、从登录页反复进入、倒计时被清掉后连点，都走这里
+    const remainSec = Math.ceil(getVerifyCodeCooldownRemaining(account) / 1000);
+    if (remainSec > 0) {
+      handleCount(remainSec);
+      releaseResendBusy();
+      return Promise.resolve();
+    }
+    markVerifyCodeSent(account);
     const imageCaptcha = initialCaptchaUsedRef.current
       ? pendingCaptchaRef.current
       : { captchaId, captchaCode };
@@ -273,6 +295,7 @@ const VerifyCode: React.FC = () => {
     return runSendCode(_params)
       .catch((error: unknown) => {
         // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
+        clearVerifyCodeSent(account);
         onClearTimer();
         setCountDown(0);
         resendCaptcha.refresh();
@@ -302,6 +325,19 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    // SDK 初始化时会自动回调一次（无痕令牌）。那时资源还没好，直接拿去 send 会报校验参数异常。
+    // 只有页面自己点了隐藏按钮之后的那一次，才是可以发短信的验证结果。
+    if (!captchaRoundAtRef.current) {
+      return { captchaResult: true, bizResult: true };
+    }
+    captchaRoundAtRef.current = 0;
+    if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) {
+      const remainSec = Math.ceil(
+        getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+      );
+      handleCount(remainSec);
+      return { captchaResult: true, bizResult: true };
+    }
     try {
       await handleSendCode(captchaVerifyParam);
     } catch {
@@ -312,10 +348,22 @@ const VerifyCode: React.FC = () => {
 
   useEffect(() => {
     handleClick();
-    // 发送验证码
+    // 刷新验证码页时，登录页带来的阿里云参数和图形验证码都已在首次发码时核销
+    const reloaded = isVerifyCodePageReload();
+    if (reloaded) {
+      initialCaptchaUsedRef.current = true;
+    }
 
-    if (!isNeedAliyunCaptcha()) {
-      //不需要阿里云验证码，直接执行登录/验证码逻辑
+    const remainSec = Math.ceil(
+      getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+    );
+    if (remainSec > 0) {
+      // 冷却未结束：接着上次的倒计时，不再发码
+      handleCount(remainSec);
+    } else if (!reloaded) {
+      // 登录页刚完成的阿里云验证码，本页不必再等 SDK 资源，直接发短信
+      handlerSuccess(captchaVerifyParam || '');
+    } else if (!isNeedAliyunCaptcha() && !needImageCaptcha) {
       handlerSuccess();
     }
 
@@ -325,10 +373,37 @@ const VerifyCode: React.FC = () => {
     hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
-  const handleReady = () => {
-    if (isNeedAliyunCaptcha()) {
-      // document.getElementById(elementId)?.click();
-      handlerSuccess(captchaVerifyParam);
+  /**
+   * 点隐藏按钮启动一轮阿里云验证。
+   * onReady 已经等到 SDK success（资源加载完）。这里再保证距离 init 至少 2 秒：
+   * 阿里云会把过短间隔的验证参数判为脚本请求，后端表现为校验参数异常。
+   */
+  const triggerCaptchaPopup = () => {
+    const now = Date.now();
+    const initAt = window.__captchaInitAt || 0;
+    const gap = now - initAt;
+    if (initAt > 0 && gap < 2000) {
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+      }
+      captchaDelayTimerRef.current = window.setTimeout(() => {
+        captchaDelayTimerRef.current = null;
+        captchaRoundAtRef.current = performance.now();
+        const captchaBtn = document.getElementById(elementId);
+        if (captchaBtn) {
+          captchaBtn.click();
+        } else {
+          captchaRef.current?.show?.();
+        }
+      }, 2000 - gap);
+      return;
+    }
+    captchaRoundAtRef.current = performance.now();
+    const captchaBtn = document.getElementById(elementId);
+    if (captchaBtn) {
+      captchaBtn.click();
+    } else {
+      captchaRef.current?.show?.();
     }
   };
 
@@ -350,15 +425,28 @@ const VerifyCode: React.FC = () => {
     // 如果需要阿里云验证码，则触发隐藏按钮 click（官方姿势）唤起验证码，
     // 按钮不在 DOM 时以 show() 兜底，与登录页 triggerCaptchaPopup 行为对齐
     if (needAliyunCaptcha) {
-      const captchaBtn = document.getElementById(elementId);
-      if (captchaBtn) {
-        captchaBtn.click();
-      } else {
-        captchaRef.current?.show?.();
+      const remainSec = Math.ceil(
+        getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+      );
+      if (remainSec > 0) {
+        handleCount(remainSec);
+        releaseResendBusy();
+        return;
       }
+      triggerCaptchaPopup();
     } else {
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       handlerSuccess();
+    }
+  };
+
+  const handleReady = () => {
+    // 只处理刷新：等 SDK success（资源加载完）之后再开新的一轮验证。
+    // 从登录页进入的发码在 mount 时已经用上一页的参数完成。
+    if (!isNeedAliyunCaptcha() || !isVerifyCodePageReload()) return;
+    if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) return;
+    if (!needImageCaptcha) {
+      handleSendCodeInit();
     }
   };
 
@@ -400,6 +488,10 @@ const VerifyCode: React.FC = () => {
       if (resendBusyTimerRef.current !== null) {
         window.clearTimeout(resendBusyTimerRef.current);
         resendBusyTimerRef.current = null;
+      }
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
       }
     };
   }, []);
