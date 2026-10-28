@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { transferLocalPanelFiles } from '@/features/client-shell/filePanelTransfers';
 import {
   assertLocalFilesContextUnchanged,
   exportLocalWorkspace,
@@ -26,6 +27,29 @@ import { sanitizeDownloadBaseName } from '@/utils/downloadFileName';
 import { exportNamedDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
+
+function panelTransferResponse<T>(data: T): RequestResponse<T> {
+  return {
+    code: SUCCESS_CODE,
+    displayCode: SUCCESS_CODE,
+    message: '',
+    data,
+    debugInfo: {},
+    success: true,
+    tid: '',
+  };
+}
+
+async function localPanelTransfer(
+  ...args: Parameters<typeof transferLocalPanelFiles>
+) {
+  try {
+    return await transferLocalPanelFiles(...args);
+  } catch (error) {
+    message.error(t('PC.Common.Toast.operationFailed'));
+    throw error;
+  }
+}
 
 // 查询文件列表
 export async function apiGetStaticFileList(
@@ -201,6 +225,8 @@ export async function apiUploadFile(
   params: ISkillUploadFileParams,
 ): Promise<RequestResponse<null>> {
   const { file, cId, filePath } = params;
+  const local = await localPanelTransfer(cId, [file], [filePath]);
+  if (local !== null) return panelTransferResponse(null);
   const formData = new FormData();
   formData.append('file', file);
   formData.append('cId', cId.toString());
@@ -217,6 +243,8 @@ export async function apiUploadFiles(
   params: IUploadFilesParams,
 ): Promise<RequestResponse<number>> {
   const { files, cId, filePaths } = params;
+  const local = await localPanelTransfer(cId, files, filePaths);
+  if (local !== null) return panelTransferResponse(local);
   const formData = new FormData();
 
   // 批量上传文件：将每个文件 append 到 FormData
@@ -409,6 +437,14 @@ export async function apiImportProject(
   params: IImportProjectParams,
 ): Promise<RequestResponse<null>> {
   const { file, cId, customTargetDir } = params;
+  const local = await localPanelTransfer(
+    cId,
+    [file],
+    [file.name],
+    'project',
+    customTargetDir,
+  );
+  if (local !== null) return panelTransferResponse(null);
   const formData = new FormData();
   formData.append('cId', cId.toString());
   formData.append('file', file);

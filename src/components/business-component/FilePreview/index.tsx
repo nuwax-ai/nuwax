@@ -1438,11 +1438,14 @@ const FilePreviewContent: React.FC<
             resource.pathname,
           );
           if (legacy) {
-            if (
-              legacy[1] !== String(localFile?.cId) ||
-              resource.searchParams.has('customTargetDir')
-            )
-              return '';
+            if (legacy[1] !== String(localFile?.cId)) return '';
+            if (resource.searchParams.get('customTargetDir')) {
+              // 自定义根由原生协议与授权根核对，页面不能自行扩大资源授权。
+              return new URL(
+                `${resource.pathname}${resource.search}${resource.hash}`,
+                staticFileBasePath,
+              ).href;
+            }
             return new URL(
               `${legacy[2]}${resource.search}${resource.hash}`,
               staticFileBasePath,

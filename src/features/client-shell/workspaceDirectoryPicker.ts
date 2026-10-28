@@ -1,5 +1,6 @@
 import type { LocalFilesCapabilities } from '@/types/interfaces/hostBridge';
 import { hostBridge } from '@/utils/hostBridge';
+import { matchesLocalComputer } from './localComputerIdentity';
 
 export type LocalDirectorySelection =
   | { canceled: true }
@@ -43,10 +44,17 @@ export async function pickLocalWorkspaceDirectory(
     caps = await api.getCapabilities();
   } catch {
     throwIfAborted(signal);
+    if (matchesLocalComputer(api, undefined, sandboxId))
+      throw new Error('Local directory picker unavailable');
     return null;
   }
   throwIfAborted(signal);
-  if (!matchesComputer(caps, sandboxId)) return null;
+  if (!matchesComputer(caps, sandboxId)) {
+    if (matchesLocalComputer(api, caps, sandboxId))
+      throw new Error('Local directory picker unavailable');
+    return null;
+  }
+  matchesLocalComputer(api, caps, sandboxId);
 
   const checkIdentity = async () => {
     throwIfAborted(signal);

@@ -68,6 +68,7 @@ vi.mock('@/components/CodeViewer', () => ({
 vi.mock('@/components/custom/Loading', () => ({ default: () => null }));
 vi.mock('@/pages/AppDev/components', () => ({ ImageViewer: () => null }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
+vi.mock('@/services/vncDesktop', () => ({ apiUpdateStaticFile: vi.fn() }));
 vi.mock('@/services/skill', () => ({
   fetchContentFromUrl: mocks.fetchContent,
   isPreviewFileTooLargeError: (error: unknown) =>
@@ -132,11 +133,12 @@ afterEach(() => {
 describe('Markdown 文件树刷新', () => {
   it('切换来源后旧写入回执不能覆盖新来源的编辑状态', async () => {
     const finishes: Array<(saved: boolean) => void> = [];
-    const save = vi
-      .fn()
-      .mockImplementation(
-        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
-      );
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
     const props = {
       initViewFileType: 'code' as const,
       readOnly: false,
@@ -158,11 +160,12 @@ describe('Markdown 文件树刷新', () => {
   it('删除前串行完成草稿，等待期间禁止继续编辑旧路径', async () => {
     const finishes: Array<(saved: boolean) => void> = [];
     let deleted!: (success: boolean) => void;
-    const save = vi
-      .fn()
-      .mockImplementation(
-        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
-      );
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
     const remove = vi.fn().mockImplementation(
       () =>
         new Promise<boolean>((resolve) => {
@@ -260,11 +263,12 @@ describe('Markdown 文件树刷新', () => {
   });
   it('旧保存回执不能把较新草稿标为已保存', async () => {
     const finishes: Array<(value: boolean) => void> = [];
-    const save = vi
-      .fn()
-      .mockImplementation(
-        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
-      );
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
     render(
       <Harness
         initViewFileType="code"
@@ -283,11 +287,12 @@ describe('Markdown 文件树刷新', () => {
   });
   it('回到初始内容也会覆盖在途旧输入，避免撤销后磁盘仍是旧草稿', async () => {
     const finishes: Array<(value: boolean) => void> = [];
-    const save = vi
-      .fn()
-      .mockImplementation(
-        () => new Promise<boolean>((resolve) => finishes.push(resolve)),
-      );
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
     render(
       <Harness
         initViewFileType="code"
