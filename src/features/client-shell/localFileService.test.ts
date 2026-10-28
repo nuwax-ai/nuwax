@@ -111,7 +111,7 @@ describe('local file routing', () => {
       const release = bind();
       await getLocalFileList(12);
       release();
-      api.resolveContext.mockResolvedValueOnce({ success: false, code });
+      api.resolveContext.mockResolvedValue({ success: false, code });
       bind();
       await expect(getLocalFileList(12)).rejects.toMatchObject({ code });
       await expect(
@@ -141,6 +141,34 @@ describe('local file routing', () => {
     expect(await getLocalFileList(cId)).toBeNull();
     expect(api.resolveContext).not.toHaveBeenCalled();
   });
+
+  it.each(['无文件桥', '旧版只读桥'])(
+    '%s 的客户端继续使用后端文件接口，不调用新方法或抛错',
+    async (version) => {
+      const cId = freshCId++;
+      mocks.getApi.mockReturnValue(
+        version === '无文件桥'
+          ? undefined
+          : {
+              getCapabilities: vi.fn().mockResolvedValue({
+                apiVersion: 1,
+                available: true,
+                sandboxId: 'local-1',
+              }),
+              resolveContext: api.resolveContext,
+              listFiles: api.listFiles,
+            },
+      );
+      bind('local-1', cId);
+      expect(await getLocalFileList(cId)).toBeNull();
+      expect(
+        await prepareLocalFilePreview(`/api/computer/static/${cId}/a.md`),
+      ).toBeNull();
+      expect(await exportLocalWorkspace(cId)).toBeUndefined();
+      expect(api.resolveContext).not.toHaveBeenCalled();
+      expect(api.listFiles).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([null, ''])(
     '可选会话字段为 %s 时不把非法 scalar 传给原生桥',
