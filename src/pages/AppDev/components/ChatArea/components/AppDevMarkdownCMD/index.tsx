@@ -1,4 +1,8 @@
 import '@/components/MarkdownRenderer/ds-markdown.css';
+import {
+  getMarkdownLocale,
+  getSafeCurrentLang,
+} from '@/components/MarkdownRenderer/getMarkdownLocale';
 import styles from '@/components/MarkdownRenderer/index.less';
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import classNames from 'classnames';
@@ -42,6 +46,8 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
 
     // 使用 requestId 作为主要 key，确保每次新会话都重新渲染
     const renderKey = requestId ? `${id}-${requestId}` : id;
+    const currentLang = getSafeCurrentLang();
+    const markdownLocale = useMemo(() => getMarkdownLocale(), [currentLang]);
 
     return (
       <div
@@ -54,7 +60,7 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
           className,
         )}
       >
-        <ConfigProvider>
+        <ConfigProvider key={currentLang} locale={markdownLocale}>
           <MarkdownCMD
             ref={ref}
             timerType="requestAnimationFrame"
