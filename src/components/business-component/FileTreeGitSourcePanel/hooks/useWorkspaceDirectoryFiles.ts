@@ -1,3 +1,4 @@
+import { isExpiredLocalFileError } from '@/components/business-component/FilePreview/localFileActionMessages';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   getLocalFilesContextKey,
@@ -217,7 +218,7 @@ export function useWorkspaceDirectoryFiles(
           return next;
         });
       } catch (error) {
-        if (isCurrentRequest()) {
+        if (isCurrentRequest() && !isExpiredLocalFileError(error)) {
           message.error(
             error instanceof Error && error.message
               ? error.message

@@ -2,7 +2,10 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FilePreview, {
   FileType,
 } from '@/components/business-component/FilePreview';
-import { localFileReadErrorMessage } from '@/components/business-component/FilePreview/localFileActionMessages';
+import {
+  isExpiredLocalFileError,
+  localFileReadErrorMessage,
+} from '@/components/business-component/FilePreview/localFileActionMessages';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
   fileMovePaths,
@@ -2439,7 +2442,8 @@ export function useFileTreePreviewView(
         getLocalFileReference(node, targetId) ||
         (error instanceof Error && error.name === 'LocalFileAccessError')
       ) {
-        message.error(localFileReadErrorMessage(error, dict));
+        if (!isExpiredLocalFileError(error))
+          message.error(localFileReadErrorMessage(error, dict));
       }
       setIsDownloadingFile(false);
       setCurrentDownloadingFileId('');
@@ -2525,7 +2529,9 @@ export function useFileTreePreviewView(
       const targetNode = await resolveNodeContentForPdfExport(node);
       await downloadFileByUrl?.(targetNode, true);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : String(error));
+      if (!isExpiredLocalFileError(error)) {
+        message.error(error instanceof Error ? error.message : String(error));
+      }
     } finally {
       setIsExportingPdf(false);
     }
