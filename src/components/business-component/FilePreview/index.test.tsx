@@ -19,6 +19,7 @@ vi.mock('@/features/client-shell/localFileService', () => ({
   getLocalFileReference: local.reference,
   getLocalFilesContextKey: () => 'ctx',
   prepareLocalFilePreview: local.prepare,
+  retryLocalFilesContext: vi.fn(),
   saveLocalFile: local.save,
 }));
 
@@ -236,6 +237,30 @@ describe('FilePreview 本机流式预览', () => {
       grant.url,
       expect.objectContaining({ credentials: 'omit' }),
     );
+  });
+
+  it('空目录参数沿用默认根，显式根交给原生协议校验', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        '![空根](/api/computer/static/9/images/a.png?customTargetDir=)\n![显式根](/api/computer/static/9/images/b.png?customTargetDir=%2Fwork)\n![其他会话](/api/computer/static/10/secret.png)',
+      ),
+    );
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        fileType="markdown"
+      />,
+    );
+    await settlePreview();
+    expect(screen.getByAltText('空根')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/a.png?customTargetDir=',
+    );
+    expect(screen.getByAltText('显式根')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/api/computer/static/9/images/b.png?customTargetDir=%2Fwork',
+    );
+    expect(screen.getByAltText('其他会话')).toHaveAttribute('src', '');
   });
 
   it('下载取消由宿主消费，不创建浏览器下载或错误', async () => {

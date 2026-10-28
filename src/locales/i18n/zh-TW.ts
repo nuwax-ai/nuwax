@@ -543,6 +543,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.FileContextMenu.newFile": "新建檔案",
   "PC.Components.FileContextMenu.newFolder": "新建資料夾",
   "PC.Components.FileContextMenu.rename": "重新命名",
+  "PC.Components.FileContextMenu.move": "移動至…",
+  "PC.Components.FileContextMenu.moveDirectory": "目標目錄（相對於專案目錄，留空為根目錄）",
   "PC.Components.FileContextMenu.uploadFile": "上傳檔案",
   "PC.Components.FileContextMenu.uploadFolder": "上傳資料夾",
   "PC.Components.FileContextMenu.uploadFolderEmpty": "資料夾中沒有可上傳的檔案",

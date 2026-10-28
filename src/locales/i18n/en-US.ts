@@ -644,6 +644,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FileContextMenu.newFile": "New File",
   "PC.Components.FileContextMenu.newFolder": "New Folder",
   "PC.Components.FileContextMenu.rename": "Rename",
+  "PC.Components.FileContextMenu.move": "Move to…",
+  "PC.Components.FileContextMenu.moveDirectory": "Destination folder relative to the project; leave empty for root",
   "PC.Components.FileContextMenu.uploadFile": "Upload File",
   "PC.Components.FileContextMenu.uploadFolder": "Upload Folder",
   "PC.Components.FileContextMenu.uploadFolderEmpty": "No uploadable files in the selected folder",

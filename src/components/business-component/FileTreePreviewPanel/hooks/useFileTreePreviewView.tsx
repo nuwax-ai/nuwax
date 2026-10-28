@@ -5,6 +5,10 @@ import FilePreview, {
 import { localFileReadErrorMessage } from '@/components/business-component/FilePreview/localFileActionMessages';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
+  fileMovePaths,
+  movedFileNode,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/fileMove';
+import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
@@ -31,6 +35,7 @@ import {
   fetchContentFromUrl,
   isPreviewFileTooLargeError,
 } from '@/services/skill';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
@@ -70,7 +75,7 @@ import {
   isOpenUiFileName,
   tryParseOpenUiFileContent,
 } from '@/utils/openUiArtifact';
-import { message } from 'antd';
+import { Input, Modal, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,
@@ -1863,6 +1868,96 @@ export function useFileTreePreviewView(
    * @param node 目标目录节点
    * @param mode files=多文件上传；folder=文件夹上传（保留子目录结构）
    */
+  const handleMoveFromMenu = (node: FileNode) => {
+    if (readOnly || mutation.current) return;
+    const epoch = saveEpoch.current;
+    let directory = workspaceRelativePath(node.id)
+      .split('/')
+      .slice(0, -1)
+      .join('/');
+    Modal.confirm({
+      title: dict('PC.Components.FileContextMenu.move'),
+      content: (
+        <Input
+          autoFocus
+          defaultValue={directory}
+          aria-label={dict('PC.Components.FileContextMenu.moveDirectory')}
+          placeholder={dict('PC.Components.FileContextMenu.moveDirectory')}
+          onChange={(event) => {
+            directory = event.target.value;
+          }}
+        />
+      ),
+      onOk: async () => {
+        if (saveEpoch.current !== epoch) throw new Error('Workspace changed');
+        let moved = false;
+        await runFileMutation(node, async () => {
+          const { source, destination } = fileMovePaths(node, directory);
+          const result = await apiUpdateStaticFile({
+            cId: Number(targetId),
+            files: [
+              {
+                name: destination,
+                renameFrom: source,
+                operation: 'rename',
+                isDir: node.type === 'folder',
+                localFile: getLocalFileReference(node, targetId),
+              },
+            ],
+          });
+          if (result.code !== SUCCESS_CODE || saveEpoch.current !== epoch)
+            return;
+          const nodes = indexFileNodesById(filesRef.current);
+          for (const entry of nodes.values()) {
+            const next = movedFileNode(entry, source, destination);
+            if (next !== entry) {
+              onFileRenamed?.(entry.id, next.id);
+              editorDrafts.current.delete(entry.id);
+            }
+          }
+          setSelectedFileNode((current) => {
+            if (!current) return current;
+            const next = movedFileNode(current, source, destination);
+            if (next === current) return current;
+            next.fileProxyUrl = current.fileProxyUrl
+              ? updateFileProxyUrl(
+                  current.fileProxyUrl,
+                  next.name,
+                  workspaceRelativePath(next.id)
+                    .split('/')
+                    .slice(0, -1)
+                    .join('/') || undefined,
+                )
+              : undefined;
+            return next;
+          });
+          const remap = (id: string) => {
+            const relative = workspaceRelativePath(id);
+            return relative === source || relative.startsWith(`${source}/`)
+              ? `${
+                  id.startsWith('workspace:') ? 'workspace:' : ''
+                }${destination}${relative.slice(source.length)}`
+              : id;
+          };
+          setSelectedFileId(remap);
+          setSelectedFolderId(remap);
+          pendingSelectFileRef.current = node.id.startsWith('workspace:')
+            ? `workspace:${destination}`
+            : destination;
+          moved = true;
+          // 写入已成功，附属刷新失败不能把移动操作误报成失败。
+          try {
+            await onRefreshFileTree?.();
+            await refreshGitList();
+          } catch (error) {
+            console.error('Refresh after moving file failed', error);
+          }
+        });
+        if (!moved) throw new Error(dict('PC.Common.Global.operationFailed'));
+      },
+    });
+  };
+
   const triggerFileUpload = useCallback(
     async (node: FileNode | null, mode: 'files' | 'folder') => {
       const relativePath = resolveFileTreeUploadRelativePath(node);
@@ -2989,6 +3084,7 @@ export function useFileTreePreviewView(
       handleRefreshFileList,
       handleDelete,
       handleRenameFromMenu,
+      handleMoveFromMenu: readOnly ? undefined : handleMoveFromMenu,
       handleUploadMultipleFiles,
       handleUploadFolder,
       handleCreateFile,

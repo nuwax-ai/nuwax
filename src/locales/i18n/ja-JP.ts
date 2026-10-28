@@ -527,6 +527,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FileContextMenu.newFile": "新しいファイル",
   "PC.Components.FileContextMenu.newFolder": "新しいフォルダー",
   "PC.Components.FileContextMenu.rename": "名前の変更",
+  "PC.Components.FileContextMenu.move": "移動先…",
+  "PC.Components.FileContextMenu.moveDirectory": "移動先フォルダー（プロジェクトからの相対パス、空欄でルート）",
   "PC.Components.FileContextMenu.uploadFile": "ファイルをアップロードする",
   "PC.Components.FileContextMenu.uploadFolder": "フォルダをアップロード",
   "PC.Components.FileContextMenu.uploadFolderEmpty": "アップロード可能なファイルがフォルダにありません",

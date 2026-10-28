@@ -50,13 +50,13 @@ describe('工作目录选择的本机与远端分流', () => {
     expect(api.pickDirectory).toHaveBeenCalledTimes(1);
   });
 
-  it('其他电脑、浏览器、关闭能力和只有旧选择桥时保留后端路线', async () => {
+  it('其他电脑和旧选择桥保留后端路线，已识别本机停服不回退', async () => {
     expect(await pick('999')).toBeNull();
     api.getCapabilities.mockResolvedValue({
       ...capabilities,
       available: false,
     });
-    expect(await pick()).toBeNull();
+    await expect(pick()).rejects.toThrow('unavailable');
     mocks.getApi.mockReturnValue({ pickDirectory: api.pickDirectory });
     expect(await pick()).toBeNull();
     mocks.getApi.mockReturnValue(undefined);

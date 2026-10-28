@@ -18,6 +18,10 @@ import type { StaticFileListResponse } from '@/types/interfaces/vncDesktop';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { useLayoutEffect, useSyncExternalStore } from 'react';
+import {
+  clearLocalComputerIdentity,
+  matchesLocalComputer,
+} from './localComputerIdentity';
 export type { LocalFileReference } from '@/types/interfaces/localFile';
 
 type ContextRecord = {
@@ -109,7 +113,11 @@ function resolveRecord(cId: string, record: ContextRecord) {
     try {
       capabilities = await api.getCapabilities();
     } catch {
-      if (record.knownLocal) throw new LocalFileAccessError('unavailable');
+      if (
+        record.knownLocal ||
+        matchesLocalComputer(api, undefined, record.input.sandboxId)
+      )
+        throw new LocalFileAccessError('unavailable');
       return null;
     }
     if (
@@ -126,7 +134,12 @@ function resolveRecord(cId: string, record: ContextRecord) {
       capabilities.writable !== true ||
       !capabilities.sandboxId
     ) {
-      if (record.knownLocal) throw new LocalFileAccessError('unavailable');
+      if (
+        record.knownLocal ||
+        (!capabilities?.available &&
+          matchesLocalComputer(api, undefined, record.input.sandboxId))
+      )
+        throw new LocalFileAccessError('unavailable');
       return null;
     }
     if (capabilities.sandboxId !== record.input.sandboxId) {
@@ -136,6 +149,7 @@ function resolveRecord(cId: string, record: ContextRecord) {
     // 完整读写桥已确认宿主就是所选电脑，根目录解析失败也不能改走云端。
     // 旧只读桥仍在前面的能力检查中保留兼容路线。
     record.knownLocal = true;
+    matchesLocalComputer(api, capabilities, record.input.sandboxId);
     recentLocalSources.delete(cId);
     recentLocalSources.set(cId, record.input.sandboxId);
     if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
@@ -215,7 +229,11 @@ export function clearLocalFilesContexts(): void {
 
 /** 登出、失效及顶层文档销毁立即释放，宿主仍做最终会话代次校验。 */
 export function initLocalFilesLifecycle(): () => void {
-  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clearLocalFilesContexts);
+  const clearSession = () => {
+    clearLocalComputerIdentity();
+    clearLocalFilesContexts();
+  };
+  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clearSession);
   window.addEventListener('pagehide', clearLocalFilesContexts);
   const disposeComputerState = subscribeComputerServiceState((state) => {
     const online =
@@ -243,7 +261,7 @@ export function initLocalFilesLifecycle(): () => void {
   });
   return () => {
     disposeComputerState();
-    eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clearLocalFilesContexts);
+    eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clearSession);
     window.removeEventListener('pagehide', clearLocalFilesContexts);
     clearLocalFilesContexts();
   };
@@ -339,6 +357,19 @@ function parseStaticUrl(
     };
   } catch {
     return;
+  }
+}
+
+/** 用户主动重试只重建失败的同一工作区，不撤销仍可用的媒体授权。 */
+export function retryLocalFilesContext(
+  input?: string | LocalFileReference,
+): void {
+  const cId =
+    typeof input === 'string' ? parseStaticUrl(input)?.cId : input?.cId;
+  const record = cId ? contexts.get(cId) : undefined;
+  if (cId && record && !record.disposed && record.settled && !record.context) {
+    record.settled = false;
+    resolveRecord(cId, record);
   }
 }
 
@@ -479,6 +510,24 @@ export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
   const record = contexts.get(ref.cId);
   if (!record || record.disposed || record.context?.contextId !== ref.contextId)
     throw new LocalFileAccessError('expired');
+}
+
+/** 文件面板新增命令复用相同来源判定与代次校验，不各自猜测当前电脑。 */
+export async function resolveLocalFilesAccess(cId: string | number) {
+  const record = findContext(String(cId));
+  if (!record) return null;
+  const generation = record.generation;
+  const context = await record.pending;
+  const assertCurrent = () => {
+    if (
+      record.disposed ||
+      record.generation !== generation ||
+      contexts.get(String(cId)) !== record
+    )
+      throw new LocalFileAccessError('expired');
+  };
+  assertCurrent();
+  return context ? { context, api: record.api!, assertCurrent } : null;
 }
 
 /** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */

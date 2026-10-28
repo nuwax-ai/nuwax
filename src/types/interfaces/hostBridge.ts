@@ -350,6 +350,11 @@ export interface LocalFileChange {
   binary?: boolean;
   renameFrom?: string;
 }
+export interface LocalFileTransferInput {
+  kind: 'files' | 'project';
+  files: { path: string; size: number }[];
+  customTargetDir?: string;
+}
 export interface HostLocalFilesBridge {
   pickDirectory(): Promise<{ canceled: boolean; paths: string[] }>;
   getCapabilities(): Promise<LocalFilesCapabilities>;
@@ -377,6 +382,20 @@ export interface HostLocalFilesBridge {
     contextId: string,
     changes: LocalFileChange[],
   ): Promise<LocalFilesResult<void>>;
+  /** API v3：受工作区约束的分块文件传入，不使用消息附件上传链路。 */
+  beginTransfer?(
+    contextId: string,
+    input: LocalFileTransferInput,
+  ): Promise<LocalFilesResult<{ transferId: string }>>;
+  writeTransferChunk?(
+    transferId: string,
+    index: number,
+    offset: number,
+    bytes: Uint8Array,
+  ): Promise<LocalFilesResult<void>>;
+  commitTransfer?(
+    transferId: string,
+  ): Promise<LocalFilesResult<{ count: number }>>;
   saveFile(
     target: LocalFileTarget,
     options?: LocalFileSaveOptions,
