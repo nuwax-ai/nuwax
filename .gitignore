@@ -63,3 +63,6 @@ tasks/
 debug-shots/
 .deploy-worktree
 .dist-retention-snapshot
+
+# 仓内嵌套 git worktree；勿提交，且 Vitest 已 exclude worktrees/**
+worktrees/
