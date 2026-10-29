@@ -42,6 +42,13 @@ export interface FileTreePreviewViewProps {
    * 调用 refreshSelectedFileContent 同步当前打开文件的内容。
    */
   fileTreeRefreshTrigger?: number;
+  /**
+   * 流式过程中只重拉当前预览文件正文，不刷新文件树。
+   * 用于编辑/修改的文件正好是当前选中文件。
+   */
+  previewFileContentRefreshTrigger?: number;
+  /** 把当前预览文件 id 同步给会话模型，供流式刷新判断要不要刷树 */
+  onPreviewFileIdChange?: (fileId: string) => void;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */

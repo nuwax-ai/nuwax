@@ -156,6 +156,8 @@ const EditAgent: React.FC = () => {
     // 文件树视图模式
     viewMode,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     setFileTreeSelfManaged,
     // 处理文件列表刷新事件
     handleRefreshFileList,
@@ -1479,6 +1481,10 @@ const EditAgent: React.FC = () => {
                               }
                               taskAgentSelectTrigger={taskAgentSelectTrigger}
                               fileTreeRefreshTrigger={fileTreeRefreshTrigger}
+                              previewFileContentRefreshTrigger={
+                                previewFileContentRefreshTrigger
+                              }
+                              onPreviewFileIdChange={setPreviewFileId}
                               originalFiles={workspaceFiles.files}
                               fileTreeDataLoading={workspaceFiles.loading}
                               onOpenDirectory={workspaceFiles.onOpenDirectory}
