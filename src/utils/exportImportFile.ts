@@ -33,6 +33,12 @@ export interface ExportFileBlobResponse {
   };
 }
 
+/** 兼容浏览器 Blob 与 Node/jsdom 测试中的 Blob polyfill */
+const isBlobLike = (value: unknown): value is Blob =>
+  !!value &&
+  typeof value === 'object' &&
+  typeof (value as { text?: unknown }).text === 'function';
+
 /**
  * 处理 blob 响应，检测并解析错误信息
  * @param response 请求响应对象
@@ -53,11 +59,16 @@ async function handleBlobResponse(
   ) {
     // 尝试将Blob转换为文本并解析为JSON
     try {
-      const text = await (data as Blob).text();
+      const text = isBlobLike(data)
+        ? await data.text()
+        : typeof data === 'string'
+        ? data
+        : '';
       const errorData = JSON.parse(text);
 
       // 如果解析成功且包含错误信息，返回错误
-      if (errorData && !errorData.success) {
+      // success 缺省时也按业务失败处理（如 code=0001 + message）
+      if (errorData && errorData.success !== true) {
         return {
           success: false,
           error: {
@@ -65,7 +76,7 @@ async function handleBlobResponse(
             displayCode: errorData.displayCode || '',
             message: errorData.message || defaultErrorMessage,
             data: errorData.data || null,
-            success: errorData.success || false,
+            success: errorData.success === true,
             tid: errorData.tid || '',
           },
         };
@@ -120,6 +131,51 @@ function handleExportError(error: any): ExportFileBlobResponse {
   };
 }
 
+/**
+ * HTTP 非 2xx 时 umi/axios 会 reject；responseType=blob 时业务 JSON 在
+ * error.response.data（Blob）里，不能只读 error.message（常为 status 文案）。
+ */
+async function handleExportRequestError(
+  error: any,
+): Promise<ExportFileBlobResponse> {
+  const responseData = error?.response?.data;
+  if (isBlobLike(responseData)) {
+    const headers = error?.response?.headers || {};
+    const contentType =
+      headers['content-type'] ||
+      headers['Content-Type'] ||
+      responseData.type ||
+      '';
+    // 400 等错误体常是 JSON；content-type 偶发缺失时仍按 JSON 业务错误试解析
+    return await handleBlobResponse({
+      data: responseData,
+      headers: {
+        ...headers,
+        'content-type': contentType || 'application/json',
+      },
+    });
+  }
+  if (
+    responseData &&
+    typeof responseData === 'object' &&
+    (typeof responseData.message === 'string' || responseData.success === false)
+  ) {
+    return {
+      success: false,
+      error: {
+        code: responseData.code || '',
+        displayCode: responseData.displayCode || '',
+        message:
+          responseData.message || dict('PC.Utils.ExportImport.exportFailed'),
+        data: responseData.data || null,
+        success: false,
+        tid: responseData.tid || '',
+      },
+    };
+  }
+  return handleExportError(error);
+}
+
 // 导出文件Blob,然后直接下载为.zip文件，将后台接口返回的错误信息返回，便于前端显示错误信息
 export async function apiExportFileBlob(
   url: string,
@@ -134,7 +190,7 @@ export async function apiExportFileBlob(
 
     return await handleBlobResponse(response);
   } catch (error: any) {
-    return handleExportError(error);
+    return handleExportRequestError(error);
   }
 }
 
