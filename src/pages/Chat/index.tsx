@@ -441,6 +441,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
   const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: id,
     enabled: active && isFileTreeVisible,
     fileTreeRefreshTrigger,
