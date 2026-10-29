@@ -5,6 +5,7 @@ import {
   render,
   screen,
 } from '@testing-library/react';
+import { message } from 'antd';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -286,6 +287,44 @@ describe('FilePreview 本机流式预览', () => {
     expect(onError).not.toHaveBeenCalled();
     click.mockRestore();
   });
+
+  it.each(['expired', 'permission-denied'])(
+    '本机下载失败 %s 保留失败回调，仅 expired 不弹窗且不回退浏览器下载',
+    async (code) => {
+      const error = Object.assign(new Error(`download ${code}`), { code });
+      local.save.mockRejectedValueOnce(error);
+      const toast = vi
+        .spyOn(message, 'error')
+        .mockImplementation(() => undefined as never);
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+      const onError = vi.fn();
+      try {
+        render(
+          <FilePreview
+            src="/api/computer/static/9/docs/report.md"
+            fileType="image"
+            showDownload
+            onError={onError}
+          />,
+        );
+        await act(async () => {
+          await Promise.resolve();
+        });
+        fireEvent.click(screen.getByRole('button', { name: /download/ }));
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(local.save).toHaveBeenCalledOnce();
+        expect(onError).toHaveBeenCalledWith(error);
+        expect(click).not.toHaveBeenCalled();
+        if (code === 'expired') expect(toast).not.toHaveBeenCalled();
+        else expect(toast).toHaveBeenCalledWith(error.message);
+      } finally {
+        toast.mockRestore();
+        click.mockRestore();
+      }
+    },
+  );
 });
 
 describe('FilePreview Markdown 渲染隔离', () => {

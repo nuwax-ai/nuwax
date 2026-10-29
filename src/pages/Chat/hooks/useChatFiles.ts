@@ -1,4 +1,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  getLocalFilesContextKey,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import {
   apiDownloadAllFiles,
@@ -38,6 +42,8 @@ export const useChatFiles = ({
   onSaveFileContentSuccessRef,
   onFileMutationSuccessRef,
 }: UseChatFilesProps) => {
+  useLocalFilesRevision();
+  const fileSourceKey = getLocalFilesContextKey(id);
   const fileTreeDataRef = useRef(fileTreeData);
   fileTreeDataRef.current = fileTreeData;
   const conversationRef = useRef(id);
@@ -254,7 +260,11 @@ export const useChatFiles = ({
           content: string,
           originalFileContent: string,
         ): Promise<boolean> => {
-          if (!id || conversationRef.current !== id) {
+          if (
+            !id ||
+            conversationRef.current !== id ||
+            getLocalFilesContextKey(id) !== fileSourceKey
+          ) {
             return false;
           }
           const updatedFilesList = updateFilesListContent(
@@ -269,14 +279,21 @@ export const useChatFiles = ({
             cId: id,
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code === SUCCESS_CODE && conversationRef.current === id) {
+          if (
+            code === SUCCESS_CODE &&
+            conversationRef.current === id &&
+            getLocalFilesContextKey(id) === fileSourceKey
+          ) {
             notifyFileMutationSuccess();
           }
-          return code === SUCCESS_CODE;
+          return (
+            code === SUCCESS_CODE &&
+            getLocalFilesContextKey(id) === fileSourceKey
+          );
         },
         500,
       ),
-    [id, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
+    [id, fileSourceKey, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
   );
 
   useEffect(

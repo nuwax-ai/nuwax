@@ -78,6 +78,13 @@ export type ConversationEffect =
       conversationId: number;
       /** throttled：流式 ToolCall 的节流刷新；immediate：FINAL_RESULT 后的立即刷新 */
       mode: 'throttled' | 'immediate';
+      /**
+       * content：编辑/修改已有文件，消费端再判断是不是当前预览文件。
+       * tree：新增、删除、移动、重命名。缺省按 tree，兼容旧调用。
+       */
+      scope?: 'content' | 'tree';
+      /** 本次工具改到的工作区路径，用于和当前预览文件比较 */
+      paths?: string[];
     }
   | {
       type: 'conflict.confirmStop';

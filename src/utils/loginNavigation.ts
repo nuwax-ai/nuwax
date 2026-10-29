@@ -5,6 +5,27 @@ type LoginHistory = {
   go: (delta: number) => void;
 };
 
+/**
+ * 当前文档是否由「刷新验证码页」加载。
+ *
+ * 阿里云 captchaVerifyParam 与图形验证码都是一次性的。从登录页进入时
+ * history.state 里的参数可用；整页刷新后 state 仍在，但凭证已被第一次发码核销。
+ * Navigation Timing 的 name 是本次文档加载的 URL：只有刷新落在验证码页才为真。
+ * 先刷新登录页再进验证码页时，name 仍是登录页，不能当成验证码页刷新。
+ */
+export function isVerifyCodePageReload(): boolean {
+  const entry = performance.getEntriesByType('navigation')[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  if (!entry || entry.type !== 'reload') return false;
+  try {
+    const path = new URL(entry.name).pathname.replace(/\/+$/, '');
+    return path.endsWith('/verify-code');
+  } catch {
+    return false;
+  }
+}
+
 /** 登录和验证码共享一个历史条目，保留进入登录时的业务返回偏移。 */
 export function replaceLoginStep(
   history: LoginHistory,

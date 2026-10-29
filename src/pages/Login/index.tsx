@@ -130,6 +130,19 @@ const Login: React.FC = () => {
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  /** SDK success（或实例就绪后的兜底）已到，验证码资源可以开始验证 */
+  const captchaReadyRef = useRef(false);
+  /** 用户已点登录，正在等资源就绪和 init 满 2 秒 */
+  const captchaLoginPendingRef = useRef(false);
+  /** 只消费这次点击触发的验证回调，忽略初始化时的自动回调 */
+  const captchaLoginArmedRef = useRef(false);
+  /** 本轮点击隐藏按钮的时间：回调可能早于本轮 captcha-open 落稳 */
+  const captchaRoundArmedAtRef = useRef(0);
+  const captchaWaitStartedRef = useRef(0);
+  /** 点开本轮验证后，至少再等这么久才把参数交给登录接口 */
+  const CAPTCHA_ROUND_SETTLE_MS = 500;
+  /** 已点登录、正在等验证码。请求自己的 loading 要等接口发出才为 true */
+  const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
   const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
@@ -279,6 +292,13 @@ const Login: React.FC = () => {
 
       if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
         loginTriggerLockRef.current = false;
+        if (
+          isClosedAfterOpen ||
+          isMaxTimeout ||
+          (isInitTimeout && !isVerifyingRef.current)
+        ) {
+          setCaptchaSubmitting(false);
+        }
         clearCaptchaPopupWatcher();
       }
     }, 300);
@@ -558,14 +578,25 @@ const Login: React.FC = () => {
    * SDK 验证通过后调用此函数，在此处发起业务请求并返回真实结果。
    * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
    */
-  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
-    console.log(
-      '[Login handleCaptchaVerify] param length:',
-      captchaVerifyParam?.length,
-      'preview:',
-      captchaVerifyParam?.substring(0, 150),
-    );
+  const waitForCaptchaRoundSettle = async () => {
+    const armedAt = captchaRoundArmedAtRef.current;
+    if (!armedAt) return;
+    const remain = CAPTCHA_ROUND_SETTLE_MS - (Date.now() - armedAt);
+    if (remain > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, remain);
+      });
+    }
+  };
 
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    if (!captchaLoginArmedRef.current) {
+      return { captchaResult: true, bizResult: true };
+    }
+    captchaLoginArmedRef.current = false;
+    // init 就绪 ≠ 本轮验证会话已落稳。无痕路径常在 click 后立刻交参，
+    // 此时 captcha-open 可能还在飞，直接登录会偶发「校验参数异常」。
+    await waitForCaptchaRoundSettle();
     // 检测 SDK 自动验证（deviceToken JSON 格式，非用户滑动验证）
     const isDeviceTokenFallback =
       captchaVerifyParam?.startsWith('{"sceneId"') &&
@@ -592,6 +623,7 @@ const Login: React.FC = () => {
       } finally {
         captchaFallbackRef.current = false;
         isVerifyingRef.current = false;
+        setCaptchaSubmitting(false);
         // 释放触发锁并清理 popup watcher，避免登录按钮锁死
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
@@ -615,6 +647,7 @@ const Login: React.FC = () => {
       return await handlerCodeLogin(captchaVerifyParam);
     } finally {
       isVerifyingRef.current = false;
+      setCaptchaSubmitting(false);
     }
   };
 
@@ -624,6 +657,8 @@ const Login: React.FC = () => {
    * 来激活验证会话；show() 仅显示已有元素，不能可靠地启动验证流程。
    */
   const triggerCaptchaPopup = () => {
+    captchaLoginArmedRef.current = true;
+    captchaRoundArmedAtRef.current = Date.now();
     const captchaBtn = document.getElementById('aliyun-captcha-login');
     if (captchaBtn) {
       captchaBtn.click();
@@ -633,8 +668,40 @@ const Login: React.FC = () => {
     startCaptchaPopupWatcher();
   };
 
+  /** 资源就绪且距离 init 至少 2 秒再点验证码，避免未加载完的参数被登录接口拒绝 */
+  const scheduleCaptchaLogin = () => {
+    captchaLoginPendingRef.current = true;
+    if (!captchaWaitStartedRef.current) {
+      captchaWaitStartedRef.current = Date.now();
+    }
+    const attempt = () => {
+      captchaDelayTimerRef.current = null;
+      if (!captchaLoginPendingRef.current) return;
+      const initAt = window.__captchaInitAt || 0;
+      const gapOk = initAt > 0 && Date.now() - initAt >= 2000;
+      if (captchaReadyRef.current && gapOk) {
+        captchaLoginPendingRef.current = false;
+        captchaWaitStartedRef.current = 0;
+        triggerCaptchaPopup();
+        return;
+      }
+      if (Date.now() - captchaWaitStartedRef.current > 12000) {
+        captchaLoginPendingRef.current = false;
+        captchaWaitStartedRef.current = 0;
+        loginTriggerLockRef.current = false;
+        setCaptchaSubmitting(false);
+        return;
+      }
+      captchaDelayTimerRef.current = window.setTimeout(attempt, 200);
+    };
+    if (captchaDelayTimerRef.current !== null) {
+      window.clearTimeout(captchaDelayTimerRef.current);
+    }
+    attempt();
+  };
+
   const doLogin = () => {
-    if (loading) return;
+    if (loading || captchaSubmitting) return;
 
     const now = Date.now();
     if (
@@ -653,24 +720,19 @@ const Login: React.FC = () => {
       openCaptcha
     );
 
-    // 保障 initAliyunCaptcha 与验证请求之间 ≥2s，确保图片资源预加载完成
+    loginTriggerLockRef.current = true;
+    lastLoginTriggerAtRef.current = now;
+
+    // 资源未就绪或 init 未满 2 秒时先等，不把未加载完的验证参数交给登录接口
     if (needAliyunCaptcha) {
+      setCaptchaSubmitting(true);
       const initAt = window.__captchaInitAt || 0;
-      const gap = now - initAt;
-      if (gap < 2000) {
-        const delay = 2000 - gap;
-        loginTriggerLockRef.current = true;
-        lastLoginTriggerAtRef.current = now;
-        captchaDelayTimerRef.current = window.setTimeout(() => {
-          captchaDelayTimerRef.current = null;
-          triggerCaptchaPopup();
-        }, delay);
+      const gapOk = initAt > 0 && now - initAt >= 2000;
+      if (!captchaReadyRef.current || !gapOk) {
+        scheduleCaptchaLogin();
         return;
       }
     }
-
-    loginTriggerLockRef.current = true;
-    lastLoginTriggerAtRef.current = now;
 
     console.log(
       '[Login doLogin] needAliyunCaptcha:',
@@ -867,7 +929,7 @@ const Login: React.FC = () => {
                     block
                     type="primary"
                     htmlType="submit"
-                    loading={loading}
+                    loading={loading || captchaSubmitting}
                   >
                     {loginType === LoginTypeEnum.Password
                       ? dict('PC.Pages.Login.login')
@@ -969,6 +1031,9 @@ const Login: React.FC = () => {
                 <AliyunCaptcha
                   config={tenantConfigInfo}
                   onVerify={handleCaptchaVerify}
+                  onReady={() => {
+                    captchaReadyRef.current = true;
+                  }}
                   elementId="aliyun-captcha-login"
                   ref={captchaRef}
                 />

@@ -5,6 +5,7 @@ import {
   SANDBOX_TEST_ERROR,
   SUCCESS_CODE,
   USER_NO_LOGIN,
+  USERAPP_OPERATION_IN_PROGRESS,
 } from '@/constants/codes.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -174,6 +175,15 @@ const errorHandler = (error: any, opts: any) => {
     error?.response?.status !== 401
   ) {
     return;
+  }
+
+  // 已有操作进行中（多为其他页签已发起同一操作）：不论哪个接口、
+  // 本处理器被第几次调用，都不弹全局提示。错误仍抛给上层，
+  // 面板等该展示的地方不受影响。
+  // 放在 BizError / HTTP 分支之前统一判断，两种错误形态都能认到 code。
+  const bizCode = error?.info?.code ?? error?.response?.data?.code;
+  if (bizCode === USERAPP_OPERATION_IN_PROGRESS) {
+    throw error;
   }
 
   if (error.name === 'BizError') {

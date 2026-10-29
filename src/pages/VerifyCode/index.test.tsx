@@ -24,6 +24,7 @@ const {
   realRequests,
   mockApiSendCode,
   mockApiLoginCode,
+  mockIsVerifyCodePageReload,
 } = vi.hoisted(() => ({
   /** useRequest(apiLoginCode) 返回的 run；由测试用例注入 onSuccess/onError 行为 */
   mockRunLoginCode: vi.fn(),
@@ -40,6 +41,7 @@ const {
   realRequests: { current: false },
   mockApiSendCode: vi.fn(),
   mockApiLoginCode: vi.fn(),
+  mockIsVerifyCodePageReload: vi.fn(() => false),
 }));
 
 vi.mock('umi', () => ({
@@ -108,6 +110,7 @@ vi.mock('@/utils/authNavigation', () => ({
 vi.mock('@/utils/loginNavigation', () => ({
   navigateAfterLogin: mockNavigateAfterLogin,
   replaceLoginStep: vi.fn(),
+  isVerifyCodePageReload: mockIsVerifyCodePageReload,
 }));
 
 vi.mock('@/utils/hostBridge', () => ({
@@ -115,7 +118,12 @@ vi.mock('@/utils/hostBridge', () => ({
 }));
 
 vi.mock('@/components/AliyunCaptcha', () => ({
-  default: React.forwardRef(() => null),
+  default: React.forwardRef((props: { onReady?: () => void }) => {
+    React.useEffect(() => {
+      props.onReady?.();
+    }, []);
+    return null;
+  }),
 }));
 
 vi.mock('@/components/base/SvgIcon', () => ({
@@ -180,8 +188,10 @@ describe('验证码登录页提交与重发加固', () => {
     mockTenantConfig.current = { ...plainTenantConfig };
     mockFinishBusinessLogin.mockResolvedValue('ready');
     mockLoadMenus.mockResolvedValue(undefined);
+    mockIsVerifyCodePageReload.mockReturnValue(false);
     mockRunSendCode.mockResolvedValue({ code: '0000', success: true });
     mockRunLoginCode.mockResolvedValue(undefined);
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -417,5 +427,88 @@ describe('验证码登录页提交与重发加固', () => {
     await act(async () => {
       settleSend();
     });
+  });
+
+  it('从登录页进入时用本次阿里云参数发码', async () => {
+    mockTenantConfig.current = {
+      openCaptcha: 1,
+      captchaSceneId: 'scene',
+      captchaPrefix: 'prefix',
+      openImageCaptcha: 0,
+    };
+    mockLocationState.current = {
+      ...mockLocationState.current,
+      captchaVerifyParam: 'fresh-param',
+    };
+    render(<VerifyCode />);
+    expect(mockRunSendCode).toHaveBeenCalledWith(
+      expect.objectContaining({ captchaVerifyParam: 'fresh-param' }),
+    );
+  });
+
+  it('刷新验证码页时不重放已核销的阿里云参数，改为重新拉起验证', async () => {
+    mockIsVerifyCodePageReload.mockReturnValue(true);
+    mockTenantConfig.current = {
+      openCaptcha: 1,
+      captchaSceneId: 'scene',
+      captchaPrefix: 'prefix',
+      openImageCaptcha: 0,
+    };
+    mockLocationState.current = {
+      ...mockLocationState.current,
+      captchaVerifyParam: 'spent-param',
+    };
+    window.__captchaInitAt = Date.now();
+    const clicks: string[] = [];
+    const originalClick = HTMLElement.prototype.click;
+    HTMLElement.prototype.click = function click(this: HTMLElement) {
+      clicks.push(this.id);
+    };
+    try {
+      render(<VerifyCode />);
+      expect(clicks).not.toContain('aliyun-captcha-sms');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+    } finally {
+      HTMLElement.prototype.click = originalClick;
+      delete window.__captchaInitAt;
+    }
+    expect(mockRunSendCode).not.toHaveBeenCalled();
+    expect(clicks).toContain('aliyun-captcha-sms');
+  });
+
+  it('刷新且开启图形验证码时不自动发码，等用户重填后再发', async () => {
+    mockIsVerifyCodePageReload.mockReturnValue(true);
+    mockTenantConfig.current = {
+      openCaptcha: 1,
+      captchaSceneId: 'scene',
+      captchaPrefix: 'prefix',
+      openImageCaptcha: 1,
+    };
+    mockLocationState.current = {
+      ...mockLocationState.current,
+      captchaVerifyParam: 'spent-param',
+      captchaId: 'old-id',
+      captchaCode: 'old-code',
+    };
+    render(<VerifyCode />);
+    expect(mockRunSendCode).not.toHaveBeenCalled();
+  });
+
+  it('60 秒内再次进入或刷新不再发码，并延续上次倒计时', async () => {
+    const warn = vi
+      .spyOn(message, 'warning')
+      .mockImplementation(() => (() => {}) as any);
+    const { unmount } = render(<VerifyCode />);
+    expect(mockRunSendCode).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    unmount();
+    render(<VerifyCode />);
+    expect(mockRunSendCode).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/55/)).toBeTruthy();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

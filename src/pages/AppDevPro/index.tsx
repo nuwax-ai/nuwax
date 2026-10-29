@@ -31,7 +31,6 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
-import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
 import {
   latestRoundChangedWorkspaceFiles,
   latestRoundNeedsPreviewRebuild,
@@ -476,6 +475,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     closePreviewView,
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     fileTreeRefreshTrigger,
     setFileTreeSelfManaged,
     openPreviewView,
@@ -508,6 +510,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /** 与 Chat 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
   const workspaceFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: queryConversationId,
     enabled: workspaceFilesEnabled,
     fileTreeRefreshTrigger,
@@ -623,7 +626,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       ? {
           cId: queryConversationId,
           sandboxId: String(finalSelectedComputerId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: appId,
           serviceType: 'PageApp',
           userId: conversationInfo.userId,
@@ -796,18 +799,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
-  // 共用文件树刷新（含当前选中文件正文）；仅文件变更完成事件调用，仍按 2s 合并。
-  const refreshRuntimeFileTree = useWorkspaceFileRefresh({
-    active,
-    conversationId: queryConversationId,
-    refresh: () => {
-      const refresh = refreshFileTreeAndSelectedFileRef.current;
-      return refresh
-        ? refresh()
-        : refreshFileListImmediately(queryConversationId);
-    },
-  });
-
   /** 会话事件打开远程桌面时调用，具体动作在工作区回调里赋值 */
   const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
     () => {},
@@ -819,7 +810,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
     effectsResources: {
-      refreshFileListThrottled: refreshRuntimeFileTree,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
       openDesktopView: (conversationId: number) => {
         openDesktopViewFromEventRef.current(conversationId);
       },
@@ -2343,6 +2335,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       originalFiles: workspaceFiles.files,
       fileTreeDataLoading: workspaceFiles.loading,
       fileTreeRefreshTrigger,
+      previewFileContentRefreshTrigger,
+      onPreviewFileIdChange: setPreviewFileId,
       targetId: String(queryConversationId), // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -2474,6 +2468,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceFiles.loadedDirectoryPaths,
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     queryConversationId,
     conversationInfo?.topic,
     handleUploadMultipleFiles,
@@ -3427,16 +3423,73 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     restartPreviewWaitRef.current = true;
     setAwaitingContainerForRestart(true);
     try {
-      const containerRunningPromise =
-        serviceReadinessRef.current.waitUntilContainerRunning(
-          envToRestart,
-          () => dbEnvRef.current !== envToRestart,
-          { acceptCached: true },
-        );
+      const envChanged = () => dbEnvRef.current !== envToRestart;
+      // 重启前先拿一轮最新 readiness 看容器与应用状态，不用陈旧缓存下结论
       resumeReadinessWatch();
-      const containerRunning = await containerRunningPromise;
-      if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      const latest = await serviceReadinessRef.current.waitForNextPoll(
+        envToRestart,
+        envChanged,
+      );
+      if (!latest || envChanged()) {
         return;
+      }
+      const containerStatus = latest.container?.status;
+      // 线上：容器已 running、应用正在 starting，说明其他页签正在重启
+      // （或启动）这个应用。再调 restart 只会被后端以「操作进行中」
+      // 拒绝，直接进入跟随状态：清掉本地停止标记，接下来按 readiness
+      // 展示启动中，ready 后自动打开预览，不再重复发起。
+      if (
+        envToRestart === UserAppDbEnvEnum.Prod &&
+        containerStatus === UserAppContainerStatusEnum.Running &&
+        latest.status === UserAppReadinessStatusEnum.Starting
+      ) {
+        setPreviewStoppedForEnv(envToRestart, false);
+        return;
+      }
+      if (containerStatus !== UserAppContainerStatusEnum.Running) {
+        // 容器在过渡中（starting / restarting / stopping）先等它落定：
+        // stopping 的终点是 stopped 而不是 running，直接等 running 会
+        // 永远等不到，重启被吞掉且等待标记一直占着，后续点击也没用。
+        let settledContainerStatus: string | undefined = containerStatus;
+        while (
+          settledContainerStatus &&
+          CONTAINER_TRANSITION_STATUSES.has(settledContainerStatus) &&
+          !envChanged()
+        ) {
+          const next = await serviceReadinessRef.current.waitForNextPoll(
+            envToRestart,
+            envChanged,
+          );
+          if (!next || envChanged()) {
+            return;
+          }
+          settledContainerStatus = next.container?.status;
+        }
+        if (envChanged()) {
+          return;
+        }
+        // 落定后仍不是 running（stopped / missing / failed 等）：主动
+        // ensure 把容器拉起来，再等 readiness 确认 running 后才重启应用。
+        if (settledContainerStatus !== UserAppContainerStatusEnum.Running) {
+          const accepted = await ensureEnvPodRef.current(envToRestart, true, {
+            reensure: true,
+            deferRunning: true,
+          });
+          if (!accepted || envChanged()) {
+            return;
+          }
+          resumeReadinessWatch();
+          const containerRunning =
+            await serviceReadinessRef.current.waitUntilContainerRunning(
+              envToRestart,
+              envChanged,
+            );
+          if (!containerRunning || envChanged()) {
+            return;
+          }
+        }
+        // 本地 pod 状态不用在这里同步：readiness 报容器 running 时已有
+        // effect 统一 confirm 本地状态，这里再调是重复。
       }
       setPreviewStoppedForEnv(envToRestart, false);
       setPreviewIframeUrl(appPreviewUrlRef.current);
