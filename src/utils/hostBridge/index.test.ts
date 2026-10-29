@@ -208,6 +208,22 @@ describe('hostBridge（统一对外接入层）', () => {
   });
 
   describe('native.openWindow（新开独立窗口）', () => {
+    it('marks ordinary external pages while preserving an explicit payment purpose', async () => {
+      const openWindow = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openWindow } };
+      await native.openWindow('https://outside.example/docs');
+      expect(openWindow).toHaveBeenLastCalledWith(
+        'https://outside.example/docs',
+        { purpose: 'page' },
+      );
+      await native.openWindow('https://cashier.example/pay', {
+        purpose: 'payment',
+      });
+      expect(openWindow).toHaveBeenLastCalledWith(
+        'https://cashier.example/pay',
+        { purpose: 'payment' },
+      );
+    });
     it('桥返回 success → 透传', async () => {
       const openWindow = vi.fn().mockResolvedValue({ success: true });
       (window as any).NuwaClawBridge = { native: { openWindow } };

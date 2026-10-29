@@ -446,7 +446,10 @@ export interface HostBridgeContract {
       canceled?: boolean;
       error?: string;
     }>;
-    openWindow(path: string): Promise<{ success: boolean; error?: string }>;
+    openWindow(
+      path: string,
+      options?: { purpose?: 'page' | 'payment' },
+    ): Promise<{ success: boolean; error?: string }>;
     openClientSettings(): Promise<{ success: boolean; error?: string }>;
   };
   localFiles: HostLocalFilesBridge;
@@ -478,6 +481,8 @@ export interface HostBridgeContract {
   im?: HostImBridge;
   /** 仅商业宿主受信顶层页面提供，旧客户端可缺失。 */
   capture?: CaptureBridge;
+  /** 可选的内置桌面浏览器能力，旧宿主可以缺失。 */
+  browser?: { getCapabilities(): Promise<{ available: boolean }> };
 }
 
 /** 浏览器没有桥；旧宿主可以只提供部分命名空间及方法，消费方按能力探测。 */
