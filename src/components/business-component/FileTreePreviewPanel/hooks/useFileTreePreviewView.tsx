@@ -171,6 +171,8 @@ export function useFileTreePreviewView(
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    onPreviewFileIdChange,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -1234,6 +1236,27 @@ export function useFileTreePreviewView(
     void refreshSelectedFileContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileTreeRefreshTrigger]);
+
+  /** 流式编辑当前预览文件：只重拉正文，不跟着刷新文件树 */
+  const handledPreviewContentRefreshTriggerRef = useRef<number>(0);
+  useEffect(() => {
+    if (!previewFileContentRefreshTrigger) {
+      return;
+    }
+    if (
+      handledPreviewContentRefreshTriggerRef.current ===
+      previewFileContentRefreshTrigger
+    ) {
+      return;
+    }
+    handledPreviewContentRefreshTriggerRef.current =
+      previewFileContentRefreshTrigger;
+    void refreshSelectedFileContent();
+  }, [previewFileContentRefreshTrigger]);
+
+  useEffect(() => {
+    onPreviewFileIdChange?.(selectedFileId);
+  }, [onPreviewFileIdChange, selectedFileId]);
 
   /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。

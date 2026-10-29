@@ -20,7 +20,10 @@ import {
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { reduceTerminalEvent } from '@/features/conversation/domain/reduceTerminalEvent';
-import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
+import {
+  classifyWorkspaceFileRefresh,
+  streamingContentRefreshAction,
+} from '@/features/conversation/domain/workspaceFileChange';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -284,6 +287,18 @@ export default () => {
    */
   const [fileTreeRefreshTrigger, setFileTreeRefreshTrigger] =
     useState<number>(0);
+  /**
+   * 流式编辑当前预览文件时只重拉正文，不刷文件树。
+   * 页面把正在预览的文件 id 写入 previewFileIdRef。
+   */
+  const [
+    previewFileContentRefreshTrigger,
+    setPreviewFileContentRefreshTrigger,
+  ] = useState<number>(0);
+  const previewFileIdRef = useRef('');
+  const setPreviewFileId = useCallback((fileId: string) => {
+    previewFileIdRef.current = fileId;
+  }, []);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树数据加载状态
@@ -440,6 +455,37 @@ export default () => {
         trailing: true,
       }),
     [refreshFileListImmediately],
+  );
+
+  /** 只重拉当前预览文件正文，5 秒内合并，和文件树节流分开 */
+  const refreshPreviewFileContentOnly = useMemo(
+    () =>
+      throttle(
+        () => {
+          setPreviewFileContentRefreshTrigger(Date.now());
+        },
+        5000,
+        { leading: true, trailing: true },
+      ),
+    [],
+  );
+
+  /**
+   * 流式内容变更：只有改到当前预览文件才刷正文。
+   * 不进入文件树节流。结构变化单独走 handleRefreshFileList，
+   * 后面的编辑不会把已经排上的文件树刷新换成正文刷新。
+   */
+  const refreshSelectedFileContentThrottled = useCallback(
+    (_cId: number, paths: string[]) => {
+      if (
+        streamingContentRefreshAction(paths, previewFileIdRef.current) !==
+        'content'
+      ) {
+        return;
+      }
+      refreshPreviewFileContentOnly();
+    },
+    [refreshPreviewFileContentOnly],
   );
 
   // 打开预览视图或远程桌面视图时修改状态值
@@ -622,6 +668,8 @@ export default () => {
     setTaskAgentSelectTrigger(0);
     // 重置兜底刷新 trigger，避免切换会话后旧 trigger 残留
     setFileTreeRefreshTrigger(0);
+    setPreviewFileContentRefreshTrigger(0);
+    previewFileIdRef.current = '';
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值
@@ -1323,16 +1371,23 @@ export default () => {
           }
         }
 
-        // 仅编辑、写入、新增、删除文件时刷新文件树（与会话工具文件对比同一口径）
+        // 仅编辑、写入、新增、删除文件时刷新。编辑当前预览文件只刷正文。
+        const fileRefresh = classifyWorkspaceFileRefresh(data);
         if (
-          shouldRefreshWorkspaceFiles(data) &&
+          fileRefresh.scope !== 'none' &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
           viewModeRef.current === 'preview' && // 文件预览
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
           params.conversationId
         ) {
-          // 刷新文件树
-          handleRefreshFileList(params.conversationId);
+          if (fileRefresh.scope === 'content') {
+            refreshSelectedFileContentThrottled(
+              params.conversationId,
+              fileRefresh.paths,
+            );
+          } else {
+            handleRefreshFileList(params.conversationId);
+          }
         }
       }
       // MESSAGE事件
@@ -2262,6 +2317,10 @@ export default () => {
     setViewMode,
     // 处理文件列表刷新事件（节流，供 SSE / 自动触发）
     handleRefreshFileList,
+    // 流式编辑当前预览文件：只刷正文；路径不匹配时内部改刷文件树
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     // 立即刷新文件列表（供手动点击刷新按钮）
     refreshFileListImmediately,
     /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
