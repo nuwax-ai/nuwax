@@ -77,6 +77,7 @@ import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import type { GeneratedMetadata } from '@/utils/generatedMetadata';
+import { extractLastTaskResultFile } from '@/utils/taskResult';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -381,6 +382,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     useRef<AppDevWorkspaceView>('files');
   /** 本轮改过文件时，会话结束后回到开发环境预览。具体动作在预览回调里赋值 */
   const returnToDevAppPreviewRef = useRef<() => void>(() => {});
+  /**
+   * 打开 task-result 产物：切到文件树并选中文件。
+   * 定义在 resetDevConsoleExpandedLayout 之后，经 ref 供会话结束回调使用。
+   */
+  const openTaskResultFileRef = useRef<(file: string) => void>(() => {});
   /** 本轮改了非文本文件时，等 readiness 合适后再重启开发环境编译 */
   const rebuildDevPreviewAfterWorkspaceChangeRef = useRef<() => void>(() => {});
   /** 文本改动或没有文件改动时，刷新当前开发环境预览 iframe */
@@ -484,6 +490,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
     setIsLoadingOtherInterface,
     onMessageSend,
     resetInit,
@@ -1887,8 +1894,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 聊天会话结束后统一刷新页面数据
    * - 刷新文件树
    * - 刷新 Git 源代码管理列表
-   * - 非文本文件有改动时重启开发环境预览
-   * - 只有文本改动或没有文件改动，且正在看开发环境预览时，重新加载 iframe
+   * - 本轮有文件改动：回到开发环境预览，并按需重新编译 / 刷新 iframe
+   * - 已在文件树预览且不会切走应用预览：按 task-result 定位打开产物文件
    */
   const handleConversationEnd = useCallback(() => {
     const refreshFileTreeAndSelectedFile =
@@ -1903,31 +1910,97 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
     const endedMessages =
       runtimeLine?.conversationProps.messageList ?? messageList;
+    // 结束当下是否在文件树；后面若切到应用预览会改掉 ref，先记下
+    const wasOnFilesView = workspaceViewRef.current === 'files';
+    const roundChangedFiles = latestRoundChangedWorkspaceFiles(endedMessages);
+    // 会切回应用预览时不再自动打开 task-result，避免和预览刷新抢工作区
+    const shouldReturnToAppPreview =
+      !hasPendingIntervention && roundChangedFiles;
+
     // 本轮有新增、修改、删除等文件变化时，回到开发环境应用预览。只查阅文件不切换。
     // 判断或切换失败时只记日志，不影响上面的文件树和 Git 刷新。
     try {
       // 还有待确认卡片时，本轮不算文件修改，不切预览，也不重新编译
-      if (hasPendingIntervention) {
-        return;
-      }
-      // 刷新只看结束当下是否正在看开发环境预览，避免切过去之后误刷新
-      const showingDevAppPreview =
-        dbEnvRef.current === UserAppDbEnvEnum.Dev &&
-        workspaceViewRef.current === 'app-preview';
-      if (latestRoundChangedWorkspaceFiles(endedMessages)) {
-        returnToDevAppPreviewRef.current();
-        // 代码或资源有变化才重启编译；只改文本时不打包
-        if (latestRoundNeedsPreviewRebuild(endedMessages)) {
-          rebuildDevPreviewAfterWorkspaceChangeRef.current();
+      if (!hasPendingIntervention) {
+        // 刷新只看结束当下是否正在看开发环境预览，避免切过去之后误刷新
+        const showingDevAppPreview =
+          dbEnvRef.current === UserAppDbEnvEnum.Dev &&
+          workspaceViewRef.current === 'app-preview';
+        if (shouldReturnToAppPreview) {
+          returnToDevAppPreviewRef.current();
+          // 代码或资源有变化才重启编译；只改文本时不打包
+          if (latestRoundNeedsPreviewRebuild(endedMessages)) {
+            rebuildDevPreviewAfterWorkspaceChangeRef.current();
+          } else if (showingDevAppPreview) {
+            refreshDevPreviewIframeRef.current();
+          }
         } else if (showingDevAppPreview) {
+          // 本轮没有文件改动，开发环境预览仍在前台时重新加载页面
           refreshDevPreviewIframeRef.current();
         }
-      } else if (showingDevAppPreview) {
-        // 本轮没有文件改动，开发环境预览仍在前台时重新加载页面
-        refreshDevPreviewIframeRef.current();
       }
     } catch (error) {
       console.error('[AppDevPro] 会话结束后回到开发环境预览失败', error);
+    }
+
+    // 仅当前就在文件树，且本轮不会切去应用预览时，自动定位本轮 task-result 文件
+    if (!wasOnFilesView || shouldReturnToAppPreview) {
+      return;
+    }
+    try {
+      let roundStart = -1;
+      for (let index = endedMessages.length - 1; index >= 0; index -= 1) {
+        const message = endedMessages[index] as {
+          role?: string;
+          messageType?: string;
+          senderType?: string;
+        };
+        const role = String(message.role ?? '').toUpperCase();
+        const messageType = String(message.messageType ?? '').toUpperCase();
+        const senderType = String(message.senderType ?? '').toUpperCase();
+        if (
+          role === 'USER' ||
+          messageType === 'USER' ||
+          senderType === 'USER'
+        ) {
+          roundStart = index + 1;
+          break;
+        }
+      }
+      if (roundStart < 0) {
+        return;
+      }
+      const texts = endedMessages
+        .slice(roundStart)
+        .map((message) => {
+          const record = message as {
+            role?: string;
+            messageType?: string;
+            senderType?: string;
+            text?: string;
+            finalResult?: { outputText?: string } | null;
+          };
+          const role = String(record.role ?? '').toUpperCase();
+          const messageType = String(record.messageType ?? '').toUpperCase();
+          const senderType = String(record.senderType ?? '').toUpperCase();
+          if (
+            role === 'USER' ||
+            messageType === 'USER' ||
+            senderType === 'USER'
+          ) {
+            return '';
+          }
+          return record.finalResult?.outputText || record.text || '';
+        })
+        .filter(Boolean)
+        .join('\n');
+      const taskResultFile = extractLastTaskResultFile(texts);
+      if (!taskResultFile) {
+        return;
+      }
+      openTaskResultFileRef.current(taskResultFile);
+    } catch (error) {
+      console.error('[AppDevPro] 会话结束后打开 task-result 失败', error);
     }
   }, [
     hasPendingIntervention,
@@ -2245,6 +2318,50 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const resetDevConsoleExpandedLayout = useCallback(() => {
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
+
+  /**
+   * 打开 task-result 产物文件（对齐 Chat：开预览 + 选中文件）。
+   * AppDevPro 额外切到文件树工作区，避免仍停在应用预览上看不见文件。
+   */
+  const openTaskResultFile = useCallback(
+    (file: string) => {
+      let fileId = file.split(`${queryConversationId}/`).pop();
+      if (fileId?.endsWith('/')) {
+        fileId = fileId.slice(0, -1);
+      }
+      if (!fileId) {
+        return;
+      }
+      closeRepoDocPreviewOverlay();
+      resetDevConsoleExpandedLayout();
+      setCanShowFileView(true);
+      setWorkspaceView('files');
+      setSelectedChangeFile(null);
+      void openPreviewView(queryConversationId, {
+        skipFileTreeRefresh: true,
+      });
+      setTaskAgentSelectedFileId(fileId);
+      setTaskAgentSelectTrigger(Date.now());
+    },
+    [
+      closeRepoDocPreviewOverlay,
+      openPreviewView,
+      queryConversationId,
+      resetDevConsoleExpandedLayout,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+    ],
+  );
+  openTaskResultFileRef.current = openTaskResultFile;
+
+  /** Markdown / 会话胶囊点击 task-result：拦截默认定位，改走页面打开逻辑 */
+  const handleTaskResultClick = useCallback(
+    (fileId: string) => {
+      openTaskResultFile(fileId);
+      return true;
+    },
+    [openTaskResultFile],
+  );
 
   /**
    * 线上终端折叠到底部后回到应用预览。
@@ -4466,6 +4583,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                     onConversationEnd={handleConversationEnd}
                     onOpenRepoDoc={handleOpenRepoDoc}
                     gitReady={containerReadyForQueries}
+                    onTaskResultClick={handleTaskResultClick}
+                    onOpenTaskResultFile={openTaskResultFile}
                   />
                 </div>
               </div>
