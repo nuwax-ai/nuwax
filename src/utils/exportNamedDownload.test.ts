@@ -170,6 +170,28 @@ describe('浏览器命名归档下载', () => {
     expect(downloads).toEqual([]);
   });
 
+  it('HTTP 400 时从 Blob 响应体取出业务 message，而不是 status 文案', async () => {
+    const bizMessage =
+      '工作区文件总大小 163MB，超过下载上限 100MB；请删除不需要的文件后重试，或改为下载单个文件/目录';
+    desktop.request.mockRejectedValue({
+      message: 'Request failed with status code 400',
+      response: {
+        status: 400,
+        data: new Blob([
+          JSON.stringify({
+            code: '0001',
+            message: bizMessage,
+          }),
+        ]),
+        headers: { 'content-type': 'application/json' },
+      },
+    });
+    await expect(exportNamedDownload('/export', '会话')).rejects.toThrow(
+      bizMessage,
+    );
+    expect(downloads).toEqual([]);
+  });
+
   it('无可用资源名称时保留服务端默认命名，不额外读取归档', async () => {
     await expect(exportNamedDownload('/export', '???')).resolves.toBe(false);
     expect(desktop.request).not.toHaveBeenCalled();
