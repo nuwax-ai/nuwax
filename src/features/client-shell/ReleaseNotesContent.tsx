@@ -55,6 +55,7 @@ const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
           <li
             key={i}
             style={{
+              listStyle: 'inherit',
               fontSize: 12,
               lineHeight: 1.7,
               marginTop: i === 0 ? 0 : 8,
