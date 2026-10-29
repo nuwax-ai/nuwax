@@ -327,10 +327,18 @@ const VerifyCode: React.FC = () => {
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
     // SDK 初始化时会自动回调一次（无痕令牌）。那时资源还没好，直接拿去 send 会报校验参数异常。
     // 只有页面自己点了隐藏按钮之后的那一次，才是可以发短信的验证结果。
-    if (!captchaRoundAtRef.current) {
+    const armedAt = captchaRoundAtRef.current;
+    if (!armedAt) {
       return { captchaResult: true, bizResult: true };
     }
     captchaRoundAtRef.current = 0;
+    // 本轮 click 后参数可能立刻交出来，再等一小段让 captcha-open 落稳
+    const settleRemain = 500 - (performance.now() - armedAt);
+    if (settleRemain > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, settleRemain);
+      });
+    }
     if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) {
       const remainSec = Math.ceil(
         getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
