@@ -1,4 +1,8 @@
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
+import {
+  getLocalFilesContextKey,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { createFileContentSaver } from '@/utils/fileContentSaver';
 import {
   forwardRef,
@@ -71,10 +75,13 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 保存文件的回调函数
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
+    useLocalFilesRevision();
+    const fileSourceKey = getLocalFilesContextKey(props.targetId);
     const saveScope = JSON.stringify([
       props.targetId,
       agentSandboxId,
       props.staticFileBasePath,
+      fileSourceKey,
     ]);
     const saveScopeRef = useRef(saveScope);
     saveScopeRef.current = saveScope;
@@ -155,13 +162,21 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             content: string,
             originalFileContent: string,
           ): Promise<boolean> => {
-            if (saveScopeRef.current !== saveScope || !onSaveFilesRef.current) {
+            if (
+              saveScopeRef.current !== saveScope ||
+              getLocalFilesContextKey(props.targetId) !== fileSourceKey ||
+              !onSaveFilesRef.current
+            ) {
               return false;
             }
             const result = await onSaveFilesRef.current([
               { fileId, fileContent: content, originalFileContent },
             ]);
-            if (result && saveScopeRef.current === saveScope) {
+            if (
+              result &&
+              saveScopeRef.current === saveScope &&
+              getLocalFilesContextKey(props.targetId) === fileSourceKey
+            ) {
               // 写入已经成功，附属的 Git 刷新不能使编辑器误报保存失败。
               try {
                 await refreshGitListRef.current?.();
@@ -169,11 +184,14 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 console.error('刷新文件变更状态失败', error);
               }
             }
-            return result ?? false;
+            return (
+              (result ?? false) &&
+              getLocalFilesContextKey(props.targetId) === fileSourceKey
+            );
           },
           500,
         ),
-      [saveScope],
+      [saveScope, fileSourceKey, props.targetId],
     );
 
     useEffect(
