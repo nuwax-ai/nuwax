@@ -28,7 +28,9 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   assertLocalFileReferenceCurrent,
   getLocalFileReference,
+  getLocalFilesContextKey,
   isAbsoluteFileUrl,
+  LocalFileAccessError,
   saveLocalFile,
   useLocalFilesRevision,
   type LocalFileReference,
@@ -78,7 +80,7 @@ import {
   isOpenUiFileName,
   tryParseOpenUiFileContent,
 } from '@/utils/openUiArtifact';
-import { Input, Modal, message } from 'antd';
+import { Input, message, Modal } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,
@@ -171,6 +173,8 @@ export function useFileTreePreviewView(
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    onPreviewFileIdChange,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -259,6 +263,7 @@ export function useFileTreePreviewView(
    * - 用途：只允许“最后一次点击文件”的请求回写内容，避免慢请求/跳转请求覆盖最新选中项
    */
   const latestFileSelectTokenRef = useRef<string>('');
+  const fileSelectSequenceRef = useRef(0);
   /** 文件树中选中的文件夹 ID（仅用于树高亮与工具栏新建父级，不影响预览区） */
   const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   // 选中的文件节点
@@ -299,10 +304,12 @@ export function useFileTreePreviewView(
   const onSaveFilesRef = useRef(onSaveFiles);
   onSaveFilesRef.current = onSaveFiles;
   const saveEpoch = useRef(0);
+  const fileContextKey = getLocalFilesContextKey(targetId);
   const saveScope = JSON.stringify([
     targetId,
     agentSandboxId,
     staticFileBasePath,
+    fileContextKey,
   ]);
   const previousSaveScope = useRef(saveScope);
   const saveAttempt = useRef(0);
@@ -499,9 +506,14 @@ export function useFileTreePreviewView(
       localFile?: LocalFileReference,
       rejectLocalFailure = false,
     ) => {
+      const epoch = saveEpoch.current;
       try {
         // 获取文件内容。体积头大于 50MB 时不读正文
         const fileContent = await fetchContentFromUrl(fileProxyUrl, localFile);
+        if (saveEpoch.current !== epoch) {
+          if (rejectLocalFailure) throw new LocalFileAccessError('expired');
+          return null;
+        }
         setLocalContentError((current) =>
           current?.fileId === fileId ? null : current,
         );
@@ -523,6 +535,10 @@ export function useFileTreePreviewView(
 
         return fileContent;
       } catch (error) {
+        if (saveEpoch.current !== epoch) {
+          if (rejectLocalFailure) throw new LocalFileAccessError('expired');
+          return null;
+        }
         if (isPreviewFileTooLargeError(error)) {
           setOversizedPreviewFileId(fileId);
           return null;
@@ -586,6 +602,7 @@ export function useFileTreePreviewView(
 
   /** 清空当前选中文件信息 */
   const clearSelectedFile = useCallback(() => {
+    latestFileSelectTokenRef.current = '';
     selectedFileIdRef.current = '';
     setSelectedFileId('');
     setSelectedFileNode(null);
@@ -633,6 +650,7 @@ export function useFileTreePreviewView(
   /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
   const refreshSelectedFileContent = useCallback(
     async (targetNode?: FileNode) => {
+      const epoch = saveEpoch.current;
       const currentSelectedFileId =
         targetNode?.id || selectedFileIdRef.current || selectedFileId;
       if (!currentSelectedFileId) {
@@ -683,7 +701,10 @@ export function useFileTreePreviewView(
       );
 
       // 请求返回时如果用户已经切换文件，则丢弃本次回写
-      if (selectedFileIdRef.current !== currentSelectedFileId) {
+      if (
+        saveEpoch.current !== epoch ||
+        selectedFileIdRef.current !== currentSelectedFileId
+      ) {
         return;
       }
       if (newFileContent === null) {
@@ -843,6 +864,12 @@ export function useFileTreePreviewView(
         fallbackNode?: FileNode;
       },
     ) => {
+      const epoch = saveEpoch.current;
+      const isCurrentSelection = () =>
+        saveEpoch.current === epoch &&
+        previousSaveScope.current === saveScope &&
+        getLocalFilesContextKey(targetId) === fileContextKey;
+      if (!isCurrentSelection()) return;
       const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
       let fileNode = findFileNode(fileId, currentFiles);
@@ -891,9 +918,10 @@ export function useFileTreePreviewView(
           }
         } catch (error) {
           workspaceSearchMiss = true;
-          console.error('搜索工作区文件失败', error);
+          if (isCurrentSelection()) console.error('搜索工作区文件失败', error);
         }
       }
+      if (!isCurrentSelection()) return;
 
       // 如果仍然没有找到，尝试模糊匹配
       if (!fileNode && fileId && fileId.includes('.')) {
@@ -924,7 +952,7 @@ export function useFileTreePreviewView(
 
         // 为本次“选中文件”生成唯一 token（后续异步回写时用于判定是否过期）
         const currentSelectedId = fileNode?.id || fileId;
-        const selectToken = `${currentSelectedId}-${Date.now()}`;
+        const selectToken = `${currentSelectedId}-${++fileSelectSequenceRef.current}`;
         latestFileSelectTokenRef.current = selectToken;
 
         // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
@@ -1043,6 +1071,7 @@ export function useFileTreePreviewView(
 
           // 只允许“当前最新选中”的请求回写编辑器内容，避免 302 跳转/慢请求导致旧数据覆盖
           if (
+            !isCurrentSelection() ||
             latestFileSelectTokenRef.current !== selectToken ||
             selectedFileIdRef.current !== currentSelectedId
           ) {
@@ -1072,7 +1101,14 @@ export function useFileTreePreviewView(
         }
       }
     },
-    [onFileSelectOpenPreview, initViewFileType, onOpenDirectory, targetId],
+    [
+      onFileSelectOpenPreview,
+      initViewFileType,
+      onOpenDirectory,
+      targetId,
+      saveScope,
+      fileContextKey,
+    ],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -1119,10 +1155,15 @@ export function useFileTreePreviewView(
           fileId?: string;
           name?: string;
           fileProxyUrl?: string;
+          localFile?: LocalFileReference;
         };
-        return `${record.fileId ?? record.name ?? ''}:${
-          record.fileProxyUrl ?? ''
-        }`;
+        return JSON.stringify([
+          record.fileId ?? record.name ?? '',
+          record.fileProxyUrl ?? '',
+          record.localFile?.contextId,
+          record.localFile?.cId,
+          record.localFile?.path,
+        ]);
       })
       .join('|')}`;
     // 父级每次传入新数组但内容未变时直接返回，避免 setFiles 把更新打满。
@@ -1169,6 +1210,26 @@ export function useFileTreePreviewView(
 
       /** 版本管控关闭后 .gitignore 被过滤，需清理仍选中该文件的预览态 */
       const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+      const nextSelected = currentSelectedFileId
+        ? findFileNode(currentSelectedFileId, treeData)
+        : null;
+      const previousLocal = selectedFileNode?.localFile;
+      const nextLocal = nextSelected?.localFile;
+      if (
+        currentSelectedFileId &&
+        nextSelected &&
+        (previousLocal || nextLocal) &&
+        (previousLocal?.contextId !== nextLocal?.contextId ||
+          previousLocal?.cId !== nextLocal?.cId ||
+          previousLocal?.path !== nextLocal?.path)
+      ) {
+        // 同名文件可能已属于另一工作区。更新树的授权，但旧预览必须重新选择，
+        // 不能把旧正文或草稿自动绑定到新授权。
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+        setLocalContentError(null);
+        clearSelectedFile();
+        return;
+      }
       if (
         currentSelectedFileId &&
         !findFileNode(currentSelectedFileId, treeData)
@@ -1234,6 +1295,27 @@ export function useFileTreePreviewView(
     void refreshSelectedFileContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileTreeRefreshTrigger]);
+
+  /** 流式编辑当前预览文件：只重拉正文，不跟着刷新文件树 */
+  const handledPreviewContentRefreshTriggerRef = useRef<number>(0);
+  useEffect(() => {
+    if (!previewFileContentRefreshTrigger) {
+      return;
+    }
+    if (
+      handledPreviewContentRefreshTriggerRef.current ===
+      previewFileContentRefreshTrigger
+    ) {
+      return;
+    }
+    handledPreviewContentRefreshTriggerRef.current =
+      previewFileContentRefreshTrigger;
+    void refreshSelectedFileContent();
+  }, [previewFileContentRefreshTrigger]);
+
+  useEffect(() => {
+    onPreviewFileIdChange?.(selectedFileId);
+  }, [onPreviewFileIdChange, selectedFileId]);
 
   /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
@@ -2194,8 +2276,20 @@ export function useFileTreePreviewView(
   /** 仅编辑器输入属于未保存草稿；Git 的 modified 状态不等于未保存。 */
   const handleContentChange = useCallback(
     (fileId: string, content: string) => {
+      if (
+        previousSaveScope.current !== saveScope ||
+        getLocalFilesContextKey(targetId) !== fileContextKey
+      )
+        return;
       const currentFile = findFileNode(fileId, filesRef.current);
       if (readOnly || currentFile?.isLink || isInMutation(fileId)) return;
+      if (currentFile?.localFile) {
+        try {
+          assertLocalFileReferenceCurrent(currentFile.localFile);
+        } catch {
+          return;
+        }
+      }
       const originalContent = currentFile?.content || '';
       const previousDraft = editorDrafts.current.get(fileId);
       const originalFileContent = previousDraft?.original ?? originalContent;
@@ -2250,7 +2344,7 @@ export function useFileTreePreviewView(
           }));
       }
     },
-    [readOnly, persistContent],
+    [readOnly, persistContent, saveScope, targetId, fileContextKey],
   );
 
   const saveCurrentFile = useCallback(async (): Promise<boolean> => {
@@ -2452,6 +2546,7 @@ export function useFileTreePreviewView(
 
   /** 切换为代码视图时重新拉取文件内容（与 FileTreeView 一致） */
   const handleRefreshFileContent = useCallback(async () => {
+    const epoch = saveEpoch.current;
     const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
     if (!fileProxyUrl || !selectedFileId) {
       return;
@@ -2481,7 +2576,10 @@ export function useFileTreePreviewView(
           getLocalFileReference(selectedFileNode!, targetId),
       );
       // 请求返回时若用户已切换文件，则丢弃本次回写
-      if (selectedFileIdRef.current !== currentRefreshFileId) {
+      if (
+        saveEpoch.current !== epoch ||
+        selectedFileIdRef.current !== currentRefreshFileId
+      ) {
         return;
       }
       if (newFileContent === null) {

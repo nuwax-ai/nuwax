@@ -314,6 +314,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     ensureDesktopConnection,
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     fileTreeRefreshTrigger,
     setFileTreeSelfManaged,
     openPreviewView,
@@ -336,6 +339,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
 
   /** 与 Chat / AppDevPro 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
   const workspaceFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: queryConversationId,
     enabled: active && !!queryConversationId,
     fileTreeRefreshTrigger,
@@ -586,6 +590,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       openDesktopView: (conversationId: number) => {
         openDesktopViewFromEventRef.current(conversationId);
       },
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
     },
   });
 
@@ -1325,6 +1331,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       originalFiles: workspaceFiles.files,
       fileTreeDataLoading: workspaceFiles.loading,
       fileTreeRefreshTrigger,
+      previewFileContentRefreshTrigger,
+      onPreviewFileIdChange: setPreviewFileId,
       targetId: queryConversationId?.toString() || '', // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -1470,6 +1478,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     workspaceFiles.loadedDirectoryPaths,
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     queryConversationId,
     conversationInfo?.topic,
     handleUploadMultipleFiles,

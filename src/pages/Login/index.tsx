@@ -136,7 +136,11 @@ const Login: React.FC = () => {
   const captchaLoginPendingRef = useRef(false);
   /** 只消费这次点击触发的验证回调，忽略初始化时的自动回调 */
   const captchaLoginArmedRef = useRef(false);
+  /** 本轮点击隐藏按钮的时间：回调可能早于本轮 captcha-open 落稳 */
+  const captchaRoundArmedAtRef = useRef(0);
   const captchaWaitStartedRef = useRef(0);
+  /** 点开本轮验证后，至少再等这么久才把参数交给登录接口 */
+  const CAPTCHA_ROUND_SETTLE_MS = 500;
   /** 已点登录、正在等验证码。请求自己的 loading 要等接口发出才为 true */
   const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
   const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
@@ -574,18 +578,25 @@ const Login: React.FC = () => {
    * SDK 验证通过后调用此函数，在此处发起业务请求并返回真实结果。
    * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
    */
+  const waitForCaptchaRoundSettle = async () => {
+    const armedAt = captchaRoundArmedAtRef.current;
+    if (!armedAt) return;
+    const remain = CAPTCHA_ROUND_SETTLE_MS - (Date.now() - armedAt);
+    if (remain > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, remain);
+      });
+    }
+  };
+
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
     if (!captchaLoginArmedRef.current) {
       return { captchaResult: true, bizResult: true };
     }
     captchaLoginArmedRef.current = false;
-    console.log(
-      '[Login handleCaptchaVerify] param length:',
-      captchaVerifyParam?.length,
-      'preview:',
-      captchaVerifyParam?.substring(0, 150),
-    );
-
+    // init 就绪 ≠ 本轮验证会话已落稳。无痕路径常在 click 后立刻交参，
+    // 此时 captcha-open 可能还在飞，直接登录会偶发「校验参数异常」。
+    await waitForCaptchaRoundSettle();
     // 检测 SDK 自动验证（deviceToken JSON 格式，非用户滑动验证）
     const isDeviceTokenFallback =
       captchaVerifyParam?.startsWith('{"sceneId"') &&
@@ -647,6 +658,7 @@ const Login: React.FC = () => {
    */
   const triggerCaptchaPopup = () => {
     captchaLoginArmedRef.current = true;
+    captchaRoundArmedAtRef.current = Date.now();
     const captchaBtn = document.getElementById('aliyun-captcha-login');
     if (captchaBtn) {
       captchaBtn.click();
