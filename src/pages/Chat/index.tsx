@@ -378,6 +378,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 处理文件列表刷新事件
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     openPreviewView,
     openDesktopView,
     ensureDesktopConnection,
@@ -1152,6 +1155,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
       refreshFileListImmediately,
       refreshGitListRef,
       openPreviewView,
@@ -1260,6 +1264,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    onPreviewFileIdChange: setPreviewFileId,
     originalFiles: workspaceDirectoryFiles.files,
     fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',

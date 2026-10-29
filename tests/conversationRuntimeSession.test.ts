@@ -1255,10 +1255,11 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
       status: 'FINISHED',
       result: { kind: 'delete' },
       refresh: true,
+      scope: 'tree' as const,
     },
   ])(
     'PROCESSING ToolCall 按完成后的文件变更刷新：$name/$status/$refresh',
-    ({ name, status, result, refresh }) => {
+    ({ name, status, result, refresh, scope }) => {
       const { session, dispatched } = createSessionWith();
       mockOpenLive.mockReturnValue(vi.fn());
       session.send({ conversationId: 1001, message: '调工具' });
@@ -1282,6 +1283,8 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
                 type: 'preview.file.refresh',
                 conversationId: 1001,
                 mode: 'throttled',
+                scope: scope ?? 'content',
+                paths: [],
               },
             ]
           : [],

@@ -31,7 +31,6 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
-import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
 import {
   latestRoundChangedWorkspaceFiles,
   latestRoundNeedsPreviewRebuild,
@@ -476,6 +475,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     closePreviewView,
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     fileTreeRefreshTrigger,
     setFileTreeSelfManaged,
     openPreviewView,
@@ -796,18 +798,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
-  // 共用文件树刷新（含当前选中文件正文）；仅文件变更完成事件调用，仍按 2s 合并。
-  const refreshRuntimeFileTree = useWorkspaceFileRefresh({
-    active,
-    conversationId: queryConversationId,
-    refresh: () => {
-      const refresh = refreshFileTreeAndSelectedFileRef.current;
-      return refresh
-        ? refresh()
-        : refreshFileListImmediately(queryConversationId);
-    },
-  });
-
   /** 会话事件打开远程桌面时调用，具体动作在工作区回调里赋值 */
   const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
     () => {},
@@ -819,7 +809,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
     effectsResources: {
-      refreshFileListThrottled: refreshRuntimeFileTree,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
       openDesktopView: (conversationId: number) => {
         openDesktopViewFromEventRef.current(conversationId);
       },
@@ -2343,6 +2334,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       originalFiles: workspaceFiles.files,
       fileTreeDataLoading: workspaceFiles.loading,
       fileTreeRefreshTrigger,
+      previewFileContentRefreshTrigger,
+      onPreviewFileIdChange: setPreviewFileId,
       targetId: String(queryConversationId), // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -2474,6 +2467,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceFiles.loadedDirectoryPaths,
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     queryConversationId,
     conversationInfo?.topic,
     handleUploadMultipleFiles,
