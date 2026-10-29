@@ -2,7 +2,11 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatFiles } from './useChatFiles';
 
-const mocks = vi.hoisted(() => ({ update: vi.fn() }));
+const mocks = vi.hoisted(() => ({ update: vi.fn(), sourceKey: '' }));
+vi.mock('@/features/client-shell/localFileService', () => ({
+  getLocalFilesContextKey: () => mocks.sourceKey,
+  useLocalFilesRevision: () => 0,
+}));
 vi.mock('@/services/vncDesktop', () => ({
   apiUpdateStaticFile: mocks.update,
   apiDownloadAllFiles: vi.fn(),
@@ -30,6 +34,7 @@ const input = {
 beforeEach(() => {
   vi.useFakeTimers();
   mocks.update.mockReset().mockResolvedValue({ code: '0000' });
+  mocks.sourceKey = '';
 });
 afterEach(() => {
   cleanup();
@@ -38,6 +43,37 @@ afterEach(() => {
 });
 
 describe('文件编辑自动保存回执', () => {
+  it('500ms等待期间授权换代，旧草稿不得通过最新文件树写入新工作区', async () => {
+    mocks.sourceKey = 'old-context';
+    const { result } = renderHook(() => useChatFiles(input));
+    const pending = result.current.handleSaveFileContent(
+      'a.txt',
+      'old draft',
+      '',
+    );
+    mocks.sourceKey = 'new-context';
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    await expect(pending).resolves.toBe(false);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('授权换代取消旧队列，重新编辑可以保存到明确的新来源', async () => {
+    mocks.sourceKey = 'old-context';
+    const { result, rerender } = renderHook(() => useChatFiles(input));
+    const old = result.current.handleSaveFileContent('a.txt', 'old draft', '');
+    mocks.sourceKey = 'new-context';
+    rerender();
+    await expect(old).resolves.toBe(false);
+    const fresh = result.current.handleSaveFileContent(
+      'a.txt',
+      'new draft',
+      '',
+    );
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    await expect(fresh).resolves.toBe(true);
+    expect(mocks.update).toHaveBeenCalledOnce();
+  });
+
   it('附属 Git 状态刷新失败不能改变已经成功的写入回执', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const notify = vi.fn().mockRejectedValue(new Error('git offline'));

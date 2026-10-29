@@ -339,6 +339,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
 
   /** 与 Chat / AppDevPro 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
   const workspaceFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: queryConversationId,
     enabled: active && !!queryConversationId,
     fileTreeRefreshTrigger,
