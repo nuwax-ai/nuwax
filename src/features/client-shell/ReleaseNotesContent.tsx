@@ -25,9 +25,9 @@ function renderInline(text: string, key: string): React.ReactNode[] {
 }
 
 const HEADING_STYLE: React.CSSProperties[] = [
-  { fontSize: 14, fontWeight: 600, color: 'var(--xagi-color-text)', margin: '2px 0 6px' },
-  { fontSize: 13, fontWeight: 600, color: 'var(--xagi-color-text)', margin: '2px 0 6px' },
-  { fontSize: 12, fontWeight: 600, color: 'var(--xagi-color-text)', margin: '2px 0 4px' },
+  { fontSize: 14, fontWeight: 600, color: 'var(--xagi-color-text)', margin: 0 },
+  { fontSize: 13, fontWeight: 600, color: 'var(--xagi-color-text)', margin: 0 },
+  { fontSize: 12, fontWeight: 600, color: 'var(--xagi-color-text)', margin: 0 },
 ];
 
 const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
@@ -41,13 +41,23 @@ const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
     bullets = [];
     const listSeq = seq++;
     blocks.push(
-      <ul key={`ul-${listSeq}`} style={{ margin: '2px 0', paddingLeft: 16 }}>
+      <ul
+        key={`ul-${listSeq}`}
+        style={{
+          margin: 0,
+          paddingLeft: 18,
+          // 全局 reset 隐藏列表标记，更新日志需显式恢复条目层次。
+          listStyleType: 'disc',
+          listStylePosition: 'outside',
+        }}
+      >
         {items.map((item, i) => (
           <li
             key={i}
             style={{
               fontSize: 12,
               lineHeight: 1.7,
+              marginTop: i === 0 ? 0 : 8,
               color: 'var(--xagi-color-text-secondary)',
             }}
           >
@@ -70,7 +80,10 @@ const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
       flushBullets();
       const headingSeq = seq++;
       blocks.push(
-        <div key={`h-${headingSeq}`} style={HEADING_STYLE[heading[1].length - 1]}>
+        <div
+          key={`h-${headingSeq}`}
+          style={HEADING_STYLE[heading[1].length - 1]}
+        >
           {renderInline(heading[2], `h-${headingSeq}`)}
         </div>,
       );
@@ -83,7 +96,7 @@ const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
         <p
           key={`p-${paraSeq}`}
           style={{
-            margin: '2px 0',
+            margin: 0,
             fontSize: 12,
             lineHeight: 1.7,
             color: 'var(--xagi-color-text-secondary)',
@@ -96,7 +109,11 @@ const ReleaseNotesContent: React.FC<{ notes: string }> = ({ notes }) => {
   });
   flushBullets();
 
-  return <div>{blocks}</div>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {blocks}
+    </div>
+  );
 };
 
 export default ReleaseNotesContent;
