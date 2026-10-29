@@ -33,7 +33,11 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
-import { localFileReadErrorMessage } from './localFileActionMessages';
+import {
+  isExpiredLocalFileError,
+  localFileReadErrorMessage,
+} from './localFileActionMessages';
+import { bundledPdfResources } from './pdfCharacterMaps';
 import { useLocalPreviewSource } from './useLocalPreviewSource';
 import { mountXlsxImageOverlay } from './xlsxImageOverlay';
 import {
@@ -835,8 +839,14 @@ const FilePreviewContent: React.FC<
       try {
         await saveLocalFile(localFile, fileName);
       } catch (error) {
-        message.error(error instanceof Error ? error.message : String(error));
-        setErrorMessage(getLocalizedErrorMessage(String(error), resolvedType));
+        if (!isExpiredLocalFileError(error)) {
+          message.error(error instanceof Error ? error.message : String(error));
+        }
+        setErrorMessage(
+          isExpiredLocalFileError(error)
+            ? localFileReadErrorMessage(error, t)
+            : getLocalizedErrorMessage(String(error), resolvedType),
+        );
         onError?.(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setDownloading(false);
@@ -1195,6 +1205,7 @@ const FilePreviewContent: React.FC<
           const pdfWidth = await waitForPdfLayout(container, controller.signal);
           if (!isCurrentRequest() || controller.signal.aborted) return;
           previewer = jsPreviewPdf.init(containerRef.current, {
+            ...bundledPdfResources,
             width: pdfWidth,
             onError: (e: any) => {
               if (!isCurrentRequest()) return;
@@ -1428,8 +1439,27 @@ const FilePreviewContent: React.FC<
     (imageSrc: string) => {
       if (!imageSrc || !staticFileBasePath) return imageSrc;
       if (localPreview && typeof src === 'string') {
-        // URL 自身保留 Markdown 所在目录；协议 handler 执行资源根和符号链接边界校验。
+        // 协议 handler 校验资源根和符号链接边界；畸形 URL 保留原有错误处理。
         try {
+          // 旧文档内的同会话静态图片仍属于本机来源，不能重新请求云端代理。
+          const resource = new URL(imageSrc, 'https://file.invalid');
+          const legacy = /^\/api\/computer\/static\/(\d+)\/(.+)$/.exec(
+            resource.pathname,
+          );
+          if (legacy) {
+            if (legacy[1] !== String(localFile?.cId)) return '';
+            if (resource.searchParams.get('customTargetDir')) {
+              // 自定义根由原生协议与授权根核对，页面不能自行扩大资源授权。
+              return new URL(
+                `${resource.pathname}${resource.search}${resource.hash}`,
+                staticFileBasePath,
+              ).href;
+            }
+            return new URL(
+              `${legacy[2]}${resource.search}${resource.hash}`,
+              staticFileBasePath,
+            ).href;
+          }
           return new URL(imageSrc, src).href;
         } catch {
           return imageSrc;
@@ -1472,7 +1502,7 @@ const FilePreviewContent: React.FC<
         imageSrc,
       )}`;
     },
-    [src, staticFileBasePath, localPreview],
+    [src, staticFileBasePath, localPreview, localFile?.cId],
   );
 
   // 对 Markdown 文本中的图片链接进行统一路径处理，并拆开反引号包裹的 $...$ / LaTeX

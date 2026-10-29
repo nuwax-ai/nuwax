@@ -18,6 +18,10 @@ import type { StaticFileListResponse } from '@/types/interfaces/vncDesktop';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { useLayoutEffect, useSyncExternalStore } from 'react';
+import {
+  clearLocalComputerIdentity,
+  matchesLocalComputer,
+} from './localComputerIdentity';
 export type { LocalFileReference } from '@/types/interfaces/localFile';
 
 type ContextRecord = {
@@ -27,6 +31,8 @@ type ContextRecord = {
   pending: Promise<LocalFilesContext | null>;
   disposed: boolean;
   settled: boolean;
+  recovering?: boolean;
+  resolutionError?: LocalFilesErrorCode;
   generation: number;
   knownLocal: boolean;
   writable: boolean;
@@ -45,17 +51,18 @@ const changed = () => {
   listeners.forEach((listener) => listener());
 };
 const safely = (task?: Promise<unknown>) => task?.catch(() => undefined);
-const fallbackCodes = new Set<LocalFilesErrorCode>([
-  'unavailable',
-  'not-local',
-  'context-unresolved',
-]);
 
 export class LocalFileAccessError extends Error {
   constructor(public readonly code: LocalFilesErrorCode, detail?: string) {
     super(detail || `本机文件访问失败（${code}）`);
     this.name = 'LocalFileAccessError';
   }
+}
+function findContext(cId: string): ContextRecord | undefined {
+  const record = contexts.get(cId);
+  if (!record && recentLocalSources.has(cId))
+    throw new LocalFileAccessError('expired');
+  return record;
 }
 function value<T>(result: LocalFilesResult<T>): T {
   if (!result.success)
@@ -84,8 +91,13 @@ function releaseOwner(cId: string, owner: symbol) {
   record.owners.delete(owner);
   if (!record.owners.size) disposeRecord(cId, record);
 }
-function resolveRecord(cId: string, record: ContextRecord) {
-  const generation = ++record.generation;
+function resolveRecord(cId: string, record: ContextRecord, recovering = false) {
+  // 未得到工作区时没有可撤销的授权；访问触发的恢复沿用代次，失败不能
+  // 改变 context key，否则文件树会因 key 变化重新请求，形成无限重试。
+  const generation = recovering ? record.generation : ++record.generation;
+  record.recovering = recovering;
+  record.resolutionError = undefined;
+  record.settled = false;
   record.pending = (async () => {
     const api = hostBridge.localFiles?.getApi();
     if (
@@ -108,7 +120,11 @@ function resolveRecord(cId: string, record: ContextRecord) {
     try {
       capabilities = await api.getCapabilities();
     } catch {
-      if (record.knownLocal) throw new LocalFileAccessError('unavailable');
+      if (
+        record.knownLocal ||
+        matchesLocalComputer(api, undefined, record.input.sandboxId)
+      )
+        throw new LocalFileAccessError('unavailable');
       return null;
     }
     if (
@@ -125,16 +141,28 @@ function resolveRecord(cId: string, record: ContextRecord) {
       capabilities.writable !== true ||
       !capabilities.sandboxId
     ) {
-      if (record.knownLocal) throw new LocalFileAccessError('unavailable');
+      if (
+        record.knownLocal ||
+        (!capabilities?.available &&
+          matchesLocalComputer(api, undefined, record.input.sandboxId))
+      )
+        throw new LocalFileAccessError('unavailable');
       return null;
     }
     if (capabilities.sandboxId !== record.input.sandboxId) {
       if (record.knownLocal) throw new LocalFileAccessError('not-local');
       return null;
     }
+    // 完整读写桥已确认宿主就是所选电脑，根目录解析失败也不能改走云端。
+    // 旧只读桥仍在前面的能力检查中保留兼容路线。
+    record.knownLocal = true;
+    matchesLocalComputer(api, capabilities, record.input.sandboxId);
+    recentLocalSources.delete(cId);
+    recentLocalSources.set(cId, record.input.sandboxId);
+    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
+      recentLocalSources.delete(recentLocalSources.keys().next().value!);
     const result = await api.resolveContext(record.input);
     if (!result.success) {
-      if (!record.knownLocal && fallbackCodes.has(result.code)) return null;
       throw new LocalFileAccessError(result.code, result.error);
     }
     if (
@@ -145,27 +173,37 @@ function resolveRecord(cId: string, record: ContextRecord) {
       safely(api.releaseContext?.(result.data.contextId));
       throw new LocalFileAccessError('expired');
     }
-    // direct 页面可先于客户端升级。完整读写能力才切换整条路线，
-    // 避免旧只读桥接管列表后又阻止原本可用的保存。
-    record.knownLocal = true;
-    recentLocalSources.delete(cId);
-    recentLocalSources.set(cId, record.input.sandboxId);
-    if (recentLocalSources.size > MAX_RECENT_LOCAL_SOURCES)
-      recentLocalSources.delete(recentLocalSources.keys().next().value!);
     record.writable =
       capabilities.apiVersion >= 2 && capabilities.writable === true;
     record.context = result.data;
-    changed();
     return result.data;
-  })().finally(() => {
-    if (record.generation === generation) {
-      record.settled = true;
-      changed();
-    }
-  });
+  })()
+    .catch((error) => {
+      if (record.generation === generation && !record.disposed) {
+        record.resolutionError =
+          error instanceof LocalFileAccessError ? error.code : undefined;
+      }
+      throw error;
+    })
+    .finally(() => {
+      if (record.generation === generation) {
+        record.settled = true;
+        record.recovering = false;
+        if (!recovering || record.context) changed();
+      }
+    });
   // 页面注册本身不显示错误；实际文件操作消费同一个拒绝。
   safely(record.pending);
-  changed();
+  if (!recovering) changed();
+}
+
+function contextForAccess(cId: string, record: ContextRecord) {
+  // 自定义目录在首次 chat 建立 ACP 会话后才可解析。只重试该暂态失败，
+  // 并发的列表、搜索及 task-result 预览共用一次解析，不要求退出会话。
+  if (record.settled && record.resolutionError === 'context-unresolved') {
+    resolveRecord(cId, record, true);
+  }
+  return record.pending;
 }
 /** 页面明确注册会话与电脑绑定；禁止以全局电脑选择推断另一个 cId。 */
 export function registerLocalFilesContext(
@@ -199,7 +237,8 @@ export function registerLocalFilesContext(
     disposed: false,
     settled: false,
     generation: 0,
-    knownLocal: false,
+    // 同一电脑的 UI 重新挂载不代表来源改变；仅显式换电脑可以恢复远端路线。
+    knownLocal: recentLocalSources.get(cId) === normalizedInput.sandboxId,
     writable: false,
     owners: new Set([owner]),
     grants: new Set(),
@@ -214,7 +253,11 @@ export function clearLocalFilesContexts(): void {
 
 /** 登出、失效及顶层文档销毁立即释放，宿主仍做最终会话代次校验。 */
 export function initLocalFilesLifecycle(): () => void {
-  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clearLocalFilesContexts);
+  const clearSession = () => {
+    clearLocalComputerIdentity();
+    clearLocalFilesContexts();
+  };
+  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clearSession);
   window.addEventListener('pagehide', clearLocalFilesContexts);
   const disposeComputerState = subscribeComputerServiceState((state) => {
     const online =
@@ -242,7 +285,7 @@ export function initLocalFilesLifecycle(): () => void {
   });
   return () => {
     disposeComputerState();
-    eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clearLocalFilesContexts);
+    eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clearSession);
     window.removeEventListener('pagehide', clearLocalFilesContexts);
     clearLocalFilesContexts();
   };
@@ -274,7 +317,9 @@ export function getLocalFilesContextKey(cId?: string | number): string {
   const record = cId === undefined ? undefined : contexts.get(String(cId));
   return record
     ? `${record.input.sandboxId}:${record.generation}:${
-        record.settled ? record.context?.contextId || 'remote' : 'pending'
+        record.settled || record.recovering
+          ? record.context?.contextId || 'remote'
+          : 'pending'
       }`
     : '';
 }
@@ -341,6 +386,19 @@ function parseStaticUrl(
   }
 }
 
+/** 用户主动重试只重建失败的同一工作区，不撤销仍可用的媒体授权。 */
+export function retryLocalFilesContext(
+  input?: string | LocalFileReference,
+): void {
+  const cId =
+    typeof input === 'string' ? parseStaticUrl(input)?.cId : input?.cId;
+  const record = cId ? contexts.get(cId) : undefined;
+  if (cId && record && !record.disposed && record.settled && !record.context) {
+    record.settled = false;
+    resolveRecord(cId, record);
+  }
+}
+
 type ReferenceInput =
   | string
   | { localFile?: LocalFileReference; fileProxyUrl?: string; path?: string };
@@ -392,10 +450,10 @@ async function resolveTarget(input: string | LocalFileReference): Promise<{
   if (isLocalPreviewUrl(input)) return null;
   const parsed = parseStaticUrl(input);
   if (!parsed) return null;
-  const record = contexts.get(parsed.cId);
+  const record = findContext(parsed.cId);
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(parsed.cId, record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -414,10 +472,10 @@ export async function getLocalFileList(
   options: LocalFilesListOptions = {},
   search?: LocalFilesSearchOptions,
 ): Promise<RequestResponse<StaticFileListResponse> | null> {
-  const record = contexts.get(String(cId));
+  const record = findContext(String(cId));
   if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -480,6 +538,24 @@ export function assertLocalFileReferenceCurrent(ref: LocalFileReference): void {
     throw new LocalFileAccessError('expired');
 }
 
+/** 文件面板新增命令复用相同来源判定与代次校验，不各自猜测当前电脑。 */
+export async function resolveLocalFilesAccess(cId: string | number) {
+  const record = findContext(String(cId));
+  if (!record) return null;
+  const generation = record.generation;
+  const context = await contextForAccess(String(cId), record);
+  const assertCurrent = () => {
+    if (
+      record.disposed ||
+      record.generation !== generation ||
+      contexts.get(String(cId)) !== record
+    )
+      throw new LocalFileAccessError('expired');
+  };
+  assertCurrent();
+  return context ? { context, api: record.api!, assertCurrent } : null;
+}
+
 /** 本机读写共用会话身份；已识别本机后，旧桥/停服/权限失败不得回云端写入。 */
 export async function updateLocalFiles(
   cId: string | number,
@@ -492,14 +568,10 @@ export async function updateLocalFiles(
       assertLocalFileReferenceCurrent(file.localFile);
     }
   }
-  const record = contexts.get(String(cId));
-  if (!record) {
-    if (recentLocalSources.has(String(cId)))
-      throw new LocalFileAccessError('expired');
-    return null;
-  }
+  const record = findContext(String(cId));
+  if (!record) return null;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (
     record.disposed ||
     record.generation !== generation ||
@@ -584,10 +656,10 @@ export async function saveLocalFile(
 export async function exportLocalWorkspace(
   cId: string | number,
 ): Promise<boolean | undefined> {
-  const record = contexts.get(String(cId));
+  const record = findContext(String(cId));
   if (!record) return undefined;
   const generation = record.generation;
-  const context = await record.pending;
+  const context = await contextForAccess(String(cId), record);
   if (record.disposed || record.generation !== generation)
     throw new LocalFileAccessError('expired');
   if (!context) return undefined;

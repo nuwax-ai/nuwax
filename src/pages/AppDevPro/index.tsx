@@ -623,7 +623,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       ? {
           cId: queryConversationId,
           sandboxId: String(finalSelectedComputerId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: appId,
           serviceType: 'PageApp',
           userId: conversationInfo.userId,

@@ -1,1 +1,0 @@
-import{ad as s,J as t}from"./index-1diE5T13.js";class e{constructor(){this.title="",this.convId="",this.items=[]}}let n="",a=null;function l(e){n=s(),a=e,t({url:"/pages/message/merge-forward-detail"})}function o(){const t=n==s()?a:null;return a=null,t}export{e as I,l as o,o as t};
