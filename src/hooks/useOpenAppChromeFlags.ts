@@ -4,7 +4,7 @@ import { useLocation } from 'umi';
 
 /**
  * 读取独立会话页 URL query 中的 chrome 隐藏开关。
- * @returns hideMenu / hideNew / hideTitle / hideTerminal / hideTree
+ * @returns hideMenu / hideNew / hideTitle / hideTerminal / hideTree / showTree
  */
 const useOpenAppChromeFlags = () => {
   const location = useLocation();

@@ -214,6 +214,12 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     () => parseOpenAppChromeFlags(routeLocation.search),
     [routeLocation.search],
   );
+  /**
+   * 地址参数 showTree=true 与 defaultFileTreeVisible 相同：
+   * 打开文件预览并展开文件树。hideTree 仍优先隐藏文件树。
+   */
+  const openFileTreeByDefault =
+    (defaultFileTreeVisible || chromeFlags.showTree) && !chromeFlags.hideTree;
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
   const stateToUse = freezeRouteLocation
     ? routeLocation.state
@@ -838,9 +844,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
     const preferredView =
       conversationPageCacheManager.getPanelPreference(pageCacheKey);
-    if (!defaultFileTreeVisible && preferredView === undefined) {
+    if (!openFileTreeByDefault && preferredView === undefined) {
       handleOpenPreview(targetAgent, true);
-    } else if (!defaultFileTreeVisible && preferredView === 'pagePreview') {
+    } else if (!openFileTreeByDefault && preferredView === 'pagePreview') {
       handleOpenPreview(targetAgent, false);
     } else {
       showPagePreview(null);
@@ -849,7 +855,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     agentId,
     id,
     pageCacheKey,
-    defaultFileTreeVisible,
+    openFileTreeByDefault,
     defaultAgentDetail,
     conversationInfo?.agent,
     handleOpenPreview,
@@ -1788,7 +1794,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
     restoredWorkspaceKeyRef.current = pageCacheKey;
     const targetView =
-      defaultFileTreeVisible && entry.view === 'closed'
+      openFileTreeByDefault && entry.view === 'closed'
         ? 'filePreview'
         : entry.view;
     if (targetView !== entry.view) rememberWorkspaceView(targetView);
@@ -1813,7 +1819,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     active,
     pageCacheKey,
     agentId,
-    defaultFileTreeVisible,
+    openFileTreeByDefault,
     rememberWorkspaceView,
   ]);
 
