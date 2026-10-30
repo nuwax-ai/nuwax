@@ -1972,7 +1972,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       }
       const texts = endedMessages
         .slice(roundStart)
-        .map((message) => {
+        .map((message: unknown) => {
           const record = message as {
             role?: string;
             messageType?: string;
