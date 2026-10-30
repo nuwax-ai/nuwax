@@ -213,6 +213,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "重启服务",
   "PC.Components.ConversationBottomConsole.tabLogs": "日志",
   "PC.Components.ConversationBottomConsole.tabTerminal": "终端",
+  "PC.Components.ConversationBottomConsole.newTerminal": "新建终端",
+  "PC.Components.ConversationBottomConsole.closeTerminal": "关闭终端",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "暂无终端输出",
   "PC.Components.ConversationBottomConsole.terminalThemeDark": "切换为深色终端",
   "PC.Components.ConversationBottomConsole.terminalThemeLight": "切换为浅色终端",

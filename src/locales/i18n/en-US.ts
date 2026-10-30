@@ -213,6 +213,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "Restart service",
   "PC.Components.ConversationBottomConsole.tabLogs": "Logs",
   "PC.Components.ConversationBottomConsole.tabTerminal": "Terminal",
+  "PC.Components.ConversationBottomConsole.newTerminal": "New terminal",
+  "PC.Components.ConversationBottomConsole.closeTerminal": "Close terminal",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "No terminal output yet",
   "PC.Components.ConversationBottomConsole.terminalThemeDark": "Switch to dark terminal",
   "PC.Components.ConversationBottomConsole.terminalThemeLight": "Switch to light terminal",

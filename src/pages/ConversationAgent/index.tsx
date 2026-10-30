@@ -1902,39 +1902,38 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             />
           </div>
 
-          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
-          {active ? (
-            <ConversationBottomConsole
-              // 在ConversationAgent中，conversationId 为 queryConversationId
-              conversationId={
-                finalSelectedComputerId === '-1'
-                  ? queryConversationId
-                  : undefined
-              }
-              visible={showDevConsole}
-              wsUrl={terminalWsUrl}
-              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-              layoutResetSignal={devConsoleLayoutResetSignal}
-              expandSignal={devConsoleExpandSignal}
-              collapseSignal={devConsoleCollapseSignal}
-              onLayoutModeChange={setDevConsoleLayoutMode}
-              onActiveTabChange={(tab) => {
-                setDevConsoleActiveTab(tab);
-              }}
-              devLog={{
-                logs: devLogs.logs,
-                isLoading: devLogs.isLoading,
-                lastLine: devLogs.lastLine,
-              }}
-              logsExtra={
-                <DevLogActions
-                  onRefresh={devLogs.refreshLogs}
-                  onClear={devLogs.clearLogs}
-                />
-              }
-            />
-          ) : null}
+          {/* 常驻页面隐藏时保留终端连接，随会话或沙箱更换释放。 */}
+          <ConversationBottomConsole
+            key={`${queryConversationId}:${finalSelectedComputerId}`}
+            preserveTerminalConnections
+            enableMultipleTerminals
+            // 在ConversationAgent中，conversationId 为 queryConversationId
+            conversationId={
+              finalSelectedComputerId === '-1' ? queryConversationId : undefined
+            }
+            visible={active && showDevConsole}
+            wsUrl={terminalWsUrl}
+            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+            layoutResetSignal={devConsoleLayoutResetSignal}
+            expandSignal={devConsoleExpandSignal}
+            collapseSignal={devConsoleCollapseSignal}
+            onLayoutModeChange={setDevConsoleLayoutMode}
+            onActiveTabChange={(tab) => {
+              setDevConsoleActiveTab(tab);
+            }}
+            devLog={{
+              logs: devLogs.logs,
+              isLoading: devLogs.isLoading,
+              lastLine: devLogs.lastLine,
+            }}
+            logsExtra={
+              <DevLogActions
+                onRefresh={devLogs.refreshLogs}
+                onClear={devLogs.clearLogs}
+              />
+            }
+          />
         </div>
       </div>
     </div>

@@ -178,6 +178,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "サービスを再起動",
   "PC.Components.ConversationBottomConsole.tabLogs": "ログ",
   "PC.Components.ConversationBottomConsole.tabTerminal": "ターミナル",
+  "PC.Components.ConversationBottomConsole.newTerminal": "ターミナルを追加",
+  "PC.Components.ConversationBottomConsole.closeTerminal": "ターミナルを閉じる",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "ターミナル出力はまだありません",
   "PC.Components.ConversationBottomConsole.terminalThemeDark": "ダークターミナルに切り替え",
   "PC.Components.ConversationBottomConsole.terminalThemeLight": "ライトターミナルに切り替え",

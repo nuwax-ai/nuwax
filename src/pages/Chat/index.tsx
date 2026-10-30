@@ -1769,16 +1769,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     [pageCacheKey],
   );
 
-  // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
+  // 常驻页面隐藏时只收起面板，终端随页面实例释放，避免切会话打断前台任务。
   useLayoutEffect(() => {
     if (active) return;
     restoredWorkspaceKeyRef.current = null;
     pendingWorkspaceRestoreRef.current = null;
     setTerminalConsoleVisible(false);
-    setHasTerminalConsoleRendered(false);
     setTerminalConsoleLayoutMode('collapsed');
     setTerminalConsoleExpandSignal(0);
-    setTerminalConsoleCollapseSignal(0);
+    setTerminalConsoleCollapseSignal((n) => n + 1);
   }, [active, pageCacheKey]);
 
   // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
@@ -1972,7 +1971,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole =
-    active && conversationInfo?.id === id && hasTerminalConsoleRendered ? (
+    conversationInfo?.id === id && hasTerminalConsoleRendered ? (
       <ConversationBottomConsole
         key={`${id}:${finalSelectedId}`}
         className={cx(styles['terminal-console'])}
@@ -1980,6 +1979,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         visible={active && terminalConsoleVisible}
         // 切到文件预览只是隐藏面板。连接留到本组件卸载再断，避免前台进程被新 shell 换掉
         preserveTerminalConnections
+        enableMultipleTerminals
         wsUrl={terminalWsUrl}
         wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
         wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}

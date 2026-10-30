@@ -696,7 +696,8 @@ const EmbeddedConsoleTerminal = forwardRef<
         }
         pendingWritesRef.current = [];
         ttydInitSentRef.current = false;
-        window.setTimeout(() => {
+        reconnectTimerRef.current = setTimeout(() => {
+          reconnectTimerRef.current = null;
           connect(url || wsUrlRef.current);
         }, 0);
       },

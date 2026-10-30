@@ -30,6 +30,32 @@
     gap: @margin;
     flex: 1;
     min-width: 0;
+    overflow-x: auto;
+    align-items: center;
+  }
+
+  .terminal-session-tab {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: @marginXxs;
+  }
+
+  .terminal-session-tab button,
+  .terminal-add {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .terminal-close,
+  .terminal-add {
+    color: @colorTextSecondary;
+    padding: 2px 4px;
+    &:hover {
+      color: @colorPrimary;
+    }
   }
 
   .console-tab {

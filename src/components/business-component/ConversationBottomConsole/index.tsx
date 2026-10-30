@@ -14,9 +14,11 @@ import {
 } from '@/services/vncDesktop';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
+  CloseOutlined,
   DownOutlined,
   FullscreenExitOutlined,
   MoonOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SunOutlined,
   UpOutlined,
@@ -25,6 +27,7 @@ import { useRequest } from 'ahooks';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, {
+  createRef,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -109,6 +112,8 @@ export interface ConversationBottomConsoleProps {
    * 开发环境和线上环境各自一份，再次进入直接沿用。
    */
   preserveTerminalConnections?: boolean;
+  /** 会话终端多开；环境终端保持原有开发 / 线上契约 */
+  enableMultipleTerminals?: boolean;
   /** 当前可见环境，仅 terminalSessions 模式使用 */
   terminalEnvironment?: ConsoleTerminalEnvironment;
   /**
@@ -188,7 +193,9 @@ export interface ConversationBottomConsoleProps {
  * - 开发 / 线上两个终端 Tab 常驻挂载，Header 环境切换时展示对应终端
  * - 日志 Tab：自定义 logsPanel、DevLogPanel（devLog）或 runtimeLogs 纯文本
  */
-const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
+const ConversationBottomConsoleInner: React.FC<
+  ConversationBottomConsoleProps
+> = ({
   visible = true,
   runtimeLogs = '',
   devLog,
@@ -202,6 +209,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   onRetryContainer,
   enableKeepalivePolling = true,
   preserveTerminalConnections = false,
+  enableMultipleTerminals = false,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -223,6 +231,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   className,
 }) => {
   const isMultiEnvironment = terminalSessions !== undefined;
+  const multipleTerminals = enableMultipleTerminals && !isMultiEnvironment;
+  const [terminalIds, setTerminalIds] = useState([1]);
+  const [activeTerminalId, setActiveTerminalId] = useState(1);
+  const activeTerminalIdRef = useRef(activeTerminalId);
+  activeTerminalIdRef.current = activeTerminalId;
+  const nextTerminalIdRef = useRef(2);
+  const sessionRefs = useRef(
+    new Map<number, React.RefObject<EmbeddedConsoleTerminalRef>>(),
+  );
+  const sessionStatus = useRef(
+    new Map<
+      number,
+      { connected: boolean; connectedOnce: boolean; failed: boolean }
+    >(),
+  );
   const env = terminalEnvironment;
   const devWsUrl = isMultiEnvironment ? terminalSessions.dev?.wsUrl : wsUrl;
   const prodWsUrl = terminalSessions?.prod?.wsUrl;
@@ -260,8 +283,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [showTerminalReconnect, setShowTerminalReconnect] =
     useState<boolean>(false);
   /** 手动重连 loading */
-  const [isTerminalReconnecting, setIsTerminalReconnecting] =
-    useState<boolean>(false);
+  const [reconnectingTerminalId, setReconnectingTerminalId] = useState<
+    number | null
+  >(null);
+  const isTerminalReconnecting = reconnectingTerminalId === activeTerminalId;
   /** 断连后预热容器的防抖定时器（自动重连前尽量 ensurePod） */
   const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
   /** ensure 进行中，避免 handleFirstExpand 重复触发 */
@@ -279,8 +304,58 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
 
-  const getTerminalRef = (targetEnv: ConsoleTerminalEnvironment) =>
-    targetEnv === 'prod' ? prodTerminalRef : devTerminalRef;
+  const getTerminalRef = (
+    targetEnv: ConsoleTerminalEnvironment,
+    sessionId = activeTerminalIdRef.current,
+  ) => {
+    if (!multipleTerminals)
+      return targetEnv === 'prod' ? prodTerminalRef : devTerminalRef;
+    let ref = sessionRefs.current.get(sessionId);
+    if (!ref) {
+      ref = createRef<EmbeddedConsoleTerminalRef>();
+      sessionRefs.current.set(sessionId, ref);
+    }
+    return ref;
+  };
+
+  const selectTerminal = (sessionId: number) => {
+    activeTerminalIdRef.current = sessionId;
+    setActiveTerminalId(sessionId);
+    const status = sessionStatus.current.get(sessionId);
+    terminalConnectedRef.current = status?.connected ?? false;
+    terminalConnectedOnceRef.current = status?.connectedOnce ?? false;
+    setShowTerminalReconnect(status?.failed ?? false);
+    setActiveTab('terminal-dev');
+    setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+  };
+
+  const addTerminal = () => {
+    const sessionId = nextTerminalIdRef.current++;
+    setTerminalIds((ids) => [...ids, sessionId]);
+    selectTerminal(sessionId);
+  };
+
+  const closeTerminal = (sessionId: number) => {
+    // 立即停止连接和重连计时器；卸载再释放 xterm 和观察器。
+    sessionRefs.current.get(sessionId)?.current?.disconnect();
+    sessionRefs.current.delete(sessionId);
+    sessionStatus.current.delete(sessionId);
+    const remaining = terminalIds.filter((id) => id !== sessionId);
+    setTerminalIds(remaining);
+    if (!remaining.length) {
+      // 最后一个终端关闭后也释放容器保活，迟到的 ensure 不得重新启动轮询。
+      containerGenerationRef.current += 1;
+      ensureInFlightRef.current = false;
+      terminalActivatedRef.current = false;
+      pendingOpenRef.current = false;
+      readyContainerStageRef.current = undefined;
+      stopKeepaliveRef.current();
+      setContainerStatus('idle');
+    }
+    if (sessionId === activeTerminalId) {
+      selectTerminal(remaining.at(-1) ?? nextTerminalIdRef.current);
+    }
+  };
 
   const getTerminalWsUrl = (targetEnv: ConsoleTerminalEnvironment) =>
     targetEnv === 'prod' ? prodWsUrl : devWsUrl;
@@ -628,6 +703,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 监听 layoutMode 变化，检测首次从 collapsed 展开 */
   useEffect(() => {
+    if (multipleTerminals && !terminalIds.length) return;
     const prevMode = prevLayoutModeRef.current;
     // 两种情况触发首次启动：
     // 1. 首次渲染时已是非折叠状态（如 defaultLayoutMode="default"）
@@ -658,6 +734,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     handleFirstExpand,
     layoutMode,
     scheduleTerminalRestoreAfterExpand,
+    multipleTerminals,
+    terminalIds.length,
     visible,
   ]);
 
@@ -778,6 +856,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       window.clearTimeout(retryTimer);
     };
   }, [
+    activeTerminalId,
     activeTab,
     containerStatus,
     requiresServiceStart,
@@ -918,7 +997,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       return;
     }
 
-    setIsTerminalReconnecting(true);
+    const targetId = activeTerminalIdRef.current;
+    const targetRef = getTerminalRef(targetEnv, targetId);
+    const generation = containerGenerationRef.current;
+    setReconnectingTerminalId(targetId);
     try {
       if (conversationId) {
         const isReady = await startContainer(conversationId);
@@ -927,15 +1009,22 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         }
       }
 
-      setShowTerminalReconnect(false);
-      setActiveTab(tabFromEnv(targetEnv));
-      setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
-
+      if (generation !== containerGenerationRef.current || !targetRef.current)
+        return;
+      const status = sessionStatus.current.get(targetId);
+      if (status) status.failed = false;
+      if (activeTerminalIdRef.current === targetId) {
+        setShowTerminalReconnect(false);
+        setActiveTab(tabFromEnv(targetEnv));
+        setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+      }
       window.requestAnimationFrame(() => {
-        getTerminalRef(targetEnv).current?.reconnect(targetWsUrl);
+        targetRef.current?.reconnect(targetWsUrl);
       });
     } finally {
-      setIsTerminalReconnecting(false);
+      setReconnectingTerminalId((current) =>
+        current === targetId ? null : current,
+      );
     }
   }, [
     conversationId,
@@ -990,11 +1079,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    * 终端 Tab：终端始终挂载，加载/错误态以叠加层淡入淡出展示。
    * 两个环境各渲染一份，通过样式切换显隐以保持各自连接。
    */
-  const renderTerminalTab = (targetEnv: ConsoleTerminalEnvironment) => {
+  const renderTerminalTab = (
+    targetEnv: ConsoleTerminalEnvironment,
+    sessionId = 1,
+  ) => {
     const targetWsUrl = getTerminalWsUrl(targetEnv);
-    const targetRef = getTerminalRef(targetEnv);
+    const targetRef = getTerminalRef(targetEnv, sessionId);
     const isCurrentEnvironment = () =>
-      !isMultiEnvironment || activeTabRef.current === tabFromEnv(targetEnv);
+      (!multipleTerminals || activeTerminalIdRef.current === sessionId) &&
+      (!isMultiEnvironment || activeTabRef.current === tabFromEnv(targetEnv));
+    let status = sessionStatus.current.get(sessionId);
+    if (!status) {
+      status = { connected: false, connectedOnce: false, failed: false };
+      sessionStatus.current.set(sessionId, status);
+    }
+    const targetStatus = status;
     const isActivePane =
       targetEnv === 'prod'
         ? activeTab === 'terminal-prod'
@@ -1003,7 +1102,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     const showRetryOverlay =
       isActivePane && (containerStatus === 'error' || showTerminalReconnect);
     const autoConnect =
-      targetEnv === 'prod' ? prodTerminalAutoConnect : devTerminalAutoConnect;
+      (targetEnv === 'prod'
+        ? prodTerminalAutoConnect
+        : devTerminalAutoConnect) &&
+      (!multipleTerminals || sessionId === activeTerminalId);
 
     if (!targetWsUrl) {
       return (
@@ -1049,7 +1151,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             wsSubprotocols={wsSubprotocols}
             wireProtocol={wireProtocol}
             autoConnect={autoConnect}
-            keepConnection={preserveTerminalConnections}
+            keepConnection={preserveTerminalConnections || multipleTerminals}
             theme={getConsoleTerminalTheme(terminalAppearance)}
             fontSize={13}
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
@@ -1057,7 +1159,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             cursorBlink
             reconnect={DEFAULT_TERMINAL_RECONNECT}
             onConnect={() => {
-              const isReconnect = terminalConnectedOnceRef.current;
+              const isReconnect = multipleTerminals
+                ? targetStatus.connectedOnce
+                : terminalConnectedOnceRef.current;
+              targetStatus.connected = true;
+              targetStatus.connectedOnce = true;
+              targetStatus.failed = false;
               if (isCurrentEnvironment()) {
                 terminalConnectedRef.current = true;
                 terminalConnectedOnceRef.current = true;
@@ -1083,6 +1190,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               );
             }}
             onDisconnect={() => {
+              targetStatus.connected = false;
               if (isCurrentEnvironment()) terminalConnectedRef.current = false;
               targetRef.current?.getTerminal()?.write('\r\n');
               targetRef.current?.writeln(
@@ -1096,6 +1204,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
                   (!isMultiEnvironment ||
                     activeTabRef.current === 'terminal-dev'));
               if (
+                isCurrentEnvironment() &&
                 isCurrentEnv &&
                 (targetEnv === 'prod'
                   ? prodExternalContainerStatusRef.current
@@ -1124,6 +1233,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               }
             }}
             onReconnectFailed={() => {
+              targetStatus.failed = true;
+              targetStatus.connected = false;
+              if (!isCurrentEnvironment()) return;
               if (isCurrentEnvironment()) terminalConnectedRef.current = false;
               if (
                 (targetEnv === 'prod' &&
@@ -1237,15 +1349,62 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       {/* 头部：终端入口已合并，具体环境跟随页面 Header */}
       <div className={cx(styles['console-header'])}>
         <div className={cx(styles['console-tabs'])}>
-          <span
-            className={cx(styles['console-tab'], {
-              [styles.active]:
-                activeTab !== 'logs' && layoutMode !== 'collapsed',
-            })}
-            onClick={() => handleTabClick(tabFromEnv(env))}
-          >
-            {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
-          </span>
+          {multipleTerminals && terminalIds.length > 0 ? (
+            terminalIds.map((sessionId) => (
+              <div className={styles['terminal-session-tab']} key={sessionId}>
+                <button
+                  type="button"
+                  className={cx(styles['console-tab'], {
+                    [styles.active]:
+                      activeTab !== 'logs' && activeTerminalId === sessionId,
+                  })}
+                  aria-pressed={
+                    activeTab !== 'logs' && activeTerminalId === sessionId
+                  }
+                  onClick={() => selectTerminal(sessionId)}
+                >
+                  {dict('PC.Components.ConversationBottomConsole.tabTerminal')}{' '}
+                  {sessionId}
+                </button>
+                <button
+                  type="button"
+                  className={styles['terminal-close']}
+                  aria-label={`${dict(
+                    'PC.Components.ConversationBottomConsole.closeTerminal',
+                  )} ${sessionId}`}
+                  onClick={() => closeTerminal(sessionId)}
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+            ))
+          ) : (
+            <span
+              className={cx(styles['console-tab'], {
+                [styles.active]:
+                  activeTab !== 'logs' && layoutMode !== 'collapsed',
+              })}
+              onClick={() =>
+                multipleTerminals
+                  ? addTerminal()
+                  : handleTabClick(tabFromEnv(env))
+              }
+            >
+              {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
+            </span>
+          )}
+          {multipleTerminals && (
+            <button
+              type="button"
+              className={styles['terminal-add']}
+              aria-label={dict(
+                'PC.Components.ConversationBottomConsole.newTerminal',
+              )}
+              onClick={addTerminal}
+            >
+              <PlusOutlined />
+            </button>
+          )}
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
@@ -1327,14 +1486,22 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       </div>
       {/* 内容区：开发/线上终端与日志常驻渲染，通过样式切换显隐 */}
       <div className={cx(styles['console-content'])}>
-        <div
-          className={cx(styles['tab-pane'], {
-            [styles['tab-pane-active']]: activeTab === 'terminal-dev',
-          })}
-          aria-hidden={activeTab !== 'terminal-dev'}
-        >
-          {renderTerminalTab('dev')}
-        </div>
+        {(multipleTerminals ? terminalIds : [1]).map((sessionId) => {
+          const selected =
+            activeTab === 'terminal-dev' &&
+            (!multipleTerminals || sessionId === activeTerminalId);
+          return (
+            <div
+              key={sessionId}
+              className={cx(styles['tab-pane'], {
+                [styles['tab-pane-active']]: selected,
+              })}
+              aria-hidden={!selected}
+            >
+              {renderTerminalTab('dev', sessionId)}
+            </div>
+          );
+        })}
         {isMultiEnvironment && (
           <div
             className={cx(styles['tab-pane'], {
@@ -1357,5 +1524,19 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     </div>
   );
 };
+
+/** 多开终端的所有权由会话和连接地址限定，换会话或沙箱必须释放旧连接。 */
+const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = (
+  props,
+) => (
+  <ConversationBottomConsoleInner
+    key={
+      props.enableMultipleTerminals
+        ? `${props.conversationId ?? ''}:${props.wsUrl ?? ''}`
+        : 'console'
+    }
+    {...props}
+  />
+);
 
 export default ConversationBottomConsole;

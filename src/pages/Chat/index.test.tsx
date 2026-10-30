@@ -675,6 +675,12 @@ describe('ChatCore / ChatPage', () => {
     await waitFor(() => expect(header()).toBeTruthy());
     act(() => header().handleOpenTerminalPanel());
     await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
+    const terminalBeforeHide =
+      mockLeftContent.mock.calls.at(-1)?.[0]?.fileSidebarProps?.bottomContent;
+    expect(terminalBeforeHide?.props).toMatchObject({
+      preserveTerminalConnections: true,
+      enableMultipleTerminals: true,
+    });
     view.rerender(<CachedChatPage route={route} active={false} />);
     await waitFor(() =>
       expect(
@@ -685,6 +691,10 @@ describe('ChatCore / ChatPage', () => {
     expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
       'terminal',
     );
+    const hiddenTerminal =
+      mockLeftContent.mock.calls.at(-1)?.[0]?.fileSidebarProps?.bottomContent;
+    expect(hiddenTerminal?.key).toBe(terminalBeforeHide.key);
+    expect(hiddenTerminal?.props.visible).toBe(false);
     view.rerender(<CachedChatPage route={route} active />);
     await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
     act(() => header().handleOpenTerminalPanel());

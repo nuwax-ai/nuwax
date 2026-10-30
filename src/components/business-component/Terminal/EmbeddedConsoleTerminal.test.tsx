@@ -197,3 +197,12 @@ describe('EmbeddedConsoleTerminal ttyd backpressure', () => {
     expect(term.dispose).toHaveBeenCalledOnce();
   });
 });
+
+// 手动重连的延迟回调也必须随终端关闭清理，不能在卸载后重新建连。
+it('cancels pending manual reconnect when terminal is unmounted', () => {
+  const { ref, unmount } = mount();
+  act(() => ref.current?.reconnect());
+  unmount();
+  act(() => vi.runOnlyPendingTimers());
+  expect(Socket.all).toHaveLength(1);
+});

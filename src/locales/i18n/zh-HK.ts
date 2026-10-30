@@ -178,6 +178,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "重啟服務",
   "PC.Components.ConversationBottomConsole.tabLogs": "日誌",
   "PC.Components.ConversationBottomConsole.tabTerminal": "終端",
+  "PC.Components.ConversationBottomConsole.newTerminal": "新增終端",
+  "PC.Components.ConversationBottomConsole.closeTerminal": "關閉終端",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "暫無終端輸出",
   "PC.Components.ConversationBottomConsole.terminalThemeDark": "切換為深色終端",
   "PC.Components.ConversationBottomConsole.terminalThemeLight": "切換為淺色終端",
