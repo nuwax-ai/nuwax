@@ -287,6 +287,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
               </div>
             }
             resetTrigger={showRightPanel ? 'visible' : 'hidden'}
+            leftHidden={!!headerProps.hideChatBox}
             rightHidden={!showRightPanel}
             right={
               <div
