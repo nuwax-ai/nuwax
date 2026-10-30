@@ -9,6 +9,9 @@ import type { ProjectChildItem, ProjectItem } from './index';
  */
 export const PROJECT_PAGE_SIZE = 20;
 
+/** 单个项目默认显示最近 5 条会话，继续展开时也按此数量追加。 */
+export const PROJECT_CONVERSATION_PAGE_SIZE = 5;
+
 /**
  * 项目唯一键：`${projectType}:${projectId}`。
  * 后端 user-project 列表合并常规项目/网站应用两套编号，projectId 数字会跨类型撞车
@@ -33,19 +36,26 @@ export function toProjectChildren(
   conversations: ConversationInfo[] | undefined,
   fallbackConversationName: string,
 ): ProjectChildItem[] | undefined {
-  return conversations?.map(
-    (conversation): ProjectChildItem => ({
-      id: conversation.id,
-      // 空主题回退与任务列表 ConversationItem 同口径
-      name:
-        conversation.topic ||
-        conversation.agent?.name ||
-        fallbackConversationName,
-      modified: conversation.modified,
-      taskStatus: conversation.taskStatus,
-      conversation,
-    }),
-  );
+  return conversations
+    ?.slice()
+    .sort(
+      (a, b) =>
+        (Date.parse(b.modified || b.created || '') || 0) -
+        (Date.parse(a.modified || a.created || '') || 0),
+    )
+    .map(
+      (conversation): ProjectChildItem => ({
+        id: conversation.id,
+        // 空主题回退与任务列表 ConversationItem 同口径
+        name:
+          conversation.topic ||
+          conversation.agent?.name ||
+          fallbackConversationName,
+        modified: conversation.modified,
+        taskStatus: conversation.taskStatus,
+        conversation,
+      }),
+    );
 }
 
 /**
