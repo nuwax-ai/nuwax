@@ -1510,6 +1510,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.more": "もっと",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask": "新規タスク",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.placeholder": "タスク・プロジェクト・専門家・スキル・コネクタ・資料ライブラリを検索",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.taskTitlePlaceholder": "タスク名で検索",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabTask": "タスク",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabProject": "プロジェクト",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabExpert": "専門家&専門家チーム",

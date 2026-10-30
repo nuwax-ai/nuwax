@@ -1510,6 +1510,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.more": "更多",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask": "新建任務",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.placeholder": "搜尋任務、項目、專家、技能、連接器或資料庫",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.taskTitlePlaceholder": "按任務名稱搜尋",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabTask": "任務",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabProject": "項目",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabExpert": "專家&專家團",
