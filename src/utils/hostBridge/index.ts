@@ -578,6 +578,9 @@ export const meta = {
  * （getState 返回 null，徽标整体隐藏）。
  */
 export const updater = {
+  onStateChange(listener: (state: ClientUpdateState) => void): () => void {
+    return getBridge()?.updater?.onStateChange?.(listener) ?? (() => {});
+  },
   /** 当前更新状态 + 宿主版本；宿主无此能力或调用失败 → null。 */
   getState(): Promise<ClientUpdateState | null> {
     try {

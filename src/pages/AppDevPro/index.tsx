@@ -167,6 +167,16 @@ const cx = classNames.bind(styles);
 /** ensure 受理后延迟再保活，不跟 readiness 的容器状态走 */
 const ENSURE_KEEPALIVE_DELAY_MS = 3000;
 
+/**
+ * 线上是否还没有生产版本。
+ * 已部署，或停过服务但 prodReleaseId 仍在，都算已经部署过。
+ *
+ * @param info 应用详情
+ * @returns 为 true 时预览区只提示去部署，不拉起容器
+ */
+const isProdAwaitingDeploy = (info?: UserAppInfo | null): boolean =>
+  info?.prodDeployed !== true && !info?.prodReleaseId?.trim();
+
 /** 开发预览连续未部署达到该时长后才自动重启，避免单次探测抖动。 */
 const UNDEPLOYED_AUTO_RESTART_MS = 15000;
 
@@ -684,6 +694,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 再次切换或切回开发时递增，让上一轮等待立刻停掉。
    */
   const prodSwitchTokenRef = useRef(0);
+  /** 切到线上前补拉详情的代数，切走或再次切换时作废上一轮 */
+  const prodDeployConfirmTokenRef = useRef(0);
+  /**
+   * 进入线上应用预览时补拉详情。
+   * 回调在预览流程创建后赋值，打开预览、收起终端时通过 ref 调用。
+   */
+  const confirmProdDeployForPreviewRef = useRef<() => void>(() => {});
+  /** 本地还是未部署，正在用 get 核对是否已被其他页签部署 */
+  const [prodDeployConfirming, setProdDeployConfirming] = useState(false);
   /** 为 true 时，stopped 自动 restart 让路，由切环境流程自己决定 start 或预览 */
   const prodSwitchPreviewActiveRef = useRef(false);
   const previewPodEnsuring = currentEnvPodStatus === 'starting';
@@ -1972,7 +1991,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       }
       const texts = endedMessages
         .slice(roundStart)
-        .map((message) => {
+        .map((message: unknown) => {
           const record = message as {
             role?: string;
             messageType?: string;
@@ -2372,6 +2391,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       setDevConsoleLayoutMode(mode);
       if (dbEnvRef.current === UserAppDbEnvEnum.Prod && mode === 'collapsed') {
         setWorkspaceView('app-preview');
+        confirmProdDeployForPreviewRef.current();
       }
     },
     [],
@@ -2393,6 +2413,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       setDevConsoleCollapseSignal((n) => n + 1);
       if (isProd) {
         setWorkspaceView('app-preview');
+        confirmProdDeployForPreviewRef.current();
       }
       return;
     }
@@ -3289,6 +3310,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     resetDevConsoleExpandedLayout();
     setWorkspaceView('app-preview');
     if (dbEnv === UserAppDbEnvEnum.Prod) {
+      confirmProdDeployForPreviewRef.current();
       return;
     }
     if (previewRuntime.running) {
@@ -3986,28 +4008,84 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }, [resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /**
+   * 线上应用预览即将展示，且本地详情仍是未部署时，重新拉一次应用详情。
+   * 已部署则进入原来的线上预览；仍然未部署或请求失败则只提示去部署。
+   * 数据库等其它视图切环境时不调用，等真正进入应用预览再核对。
+   */
+  const confirmProdDeployForPreview = useCallback(() => {
+    if (
+      dbEnvRef.current !== UserAppDbEnvEnum.Prod ||
+      !appId ||
+      !isProdAwaitingDeploy(userAppInfo)
+    ) {
+      return;
+    }
+    const token = ++prodDeployConfirmTokenRef.current;
+    prodSwitchTokenRef.current += 1;
+    prodSwitchPreviewActiveRef.current = false;
+    setProdDeployConfirming(true);
+    const requestAppId = appId;
+    void (async () => {
+      let info = userAppInfo;
+      try {
+        const result = await apiUserAppGetById(requestAppId);
+        if (prodDeployConfirmTokenRef.current !== token) {
+          return;
+        }
+        if (result?.code === SUCCESS_CODE && result.data) {
+          info = result.data;
+          setUserAppInfo(result.data);
+        }
+      } catch (error) {
+        console.error(
+          '[AppDevPro] refresh user app before prod preview failed',
+          error,
+        );
+      }
+      if (
+        prodDeployConfirmTokenRef.current !== token ||
+        dbEnvRef.current !== UserAppDbEnvEnum.Prod
+      ) {
+        return;
+      }
+      setProdDeployConfirming(false);
+      if (isProdAwaitingDeploy(info)) {
+        return;
+      }
+      void beginProdPreviewAfterSwitch();
+    })();
+  }, [appId, beginProdPreviewAfterSwitch, userAppInfo]);
+  confirmProdDeployForPreviewRef.current = confirmProdDeployForPreview;
+
+  /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
    * 切到线上后进入应用预览。尚未部署时只展示提示，不拉起容器。
    * 当前已是数据库或数据库配置时保持页签，配置页随环境重新请求。
    * 切到线上且已有生产版本时：容器未 running 先 ensure，容器 running 后再决定预览或 start。
+   * 只有当前就在应用预览时，才在切换时补拉详情；其它视图保持原逻辑。
    */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       dbEnvRef.current = nextEnv;
       setDbEnv(nextEnv);
+      const onAppPreview = workspaceView === 'app-preview';
       const prodAwaitingDeploy =
-        nextEnv === UserAppDbEnvEnum.Prod &&
-        userAppInfo?.prodDeployed !== true &&
-        !userAppInfo?.prodReleaseId?.trim();
-      if (nextEnv !== UserAppDbEnvEnum.Prod || prodAwaitingDeploy) {
-        prodSwitchTokenRef.current += 1;
-        prodSwitchPreviewActiveRef.current = false;
-      }
-      // 线上还没有生产版本时不拉起容器，预览区只提示去部署
-      if (nextEnv === UserAppDbEnvEnum.Prod && !prodAwaitingDeploy) {
-        void beginProdPreviewAfterSwitch();
-      } else if (!prodAwaitingDeploy) {
-        startEnvPodIfNeeded(nextEnv);
+        nextEnv === UserAppDbEnvEnum.Prod && isProdAwaitingDeploy(userAppInfo);
+      if (prodAwaitingDeploy && onAppPreview) {
+        confirmProdDeployForPreview();
+      } else {
+        prodDeployConfirmTokenRef.current += 1;
+        setProdDeployConfirming(false);
+        if (nextEnv !== UserAppDbEnvEnum.Prod || prodAwaitingDeploy) {
+          prodSwitchTokenRef.current += 1;
+          prodSwitchPreviewActiveRef.current = false;
+        }
+        // 线上还没有生产版本时不拉起容器，预览区只提示去部署
+        if (nextEnv === UserAppDbEnvEnum.Prod && !prodAwaitingDeploy) {
+          void beginProdPreviewAfterSwitch();
+        } else if (!prodAwaitingDeploy) {
+          startEnvPodIfNeeded(nextEnv);
+        }
       }
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         setSettingsOpen(false);
@@ -4023,14 +4101,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         return;
       }
       setWorkspaceView('app-preview');
+      // 从文件、终端等切到线上时会进入应用预览，这时再按预览入口核对部署状态
+      if (!onAppPreview) {
+        confirmProdDeployForPreview();
+      }
     },
     [
       beginProdPreviewAfterSwitch,
+      confirmProdDeployForPreview,
       previewTabs,
       resetDevConsoleExpandedLayout,
       startEnvPodIfNeeded,
-      userAppInfo?.prodDeployed,
-      userAppInfo?.prodReleaseId,
+      userAppInfo,
       workspaceView,
     ],
   );
@@ -4053,8 +4135,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const prodAwaitingDeploy =
     dbEnv === UserAppDbEnvEnum.Prod &&
-    userAppInfo?.prodDeployed !== true &&
-    !userAppInfo?.prodReleaseId?.trim();
+    !prodDeployConfirming &&
+    isProdAwaitingDeploy(userAppInfo);
   /** 远程桌面独立工作区是否激活（Header 图标高亮，与终端互斥） */
   const isAgentDesktopOpen =
     !repoDocCoversWorkspace &&

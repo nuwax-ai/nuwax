@@ -7,10 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const getStateMock = vi.fn();
 const downloadMock = vi.fn();
 const installMock = vi.fn();
+const checkMock = vi.fn();
+const onStateChangeMock = vi.fn();
 
 vi.mock('@/utils/hostBridge', () => ({
   hostBridge: {
     updater: {
+      onStateChange: (...args: unknown[]) => onStateChangeMock(...args),
+      check: (...args: unknown[]) => checkMock(...args),
       getState: (...args: unknown[]) => getStateMock(...args),
       download: (...args: unknown[]) => downloadMock(...args),
       install: (...args: unknown[]) => installMock(...args),
@@ -27,7 +31,12 @@ vi.mock('@/utils/hostBridge', () => ({
 }));
 
 import {
+  handleHostActivityPayload,
+  __resetForTest as resetHostVisibility,
+} from '@/services/hostVisibility';
+import {
   __resetForTest,
+  checkLatest,
   download,
   getState,
   install,
@@ -54,6 +63,7 @@ describe('clientUpdateService', () => {
       getStateMock.mockResolvedValue(makeState({ installAfterDownload: true }));
       start();
       await vi.advanceTimersByTimeAsync(0);
+      getStateMock.mockClear();
       let finish!: (value: { success: boolean }) => void;
       downloadMock.mockReturnValue(
         new Promise((resolve) => {
@@ -67,7 +77,7 @@ describe('clientUpdateService', () => {
       await vi.advanceTimersByTimeAsync(2000);
       expect(getState()?.status).toBe('installing');
       await vi.advanceTimersByTimeAsync(2000);
-      expect(getStateMock).toHaveBeenCalledTimes(3);
+      expect(getStateMock).toHaveBeenCalledTimes(2);
       finish({ success: true });
       await pending;
     } finally {
@@ -93,6 +103,9 @@ describe('clientUpdateService', () => {
     getStateMock.mockReset();
     downloadMock.mockReset();
     installMock.mockReset();
+    checkMock.mockReset().mockResolvedValue(undefined);
+    onStateChangeMock.mockReset().mockReturnValue(() => {});
+    resetHostVisibility();
     // 桌面宿主 + updater 桥在场（isAvailable 的 feature-detect 分支）
     (window as unknown as Record<string, unknown>).NuwaClawBridge = {
       updater: { getState: async () => null },
@@ -104,6 +117,155 @@ describe('clientUpdateService', () => {
     delete (window as unknown as Record<string, unknown>).NuwaClawBridge;
     vi.restoreAllMocks();
   });
+
+  it('关于页返回主页面时，聚焦立即同步新版；自动补查按 5 分钟节流', async () => {
+    vi.useFakeTimers();
+    try {
+      getStateMock.mockResolvedValue(makeState({ status: 'not-available' }));
+      start();
+      await vi.advanceTimersByTimeAsync(0);
+      await checkLatest();
+      expect(checkMock).toHaveBeenCalledTimes(1);
+      getStateMock.mockResolvedValue(makeState({ version: '1.0.9' }));
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(getState()?.version).toBe('1.0.9');
+      expect(checkMock).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(checkMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('关于页发现新版后立即消费宿主推送，空闲仍只按 30 秒轮询', async () => {
+    vi.useFakeTimers();
+    try {
+      getStateMock.mockResolvedValue(makeState({ status: 'not-available' }));
+      const unsubscribe = vi.fn();
+      onStateChangeMock.mockReturnValue(unsubscribe);
+      start();
+      await vi.advanceTimersByTimeAsync(0);
+      getStateMock.mockClear();
+      const receive = onStateChangeMock.mock.calls[0][0] as (
+        state: ClientUpdateState,
+      ) => void;
+      receive(makeState({ version: '1.0.9', releaseNotes: 'latest notes' }));
+      expect(getState()).toMatchObject({
+        version: '1.0.9',
+        releaseNotes: 'latest notes',
+      });
+      await vi.advanceTimersByTimeAsync(29_999);
+      expect(getStateMock).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(getStateMock).toHaveBeenCalledTimes(1);
+      __resetForTest();
+      expect(unsubscribe).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('宿主推送比未完成的旧状态读取更新时，旧响应不能覆盖新版本', async () => {
+    getStateMock.mockResolvedValue(makeState());
+    start();
+    await checkLatest();
+    let finish!: (state: ClientUpdateState) => void;
+    getStateMock.mockImplementationOnce(
+      () =>
+        new Promise<ClientUpdateState>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    window.dispatchEvent(new Event('focus'));
+    const receive = onStateChangeMock.mock.calls[0][0] as (
+      state: ClientUpdateState,
+    ) => void;
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    receive(makeState({ version: '1.0.9' }));
+    finish(makeState({ status: 'not-available' }));
+    await vi.waitFor(() => expect(getStateMock).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(getState()?.version).toBe('1.0.9');
+  });
+
+  it('宿主恢复可见时立即同步，停止后取消前台事件监听', async () => {
+    getStateMock.mockResolvedValue(makeState());
+    start();
+    await checkLatest();
+    getStateMock.mockClear();
+    handleHostActivityPayload({ visible: false });
+    handleHostActivityPayload({ visible: true });
+    await vi.waitFor(() => expect(getStateMock).toHaveBeenCalled());
+    __resetForTest();
+    getStateMock.mockClear();
+    window.dispatchEvent(new Event('focus'));
+    handleHostActivityPayload({ visible: false });
+    handleHostActivityPayload({ visible: true });
+    expect(getStateMock).not.toHaveBeenCalled();
+  });
+
+  it('网络恢复、聚焦和恢复可见共用冷却，不因多种事件重复查服务器', async () => {
+    vi.useFakeTimers();
+    try {
+      getStateMock.mockResolvedValue(makeState());
+      start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(checkMock).not.toHaveBeenCalled();
+      window.dispatchEvent(new Event('online'));
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(checkMock).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+      window.dispatchEvent(new Event('online'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(checkMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('打开日志强制刷新、并发入口复用检查，完成后立即同步最新说明', async () => {
+    getStateMock.mockResolvedValue(makeState());
+    start();
+    await checkLatest();
+    let finish!: () => void;
+    checkMock.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const first = checkLatest();
+    const second = checkLatest();
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    getStateMock.mockResolvedValue(
+      makeState({ version: '1.0.9', releaseNotes: 'latest notes' }),
+    );
+    finish();
+    await Promise.all([first, second]);
+    expect(checkMock).toHaveBeenCalledTimes(2);
+    expect(getState()).toMatchObject({
+      version: '1.0.9',
+      releaseNotes: 'latest notes',
+    });
+  });
+
+  it.each(['downloading', 'downloaded', 'installing'] as const)(
+    '%s 时打开日志不重新选定更新目标',
+    async (status) => {
+      getStateMock.mockResolvedValue(makeState({ status }));
+      start();
+      await checkLatest();
+      checkMock.mockClear();
+      await checkLatest();
+      expect(checkMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('isAvailable：宿主桥缺失 updater 命名空间时为 false', () => {
     delete (window as unknown as Record<string, unknown>).NuwaClawBridge;

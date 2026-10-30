@@ -2,6 +2,8 @@ import type { HostAuthContext } from '@/types/interfaces/hostAuth';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { navigateToAuthUrl, resolveAuthRedirectUrl } from './authNavigation';
 
+vi.mock('umi', () => ({ history: { replace: vi.fn() } }));
+
 const context: HostAuthContext = {
   businessOrigin: 'https://tenant.example:8443',
   gatewayOrigin: 'http://127.0.0.1:46801',
