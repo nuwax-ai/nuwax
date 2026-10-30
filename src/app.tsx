@@ -103,9 +103,9 @@ export async function getInitialState(): Promise<InitialStateType> {
     // 客户端 Cookie 或本地开发 Token 尚未就绪时先进入登录页，避免首屏鉴权请求
     // 失败后反复重挂；Mock 验收页保持独立的匿名供数链路。
     if (!isPublicPath && !isConversationMockPage() && !hostSessionReady) {
-      window.location.replace(
+      history.replace(
         `/login?redirect=${encodeURIComponent(
-          initialPathname + window.location.search,
+          initialPathname + window.location.search + window.location.hash,
         )}`,
       );
       return { menuData: [] };

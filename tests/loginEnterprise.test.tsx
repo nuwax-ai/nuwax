@@ -66,6 +66,9 @@ vi.mock('@/pages/Login/IdpLoginButtons', () => ({
   default: ({ trailingAction }: any) => trailingAction,
 }));
 vi.mock('@/pages/Login/index.less', () => ({ default: {} }));
+vi.mock('@/components/business-component/AppStartup/index.less', () => ({
+  default: {},
+}));
 vi.mock('@/pages/Login/LoginLangSwitcher', () => ({ default: () => null }));
 vi.mock('@/pages/Login/SiteProtocol', () => ({ default: () => null }));
 

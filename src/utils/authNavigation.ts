@@ -1,4 +1,5 @@
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import { history } from 'umi';
 import { getBusinessBase } from './authIdp';
 
 /** 后端认证跳转在商业客户端网关形态下保持同源，保留路径、查询和 hash。 */
@@ -65,6 +66,24 @@ export async function navigateToAuthUrl(url: string): Promise<void> {
     window.location.href !== sourceHref
   ) {
     return;
+  }
+  try {
+    const destination = new URL(target, window.location.origin);
+    // 本站登录页由 SPA 承载，整页跳转会重复启动、鉴权和加载登录资源。
+    // 外部 SSO 与后端 /auth/ 中间页仍须走文档导航。
+    if (
+      destination.origin === window.location.origin &&
+      !destination.username &&
+      !destination.password &&
+      /^\/login\/?$/i.test(destination.pathname)
+    ) {
+      history.replace(
+        destination.pathname + destination.search + destination.hash,
+      );
+      return;
+    }
+  } catch {
+    // 非标准 URL 沿用原导航行为。
   }
   window.location.href = target;
 }
