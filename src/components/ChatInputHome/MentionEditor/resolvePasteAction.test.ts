@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolvePasteAction } from './resolvePasteAction';
+import { resolvePasteAction, resolvePasteText } from './resolvePasteAction';
 
 const img = (type = 'image/png') => ({ kind: 'file', type });
 const text = (type = 'text/plain') => ({ kind: 'string', type });
 
 describe('resolvePasteAction (NW-128 粘贴转图)', () => {
+  it('HTML 仅在 plain 为空时补文字；表格换行，不读取图片 alt 或脚本样式', () => {
+    expect(resolvePasteText('原始\t文本\n', '<p>另一份</p>')).toBe(
+      '原始\t文本\n',
+    );
+    const html =
+      '<style>bad</style><script>bad()</script><table><tr><td>甲 &amp; 乙</td><td>丙</td></tr><tr><td>丁</td><td>戊</td></tr></table><img alt="截图描述" src="x">';
+    expect(resolvePasteText('', html)).toBe('甲 & 乙\t丙\n丁\t戊');
+    expect(
+      resolvePasteAction({ items: [img()], text: resolvePasteText('', html) }),
+    ).toBe('insert-plain-text');
+    expect(
+      resolvePasteAction({
+        items: [img()],
+        text: resolvePasteText('', '<img alt="图片" src="x">'),
+      }),
+    ).toBe('upload-files');
+    expect(
+      resolvePasteAction({
+        items: [img(), { kind: 'file', type: 'application/pdf' }],
+        text: resolvePasteText('', html),
+      }),
+    ).toBe('upload-files');
+  });
+
   it('纯图片截图（无文字）：继续上传附件（截图粘贴流不变）', () => {
     expect(
       resolvePasteAction({

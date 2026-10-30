@@ -152,6 +152,40 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+describe('Office HTML 粘贴（NW-128）', () => {
+  it('plain 为空时仍插入 HTML 文字，不上传渲染快照，也不带入 HTML 属性', () => {
+    const onPaste = vi.fn();
+    const onChange = vi.fn();
+    const { container } = render(
+      <MentionEditor autoFocus={false} onPaste={onPaste} onChange={onChange} />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    editor.focus();
+    caret(editor, 0);
+    const original = document.execCommand;
+    document.execCommand = vi.fn(() => false);
+    try {
+      fireEvent.paste(editor, {
+        clipboardData: {
+          items: [{ kind: 'file', type: 'image/png' }],
+          getData: (type: string) =>
+            type === 'text/html'
+              ? '<html><head><style>.MsoNormal{color:red}</style></head><body><!--StartFragment--><p class="MsoNormal">季度<span onclick="bad()">报告</span></p><p>下一页<br>总结</p><img src="file:///snapshot.png"><!--EndFragment--></body></html>'
+              : '',
+        },
+      });
+      expect(onPaste).not.toHaveBeenCalled();
+      expect(getSerializedEditorText(editor)).toBe('季度报告\n下一页\n总结');
+      expect(editor.querySelector('p, span, img, style, [onclick]')).toBeNull();
+      expect(onChange).toHaveBeenCalled();
+    } finally {
+      document.execCommand = original;
+    }
+  });
+});
+
 describe('触发规则', () => {
   it('文件路径允许点和斜杠，空白结束引用', () => {
     expect(detectMention('分析 @output/报告.md')).toMatchObject({

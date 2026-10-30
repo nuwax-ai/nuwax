@@ -22,8 +22,65 @@ export interface PasteClipboardItemLike {
 export interface ResolvePasteActionInput {
   /** DataTransfer.items 的轻量快照（同步遍历展开） */
   items: readonly PasteClipboardItemLike[] | null;
-  /** text/plain flavor 内容（paste 事件内可同步读取） */
+  /** text/plain 或 HTML 中提取的纯文字（paste 事件内同步读取） */
   text: string;
+}
+
+/** plain 缺失时提取 HTML 文字；绝不将剪贴板 DOM 挂入页面。 */
+export function resolvePasteText(text: string, html: string): string {
+  if (text || !html) return text;
+
+  // template 的内容保持 inert，图片、脚本及事件属性均不会在编辑器中生效。
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  template.content
+    .querySelectorAll(
+      'script, style, title, noscript, template, svg, math, iframe, object',
+    )
+    .forEach((node) => node.remove());
+
+  let result = '';
+  const newline = () => {
+    if (result && !result.endsWith('\n')) result += '\n';
+  };
+  const blocks = new Set([
+    'P',
+    'DIV',
+    'LI',
+    'UL',
+    'OL',
+    'H1',
+    'H2',
+    'H3',
+    'H4',
+    'H5',
+    'H6',
+    'BLOCKQUOTE',
+    'PRE',
+    'TR',
+    'TABLE',
+  ]);
+  const visit = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      result += (node.textContent ?? '').replace(/[\t\r\n ]+/g, ' ');
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = (node as Element).tagName;
+    if (tag === 'BR') {
+      result += '\n';
+      return;
+    }
+    if (blocks.has(tag)) newline();
+    node.childNodes.forEach(visit);
+    if (tag === 'TD' || tag === 'TH') result += '\t';
+    if (blocks.has(tag)) newline();
+  };
+  template.content.childNodes.forEach(visit);
+  return result
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim();
 }
 
 export function resolvePasteAction({

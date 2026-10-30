@@ -55,7 +55,7 @@ import type {
   MentionItem,
 } from '../MentionPopup/types';
 import styles from './index.less';
-import { resolvePasteAction } from './resolvePasteAction';
+import { resolvePasteAction, resolvePasteText } from './resolvePasteAction';
 
 const cx = classNames.bind(styles);
 
@@ -2176,7 +2176,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const handlePasteEvent = useCallback(
       (e: React.ClipboardEvent<HTMLDivElement>) => {
         const clipboardData = e.clipboardData;
-        const text = clipboardData?.getData('text/plain') ?? '';
+        const text = resolvePasteText(
+          clipboardData?.getData('text/plain') ?? '',
+          clipboardData?.getData('text/html') ?? '',
+        );
 
         const action = resolvePasteAction({
           items: clipboardData?.items
