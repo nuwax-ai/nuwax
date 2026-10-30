@@ -653,6 +653,71 @@ describe('preserveOptimisticMessageTail', () => {
     ]);
   });
 
+  it.each([
+    [MessageStatusEnum.Stopped, ''],
+    [MessageStatusEnum.Stopped, '部分输出'],
+    [MessageStatusEnum.Error, ''],
+    [MessageStatusEnum.Complete, ''],
+  ])(
+    '恢复快照能补齐未收到协议终态的本地 %s 消息（正文 %s）',
+    (status, text) => {
+      const current = [
+        {
+          ...persistedUser('first question', 101),
+          clientRenderKey: optimisticUserId,
+        },
+        {
+          id: 103,
+          role: AssistantRoleEnum.ASSISTANT,
+          clientRenderKey: optimisticAsstId,
+          text,
+          status,
+        } as MessageInfo,
+      ];
+      const recovered = {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '服务端完整回答',
+        status: MessageStatusEnum.Complete,
+        finalResult: { success: true, outputText: '服务端完整回答' },
+      } as MessageInfo;
+      const merged = reconcileConversationSnapshotMessages(current, [
+        persistedUser('first question', 101),
+        recovered,
+      ]);
+      expect(merged[1]).toMatchObject({
+        ...recovered,
+        clientRenderKey: optimisticAsstId,
+      });
+      // 接受已落库终态后仍维持已有防闪烁合同。
+      expect(
+        reconcileConversationSnapshotMessages(merged, [
+          persistedUser('first question', 101),
+          { ...recovered, text: '滞后快照' },
+        ])[1].text,
+      ).toBe('服务端完整回答');
+    },
+  );
+
+  it('恢复中的残缺快照不能覆盖本地中断前内容', () => {
+    const local = {
+      id: 103,
+      role: AssistantRoleEnum.ASSISTANT,
+      clientRenderKey: optimisticAsstId,
+      text: '中断前输出',
+      status: MessageStatusEnum.Stopped,
+    } as MessageInfo;
+    const incoming = {
+      ...local,
+      clientRenderKey: undefined,
+      text: '',
+      status: MessageStatusEnum.Incomplete,
+    };
+    expect(
+      reconcileConversationSnapshotMessages([local], [incoming])[0].text,
+    ).toBe('中断前输出');
+  });
+
   it('keeps locally finalized assistant content when the persisted snapshot differs', () => {
     const localFinalResult = {
       success: true,

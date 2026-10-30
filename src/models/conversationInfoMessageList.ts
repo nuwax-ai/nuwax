@@ -337,6 +337,21 @@ const preserveFinalizedMessagePresentation = (
     return incoming;
   }
 
+  // close / 网络错误只给本地占位收尾，并不证明回答已完整到达。
+  // 不能把这类空/中断消息冻结，否则后续落库快照中的完整回答永远被本地空值盖掉。
+  const canRecoverInterruptedAnswer =
+    local.role === AssistantRoleEnum.ASSISTANT &&
+    !local.finalResult &&
+    !isIncompleteStatus(local.status) &&
+    (local.status === MessageStatusEnum.Stopped ||
+      local.status === MessageStatusEnum.Error ||
+      !(local.text || '').trim()) &&
+    !isIncompleteStatus(incoming.status) &&
+    Boolean((incoming.text || incoming.finalResult?.outputText || '').trim());
+  if (canRecoverInterruptedAnswer) {
+    return { ...incoming, clientRenderKey: local.clientRenderKey };
+  }
+
   // 流式中的消息（loading/incomplete）仍以快照为准；已终态
   // （Complete/Error/Stopped/null）才冻结本地呈现，避免结束后的轮询覆盖闪烁。
   if (!local.finalResult && isIncompleteStatus(local.status)) {
