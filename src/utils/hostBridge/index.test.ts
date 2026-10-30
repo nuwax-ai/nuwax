@@ -42,6 +42,17 @@ describe('hostBridge（统一对外接入层）', () => {
     host: { getProduct: () => 'nuwax' },
   });
 
+  it('updater 状态订阅透传注销函数，旧宿主缺失订阅能力时安全降级', () => {
+    const dispose = vi.fn();
+    const onStateChange = vi.fn(() => dispose);
+    const listener = vi.fn();
+    (window as any).NuwaClawBridge = { updater: { onStateChange } };
+    expect(hostBridge.updater.onStateChange(listener)).toBe(dispose);
+    expect(onStateChange).toHaveBeenCalledWith(listener);
+    (window as any).NuwaClawBridge = { updater: {} };
+    expect(() => hostBridge.updater.onStateChange(listener)()).not.toThrow();
+  });
+
   describe('localFiles.getApi', () => {
     it('只透传真实商业宿主的文件能力，旧宿主和社区宿主降级', () => {
       const fileApi = { getCapabilities: vi.fn() };

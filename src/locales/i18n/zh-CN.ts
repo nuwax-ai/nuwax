@@ -1626,6 +1626,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "处理路径跳转失败，请检查菜单路径是否存在",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "项目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "暂无项目",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions": "展开显示",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "收起",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "新建会话",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "项目新建会话暂未接入，当前无法创建。",

@@ -1502,6 +1502,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.home": "主頁",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "項目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "暫無項目",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions": "展開顯示",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "收起",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail": "項目詳情",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失敗",

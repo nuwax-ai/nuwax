@@ -1,10 +1,12 @@
+import { subscribeHostVisibility } from '@/services/hostVisibility';
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 
 /**
  * 宿主客户端更新状态服务（logo 旁版本徽标消费）。
  *
  * 数据源：hostBridge.updater.getState()（壳主进程 autoUpdater 单例）。
- * 主动拉取 + 自适应轮询——下载/检查/安装中 2s，其余 30s；状态变化即时通知订阅者。
+ * 宿主状态推送优先，下载/检查/安装中 2s、其余 30s 轮询兜底。
+ * 前台/网络恢复时补查服务器（5 分钟节流），打开更新日志时强制补查。
  * 浏览器 / 旧宿主（无 updater 命名空间）available() 为 false，徽标整体隐藏。
  */
 
@@ -12,10 +14,16 @@ export type ClientUpdateListener = (state: ClientUpdateState | null) => void;
 
 const ACTIVE_POLL_INTERVAL_MS = 2_000;
 const IDLE_POLL_INTERVAL_MS = 30_000;
+const FOREGROUND_CHECK_INTERVAL_MS = 5 * 60_000;
 
 let state: ClientUpdateState | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let started = false;
+let checkTask: Promise<void> | null = null;
+let lastCheckAt: number | null = null;
+let unsubscribeHostVisibility: (() => void) | undefined;
+let unsubscribeState: (() => void) | undefined;
+let refreshRevision = 0;
 const listeners = new Set<ClientUpdateListener>();
 
 function notify(): void {
@@ -32,9 +40,10 @@ export function isAvailable(): boolean {
 
 async function refresh(): Promise<void> {
   if (!isAvailable()) return;
+  const revision = ++refreshRevision;
   try {
     const next = await hostBridge.updater.getState();
-    if (next && typeof next === 'object') {
+    if (revision === refreshRevision && next && typeof next === 'object') {
       state = next;
       notify();
     }
@@ -60,6 +69,44 @@ function schedule(): void {
   );
 }
 
+/** 静默核对通道最新信息；检查完成后立即读取宿主状态，无需等待下一轮轮询。 */
+export function checkLatest(force = true): Promise<void> {
+  if (!isAvailable()) return Promise.resolve();
+  if (checkTask) return checkTask;
+  if (
+    state?.status === 'downloading' ||
+    state?.status === 'downloaded' ||
+    state?.status === 'installing' ||
+    (!force &&
+      lastCheckAt !== null &&
+      Date.now() - lastCheckAt < FOREGROUND_CHECK_INTERVAL_MS)
+  )
+    return Promise.resolve();
+  lastCheckAt = Date.now();
+  checkTask = Promise.resolve()
+    .then(() => hostBridge.updater.check())
+    .catch(() => {
+      // 自动刷新失败保留已知版本，下载前由宿主再次核对目标。
+    })
+    .then(refresh)
+    .finally(() => {
+      checkTask = null;
+      schedule();
+    });
+  return checkTask;
+}
+
+function onForeground(): void {
+  if (
+    !started ||
+    document.visibilityState === 'hidden' ||
+    navigator.onLine === false
+  )
+    return;
+  // 关于页可能已经查到新版，先读取缓存，再按节流规则补查服务器。
+  void refresh().then(() => checkLatest(false));
+}
+
 export function getState(): ClientUpdateState | null {
   return state;
 }
@@ -75,13 +122,40 @@ export function subscribe(listener: ClientUpdateListener): () => void {
 
 /** 启动轮询（幂等；不可用环境 no-op）。首个订阅者挂载时调用。 */
 export function start(): void {
-  if (started || !isAvailable()) return;
+  if (!isAvailable()) return;
+  if (started) {
+    onForeground();
+    return;
+  }
   started = true;
+  unsubscribeState = hostBridge.updater.onStateChange((next) => {
+    refreshRevision += 1;
+    state = next;
+    if (next.status === 'available' || next.status === 'not-available') {
+      lastCheckAt = Date.now();
+    }
+    notify();
+    schedule();
+  });
+  window.addEventListener('focus', onForeground);
+  window.addEventListener('online', onForeground);
+  document.addEventListener('visibilitychange', onForeground);
+  unsubscribeHostVisibility = subscribeHostVisibility((visible) => {
+    if (visible) onForeground();
+  });
+  // 启动首查由宿主统一调度，前端首次挂载只同步状态，避免重复请求。
   void refresh().then(schedule);
 }
 
 export function stop(): void {
   started = false;
+  window.removeEventListener('focus', onForeground);
+  window.removeEventListener('online', onForeground);
+  document.removeEventListener('visibilitychange', onForeground);
+  unsubscribeHostVisibility?.();
+  unsubscribeHostVisibility = undefined;
+  unsubscribeState?.();
+  unsubscribeState = undefined;
   if (timer) {
     clearTimeout(timer);
     timer = null;
@@ -138,5 +212,8 @@ export async function install(): Promise<{ success: boolean; error?: string }> {
 export function __resetForTest(): void {
   stop();
   state = null;
+  checkTask = null;
+  lastCheckAt = null;
+  refreshRevision += 1;
   listeners.clear();
 }

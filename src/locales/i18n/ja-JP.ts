@@ -1502,6 +1502,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.home": "家",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "プロジェクト",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "プロジェクトはまだありません",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions": "さらに表示",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "折りたたみ",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail": "プロジェクト詳細",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失敗",

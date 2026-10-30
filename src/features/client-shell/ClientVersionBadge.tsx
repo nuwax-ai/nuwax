@@ -12,6 +12,7 @@ import { InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Modal, Popover, Progress } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  checkLatest,
   isAvailable,
   start,
   subscribe,
@@ -58,6 +59,10 @@ const ClientVersionBadge: React.FC = () => {
   const actionInFlight = useRef(false);
   const installationActive =
     installPhase === 'running' || state?.status === 'installing';
+
+  useEffect(() => {
+    if (popoverOpen) void checkLatest();
+  }, [popoverOpen]);
 
   useEffect(() => {
     mounted.current = true;

@@ -53,6 +53,34 @@
   padding: @paddingLg 0;
 }
 
+.child-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px @paddingXxs 4px 38px;
+
+  button {
+    padding: 2px 0;
+    border: 0;
+    border-radius: @borderRadiusSm;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    font-family: inherit;
+    font-size: @fontSizeSm;
+    line-height: 20px;
+    cursor: pointer;
+
+    &:hover {
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    &:focus-visible {
+      outline: @lineWidthBold solid @colorPrimary;
+      outline-offset: 2px;
+    }
+  }
+}
+
 .project-empty {
   display: flex;
   flex-direction: column;
@@ -417,6 +445,10 @@
 .compact {
   gap: 0;
   padding: 0;
+
+  .child-pagination {
+    padding-left: 15px;
+  }
 
   .row {
     position: relative;

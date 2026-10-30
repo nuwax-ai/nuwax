@@ -18,6 +18,7 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 vi.mock('./clientUpdateService', () => ({
+  checkLatest: vi.fn(),
   isAvailable: () => true,
   start: vi.fn(),
   subscribe: (cb: (s: ClientUpdateState | null) => void) => {
@@ -60,7 +61,12 @@ describe('ClientVersionBadge', () => {
         name: 'PC.Components.ClientUpdate.downloading',
       }),
     ).toBeInTheDocument();
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 1_100);
+        }),
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(serviceMock.download).not.toHaveBeenCalled();
     expect(serviceMock.install).not.toHaveBeenCalled();
@@ -157,7 +163,12 @@ describe('ClientVersionBadge', () => {
         name: 'PC.Components.ClientUpdate.installing',
       }),
     ).toBeInTheDocument();
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 1_100);
+        }),
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
     // 成功后保留局部忙碌状态到进程退出。
     await act(async () => finishInstall({ success: true }));

@@ -1626,6 +1626,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "Path resolution failed. Please check if the menu path exists",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "Projects",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "No projects yet",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions": "Show more",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "Collapse",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "New conversation",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "Creating a conversation in this project is not available yet.",

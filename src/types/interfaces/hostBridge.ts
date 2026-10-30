@@ -455,6 +455,8 @@ export interface HostBridgeContract {
   localFiles: HostLocalFilesBridge;
   updater: {
     getState(): Promise<ClientUpdateState | null>;
+    /** 新宿主推送更新状态；旧宿主由 getState 轮询兼容。 */
+    onStateChange?(listener: (state: ClientUpdateState) => void): () => void;
     check(): Promise<ClientUpdateCheckResult | null>;
     /** installAfterDownload 为 true 时，下载并继续安装、重启；否则仅下载。 */
     download(): Promise<{ success: boolean; error?: string }>;
