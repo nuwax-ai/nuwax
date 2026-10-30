@@ -1,4 +1,5 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import AppStartup from '@/components/business-component/AppStartup';
 import ImageCaptcha, {
   imageCaptchaRules,
   type ImageCaptchaRef,
@@ -330,6 +331,7 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let redirectStarted = false;
     const loadIdps = async () => {
       const returned = await completeDesktopIdpReturn();
       if (cancelled || returned === 'started' || returned === 'cancelled')
@@ -355,6 +357,7 @@ const Login: React.FC = () => {
                 redirect: getIdpRedirect(),
                 replace: true,
               });
+              redirectStarted = result === 'started' || result === 'cancelled';
               if (!cancelled && result === 'failed') {
                 setIdpItems(filterIdpByUa(items, navigator.userAgent));
                 message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
@@ -366,7 +369,7 @@ const Login: React.FC = () => {
           // 列表失败回落普通登录
           .catch(() => undefined)
           .finally(() => {
-            if (!cancelled) setIdpReady(true);
+            if (!cancelled && !redirectStarted) setIdpReady(true);
           })
       );
     };
@@ -796,6 +799,9 @@ const Login: React.FC = () => {
       value: LoginTypeEnum.Code + '',
     },
   ];
+
+  // 配置和登录方式就绪后一次呈现整页，避免先露出左侧介绍、再补表单。
+  if (!loadEnd || !idpReady) return <AppStartup />;
 
   return (
     <ConfigProvider

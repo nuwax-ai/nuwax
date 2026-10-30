@@ -33,6 +33,7 @@ vi.mock('@/services/i18nRuntime', () => ({
       : key,
 }));
 vi.mock('./clientUpdateService', () => ({
+  checkLatest: vi.fn(),
   isAvailable: () => mocks.clientAvailable,
   start: () => mocks.startClient(),
   subscribe: (listener: (state: ClientUpdateState | null) => void) => {
