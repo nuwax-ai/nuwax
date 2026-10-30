@@ -355,12 +355,14 @@ describe('SkillListView·分页与开关闭环', () => {
         pageOf([skill({ id: 22, targetId: 202, name: '第二页技能' })], 2, 2),
       );
     const { container } = renderView({ type: 'system' });
-    await screen.findByText('第一页技能');
 
-    // 滚动容器触底 → 追加第二页
+    // 首屏返回前设置尺寸，避免 jsdom 的零高度先触发自动补拉。
     const scroller = container.firstElementChild as HTMLElement;
     Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
     Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    await screen.findByText('第一页技能');
+
+    // 滚动容器触底 → 追加第二页
     fireEvent.scroll(scroller);
     await screen.findByText('第二页技能');
     expect(apiPublishedSkillList).toHaveBeenCalledTimes(2);
