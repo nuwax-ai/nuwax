@@ -20,6 +20,7 @@ import type {
 } from '@/components/ChatInputHome/MentionPopup/types';
 import ModelSelector from '@/components/ChatInputHome/ModelSelector';
 import SpaceSelector from '@/components/ChatInputHome/SpaceSelector';
+import { useNativeCapture } from '@/components/ChatInputHome/useNativeCapture';
 import { useSlashPlugins } from '@/components/ChatInputHome/useSlashPlugins';
 import WorkspaceDirPickerModal from '@/components/ChatInputHome/WorkspaceDirPickerModal';
 import ChatUploadFile from '@/components/ChatUploadFile';
@@ -902,6 +903,13 @@ const ChatInputUnifiedImpl: React.FC<
     },
     [applyServerUploadResult, getDefaultFileName, wholeDisabled],
   );
+
+  useNativeCapture({
+    editorRef: mentionEditorRef,
+    scope: `${draftScope ?? ownConversationId ?? 'new'}:${agentId ?? ''}`,
+    disabled: wholeDisabled || !hasPermission || isSandboxUnavailable,
+    onFiles: uploadFilesToServer,
+  });
 
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent<HTMLDivElement>) => {
