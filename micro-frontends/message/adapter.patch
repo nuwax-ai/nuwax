@@ -723,7 +723,7 @@ index 0000000..36ba2ec
 +  );
 +}
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index c32d4fe..f94f7cf 100644
+index b45dfd6..a50e1b4 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,4 +1,5 @@
@@ -732,16 +732,16 @@ index c32d4fe..f94f7cf 100644
  import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, CardActionState, Id, MessageDto } from '../api/types';
-@@ -145,6 +146,8 @@ import { useChatStore } from '../store/chat';
+@@ -167,6 +168,8 @@ import { useChatStore } from '../store/chat';
  import ChatAnnouncementPanel from './ChatAnnouncementPanel';
  import ChatDocsPanel from './ChatDocsPanel';
  import ChatFilesPanel from './ChatFilesPanel';
 +import ChatTasksPanel from './ChatTasksPanel';
 +import { conversationTasksProvider } from '../tasksRuntime';
  import ChatJoinRequestsPanel from './ChatJoinRequestsPanel';
+ import ChatLinkPanel from './ChatLinkPanel';
  import ChatMembersPanel from './ChatMembersPanel';
- import ChatPinPanel from './ChatPinPanel';
-@@ -1020,8 +1023,8 @@ export default function ChatWindow() {
+@@ -1083,8 +1086,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -752,7 +752,7 @@ index c32d4fe..f94f7cf 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -1039,8 +1042,8 @@ export default function ChatWindow() {
+@@ -1102,8 +1105,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -763,16 +763,26 @@ index c32d4fe..f94f7cf 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1700,7 +1703,7 @@ export default function ChatWindow() {
+@@ -2020,7 +2023,7 @@ export default function ChatWindow() {
    //   ★下面 active 的回退（不在 visibleTabs ⇒ 弹回 ANCHOR_TAB）**自动兜住**
    //   "用户正停在资料库页时切到智能体/自环会话"：那一帧 docs 从可见集消失，
    //   回退逻辑当帧把他带回「消息」，不需要另写 effect。
 -  const visibleTabs = visibleTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p);
 +  const visibleTabs = visibleTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p, conversationTasksProvider.available);
-   const active = visibleTabs.includes(activeTab) ? activeTab : ANCHOR_TAB;
    /**
+    * ★★DEV-434：当前选中的是不是一个**真实存在**的自定义链接。
+    *
+@@ -2114,8 +2117,7 @@ export default function ChatWindow() {
+       return next;
+     });
+     setActiveTab(ANCHOR_TAB);
+-  };
+-  /**
++  };  /**
     * ★★DEV-256（用户原话「把搜索放到右边去只展示搜索图标」）：
-@@ -1928,13 +1931,13 @@ export default function ChatWindow() {
+    * 把**固定工具位**从标签行里分出去，交给顶栏右侧渲染成图标按钮。
+    *
+@@ -2488,13 +2490,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -792,7 +802,7 @@ index c32d4fe..f94f7cf 100644
      };
    });
  
-@@ -4364,7 +4367,7 @@ export default function ChatWindow() {
+@@ -4924,7 +4926,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -801,7 +811,7 @@ index c32d4fe..f94f7cf 100644
    };
  
    const removePending = (id: string): void => {
-@@ -4973,7 +4976,7 @@ export default function ChatWindow() {
+@@ -5533,7 +5535,7 @@ export default function ChatWindow() {
    // ★★DEV-323 ③b：isSelfP2p 同样**必须成对传**（用户拍板口径就是"隐藏标签页**并**
    //   去掉添加菜单里的入口"）—— 只改上面那一处，自聊里的「+」照样能把资料库加回来，
    //   加完顶部什么都不多，正是这条注释警告过的那种死按钮。
@@ -810,7 +820,7 @@ index c32d4fe..f94f7cf 100644
    const plusItems: MenuProps['items'] = [
      {
        key: 'add',
-@@ -5048,6 +5051,8 @@ export default function ChatWindow() {
+@@ -5624,6 +5626,8 @@ export default function ChatWindow() {
        />
      ) : active === 'files' ? (
        <ChatFilesPanel convId={activeConvId} onClose={closeSide} />
@@ -819,7 +829,7 @@ index c32d4fe..f94f7cf 100644
      ) : active === 'search' ? (
        <ChatSearchPanel convId={activeConvId} onGoMessages={closeSide} onClose={closeSide} />
      ) : active === 'announcement' ? (
-@@ -5292,7 +5297,7 @@ export default function ChatWindow() {
+@@ -5868,7 +5872,7 @@ export default function ChatWindow() {
                      ),
                      disabled: notifyToggleDisabled(notifySt),
                    },
@@ -828,7 +838,7 @@ index c32d4fe..f94f7cf 100644
                      key: 'notifyTest',
                      label: '发送测试通知',
                      // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
-@@ -5300,7 +5305,7 @@ export default function ChatWindow() {
+@@ -5876,7 +5880,7 @@ export default function ChatWindow() {
                      //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
                      //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
                      disabled: notifyToggleDisabled(notifySt) || !notifyOn,
@@ -837,7 +847,7 @@ index c32d4fe..f94f7cf 100644
                    // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
                    //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
                    //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
-@@ -6053,7 +6058,7 @@ export default function ChatWindow() {
+@@ -6786,7 +6790,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
@@ -846,27 +856,37 @@ index c32d4fe..f94f7cf 100644
                  onOpenChange={(v) => { if (!v) setImgMenu(null); }}
                  menu={{
                    /* ★★DEV-223：这里原来写死单项，现在走 imgMenuStickerItem ——
-@@ -6124,6 +6129,7 @@ export default function ChatWindow() {
-         /* ★★DEV-265：决定弹窗里**列出哪些项**（单聊不列群专属的那四项）。
-            ★DEV-193 的旧口径"只影响标注、不影响能勾什么"已被 DEV-265 推翻。 */
-         isGroup={isGroup}
+@@ -6909,6 +6913,7 @@ export default function ChatWindow() {
+             if (convId != null) reloadCustomLinks(convId).catch(() => undefined);
+           }
+         }}
 +        tasksAvailable={conversationTasksProvider.available}
        />
  
+       {/* ★★DEV-434：添加 / 编辑自定义链接（同一个弹窗两种模式）。
+@@ -6924,8 +6929,7 @@ export default function ChatWindow() {
+         onClose={() => {
+           setAddLinkOpen(false);
+           setEditLinkKey(null);
+-        }}
+-      />
++        }}      />
+ 
        {/* ★★DEV-256：顶栏右侧那个「添加群员」图标打开的弹窗。
+           ★与「成员」面板里那个图标用的是**同一个组件** —— 两个入口一份实现。
 diff --git a/nuwax-im-web/src/components/ManageTabsModal.tsx b/nuwax-im-web/src/components/ManageTabsModal.tsx
-index 288ae89..c7babdc 100644
+index ebcfad1..8c213e7 100644
 --- a/nuwax-im-web/src/components/ManageTabsModal.tsx
 +++ b/nuwax-im-web/src/components/ManageTabsModal.tsx
-@@ -49,6 +49,7 @@ export default function ManageTabsModal({
-   onChange,
-   onClose,
-   isGroup = false,
+@@ -56,6 +56,7 @@ export default function ManageTabsModal({
+   onRemoveLink,
+   onEditLink,
+   onMoveLink,
 +  tasksAvailable = false,
  }: {
    open: boolean;
    keys: readonly TopTabKey[];
-@@ -67,8 +68,9 @@ export default function ManageTabsModal({
+@@ -108,8 +109,9 @@ export default function ManageTabsModal({
     * ⇒ 单聊里列出它们，等于让用户去勾一个"勾完什么都不会发生"的东西。
     */
    isGroup?: boolean;
@@ -1774,7 +1794,7 @@ index 0000000..04c32a3
 +});
 diff --git a/nuwax-im-web/src/lib/conversationTasks.ts b/nuwax-im-web/src/lib/conversationTasks.ts
 new file mode 100644
-index 0000000..c24e4e9
+index 0000000..d1e4e18
 --- /dev/null
 +++ b/nuwax-im-web/src/lib/conversationTasks.ts
 @@ -0,0 +1,158 @@
@@ -2425,7 +2445,7 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index 8a17383..2263507 100644
+index 400b0f7..4ce5150 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
 @@ -1,3 +1,4 @@
@@ -2961,7 +2981,7 @@ index 9d92f0d..8387ffb 100644
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
 diff --git a/nuwax-im-web/tsconfig.test.json b/nuwax-im-web/tsconfig.test.json
-index cc4ecf8..91c36b9 100644
+index c888813..f6697fd 100644
 --- a/nuwax-im-web/tsconfig.test.json
 +++ b/nuwax-im-web/tsconfig.test.json
 @@ -38,6 +38,7 @@
