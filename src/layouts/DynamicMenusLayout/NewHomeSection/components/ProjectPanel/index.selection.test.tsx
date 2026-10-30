@@ -205,6 +205,137 @@ describe('ProjectPanel 选中关系', () => {
     window.localStorage.clear();
   });
 
+  it('各项目独立展开，关闭项目、全部折叠或重新挂载后恢复最近 5 条', async () => {
+    const conversations = Array.from({ length: 12 }, (_, index) => ({
+      ...buildConversation(index + 1),
+      modified: `2026-09-12T06:00:${String(index + 1).padStart(2, '0')}.000Z`,
+    }));
+    respondPage(defaultRecords(), {
+      1: conversations,
+      2: Array.from({ length: 6 }, (_, index) => buildConversation(21 + index)),
+    });
+    const ref = createRef<ProjectPanelHandle>();
+    const { rerender, unmount } = render(<ProjectPanel ref={ref} compact />);
+    await screen.findByText('会话12');
+    await screen.findByText('会话21');
+    const first = childrenContainerOf('项目一')!;
+    const second = childrenContainerOf('项目二')!;
+    const names = (container: HTMLElement) =>
+      [...container.querySelectorAll('[class*="child-name"]')].map(
+        (element) => element.textContent,
+      );
+    const button = (container: HTMLElement, key: string) =>
+      [...container.querySelectorAll('button')].find((element) =>
+        element.textContent?.includes(`NewHomeSection.${key}`),
+      )!;
+
+    expect(names(first)).toEqual([
+      '会话12',
+      '会话11',
+      '会话10',
+      '会话9',
+      '会话8',
+    ]);
+    expect(names(second)).toHaveLength(5);
+    expect(button(first, 'expandSessions').textContent).toBe(
+      'PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions',
+    );
+    expect(button(first, 'collapseSessions')).toBeUndefined();
+
+    fireEvent.click(button(first, 'expandSessions'));
+    expect(names(first)).toHaveLength(10);
+    expect(names(second)).toHaveLength(5);
+    expect(button(first, 'expandSessions').textContent).toBe(
+      'PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions',
+    );
+
+    fireEvent.click(button(first, 'expandSessions'));
+    expect(names(first)).toHaveLength(12);
+    expect(button(first, 'expandSessions')).toBeUndefined();
+    expect(button(first, 'collapseSessions')).toBeUndefined();
+    rerender(<ProjectPanel ref={ref} compact activeConversationId="3" />);
+    expect(names(first)).toHaveLength(12);
+    fireEvent.click(button(second, 'expandSessions'));
+    expect(names(second)).toHaveLength(6);
+
+    fireEvent.click(screen.getByText('项目一'));
+    expect(first).toHaveAttribute('hidden');
+    fireEvent.click(screen.getByText('项目一'));
+    expect(first).not.toHaveAttribute('hidden');
+    expect(names(first)).toHaveLength(5);
+    expect(names(second)).toHaveLength(6);
+
+    fireEvent.click(button(first, 'expandSessions'));
+    expect(names(first)).toHaveLength(10);
+    act(() => ref.current?.toggleAll());
+    expect(first).toHaveAttribute('hidden');
+    expect(second).toHaveAttribute('hidden');
+    act(() => ref.current?.toggleAll());
+    expect(first).not.toHaveAttribute('hidden');
+    expect(second).not.toHaveAttribute('hidden');
+    expect(names(first)).toHaveLength(5);
+    expect(names(second)).toHaveLength(5);
+    expect(conversationsMock).toHaveBeenCalledTimes(2);
+    // 展示排序不改写接口回包，后续事件核对仍使用完整会话集合。
+    expect(conversations.map(({ id }) => id)).toEqual(
+      Array.from({ length: 12 }, (_, index) => index + 1),
+    );
+
+    unmount();
+    render(<ProjectPanel compact />);
+    await screen.findByText('会话12');
+    const reloaded = childrenContainerOf('项目一')!;
+    expect(names(reloaded)).toHaveLength(5);
+    expect(button(reloaded, 'expandSessions').textContent).toBe(
+      'PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions',
+    );
+  });
+
+  it('当前打开的旧会话保留选中定位，切换会话保持展开数量', async () => {
+    const resolved = vi.fn();
+    respondPage([buildRecord()], {
+      1: Array.from({ length: 12 }, (_, index) => buildConversation(index + 1)),
+    });
+    const { rerender } = render(
+      <ProjectPanel
+        activeConversationId="12"
+        onActiveChildResolved={resolved}
+      />,
+    );
+    await screen.findByText('会话12');
+    const children = childrenContainerOf('项目一')!;
+    expect(children.querySelectorAll('[class*="child-name"]')).toHaveLength(5);
+    expect(screen.queryByText('会话5')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('会话12').closest('[aria-current]'),
+    ).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(resolved).toHaveBeenLastCalledWith('12'));
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /NewHomeSection.expandSessions/,
+      }),
+    );
+    expect(children.querySelectorAll('[class*="child-name"]')).toHaveLength(10);
+    expect(
+      screen.queryByRole('button', {
+        name: /NewHomeSection.collapseSessions/,
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('会话12').closest('[aria-current]')).toBeTruthy();
+
+    rerender(
+      <ProjectPanel
+        activeConversationId="11"
+        onActiveChildResolved={resolved}
+      />,
+    );
+    await waitFor(() => expect(resolved).toHaveBeenLastCalledWith('11'));
+    expect(children.querySelectorAll('[class*="child-name"]')).toHaveLength(10);
+    expect(screen.getByText('会话11').closest('[aria-current]')).toBeTruthy();
+    expect(screen.queryByText('会话12')).not.toBeInTheDocument();
+  });
+
   it('项目新建任务透传列表中的电脑与工作目录，不额外请求项目详情', async () => {
     respondPage([
       buildRecord({
