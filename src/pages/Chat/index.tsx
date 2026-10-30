@@ -2180,6 +2180,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     hideTitle: chromeFlags.hideTitle,
     hideTerminal: chromeFlags.hideTerminal,
     hideTree: chromeFlags.hideTree,
+    hideChatBox: chromeFlags.hideChatBox,
     agentId,
     conversationInfo,
     setConversationInfo,
