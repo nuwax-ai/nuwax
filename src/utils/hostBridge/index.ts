@@ -347,10 +347,19 @@ export const native = {
    */
   async openWindow(
     path: string,
+    options?: { purpose?: 'page' | 'payment' },
   ): Promise<{ success: boolean; error?: string }> {
     const open = getBridge()?.native?.openWindow;
     if (!open) return { success: false };
     try {
+      if (options) return await open(path, options);
+      // 旧宿主会忽略可选参数；相对路径与同源业务路由保留原调用形状。
+      if (
+        /^https?:\/\//i.test(path) &&
+        new URL(path).origin !== window.location.origin
+      ) {
+        return await open(path, { purpose: 'page' });
+      }
       return await open(path);
     } catch (e) {
       return {

@@ -108,6 +108,7 @@ describe('积分流水页增购复用支付窗口', () => {
     await waitFor(() => expect(onCancel).toHaveBeenCalledOnce());
     expect(mocks.openNative).toHaveBeenCalledWith(
       'https://cashier.example/credits',
+      { purpose: 'payment' },
     );
     expect(open).not.toHaveBeenCalled();
   });
