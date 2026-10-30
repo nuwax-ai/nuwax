@@ -324,6 +324,8 @@ export interface MentionEditorProps {
  * 用于父组件控制编辑器
  */
 export interface MentionEditorHandle {
+  /** 仅查询本输入框的 DOM 焦点，供客户端截图认领使用。 */
+  hasFocus?: () => boolean;
   /** 清空编辑器内容 */
   clear: () => void;
   /**

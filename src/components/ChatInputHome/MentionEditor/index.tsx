@@ -1557,6 +1557,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
+      hasFocus: () => !!editorRef.current?.contains(document.activeElement),
       clear,
       setEditorText,
       getPlainText,
