@@ -1,10 +1,11 @@
 /**
  * 单栏（style3）首页会话域视图：项目/任务双分组折叠形态（原型同款）。
- * 数据经 HomeSectionDataShell 注入；本文件只管形态——分组头 sticky 吸顶、
+ * 数据经 HomeSectionDataShell 注入；本文件只管形态——固定分组头、独立滚动、
  * 折叠态、项目面板挂载与任务分组触底加载。
  */
 import SvgIcon from '@/components/base/SvgIcon';
 import useCommercialEdition from '@/hooks/useCommercialEdition';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -30,15 +31,17 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   const { aiOSCommercialEdition } = useCommercialEdition();
   const showProjectSection = aiOSCommercialEdition && !shell.projectEmpty;
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
+  const projectScrollRef = useRef<HTMLDivElement | null>(null);
+  const projectScrollShowRef = useScrollbarScrollShow(1000, projectScrollRef);
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表）；NW-149 起记录最后一次
-  // 布局，刷新或重开客户端后保持收起。读取失败由偏好模块回退默认展开
+  // 布局，刷新或重开客户端后保持；首次进入项目收起、任务展开。
   const [projectCollapsed, setProjectCollapsed] = useState(() =>
     readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY),
   );
   const [taskCollapsed, setTaskCollapsed] = useState(() =>
     readCollapsedFlag(TASK_SECTION_COLLAPSED_KEY),
   );
-  // 折叠态就是用户最后一次操作：所有变更入口（分组头点击、滚动置顶展开）
+  // 折叠态就是用户最后一次操作：所有变更入口（分组头点击、全部展开）
   // 都经 state，变更后统一落盘，避免漏记某个入口
   useEffect(() => {
     writeCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY, projectCollapsed);
@@ -133,18 +136,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [taskListVisible, shell]);
 
-  const handleProjectHeaderClick = () => {
-    const container = shell.scrollContainerRef.current;
-    // 从吸顶标题返回项目列表；列表起点仍保留原有的展开/收起操作。
-    if (container && container.scrollTop > 0) {
-      setProjectCollapsed(false);
-      container.scrollTop = 0;
-      return;
-    }
-    setProjectCollapsed((prev) => !prev);
-  };
-
-  // 两个分组头共用滚动包含块；项目可见时，任务才在项目头下方吸顶。
+  // 分组头留在滚动区外，长项目列表不会把任务入口推到视口下方。
   const renderSectionHeader = (options: {
     label: string;
     collapsed: boolean;
@@ -157,7 +149,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
         [styles['task-section-tabs-with-project']]:
           options.task && showProjectSection,
         [styles['section-tabs-collapsed']]: options.collapsed,
-        [styles['section-tabs-sticky']]: true,
+        [styles['section-tabs-fixed']]: true,
       })}
       onClick={options.onToggle}
       role="button"
@@ -190,8 +182,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
             event.stopPropagation();
             setProjectCollapsed(false);
             projectPanelRef.current?.toggleAll();
-            if (shell.scrollContainerRef.current) {
-              shell.scrollContainerRef.current.scrollTop = 0;
+            if (projectScrollRef.current) {
+              projectScrollRef.current.scrollTop = 0;
             }
           }}
         >
@@ -211,10 +203,10 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   );
 
   return (
-    /* 分组头直接放入同一滚动容器，避免各自分组的边界把项目标题顶出。 */
     <div
-      ref={shell.scrollShowRef}
-      className={cx(styles['conversation-list-wrapper'])}
+      className={cx(styles['sidebar-section-wrapper'], {
+        [styles['sidebar-tasks-collapsed']]: taskCollapsed,
+      })}
     >
       {aiOSCommercialEdition && (
         <>
@@ -225,11 +217,12 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
                 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
               ),
               collapsed: projectCollapsed,
-              onToggle: handleProjectHeaderClick,
+              onToggle: () => setProjectCollapsed((prev) => !prev),
             })}
           {/* hidden 而非卸载：ProjectPanel 必须保持挂载，其他入口新建项目后
               上报链（计数/空态）才能驱动分组恢复显示。 */}
           <div
+            ref={projectScrollShowRef}
             className={cx(styles['project-list-section'])}
             hidden={projectCollapsed || shell.projectEmpty}
           >
@@ -254,7 +247,10 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
         onToggle: () => setTaskCollapsed((prev) => !prev),
       })}
       {!taskCollapsed && (
-        <div className={styles['task-list-section']}>
+        <div
+          ref={shell.scrollShowRef}
+          className={styles['conversation-list-wrapper']}
+        >
           <TaskListSection
             compact
             leadingMark

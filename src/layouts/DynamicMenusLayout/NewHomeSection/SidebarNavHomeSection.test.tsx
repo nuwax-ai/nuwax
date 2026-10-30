@@ -66,6 +66,7 @@ describe('style3 侧栏切回同步', () => {
     revalidateVisible.mockClear();
     hasExecutingChildren.mockClear();
     window.localStorage.clear();
+    window.localStorage.setItem(PROJECT_SECTION_COLLAPSED_KEY, '0');
   });
 
   afterEach(() => {
@@ -192,7 +193,24 @@ describe('style3 侧栏切回同步', () => {
     ).toBeNull();
   });
 
-  it('挂载时沿用上次收起的项目分组，展开后清掉偏好', () => {
+  it('项目默认收起，展开后重新挂载仍保持展开', () => {
+    window.localStorage.removeItem(PROJECT_SECTION_COLLAPSED_KEY);
+    const first = render(<SidebarNavHomeSection shell={shell} />);
+    const name = 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab';
+    expect(screen.getByRole('button', { name })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    fireEvent.click(screen.getByRole('button', { name }));
+    first.unmount();
+    render(<SidebarNavHomeSection shell={shell} />);
+    expect(screen.getByRole('button', { name })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('挂载时沿用上次收起的项目分组，展开后保存偏好', () => {
     window.localStorage.setItem(PROJECT_SECTION_COLLAPSED_KEY, '1');
     render(<SidebarNavHomeSection shell={shell} />);
 
@@ -203,9 +221,9 @@ describe('style3 侧栏切回同步', () => {
 
     fireEvent.click(projectHeader);
     expect(projectHeader).toHaveAttribute('aria-expanded', 'true');
-    expect(
-      window.localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY),
-    ).toBeNull();
+    expect(window.localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY)).toBe(
+      '0',
+    );
   });
 
   it('收起任务分组后重新挂载仍保持收起', () => {
@@ -232,7 +250,7 @@ vi.mock('@/hooks/useCommercialEdition', () => ({
   }),
 }));
 
-it('项目授权刷新时，任务吸顶偏移随项目标题显隐同步更新', () => {
+it('项目授权刷新时，任务标题间距随项目标题显隐同步更新', () => {
   commercialState.enabled = false;
   const view = render(<SidebarNavHomeSection shell={shell} />);
   const title = 'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab';
@@ -246,7 +264,7 @@ it('项目授权刷新时，任务吸顶偏移随项目标题显隐同步更新'
   expect(screen.getByText(title)).toBeTruthy();
   expect(taskHeader).toHaveClass('task-section-tabs-with-project');
 
-  // 收起项目内容仍保留项目标题，任务偏移不能提前归零。
+  // 切换项目内容仍保留项目标题与分组间距。
   fireEvent.click(screen.getByText(title));
   expect(taskHeader).toHaveClass('task-section-tabs-with-project');
 
