@@ -13,6 +13,9 @@ vi.mock('@/services/i18nRuntime', () => ({
 vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationList: vi.fn(),
 }));
+vi.mock('@/services/conversationSearch', () => ({
+  apiSearchConversationMessages: vi.fn(),
+}));
 
 vi.mock('@/services/repo', () => ({
   apiRepoSearch: vi.fn(),
@@ -29,6 +32,7 @@ vi.mock('@/services/userProjectApp', () => ({
 }));
 
 import { apiAgentConversationList } from '@/services/agentConfig';
+import { apiSearchConversationMessages } from '@/services/conversationSearch';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import { apiPublishedAgentList } from '@/services/square';
 import {
@@ -57,6 +61,12 @@ const ok = <T>(data: T) => Promise.resolve({ code: '0000', data } as never);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(apiSearchConversationMessages)
+    .mockReset()
+    .mockResolvedValue({
+      code: '0000',
+      data: { items: [], nextCursor: null, hasMore: false },
+    } as never);
 });
 
 describe('stripHtml', () => {
@@ -143,7 +153,12 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
       projectFilter: 'exclude',
     });
     expect(res.hasMore).toBe(true);
-    expect(res.cursor).toEqual({ lastId: 29 });
+    expect(res.cursor).toEqual({
+      lastId: 29,
+      messageBeforeIndex: undefined,
+      taskTitlesDone: false,
+      taskMessagesDone: true,
+    });
   });
 
   it('信封 code 非成功返回空数组', async () => {
@@ -155,6 +170,95 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
     expect(res.items).toEqual([]);
     expect(res.hasMore).toBe(false);
   });
+
+  it('正文命中携带稳定消息定位，空命中页仍推进游标', async () => {
+    mocked.apiAgentConversationList.mockResolvedValue(ok([]) as never);
+    vi.mocked(apiSearchConversationMessages).mockResolvedValueOnce(
+      ok({ items: [], nextCursor: 50, hasMore: true }) as never,
+    );
+    const first = await fetchTaskPage({
+      keyword: '正文',
+      size: 20,
+      cursor: {},
+    });
+    expect(first.items).toEqual([]);
+    expect(first.hasMore).toBe(true);
+    expect(first.cursor).toEqual({
+      lastId: undefined,
+      messageBeforeIndex: 50,
+      taskTitlesDone: true,
+      taskMessagesDone: false,
+    });
+    vi.mocked(apiSearchConversationMessages).mockResolvedValueOnce(
+      ok({
+        items: [
+          {
+            conversation: { id: 7, agentId: 9, topic: '不含关键词的标题' },
+            messageId: 'stable-42',
+            messageIndex: 42,
+            snippet: '命中的正文',
+          },
+        ],
+        nextCursor: 42,
+        hasMore: false,
+      }) as never,
+    );
+    const second = await fetchTaskPage({
+      keyword: '正文',
+      size: 20,
+      cursor: first.cursor,
+    });
+    expect(apiSearchConversationMessages).toHaveBeenLastCalledWith({
+      keyword: '正文',
+      size: 20,
+      beforeIndex: 50,
+    });
+    expect(mocked.apiAgentConversationList).toHaveBeenCalledTimes(1);
+    expect(second.items[0]).toMatchObject({
+      description: '命中的正文',
+      messageLocation: {
+        conversationId: 7,
+        messageId: 'stable-42',
+        messageIndex: 42,
+      },
+    });
+    expect(second.hasMore).toBe(false);
+  });
+
+  it.each(['reject', 'business'] as const)(
+    '正文接口 %s 失败保留标题与可重试游标',
+    async (failure) => {
+      mocked.apiAgentConversationList.mockResolvedValue(
+        ok([{ id: 7, topic: '标题结果' }]) as never,
+      );
+      if (failure === 'reject')
+        vi.mocked(apiSearchConversationMessages).mockRejectedValueOnce(
+          new Error('404'),
+        );
+      else
+        vi.mocked(apiSearchConversationMessages).mockResolvedValueOnce({
+          code: '0001',
+          data: null,
+        } as never);
+      const first = await fetchTaskPage({
+        keyword: '标题',
+        size: 20,
+        cursor: {},
+      });
+      expect(first.items.map((item) => item.name)).toEqual(['标题结果']);
+      expect(first.messageSearchFailed).toBe(true);
+      expect(first.cursor.taskMessagesDone).toBe(false);
+      expect(first.hasMore).toBe(true);
+      const retry = await fetchTaskPage({
+        keyword: '标题',
+        size: 20,
+        cursor: first.cursor,
+      });
+      expect(mocked.apiAgentConversationList).toHaveBeenCalledTimes(1);
+      expect(retry.messageSearchFailed).toBe(false);
+      expect(retry.hasMore).toBe(false);
+    },
+  );
 });
 
 describe('fetchProjectPage（页码分页 + 当页补拉子会话）', () => {
