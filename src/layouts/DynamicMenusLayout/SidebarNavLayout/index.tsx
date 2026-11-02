@@ -462,6 +462,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   return (
     <div
       className={navigationClassName}
+      data-theme-part="sidebar"
       ref={rootRef}
       // 分隔条（absolute）的定位锚点：与外层 #mobile-menu-container 同盒，
       // 原 absolute 子元素（sidebar-expand-btn）锚点等效不变

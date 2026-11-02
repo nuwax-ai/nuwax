@@ -1,3 +1,5 @@
+import { plotAppearance } from '@/features/themes/adapters';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { Line } from '@ant-design/plots';
 import { useSize } from 'ahooks';
@@ -17,11 +19,13 @@ const SessionStats: React.FC<SessionStatsProps> = ({
   period = '7d',
   onPeriodChange,
 }) => {
+  const appearance = useAppTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
 
   const chartConfig = useMemo(
     () => ({
+      theme: plotAppearance(appearance),
       data: chartData,
       xField: 'date',
       yField: 'value',
@@ -43,26 +47,26 @@ const SessionStats: React.FC<SessionStatsProps> = ({
         x: {
           label: {
             style: {
-              fill: 'rgba(0, 0, 0, 0.45)',
+              fill: appearance.tokens['text.secondary'],
               fontSize: 12,
             },
           },
           line: {
             style: {
-              stroke: '#d9d9d9',
+              stroke: appearance.tokens['border.default'],
             },
           },
           tick: {
             length: 4,
             style: {
-              stroke: '#d9d9d9',
+              stroke: appearance.tokens['border.default'],
             },
           },
         },
         y: {
           label: {
             style: {
-              fill: 'rgba(0, 0, 0, 0.45)',
+              fill: appearance.tokens['text.secondary'],
               fontSize: 12,
             },
           },
@@ -71,7 +75,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
               style: {
                 lineWidth: 1,
                 lineDash: [4, 4],
-                stroke: '#f0f0f0',
+                stroke: appearance.tokens['border.default'],
               },
             },
           },
@@ -87,7 +91,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
         value: (d.value || 0).toLocaleString(),
       }),
     }),
-    [chartData, loading, size?.width],
+    [chartData, loading, size?.width, appearance],
   );
 
   return (

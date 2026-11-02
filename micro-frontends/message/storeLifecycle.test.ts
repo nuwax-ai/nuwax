@@ -80,6 +80,10 @@ beforeAll(async () => {
     path.join(fixture, 'nuwax-im-web/src/unreadReconcile.ts'),
   );
   source = path.join(fixture, 'nuwax-im-web/src');
+  cpSync(
+    path.join(adapterDir, '../shared/themeRuntime.ts'),
+    path.join(source, 'themeRuntime.ts'),
+  );
 
   vi.doMock(path.join(source, 'authMode.ts'), () => ({
     isPlatformMode: true,

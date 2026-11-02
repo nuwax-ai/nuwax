@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "blue-hour",
+  "name": "澄蓝 · Blue Hour",
+  "version": "1.0.0",
+  "author": "Nuwax Theme Examples",
+  "description": "清透蓝白与深海蓝灰，两种模式共用一套语义样式。",
+  "variants": {
+    "light": {
+      "tokens": "tokens/light.json",
+      "styles": {
+        "common": ["styles/common.css"],
+        "web": ["styles/web.css"],
+        "message": ["styles/message.css"],
+        "repo": ["styles/repo.css"],
+        "shell": ["styles/shell.css"]
+      }
+    },
+    "dark": {
+      "tokens": "tokens/dark.json",
+      "styles": {
+        "common": ["styles/common.css"],
+        "web": ["styles/web.css"],
+        "message": ["styles/message.css"],
+        "repo": ["styles/repo.css"],
+        "shell": ["styles/shell.css"]
+      }
+    }
+  },
+  "preview": "preview.png"
+}

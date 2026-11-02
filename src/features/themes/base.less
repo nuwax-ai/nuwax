@@ -1,0 +1,71 @@
+:where(html[data-theme-surface='web']) {
+  color-scheme: light;
+
+  &[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--nuwax-surface-bg);
+    color: var(--nuwax-text-primary);
+  }
+
+  [data-theme-part='sidebar'] {
+    background: var(--nuwax-sidebar-bg);
+  }
+
+  [data-theme-part='conversation'] {
+    background: var(--nuwax-app-bg);
+    color: var(--nuwax-text-primary);
+  }
+
+  [data-theme-part='input'] {
+    background: var(--nuwax-input-bg);
+  }
+
+  [data-theme-part='card'] {
+    background: var(--nuwax-elevated-bg);
+    border-color: var(--nuwax-border-default);
+  }
+
+  .theme-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .theme-manager-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .theme-manager-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .theme-manager-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--nuwax-border-default);
+      border-radius: var(--nuwax-radius-medium);
+      background: var(--nuwax-elevated-bg);
+
+      &[data-selected='true'] {
+        border-color: var(--nuwax-primary);
+      }
+    }
+
+    .theme-manager-name {
+      font-weight: 600;
+    }
+
+    .theme-manager-detail {
+      color: var(--nuwax-text-secondary);
+      font-size: 12px;
+    }
+  }
+}

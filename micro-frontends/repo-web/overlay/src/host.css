@@ -15,3 +15,34 @@
   height: 100%;
   min-height: 0;
 }
+
+/* stylelint-disable selector-class-pattern -- Match upstream BEM names without editing the submodule. */
+
+/* 文档内容及画布保留自己的颜色，应用框架跟随宿主主题。 */
+[data-repo-app-scope][data-theme] {
+  color: var(--nuwax-text-primary);
+  background: var(--nuwax-app-bg);
+  font-family: var(--nuwax-font-family);
+}
+
+[data-repo-app-scope][data-theme] .library-nav,
+[data-repo-app-scope][data-theme] .doc-page__nav {
+  background: var(--nuwax-sidebar-bg);
+  color: var(--nuwax-text-primary);
+  border-color: var(--nuwax-border-default);
+}
+
+[data-repo-app-scope][data-theme] .library-nav__home--active,
+[data-repo-app-scope][data-theme] .library-nav__space-head--selected,
+[data-repo-app-scope][data-theme] .library-nav__section-title--selected {
+  background: var(--nuwax-selected-bg);
+  color: var(--nuwax-primary);
+}
+
+[data-repo-app-scope][data-theme] button,
+[data-repo-app-scope][data-theme] input,
+[data-repo-app-scope][data-theme] textarea {
+  border-color: var(--nuwax-border-default);
+}
+
+/* stylelint-enable selector-class-pattern */

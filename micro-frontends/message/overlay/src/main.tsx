@@ -6,9 +6,10 @@ import {
   qiankunWindow,
 } from '@tiny-codes/vite-plugin-qiankun';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, theme as antdTheme } from 'antd';
+import type { ThemeConfig } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { StrictMode } from 'react';
+import { StrictMode, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import App from './App';
 import './host.css';
@@ -21,6 +22,7 @@ import {
   isMessageActive,
   updateMessageRuntime,
   type MessageHostProps,
+  messageTheme,
 } from './hostRuntime';
 import { clearCustomEventSubscribers } from './lib/customEvents';
 import { disposeImNotifications } from './lib/notify';
@@ -36,6 +38,35 @@ import { startUnreadReconcile } from './unreadReconcile';
 let root: Root | null = null;
 let queryClient: QueryClient | null = null;
 let stopUnreadReconcile: (() => void) | null = null;
+
+function ThemedMessage() {
+  const appearance = useSyncExternalStore(
+    messageTheme.subscribe,
+    messageTheme.getSnapshot,
+  );
+  return (
+    <ConfigProvider
+      locale={zhCN}
+      prefixCls="nuwax-im"
+      iconPrefixCls="nuwax-imicon"
+      getPopupContainer={getMessagePortalRoot}
+      getTargetContainer={getMessagePortalRoot}
+      theme={
+        appearance
+          ? {
+              algorithm:
+                appearance.mode === 'dark'
+                  ? antdTheme.darkAlgorithm
+                  : antdTheme.defaultAlgorithm,
+              token: appearance.antdTokens as ThemeConfig['token'],
+            }
+          : undefined
+      }
+    >
+      <App />
+    </ConfigProvider>
+  );
+}
 
 function render(props: MessageHostProps = {}, embedded = false): void {
   if (root !== null) throw new Error('消息实例尚未卸载，拒绝重复挂载');
@@ -57,15 +88,7 @@ function render(props: MessageHostProps = {}, embedded = false): void {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <ConfigProvider
-          locale={zhCN}
-          prefixCls="nuwax-im"
-          iconPrefixCls="nuwax-imicon"
-          getPopupContainer={getMessagePortalRoot}
-          getTargetContainer={getMessagePortalRoot}
-        >
-          <App />
-        </ConfigProvider>
+        <ThemedMessage />
       </QueryClientProvider>
     </StrictMode>,
   );

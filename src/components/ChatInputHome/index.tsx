@@ -876,7 +876,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
           )}
 
           {/* 输入核心包裹区域 */}
-          <div className={cx(styles['input-wrapper'])}>
+          <div className={cx(styles['input-wrapper'])} data-theme-part="input">
             {/*文件列表*/}
             <ConditionRender condition={uploadFiles?.length}>
               <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />

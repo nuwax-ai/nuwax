@@ -1,3 +1,5 @@
+import { plotAppearance } from '@/features/themes/adapters';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { Line } from '@ant-design/plots';
 import { useSize } from 'ahooks';
@@ -27,11 +29,13 @@ const TrendChart: React.FC<TrendChartProps> = ({
     },
   ],
 }) => {
+  const appearance = useAppTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
 
   const config = useMemo(
     () => ({
+      theme: plotAppearance(appearance),
       data,
       xField: 'date',
       yField: 'value',
@@ -52,26 +56,26 @@ const TrendChart: React.FC<TrendChartProps> = ({
         x: {
           label: {
             style: {
-              fill: 'rgba(0, 0, 0, 0.45)',
+              fill: appearance.tokens['text.secondary'],
               fontSize: 12,
             },
           },
           line: {
             style: {
-              stroke: '#d9d9d9',
+              stroke: appearance.tokens['border.default'],
             },
           },
           tick: {
             length: 4,
             style: {
-              stroke: '#d9d9d9',
+              stroke: appearance.tokens['border.default'],
             },
           },
         },
         y: {
           label: {
             style: {
-              fill: 'rgba(0, 0, 0, 0.45)',
+              fill: appearance.tokens['text.secondary'],
               fontSize: 12,
             },
           },
@@ -80,7 +84,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
               style: {
                 lineWidth: 1,
                 lineDash: [4, 4],
-                stroke: '#f0f0f0',
+                stroke: appearance.tokens['border.default'],
               },
             },
           },
@@ -96,7 +100,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
         value: d.value.toLocaleString(),
       }),
     }),
-    [data, color, tooltipName, size?.width],
+    [data, color, tooltipName, size?.width, appearance],
   );
   return (
     <Card className={cx(styles['trend-chart'])} variant="borderless">

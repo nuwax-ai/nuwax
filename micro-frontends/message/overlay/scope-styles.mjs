@@ -1,3 +1,4 @@
+import { rewriteThemeColors } from './theme-colors.mjs';
 export const MESSAGE_SCOPE = '[data-message-app-scope]';
 
 /** 只拆顶层逗号，不破坏 :is/:where/属性值中的选择器。 */
@@ -49,6 +50,7 @@ export function messageScopedStyles() {
   return {
     postcssPlugin: 'nuwax-message-scope',
     Once(root) {
+      rewriteThemeColors(root);
       const animations = new Map();
       root.walkAtRules((rule) => {
         if (!/keyframes$/i.test(rule.name)) return;

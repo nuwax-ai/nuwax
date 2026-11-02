@@ -1,3 +1,8 @@
+import {
+  applyMonacoTheme,
+  monacoFontOptions,
+} from '@/features/themes/adapters';
+import { themeRuntime } from '@/features/themes/runtime';
 import { FileNode } from '@/models/appDev';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -350,8 +355,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       // 创建编辑器实例
       const editor = await safeAsyncOperation(async () => {
         // 根据 isDynamicTheme 决定使用的主题
-        let theme: string = 'vs';
-        if (isDynamicTheme) {
+        let theme: string = applyMonacoTheme(monaco) ?? 'vs';
+        if (isDynamicTheme && theme === 'vs') {
           // 在创建编辑器之前先定义动态主题，确保首次渲染就使用目标背景色
           defineDynamicTheme('#F5f5f5');
           theme = 'dynamicTheme';
@@ -380,6 +385,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         return;
       }
 
+      editor.updateOptions(monacoFontOptions());
       editorInstanceRef.current = editor;
       editorCreatedRef.current = true;
       lastFileIdRef.current = currentFile?.id || null;
@@ -869,6 +875,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   // 监听主题变化
   useEffect(() => {
     const handleThemeChange = () => {
+      if (applyMonacoTheme(monaco)) {
+        editorInstanceRef.current?.updateOptions(monacoFontOptions());
+        return;
+      }
       if (editorInstanceRef.current && !isDisposingRef.current) {
         try {
           const editor = editorInstanceRef.current;
@@ -893,6 +903,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // 监听主题变化
     const observer = new MutationObserver(handleThemeChange);
+    const stopTheme = themeRuntime.subscribe(handleThemeChange);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
@@ -900,6 +911,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     return () => {
       observer.disconnect();
+      stopTheme();
     };
   }, []);
 

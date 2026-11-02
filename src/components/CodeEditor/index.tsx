@@ -1,5 +1,11 @@
 import CodeOptimizeModal from '@/components/CodeOptimizeModal';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+import { getActiveThemeSnapshot } from '@/features/themes/activeTheme';
+import {
+  applyMonacoTheme,
+  monacoFontOptions,
+} from '@/features/themes/adapters';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import Editor, { loader } from '@monaco-editor/react';
@@ -43,6 +49,13 @@ const CodeEditor: React.FC<Props> = ({
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
   const { testRun } = useModel('model');
+  const appearance = useAppTheme();
+  const effectiveTheme = getActiveThemeSnapshot()
+    ? `nuwax-${appearance.mode}`
+    : theme;
+  useEffect(() => {
+    applyMonacoTheme(monaco);
+  }, [appearance]);
   useEffect(() => {
     loader.config({
       monaco,
@@ -126,6 +139,7 @@ const CodeEditor: React.FC<Props> = ({
       },
       readOnly: readOnly, // 添加只读模式配置
       ...rewriteEditorOptions,
+      ...monacoFontOptions(),
     };
 
     // 如果是JSON语言，关闭代码输入提示相关功能
@@ -169,7 +183,10 @@ const CodeEditor: React.FC<Props> = ({
             className={className}
             height={height}
             language={codeLanguage?.toLowerCase()}
-            theme={theme}
+            theme={effectiveTheme}
+            beforeMount={() => {
+              applyMonacoTheme(monaco);
+            }}
             value={value}
             onChange={handleCodeChange}
             options={getEditorOptions(editorOptions)}
@@ -180,7 +197,10 @@ const CodeEditor: React.FC<Props> = ({
           className={className}
           height={height}
           language={codeLanguage?.toLowerCase()}
-          theme={theme}
+          theme={effectiveTheme}
+          beforeMount={() => {
+            applyMonacoTheme(monaco);
+          }}
           value={value}
           onChange={handleCodeChange}
           options={getEditorOptions(editorOptions)}

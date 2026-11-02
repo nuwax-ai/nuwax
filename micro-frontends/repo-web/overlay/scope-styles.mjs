@@ -1,3 +1,4 @@
+import { rewriteThemeColors } from './theme-colors.mjs';
 export const REPO_SCOPE = '[data-repo-app-scope]';
 
 /** 按顶层逗号拆选择器，保留 :is/:where/属性值里的逗号。 */
@@ -49,6 +50,7 @@ export function repoScopedStyles() {
   return {
     postcssPlugin: 'nuwax-repo-scope',
     Once(root) {
+      rewriteThemeColors(root);
       const animations = new Map();
       root.walkAtRules((rule) => {
         if (!/keyframes$/i.test(rule.name)) return;

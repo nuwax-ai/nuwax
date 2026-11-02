@@ -1,3 +1,5 @@
+import { createMicroThemePayload } from '@/features/themes/dom';
+import { themeRuntime } from '@/features/themes/runtime';
 import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { t } from '@/services/i18nRuntime';
 import { subscribeImEvents } from '@/services/imEventBridge';
@@ -14,6 +16,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import { history } from 'umi';
+import type { MicroThemePayload } from '../../../micro-frontends/shared/themeRuntime';
 import styles from './index.less';
 import { microAppLifecycleQueue } from './lifecycle';
 import { microAppHostStore, type MicroAppHostEntry } from './store';
@@ -29,8 +32,17 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
   active,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentRef = useRef({ entry, active });
-  currentRef.current = { entry, active };
+  const appearance = useSyncExternalStore(
+    themeRuntime.subscribe,
+    themeRuntime.getState,
+  );
+  const [theme, setTheme] = useState<MicroThemePayload>();
+  const resources = useRef(
+    new Map<number, ReturnType<typeof createMicroThemePayload>>(),
+  );
+  const currentRef = useRef({ entry, active, theme });
+  currentRef.current = { entry, active, theme };
+  const themeReady = theme !== undefined;
   const leaseRef = useRef<ReturnType<typeof microAppLifecycleQueue.acquire>>();
   const navigationEnabledRef = useRef(false);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
@@ -38,9 +50,35 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
   );
 
   useEffect(() => {
+    const payload = createMicroThemePayload(appearance.snapshot);
+    resources.current.set(payload.revision, payload);
+    setTheme({
+      revision: payload.revision,
+      mode: payload.mode,
+      variables: payload.variables,
+      antdTokens: payload.antdTokens,
+      css: payload.css[entry.name === 'nuwax-im-web' ? 'message' : 'repo'],
+    });
+  }, [appearance.snapshot, entry.name]);
+  useEffect(
+    () => () => {
+      for (const payload of resources.current.values()) payload.dispose();
+      resources.current.clear();
+    },
+    [],
+  );
+  const releaseOlderResources = (revision: number) => {
+    for (const [key, payload] of resources.current)
+      if (key < revision) {
+        payload.dispose();
+        resources.current.delete(key);
+      }
+  };
+
+  useEffect(() => {
     const config = MICRO_APP_ROUTES.find((item) => item.name === entry.name);
     const container = containerRef.current;
-    if (!config || !container) return;
+    if (!config || !container || !themeReady) return;
     let mounted = true;
     let unsubscribeImEvents: (() => void) | undefined;
 
@@ -100,6 +138,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
           entry: config.entry,
           container,
           props: {
+            theme: currentRef.current.theme,
             path: currentRef.current.entry.path,
             active: currentRef.current.active,
             navigationRevision: currentRef.current.entry.navigationRevision,
@@ -142,16 +181,20 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
       lease.dispose();
       if (leaseRef.current === lease) leaseRef.current = undefined;
     };
-  }, [entry.name, entry.generation]);
+  }, [entry.name, entry.generation, themeReady]);
 
   useEffect(() => {
     const lease = leaseRef.current;
     if (!lease) return;
     void lease
       .update({
+        theme,
         path: entry.path,
         active,
         navigationRevision: entry.navigationRevision,
+      })
+      .then(() => {
+        if (theme) releaseOlderResources(theme.revision);
       })
       .catch((error) => {
         if (!lease.isDisposed()) {
@@ -160,7 +203,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
           setStatus('failed');
         }
       });
-  }, [entry.path, entry.navigationRevision, active]);
+  }, [entry.path, entry.navigationRevision, active, theme]);
 
   return (
     <div

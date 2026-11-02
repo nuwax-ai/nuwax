@@ -1,0 +1,19 @@
+[data-theme-part='theme-settings'] {
+  color: var(--nuwax-text-primary);
+}
+
+[data-theme-part='markdown'] pre {
+  background: var(--nuwax-code-bg);
+  color: var(--nuwax-code-text);
+  border: 1px solid var(--nuwax-border-default);
+  border-radius: var(--nuwax-radius-medium);
+}
+
+[data-theme-part='markdown'] a {
+  color: var(--nuwax-primary);
+}
+
+[data-theme-part='terminal'] {
+  background: var(--nuwax-terminal-bg);
+  color: var(--nuwax-terminal-text);
+}

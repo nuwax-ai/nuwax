@@ -16,6 +16,7 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 import { STORAGE_KEYS } from '@/constants/theme.constants';
+import { setActiveThemeSnapshot } from '@/features/themes/activeTheme';
 import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
@@ -26,6 +27,50 @@ import { unifiedThemeService } from './unifiedThemeService';
 const seedMigrationGuard = () => {
   localStorage.setItem('xagi-nav-style-migrated-style3', 'test');
 };
+
+describe('active theme package owns appearance', () => {
+  afterEach(() => {
+    setActiveThemeSnapshot(null);
+    localStorage.clear();
+    document.documentElement.style.cssText = '';
+    unifiedThemeService.reloadConfiguration(false);
+  });
+  it('keeps dark mode and package colors during late tenant writes and configuration reloads', async () => {
+    setActiveThemeSnapshot({
+      revision: 1,
+      themeId: 'custom-dark',
+      name: 'Custom',
+      mode: 'dark',
+      tokens: { primary: '#66aaff' },
+      css: { web: '', shell: '', message: '', repo: '' },
+      assets: {},
+    });
+    document.documentElement.style.setProperty(
+      '--xagi-layout-bg-primary',
+      '#202024',
+    );
+    await unifiedThemeService.updateData({
+      primaryColor: '#5147ff',
+      antdTheme: 'light',
+      layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    });
+    expect(unifiedThemeService.getCurrentData()).toMatchObject({
+      primaryColor: '#66aaff',
+      antdTheme: 'dark',
+      layoutStyle: 'dark',
+    });
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--xagi-layout-bg-primary',
+      ),
+    ).toBe('#202024');
+    unifiedThemeService.reloadConfiguration(true);
+    expect(unifiedThemeService.getCurrentData().antdTheme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-nav-theme')).toBe(
+      'dark',
+    );
+  });
+});
 
 const seedTenantTemplate = (templateConfig: unknown) => {
   localStorage.setItem(

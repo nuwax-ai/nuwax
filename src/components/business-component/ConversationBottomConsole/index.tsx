@@ -5,6 +5,8 @@ import { DEFAULT_TERMINAL_RECONNECT } from '@/components/business-component/Term
 import type { TerminalWireProtocol } from '@/components/business-component/Terminal/type';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { getActiveThemeSnapshot } from '@/features/themes/activeTheme';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiEnsurePod,
@@ -705,7 +707,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const useDevLogPanel = Boolean(devLog);
   /** 终端主题是否为受控模式 */
   const isControlled = terminalAppearanceProp !== undefined;
-  const terminalAppearance = isControlled
+  const appearance = useAppTheme();
+  const managedTheme = getActiveThemeSnapshot();
+  const terminalAppearance = managedTheme
+    ? appearance.mode
+    : isControlled
     ? terminalAppearanceProp
     : internalAppearance;
   const isLightTerminal = terminalAppearance === 'light';
@@ -1029,6 +1035,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           [styles['terminal-tab-stage-light']]: isLightTerminal,
           [styles['terminal-tab-stage-dark']]: !isLightTerminal,
         })}
+        data-theme-part="terminal"
+        style={
+          managedTheme
+            ? { background: appearance.tokens['terminal.bg'] }
+            : undefined
+        }
       >
         <div
           className={cx(styles['xterm-container'])}
@@ -1050,9 +1062,13 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             wireProtocol={wireProtocol}
             autoConnect={autoConnect}
             keepConnection={preserveTerminalConnections}
-            theme={getConsoleTerminalTheme(terminalAppearance)}
+            theme={getConsoleTerminalTheme(terminalAppearance, managedTheme)}
             fontSize={13}
-            fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
+            fontFamily={
+              managedTheme
+                ? appearance.tokens['font.code']
+                : CONSOLE_TERMINAL_FONT_FAMILY
+            }
             lineHeight={1.35}
             cursorBlink
             reconnect={DEFAULT_TERMINAL_RECONNECT}
@@ -1263,7 +1279,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {showLogsTab && activeTab === 'logs' && logsExtra}
 
           {/* 终端主题切换按钮 */}
-          {showTerminalAppearanceToggle && (
+          {showTerminalAppearanceToggle && !managedTheme && (
             <TooltipIcon
               title={
                 isLightTerminal

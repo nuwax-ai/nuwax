@@ -110,6 +110,10 @@ export async function readMicroAppRegistry(root) {
     const adapterRoot = path.dirname(adapterPath);
     const adapterContents = await fs.readFile(adapterPath, 'utf8');
     const adapter = JSON.parse(adapterContents);
+    const sharedOverlay = Object.entries(adapter.sharedOverlay ?? {}).map(([target, source]) => {
+      localPath(root, target, 'sharedOverlay target');
+      return { target, source: localPath(root, source, 'sharedOverlay source') };
+    });
     if (adapter.projectDir) localPath(root, adapter.projectDir, 'projectDir');
     const buildEnvironment = adapter.buildEnvironment ?? {};
     if (
@@ -150,6 +154,7 @@ export async function readMicroAppRegistry(root) {
       source: localPath(root, adapter.sourceDir, 'sourceDir'),
       patch: localPath(adapterRoot, adapter.patch, 'patch'),
       overlay: localPath(adapterRoot, adapter.overlay, 'overlay'),
+      sharedOverlay,
     });
   }
   return result;
@@ -246,12 +251,17 @@ export async function adapterFingerprint(app) {
     hash.update(file);
     hash.update(await fs.readFile(path.join(app.overlay, file)));
   }
+  for (const file of app.sharedOverlay ?? []) {
+    hash.update(`shared:${file.target}`);
+    hash.update(await fs.readFile(file.source));
+  }
   return {
     sha256: hash.digest('hex'),
     files: [
       'adapter.json',
       app.adapter.patch,
       ...files.map((file) => `${app.adapter.overlay}/${file}`),
+      ...(app.sharedOverlay ?? []).map((file) => `shared:${file.target}`),
     ],
   };
 }
@@ -265,7 +275,14 @@ export async function snapshotAdapter(app, directory) {
   await fs.writeFile(adapterPath, app.adapterContents);
   await fs.copyFile(app.patch, patch);
   await fs.cp(app.overlay, overlay, { recursive: true });
-  const snapshot = { ...app, adapterPath, patch, overlay };
+  const sharedOverlay = [];
+  for (const [index, file] of (app.sharedOverlay ?? []).entries()) {
+    const source = path.join(directory, 'shared-inputs', String(index));
+    await fs.mkdir(path.dirname(source), { recursive: true });
+    await fs.copyFile(file.source, source);
+    sharedOverlay.push({ ...file, source });
+  }
+  const snapshot = { ...app, adapterPath, patch, overlay, sharedOverlay };
   const fingerprint = await adapterFingerprint(snapshot);
   const current = await adapterFingerprint(app);
   if (current.sha256 !== fingerprint.sha256) {
@@ -757,6 +774,11 @@ export async function syncMicroApps({
         ? localPath(working, app.adapter.projectDir, 'projectDir')
         : working;
       await fs.cp(snapshot.overlay, project, { recursive: true });
+      for (const file of snapshot.sharedOverlay ?? []) {
+        const target = localPath(project, file.target, 'sharedOverlay target');
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        await fs.copyFile(file.source, target);
+      }
       const ownWorkspace = await fs
         .access(path.join(project, 'pnpm-workspace.yaml'))
         .then(

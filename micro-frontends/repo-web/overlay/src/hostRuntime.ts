@@ -1,7 +1,10 @@
 /** 宿主适配只在隔离产物内生效，不向业务 main 写入平台假设。 */
 export const REPO_BASE = '/repo';
+import { createMicroThemeStore, type MicroThemePayload } from './themeRuntime';
+export const repoTheme = createMicroThemeStore();
 
 export interface RepoHostProps {
+  theme?: MicroThemePayload;
   container?: HTMLElement;
   path?: string;
   active?: boolean;
@@ -62,9 +65,11 @@ export function beginRepoRuntime(
   snapshot = { path: initialPath, active: props.active !== false, command: 0 };
   root.setAttribute('data-repo-app-scope', '');
   root.setAttribute('data-repo-embedded', String(isEmbedded));
+  repoTheme.begin(root, 'repo', props.theme);
 }
 
 export function updateRepoRuntime(props: RepoHostProps): void {
+  repoTheme.update(props.theme);
   if (props.onNavigate !== undefined) onNavigate = props.onNavigate;
   if (props.onAuthExpired !== undefined) onAuthExpired = props.onAuthExpired;
   const active = props.active ?? snapshot.active;
@@ -198,6 +203,7 @@ export function captureRepoAuthRedirect(): (target: string) => void {
 }
 
 export function endRepoRuntime(): void {
+  repoTheme.dispose();
   root?.removeAttribute('data-repo-app-scope');
   root?.removeAttribute('data-repo-embedded');
   root = null;

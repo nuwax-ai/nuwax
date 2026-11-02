@@ -1,0 +1,13 @@
+[data-theme-part='browser-toolbar'] {
+  background: var(--nuwax-sidebar-bg);
+  color: var(--nuwax-text-primary);
+  border-bottom: 1px solid var(--nuwax-border-default);
+}
+
+[data-theme-part='theme-manager'] {
+  background: var(--nuwax-elevated-bg);
+  color: var(--nuwax-text-primary);
+  border: 1px solid var(--nuwax-border-default);
+  border-radius: var(--nuwax-radius-large);
+  padding: var(--nuwax-spacing-large);
+}

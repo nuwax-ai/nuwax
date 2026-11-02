@@ -19,6 +19,7 @@ import {
   THEME_COLOR_CONFIGS,
   backgroundConfigs,
 } from '@/constants/theme.constants';
+import { getActiveThemeSnapshot } from '@/features/themes/activeTheme';
 import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
@@ -133,8 +134,9 @@ class UnifiedThemeService {
     // （resolveEffectiveNavigationStyle）：桌面端锁定单栏时，存储 style1/2 的
     // 渐变壁纸/深色导航同样收敛为纯色浅色
     if (
+      !getActiveThemeSnapshot() &&
       resolveEffectiveNavigationStyle(data.navigationStyle) ===
-      ThemeNavigationStyleType.STYLE3
+        ThemeNavigationStyleType.STYLE3
     ) {
       if (
         singleColumnBackgroundId &&
@@ -146,7 +148,15 @@ class UnifiedThemeService {
         data.layoutStyle = ThemeLayoutColorStyle.LIGHT;
       }
     }
-    return data;
+    const active = getActiveThemeSnapshot();
+    return active
+      ? {
+          ...data,
+          primaryColor: String(active.tokens.primary),
+          antdTheme: active.mode,
+          layoutStyle: active.mode as ThemeLayoutColorStyle,
+        }
+      : data;
   }
 
   /**
@@ -363,7 +373,10 @@ class UnifiedThemeService {
     // 收敛，随后的背景/深浅写入由设置面板置灰拦在 UI 层。
     // 不在 updateData 里做全局不变量——租户管理页的背景/深浅预览共用本服务，
     // 管理员运行态为单栏时会被误强转
-    if (style === ThemeNavigationStyleType.STYLE3) {
+    if (
+      !getActiveThemeSnapshot() &&
+      style === ThemeNavigationStyleType.STYLE3
+    ) {
       const updates: Partial<UnifiedThemeData> = { navigationStyle: style };
       if (
         singleColumnBackgroundId &&
@@ -451,6 +464,7 @@ class UnifiedThemeService {
     // 浏览器端不收敛：租户管理页背景/深浅预览共用本服务，管理员误强转顾虑照旧
     // （2026-09-12 注释）
     if (
+      !getActiveThemeSnapshot() &&
       isDesktopHost() &&
       resolveEffectiveNavigationStyle(next.navigationStyle) ===
         ThemeNavigationStyleType.STYLE3
@@ -459,6 +473,12 @@ class UnifiedThemeService {
         next.backgroundId = singleColumnBackgroundId;
       }
       next.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+    }
+    const active = getActiveThemeSnapshot();
+    if (active) {
+      next.primaryColor = String(active.tokens.primary);
+      next.antdTheme = active.mode;
+      next.layoutStyle = active.mode as ThemeLayoutColorStyle;
     }
     this.currentData = next;
 
@@ -523,6 +543,33 @@ class UnifiedThemeService {
   private applyToDOM(): void {
     try {
       const root = document.documentElement;
+
+      const active = getActiveThemeSnapshot();
+      if (active) {
+        const navigation = resolveEffectiveNavigationStyle(
+          this.currentData.navigationStyle,
+        );
+        root.setAttribute('data-theme', active.mode);
+        root.setAttribute('data-nav-theme', active.mode);
+        root.setAttribute(
+          'data-nav-style',
+          navigation === ThemeNavigationStyleType.STYLE3
+            ? 'sidebar'
+            : navigation === ThemeNavigationStyleType.STYLE1
+            ? 'compact'
+            : 'expanded',
+        );
+        root.style.setProperty(
+          '--xagi-nav-first-menu-width',
+          `${
+            navigation === ThemeNavigationStyleType.STYLE2
+              ? FIRST_MENU_WIDTH_STYLE2
+              : FIRST_MENU_WIDTH
+          }px`,
+        );
+        this.updateBodyClasses(navigation);
+        return;
+      }
 
       // 设置主题色
       root.style.setProperty(

@@ -1,6 +1,8 @@
 import { BulbOutlined, DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
+import { mermaidAppearance } from '@/features/themes/adapters';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import React, { memo, useMemo, useRef, useState } from 'react';
 
@@ -37,13 +39,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     markdownRef,
     headerActions = true,
     disableTyping = true,
-    theme = 'light',
+    theme,
     thinking = '',
     status,
     thinkingFinished,
     collapseProcessGroups = false,
     autoCollapseEnabled = true,
   }: MarkdownRendererProps) => {
+    const appearance = useAppTheme();
+    const resolvedTheme = theme ?? appearance.mode;
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
     // 正文与思考流可能交错到达，不能以已有正文作为思考结束依据。
@@ -67,7 +71,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       [conversationId, collapseProcessGroups, autoCollapseEnabled],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
-    const mermaidProvider = useMemo(() => mermaidConfig, []);
+    const mermaidProvider = useMemo(
+      () => ({ ...mermaidConfig, ...mermaidAppearance(appearance) }),
+      [appearance],
+    );
     const currentLang = getSafeCurrentLang();
     const markdownLocale = useMemo(() => getMarkdownLocale(), [currentLang]);
 
@@ -78,6 +85,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         id={`${requestId}`}
         data-key={`${requestId}`}
         className={cx(styles['markdown-container'], className)}
+        data-theme-part="markdown"
       >
         <ConfigProvider
           key={currentLang}
@@ -114,7 +122,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
               interval={12}
               plugins={plugins}
               codeBlock={{ headerActions }}
-              theme={theme}
+              theme={resolvedTheme}
               math={{
                 splitSymbol: 'bracket',
                 replaceMathBracket,
@@ -145,7 +153,7 @@ const PureMarkdownRenderer = memo(
     id: requestId = '',
     className = '',
     children,
-    theme = 'light',
+    theme,
     disableTyping = false,
     interval = 30,
     timerType = 'requestAnimationFrame',
@@ -160,6 +168,7 @@ const PureMarkdownRenderer = memo(
     timerType?: 'requestAnimationFrame' | 'setTimeout';
     conversationId?: string | number;
   }) => {
+    const appearance = useAppTheme();
     const plugins = useMemo(
       () => [katexPlugin, genCustomPlugin(conversationId)],
       [conversationId],
@@ -177,6 +186,7 @@ const PureMarkdownRenderer = memo(
         id={`${requestId}`}
         data-key={`${requestId}`}
         className={cx(styles['markdown-container'], className)}
+        data-theme-part="markdown"
       >
         <ConfigProvider key={currentLang} locale={markdownLocale}>
           <DsMarkdown
@@ -185,7 +195,7 @@ const PureMarkdownRenderer = memo(
             disableTyping={disableTyping}
             plugins={plugins}
             codeBlock={{ headerActions: false }}
-            theme={theme}
+            theme={theme ?? appearance.mode}
             // 文件预览 MD 通常直接写 $...$ / $$...$$，用 dollar 模式跳过括号预处理，
             // 避免误伤 $\sqrt[3]{x}$、$f'(x)$ 等含 [] / () 的公式
             math={{

@@ -1,3 +1,5 @@
+import { plotAppearance } from '@/features/themes/adapters';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { Column } from '@ant-design/plots';
 import { Card, Empty } from 'antd';
@@ -15,8 +17,10 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
   data,
   loading,
 }) => {
+  const appearance = useAppTheme();
   const config = useMemo(
     () => ({
+      theme: plotAppearance(appearance),
       data: data?.map((item) => ({
         ...item,
         // 这里的 userName 可能为 null (根据接口示例)，做个兜底展示
@@ -34,7 +38,7 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
       label: {
         text: (d: any) => `¥${(d.amount / 1000).toFixed(1)}K`,
         style: {
-          fill: 'rgba(0, 0, 0, 0.85)',
+          fill: appearance.tokens['text.primary'],
           fontSize: 12,
           fontWeight: 600,
           dy: -20,
@@ -49,14 +53,14 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
         x: {
           label: {
             style: {
-              fill: 'rgba(0, 0, 0, 0.85)',
+              fill: appearance.tokens['text.primary'],
               fontSize: 13,
               fontWeight: 500,
             },
           },
           line: {
             style: {
-              stroke: '#bfbfbf',
+              stroke: appearance.tokens['border.default'],
               lineWidth: 1,
             },
           },
@@ -65,14 +69,14 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
           label: {
             formatter: (v: number) => `¥${v.toLocaleString()}`,
             style: {
-              fill: 'rgba(0, 0, 0, 0.45)',
+              fill: appearance.tokens['text.secondary'],
               fontSize: 11,
             },
           },
           gridLine: {
             style: {
               lineDash: [4, 4],
-              stroke: '#f0f0f0',
+              stroke: appearance.tokens['border.default'],
             },
           },
         },
@@ -91,7 +95,7 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
         ],
       },
     }),
-    [data],
+    [data, appearance],
   );
 
   return (

@@ -86,6 +86,10 @@ beforeAll(async () => {
   });
   const source = path.join(fixture, 'nuwax-im-web/src');
   cpSync(
+    path.join(adapterDir, '../shared/themeRuntime.ts'),
+    path.join(source, 'themeRuntime.ts'),
+  );
+  cpSync(
     path.join(adapterDir, 'overlay/src/hostRuntime.ts'),
     path.join(source, 'hostRuntime.ts'),
   );

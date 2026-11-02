@@ -1,0 +1,38 @@
+/* Only public theme parts; no business layout changes. */
+[data-theme-part='sidebar'] {
+  background: linear-gradient(
+    180deg,
+    var(--nuwax-sidebar-bg),
+    var(--nuwax-surface-bg)
+  );
+  color: var(--nuwax-text-primary);
+  border-color: var(--nuwax-border-default);
+}
+
+[data-theme-part='input'] {
+  background: var(--nuwax-input-bg);
+  color: var(--nuwax-text-primary);
+  border: 1px solid var(--nuwax-border-default);
+  border-radius: var(--nuwax-radius-large);
+  box-shadow: 0 6px 24px #00000008;
+}
+
+[data-theme-part='input']:focus-within {
+  border-color: var(--nuwax-focus-ring);
+}
+
+[data-theme-part='conversation'] {
+  background: var(--nuwax-app-bg);
+  color: var(--nuwax-text-primary);
+}
+
+[data-theme-part='message-bubble'] {
+  border-radius: var(--nuwax-radius-medium);
+}
+
+[data-theme-part='search'] {
+  background: var(--nuwax-input-bg);
+  color: var(--nuwax-text-primary);
+  border-radius: var(--nuwax-radius-medium);
+  border-color: var(--nuwax-border-default);
+}

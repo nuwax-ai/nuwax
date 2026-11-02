@@ -53,6 +53,64 @@ export interface ShellThemePayload {
   bgItemHover?: string;
 }
 
+export type HostThemeMode = 'light' | 'dark';
+export type HostThemePreference = HostThemeMode | 'system';
+export type HostThemeSurface = 'web' | 'shell' | 'message' | 'repo';
+/** 路径到 base64 文件内容的映射；不向网页暴露本机绝对路径。 */
+export type HostThemeFiles = Record<string, string>;
+export interface HostThemeSnapshot {
+  revision: number;
+  themeId: string;
+  name: string;
+  mode: HostThemeMode;
+  tokens: Record<string, string>;
+  css: Record<HostThemeSurface, string>;
+  assets: Record<string, { mime: string; base64: string }>;
+}
+export interface HostThemeInfo {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  modes: HostThemeMode[];
+  source: 'builtin' | 'installed' | 'linked';
+}
+export interface HostThemesState {
+  revision: number;
+  selection: { themeId: string; mode: HostThemePreference };
+  snapshot: HostThemeSnapshot;
+  themes: HostThemeInfo[];
+  error?: string;
+  /** 历史偏好迁移只允许在从未显式选择主题时执行。 */
+  hasUserSelection?: boolean;
+  /** 本次启动仅使用官方主题，保留原选择用于恢复。 */
+  recovery?: boolean;
+}
+export interface HostThemeResult {
+  ok: boolean;
+  state?: HostThemesState;
+  canceled?: boolean;
+  conflict?: boolean;
+  error?: string;
+}
+export interface HostThemesBridge {
+  getState(): Promise<HostThemesState | null>;
+  install(files: HostThemeFiles, replace?: boolean): Promise<HostThemeResult>;
+  /** 由主进程打开目录选择器；不接受网页传入任意本机路径。 */
+  linkDirectory(): Promise<HostThemeResult>;
+  exportPackage(
+    id: string,
+  ): Promise<{ files?: HostThemeFiles; error?: string }>;
+  select(
+    id: string,
+    mode: HostThemePreference,
+    onlyIfUnselected?: boolean,
+  ): Promise<HostThemeResult>;
+  remove(id: string): Promise<HostThemeResult>;
+  openDirectory(id: string): Promise<HostThemeResult>;
+  onChanged(listener: (state: HostThemesState) => void): () => void;
+}
+
 export interface TitlebarDragRegion {
   x: number;
   y: number;
@@ -467,6 +525,8 @@ export interface HostBridgeContract {
     onHostCommand(callback: ((payload: HostCommand) => void) | null): void;
   };
   theme: { syncTheme(payload: ShellThemePayload): void };
+  /** 本机主题管理；旧宿主缺席时前端使用 Web 存储适配器。 */
+  themes?: HostThemesBridge;
   layout: {
     setNewTaskAvailable(available: boolean): void;
     setSecondMenuAvailable(available: boolean): void;

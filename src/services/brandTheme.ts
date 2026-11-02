@@ -24,6 +24,7 @@ import {
   DEFAULT_THEME_CONFIG,
   STORAGE_KEYS,
 } from '@/constants/theme.constants';
+import { getActiveThemeSnapshot } from '@/features/themes/activeTheme';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
@@ -177,6 +178,7 @@ function hasExplicitThemeConfig(): boolean {
  * 换背景图被强制吞回 none」两类切换失效（用户实测踩中，2026-08-31 修复）。
  */
 export function isBrandThemeActive(): boolean {
+  if (getActiveThemeSnapshot()) return false;
   if (!hasExplicitThemeConfig()) return true;
   const data = unifiedThemeService.getCurrentData();
   return (
@@ -191,6 +193,7 @@ export function isBrandThemeActive(): boolean {
  * ThemeSwitchPanel 色板高亮用。显式定制后主色完全跟随用户选择，不再强制。
  */
 export function isDefaultBrandThemeActive(): boolean {
+  if (getActiveThemeSnapshot()) return false;
   return !hasExplicitThemeConfig();
 }
 
@@ -237,6 +240,7 @@ function buildShellThemePayload(active: boolean): ShellThemePayload {
  * 布局，此时残留的 'none' 只可能来自本覆盖层，按值判定自洽。
  */
 function syncBrandThemeCssOverride(): void {
+  if (getActiveThemeSnapshot()) return;
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   // 生效判定已内含「浅色布局」约束（灰白变量仅浅色下有意义），无需再叠加 antdTheme 判断
@@ -295,6 +299,7 @@ export function setOpenAppSkipHtmlBackground(skip: boolean): void {
  *   （2026-09-04 起浏览器同步，此前浏览器默认态刻意保持平台观感）。
  */
 export function initBrandTheme(): () => void {
+  if (getActiveThemeSnapshot()) return () => {};
   // 全端默认切换到女娲主题：用户/租户均未显式定制主题时，把「女娲蓝 + 纯色背景」
   // 写入正式主题配置（走服务统一的存储/DOM 应用链路，主题切换面板因此自然高亮
   // 女娲蓝与纯色两项）。用户此后切任何主题都构成显式配置，此写入不再重复。

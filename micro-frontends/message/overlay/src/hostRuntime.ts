@@ -1,7 +1,10 @@
 /** 消息仅有 store 内会话选择，不引入新的业务路由协议。 */
 export const MESSAGE_BASE = '/instant-message';
+import { createMicroThemeStore, type MicroThemePayload } from './themeRuntime';
+export const messageTheme = createMicroThemeStore();
 
 export interface MessageHostProps {
+  theme?: MicroThemePayload;
   container?: HTMLElement;
   path?: string;
   navigationRevision?: number;
@@ -127,6 +130,7 @@ export function beginMessageRuntime(
   };
   root.setAttribute('data-message-app-scope', '');
   root.setAttribute('data-message-embedded', String(isEmbedded));
+  messageTheme.begin(root, 'message', props.theme);
   if (isEmbedded) {
     root.tabIndex = -1;
     // 点消息区空白后焦点留在子根，⌘V 仍能被本应用捕获；不会抢编辑器或按钮焦点。
@@ -156,6 +160,7 @@ export function beginMessageRuntime(
 }
 
 export function updateMessageRuntime(props: MessageHostProps): void {
+  messageTheme.update(props.theme);
   if (props.host !== undefined) exposeHost(props.host);
   if (props.onAuthExpired !== undefined) onAuthExpired = props.onAuthExpired;
   const active = props.active ?? snapshot.active;
@@ -208,6 +213,7 @@ export function redirectMessageAuth(target: string): void {
 }
 
 export function endMessageRuntime(): void {
+  messageTheme.dispose();
   exposeHost(undefined);
   invalidateMessageRequests();
   disposeFocus?.();

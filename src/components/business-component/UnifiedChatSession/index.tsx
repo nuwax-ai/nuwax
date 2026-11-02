@@ -451,6 +451,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   return (
     <div
       ref={sessionContainerRef}
+      data-theme-part="conversation"
       className={cx(styles['session-container'], className)}
       style={style}
     >

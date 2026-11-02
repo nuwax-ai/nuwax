@@ -1,3 +1,4 @@
+import type { HostThemeSnapshot } from '@/types/interfaces/hostBridge';
 import type { ITheme } from '@xterm/xterm';
 
 /** 底部控制台终端外观：深色 / 浅色 */
@@ -71,5 +72,27 @@ export const CONSOLE_TERMINAL_THEME = CONSOLE_TERMINAL_THEME_DARK;
 export const CONSOLE_TERMINAL_FONT_FAMILY =
   '"SF Mono", Menlo, Monaco, Consolas, "DejaVu Sans Mono", "Microsoft YaHei", monospace';
 
-export const getConsoleTerminalTheme = (mode: TerminalAppearanceMode): ITheme =>
-  mode === 'light' ? CONSOLE_TERMINAL_THEME_LIGHT : CONSOLE_TERMINAL_THEME_DARK;
+export const getConsoleTerminalTheme = (
+  mode: TerminalAppearanceMode,
+  snapshot?: HostThemeSnapshot | null,
+): ITheme => {
+  const base =
+    mode === 'light'
+      ? CONSOLE_TERMINAL_THEME_LIGHT
+      : CONSOLE_TERMINAL_THEME_DARK;
+  if (!snapshot) return base;
+  const t = snapshot.tokens;
+  return {
+    ...base,
+    background: t['terminal.bg'],
+    foreground: t['terminal.text'],
+    cursor: t.primary,
+    cursorAccent: t['terminal.bg'],
+    selectionBackground: t['selected.bg'],
+    selectionForeground: t['text.primary'],
+    red: t.error,
+    green: t.success,
+    yellow: t.warning,
+    blue: t.primary,
+  };
+};

@@ -7,6 +7,10 @@
   "pin": "0fafa86ddd6dab0e10fcc2a7641b83a9957a2972",
   "patch": "adapter.patch",
   "overlay": "overlay",
+  "sharedOverlay": {
+    "src/themeRuntime.ts": "micro-frontends/shared/themeRuntime.ts",
+    "theme-colors.mjs": "micro-frontends/shared/theme-colors.mjs"
+  },
   "entry": "/micro-apps/message/index.html",
   "assetBase": "/micro-apps/message/",
   "businessBase": "/instant-message",

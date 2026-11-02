@@ -1,3 +1,8 @@
+import {
+  applyMonacoTheme,
+  monacoFontOptions,
+} from '@/features/themes/adapters';
+import { themeRuntime } from '@/features/themes/runtime';
 import { getLanguageFromFile } from '@/utils/monacoConfig';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useRef, useState } from 'react';
@@ -41,6 +46,7 @@ const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
 
     // 创建 DiffEditor 实例
     const diffEditor = monaco.editor.createDiffEditor(containerRef.current, {
+      theme: applyMonacoTheme(monaco) ?? 'vs',
       automaticLayout: true,
       readOnly: true,
       renderSideBySide: true,
@@ -49,6 +55,7 @@ const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
       fontSize: 12,
       fontFamily:
         "'JetBrains Mono', monospace, 'Fira Code','Consolas', 'Monaco', 'Courier New'",
+      ...monacoFontOptions(),
       lineHeight: 20,
       tabSize: 2,
       minimap: { enabled: false },
@@ -85,6 +92,17 @@ const MonacoDiffEditor: React.FC<MonacoDiffEditorProps> = ({
       diffEditorRef.current = null;
     };
   }, [fileId]);
+
+  useEffect(
+    () =>
+      themeRuntime.subscribe(() => {
+        if (diffEditorRef.current) {
+          applyMonacoTheme(monaco);
+          diffEditorRef.current.updateOptions(monacoFontOptions());
+        }
+      }),
+    [],
+  );
 
   // 内容变化时更新 model
   useEffect(() => {

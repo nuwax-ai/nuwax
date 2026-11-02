@@ -24,3 +24,47 @@
   min-height: 0;
   overflow: hidden;
 }
+
+/* 主题层只覆盖外观；布局、交互和消息内容由上游管理。 */
+[data-message-app-scope][data-theme] {
+  color: var(--nuwax-text-primary);
+  background: var(--nuwax-app-bg);
+  font-family: var(--nuwax-font-family);
+}
+
+[data-message-app-scope][data-theme] .conv-pane {
+  background: var(--nuwax-sidebar-bg);
+  border-color: var(--nuwax-border-default);
+}
+
+[data-message-app-scope][data-theme] .chat-pane {
+  background: var(--nuwax-app-bg);
+}
+
+[data-message-app-scope][data-theme] .composer {
+  background: var(--nuwax-input-bg);
+  color: var(--nuwax-text-primary);
+  border-color: var(--nuwax-border-default);
+}
+
+[data-message-app-scope][data-theme] .conv-item:hover {
+  background: var(--nuwax-hover-bg);
+}
+
+[data-message-app-scope][data-theme] .conv-item.active {
+  background: var(--nuwax-selected-bg);
+}
+
+[data-message-app-scope][data-theme] .rich-editor {
+  color: var(--nuwax-text-primary);
+}
+
+[data-message-app-scope][data-theme] .bubble {
+  background: var(--nuwax-chat-assistant-bg);
+  color: var(--nuwax-chat-assistant-text);
+}
+
+[data-message-app-scope][data-theme] .msg-row.me .bubble {
+  background: var(--nuwax-chat-user-bg);
+  color: var(--nuwax-chat-user-text);
+}

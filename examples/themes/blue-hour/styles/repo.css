@@ -1,0 +1,7 @@
+[data-theme-part='sidebar'] {
+  border-right: 1px solid var(--nuwax-border-default);
+}
+
+[data-theme-part='search'] {
+  border: 1px solid var(--nuwax-border-default);
+}

@@ -18,6 +18,10 @@ import {
   DesktopShellPreviewChrome,
   initClientShell,
 } from './features/client-shell';
+import { getActiveThemeSnapshot } from './features/themes/activeTheme';
+import { tokenToAntd, type ThemeTokens } from './features/themes/core';
+import { initializeApplicationThemes } from './features/themes/integration';
+import { themeRuntime } from './features/themes/runtime';
 import useEventPolling from './hooks/useEventPolling';
 import {
   getAppStartupDiagnostic,
@@ -310,7 +314,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     const applyThemeConfig = () => {
       try {
         const data = unifiedThemeService.getCurrentData();
-        const darkMode = data.antdTheme === 'dark';
+        const snapshot = getActiveThemeSnapshot();
+        const darkMode = snapshot
+          ? snapshot.mode === 'dark'
+          : data.antdTheme === 'dark';
         // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝
         // （见 brandTheme）；显式定制后主色跟随用户选择——灰白 solid 布局已
         // 改挂背景维度（isBrandThemeActive），不再反向绑架 antd 主色
@@ -325,11 +332,13 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         const tokens = {
           ...baseTokens,
           colorPrimary: effectivePrimary,
+          ...(snapshot ? tokenToAntd(snapshot.tokens as ThemeTokens) : {}),
         };
 
         const signature = JSON.stringify({
           mode: darkMode ? 'dark' : 'light',
           tokens,
+          language: data.language,
         });
         if (signature === lastAppliedRef.current) return;
         lastAppliedRef.current = signature;
@@ -384,6 +393,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 
     // 监听统一主题服务的配置变更
     const handleThemeChange = () => applyThemeConfig();
+    const stopThemePackages = themeRuntime.subscribe(handleThemeChange);
     unifiedThemeService.addListener(handleThemeChange);
 
     // 兼容旧的事件监听（确保向后兼容）
@@ -394,6 +404,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     );
 
     return () => {
+      stopThemePackages();
       unifiedThemeService.removeListener(handleThemeChange);
       window.removeEventListener(
         'unified-theme-changed',
@@ -466,7 +477,20 @@ export function innerProvider(container: React.ReactElement) {
  * 可以在这里添加全局错误边界等
  */
 export function render(oldRender: () => void) {
-  oldRender();
+  // 存储被浏览器阻塞时不阻塞整个产品启动；稍后读到的主题仍会热更新。
+  let rendered = false;
+  const complete = () => {
+    if (!rendered) {
+      rendered = true;
+      oldRender();
+    }
+  };
+  const timeout = window.setTimeout(complete, 1500);
+  const done = () => {
+    window.clearTimeout(timeout);
+    complete();
+  };
+  void initializeApplicationThemes().then(done, done);
 }
 
 /**
@@ -491,6 +515,17 @@ export const antd = (memo: any) => {
   try {
     memo.theme ??= {} as any;
     memo.theme.cssVar = { prefix: 'xagi' } as any;
+    const snapshot = getActiveThemeSnapshot();
+    if (snapshot) {
+      memo.theme.algorithm =
+        snapshot.mode === 'dark'
+          ? antdTheme.darkAlgorithm
+          : antdTheme.defaultAlgorithm;
+      memo.theme.token = {
+        ...memo.theme.token,
+        ...tokenToAntd(snapshot.tokens as ThemeTokens),
+      };
+    }
     memo.direction = 'ltr' as any;
     memo.appConfig ??= {} as any;
 

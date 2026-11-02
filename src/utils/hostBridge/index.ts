@@ -10,7 +10,10 @@
  */
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
-import type { HostLocalFilesBridge } from '@/types/interfaces/hostBridge';
+import type {
+  HostLocalFilesBridge,
+  HostThemesBridge,
+} from '@/types/interfaces/hostBridge';
 import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
 import {
   getDesktopShellPreviewPlatform,
@@ -83,6 +86,26 @@ export function isDesktopHost(): boolean {
   if (getDesktopShellPreviewPlatform()) return true;
   const p = getBridge()?.host?.getProduct?.();
   return p === 'nuwax' || p === 'nuwawork';
+}
+
+/** 按调用时能力取得主题管理器；旧客户端和普通浏览器使用浏览器存储。 */
+export async function getThemesBridge(): Promise<HostThemesBridge | null> {
+  const bridge = getBridge();
+  const themes = bridge?.themes;
+  if (!isDesktopHost() || !themes) return null;
+  const methods = [
+    'getState',
+    'install',
+    'linkDirectory',
+    'exportPackage',
+    'select',
+    'remove',
+    'openDirectory',
+    'onChanged',
+  ] as const;
+  if (!methods.every((name) => typeof themes[name] === 'function')) return null;
+  if (bridge?.canUse && !(await bridge.canUse('themes'))) return null;
+  return themes as HostThemesBridge;
 }
 
 /**

@@ -7,6 +7,10 @@
   "pin": "db9f23a61e7f218873400cd9bf2ac3c1b258daeb",
   "patch": "adapter.patch",
   "overlay": "overlay",
+  "sharedOverlay": {
+    "src/themeRuntime.ts": "micro-frontends/shared/themeRuntime.ts",
+    "theme-colors.mjs": "micro-frontends/shared/theme-colors.mjs"
+  },
   "entry": "/micro-apps/repo/index.html",
   "assetBase": "/micro-apps/repo/",
   "businessBase": "/repo",
