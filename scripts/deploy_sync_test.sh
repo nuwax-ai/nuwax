@@ -3,23 +3,23 @@
 # deploy_sync_test.sh —— 个人分支一键同步测试流程（级联合并版，分支角色可配）
 #
 # 合并链：个人开发分支（先合 origin/版本开发分支，客户端相关支持）
-#        → 推 GitHub → 质量门 → 版本开发分支（推 origin）
-#        → 本地 dev → test（构建部署）→ gitlab/test
+#        → 双推送 → 质量门 → 版本开发分支（双远端）
+#        → dev（双远端）→ test（构建部署，双远端）
 #
 # 流程：
 #   1. 前置校验（配置解析 / 分支 / 干净工作区 / git fetch --all --prune / 分支存在性；
 #      停在链路中段分支且工作区干净时自动切回起跑分支，支持失败后直接重跑续跑）
 #   2. 合并 origin/<版本开发分支> 进个人分支
-#   3. 推送个人分支到 GitHub（origin）
+#   3. 推送个人分支到 GitHub 与 GitLab
 #   4. 跑 pnpm run test:conversation 质量门（非存量挂失败则止步，不碰后续分支；
 #      断点续跑且版本分支已包含个人分支时跳过——该批代码上一轮已过门并推送）
-#   5. 合入版本开发分支并推 origin
-#   6. 合入本地 dev（部署数据源；不推送远端），汇合 origin/dev、gitlab/dev 与版本分支；
+#   5. 合入版本开发分支并双推送
+#   6. 合入 dev 并双推送，汇合 origin/dev、gitlab/dev 与版本分支；
 #      组合源码不同于已测个人分支时补过质量门，按精确 dev 提交缓存成功结果
 #   7. 切 test、pull gitlab+origin 双远端，merge dev（仅 dist/ 与版本烤哈希冲突自动
 #      按全量重建解决，源码冲突回滚交人工）→ 构建 → 提交 dist
 #      → push origin/test + gitlab/test（部署步骤已内联，语义同 deploy_test.sh）
-#      → 打印三处远端落点核验
+#      → 打印各分支双远端落点核验
 #   8. 切回个人开发分支
 #
 # 配置（优先级：环境变量 > scripts/deploy_sync_test.env 配置文件 > 交互提示/内置默认）：
@@ -42,7 +42,7 @@
 #                                     # 确有存量挂时显式指定，修复后移除。
 #
 # 说明：
-# - dev 仅本地合并不推送（如需推 origin/dev / gitlab/dev，在步骤 6 后补 run git push 即可）。
+# - 所有个人/版本/dev/test 分支在合并或提交后均双推送，任一远端失败不得算完成。
 # - 远端显式点名（origin / gitlab），不依赖 upstream 隐式行为。
 # - 非 DRY_RUN 下任何一步失败即停：成功自动切回原分支；失败时若无未提交改动也自动切回起跑分支
 #   （冲突已回滚/构建产物不阻塞的场景），有未提交改动或冲突态则停在出错分支交人工。
@@ -116,7 +116,7 @@ if [ ! -f "$CONFIG_FILE" ] && [ "${DRY_RUN:-0}" != "1" ] && [ -t 0 ]; then
   echo "未找到配置文件 ${CONFIG_FILE}，进入首次配置（输入内容将回显并写入文件，下次免输入）："
   _FB="${FEATURE_BRANCH:-$(prompt_required FEATURE_BRANCH "个人开发分支")}"
   _VB="${VERSION_BRANCH:-$(prompt_required VERSION_BRANCH "团队版本开发分支（如 feat-2026.9.30，注意无前导零）")}"
-  _DB="${DEV_BRANCH:-$(prompt_optional DEV_BRANCH "集成分支（仅本地合并）" dev)}"
+  _DB="${DEV_BRANCH:-$(prompt_optional DEV_BRANCH "集成分支（双远端同步）" dev)}"
   _TB="${TEST_BRANCH:-$(prompt_optional TEST_BRANCH "测试部署分支" test)}"
   # 必填项放弃输入时不写盘，避免残缺配置文件挡住下次交互入口
   [ -n "$_FB" ] && [ -n "$_VB" ] ||
@@ -185,20 +185,24 @@ if [ "$DRY_RUN" = "1" ]; then
   fi
   log "步骤 3/8：推送个人分支"
   run git push origin "HEAD:refs/heads/${FEATURE_BRANCH}"
+  run git push gitlab "HEAD:refs/heads/${FEATURE_BRANCH}"
   log "步骤 4/8：test:conversation 质量门（已合入版本分支的同批断点续跑可跳过）"
   run pnpm run test:conversation
-  log "步骤 5/8：合入 ${VERSION_BRANCH} 并推 origin"
+  log "步骤 5/8：合入 ${VERSION_BRANCH} 并双推送"
   run git checkout "$VERSION_BRANCH"
   run git pull --no-verify origin "$VERSION_BRANCH"
   run git merge "$FEATURE_BRANCH" --no-verify
   run git push origin "$VERSION_BRANCH"
-  log "步骤 6/8：合入本地 ${DEV_BRANCH}，汇合双远端 dev；不推送 dev"
+  run git push gitlab "$VERSION_BRANCH"
+  log "步骤 6/8：合入 ${DEV_BRANCH}，汇合并双推送 dev"
   run git checkout "$DEV_BRANCH"
   run git pull --no-verify origin "$DEV_BRANCH"
   run git merge "$VERSION_BRANCH" --no-verify
   run git fetch gitlab "refs/heads/${DEV_BRANCH}:refs/remotes/gitlab/${DEV_BRANCH}"
   run git merge "gitlab/${DEV_BRANCH}" --no-verify
   log "组合 dev 源码不同于已测个人分支时补过质量门；成功结果按精确 dev 提交缓存"
+  run git push origin "$DEV_BRANCH"
+  run git push gitlab "$DEV_BRANCH"
   log "步骤 7/8：${TEST_BRANCH} 双远端合入、重建完整 dist（含微应用与移动端）、提交产物及烤哈希"
   run git checkout "$TEST_BRANCH"
   run git pull --no-verify gitlab "$TEST_BRANCH"
@@ -405,15 +409,10 @@ if git show-ref --verify --quiet refs/remotes/gitlab/"${VERSION_BRANCH}" 2>/dev/
   fi
 fi
 
-CURRENT_STEP="推送 GitHub 个人分支"
-log "步骤 3/8：推送 ${REAL_FEATURE} 到 GitHub（origin）"
-if [ -n "$WT_DIR" ]; then
-  # worktree 模式：临时分支推回真名远端
-  retry_git 3 push origin "HEAD:refs/heads/${REAL_FEATURE}"
-  git fetch origin "${REAL_FEATURE}" --quiet
-else
-  retry_git 3 push origin "$FEATURE_BRANCH"
-fi
+CURRENT_STEP="双推送个人分支"
+log "步骤 3/8：推送 ${REAL_FEATURE} 到 GitHub（origin）与 GitLab（gitlab）"
+# 隔离 worktree 使用临时本地分支，两个远端都发布回原个人分支名。
+push_both_remotes "$REAL_FEATURE" HEAD
 
 CURRENT_STEP="test:conversation 质量门"
 # 续跑免重跑：VERSION 已包含 FEATURE ⇒ 这批代码上一轮已过质量门并随步骤 5 推上共享分支
@@ -427,7 +426,7 @@ else
 fi
 
 CURRENT_STEP="合入版本开发分支 ${VERSION_BRANCH}"
-log "步骤 5/8：合入团队版本开发分支 ${VERSION_BRANCH} 并推 origin"
+log "步骤 5/8：合入团队版本开发分支 ${VERSION_BRANCH} 并双推送"
 run git checkout "$VERSION_BRANCH"
 pull_with_heal origin "$VERSION_BRANCH"
 if git merge-base --is-ancestor "$FEATURE_BRANCH" "$VERSION_BRANCH"; then
@@ -440,10 +439,10 @@ else
     fi
   fi
 fi
-push_with_heal origin "$VERSION_BRANCH"
+push_both_remotes "$VERSION_BRANCH"
 
 CURRENT_STEP="合入 ${DEV_BRANCH}"
-log "步骤 6/8：合入本地 ${DEV_BRANCH}（部署数据源，不推送远端）"
+log "步骤 6/8：合入 ${DEV_BRANCH}（汇合后双推送）"
 run git checkout "$DEV_BRANCH"
 pull_with_heal origin "$DEV_BRANCH"
 if git merge-base --is-ancestor "$VERSION_BRANCH" "$DEV_BRANCH"; then
@@ -457,7 +456,7 @@ else
   fi
 fi
 # GitLab dev 可能比 test 更早接到共享开发；仅拉取双 test 不保证这些源码已进入交付。
-# 先汇合到本地 dev，两个远端 dev 都保持原样。源冲突拒绝自动择侧，阻止后续部署。
+# 先汇合到本地 dev，验证组合后同步两个远端。源冲突拒绝自动择侧，阻止后续部署。
 retry_git 3 fetch gitlab "refs/heads/${DEV_BRANCH}:refs/remotes/gitlab/${DEV_BRANCH}"
 if git merge-base --is-ancestor "gitlab/${DEV_BRANCH}" "$DEV_BRANCH"; then
   log "本地 ${DEV_BRANCH} 已包含 gitlab/${DEV_BRANCH}，跳过合并"
@@ -474,6 +473,7 @@ fi
 verify_microapp_pins
 # 个人分支的门不能证明来自另一路 dev 的组合源码；失败续跑不能绕过。
 run_combined_source_gate "$DEV_BRANCH" "$FEATURE_BRANCH" "$DEV_GATE_RECORD" "步骤 6.2"
+push_both_remotes "$DEV_BRANCH"
 
 CURRENT_STEP="${TEST_BRANCH} 分支构建部署"
 log "步骤 7/8：切 ${TEST_BRANCH}、双远端 pull、merge ${DEV_BRANCH}、构建并推送（语义同 deploy_test.sh）"
@@ -519,12 +519,11 @@ run_combined_source_gate "$TEST_BRANCH" "$TEST_VERIFIED_HEAD" "$TEST_GATE_RECORD
 mkdir -p "$(dirname "$TEST_GATE_RECORD")"
 printf '%s\n' "$(git rev-parse HEAD)" >"$TEST_GATE_RECORD"
 CURRENT_STEP="推送 ${TEST_BRANCH} 产物"
-push_with_heal origin "$TEST_BRANCH"
-push_with_heal gitlab "$TEST_BRANCH"
+push_both_remotes "$TEST_BRANCH"
 
 # 部署核验：推送成功后远端跟踪引用已更新，打印三处落点头部（可直接贴提测单，免手工 fetch 比对）
-log "部署核验（三处远端落点）："
-for ref in "origin/${VERSION_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
+log "部署核验（双远端落点）："
+for ref in "origin/${REAL_FEATURE}" "gitlab/${REAL_FEATURE}" "origin/${VERSION_BRANCH}" "gitlab/${VERSION_BRANCH}" "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
   echo "    ${ref} → $(git log --oneline -1 "${ref}" 2>/dev/null || echo '读取失败')"
 done
 

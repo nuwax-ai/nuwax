@@ -33,7 +33,6 @@ import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
-import { useTerminalPageRetention } from '@/features/conversation/react/useTerminalPageRetention';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import {
@@ -190,9 +189,6 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   const routeState = routeSnapshot ? routeSnapshot.state : location.state;
   const routeAction = routeSnapshot?.action ?? history.action;
   const routeKey = routeSnapshot?.key ?? location.key;
-  const onTerminalSessionCountChange = useTerminalPageRetention(
-    routeSnapshot?.key,
-  );
 
   /**
    * 从 URL query 参数中提取 agentId
@@ -1906,39 +1902,39 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             />
           </div>
 
-          {/* 常驻页面隐藏时保留终端连接，随会话或沙箱更换释放。 */}
-          <ConversationBottomConsole
-            key={`${queryConversationId}:${finalSelectedComputerId}`}
-            preserveTerminalConnections
-            enableMultipleTerminals
-            onTerminalSessionCountChange={onTerminalSessionCountChange}
-            // 在ConversationAgent中，conversationId 为 queryConversationId
-            conversationId={
-              finalSelectedComputerId === '-1' ? queryConversationId : undefined
-            }
-            visible={active && showDevConsole}
-            wsUrl={terminalWsUrl}
-            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-            layoutResetSignal={devConsoleLayoutResetSignal}
-            expandSignal={devConsoleExpandSignal}
-            collapseSignal={devConsoleCollapseSignal}
-            onLayoutModeChange={setDevConsoleLayoutMode}
-            onActiveTabChange={(tab) => {
-              setDevConsoleActiveTab(tab);
-            }}
-            devLog={{
-              logs: devLogs.logs,
-              isLoading: devLogs.isLoading,
-              lastLine: devLogs.lastLine,
-            }}
-            logsExtra={
-              <DevLogActions
-                onRefresh={devLogs.refreshLogs}
-                onClear={devLogs.clearLogs}
-              />
-            }
-          />
+          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
+          {active ? (
+            <ConversationBottomConsole
+              // 在ConversationAgent中，conversationId 为 queryConversationId
+              conversationId={
+                finalSelectedComputerId === '-1'
+                  ? queryConversationId
+                  : undefined
+              }
+              visible={showDevConsole}
+              wsUrl={terminalWsUrl}
+              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+              layoutResetSignal={devConsoleLayoutResetSignal}
+              expandSignal={devConsoleExpandSignal}
+              collapseSignal={devConsoleCollapseSignal}
+              onLayoutModeChange={setDevConsoleLayoutMode}
+              onActiveTabChange={(tab) => {
+                setDevConsoleActiveTab(tab);
+              }}
+              devLog={{
+                logs: devLogs.logs,
+                isLoading: devLogs.isLoading,
+                lastLine: devLogs.lastLine,
+              }}
+              logsExtra={
+                <DevLogActions
+                  onRefresh={devLogs.refreshLogs}
+                  onClear={devLogs.clearLogs}
+                />
+              }
+            />
+          ) : null}
         </div>
       </div>
     </div>

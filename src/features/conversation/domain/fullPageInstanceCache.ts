@@ -15,8 +15,6 @@ export interface FullPageInstanceEntry {
   conversationId: string | null;
   lifecycle: FullPageInstanceLifecycle;
   running: boolean;
-  /** 打开的终端占用页面保留资格，独立于智能体任务终态。 */
-  terminalSessionCount: number;
   terminalAt: number | null;
   hiddenSince: number | null;
   createdAt: number;
@@ -49,8 +47,6 @@ export function selectFullPageEvictionKey(
     )
     .sort(
       (left, right) =>
-        Number(left.terminalSessionCount > 0) -
-          Number(right.terminalSessionCount > 0) ||
         Number(left.running) - Number(right.running) ||
         left.lastAccessOrder - right.lastAccessOrder ||
         left.createdAt - right.createdAt ||

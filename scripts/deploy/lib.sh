@@ -306,15 +306,35 @@ detect_microapp_upgrades() {
 
 # push 带自愈：远端被直推（非快进拒绝）时先并远端再推——同事直推 gitlab 的
 # 工作流下 test/版本分支 push 三连拒的场景脚本自动消化（2026-10-09 实证）。
-push_with_heal() { # push_with_heal <remote> <branch>
-  if retry_git 3 push "$1" "$2"; then return 0; fi
+push_with_heal() { # push_with_heal <remote> <branch> [source-ref]
+  local refspec="$2"
+  if [ "${3:-$2}" != "$2" ]; then refspec="${3}:refs/heads/$2"; fi
+  if retry_git 3 push "$1" "$refspec"; then return 0; fi
   log "push 被拒（远端有新提交），先合并远端再推：$1/$2"
-  retry_git 3 fetch "$1" "$2" || return 1
+  retry_git 3 fetch "$1" "+refs/heads/$2:refs/remotes/$1/$2" || return 1
   if ! rgit merge "refs/remotes/$1/$2" --no-verify -m "merge: 合拢 $1/$2 直推提交"; then
     resolve_machine_conflicts "merge: 合拢 $1/$2 直推提交（机器产物冲突自动消化）" ||
       { git merge --abort 2>/dev/null || true; return 1; }
   fi
-  retry_git 3 push "$1" "$2"
+  retry_git 3 push "$1" "$refspec"
+}
+
+# 第二个远端的并发提交可能触发自愈合并；此时必须回推第一个远端，不能留下双尖。
+push_both_remotes() { # push_both_remotes <branch> [source-ref]
+  local branch="$1" source_ref="${2:-$1}" attempt tip origin_tip gitlab_tip
+  for attempt in 1 2 3; do
+    push_with_heal origin "$branch" "$source_ref" || return 1
+    push_with_heal gitlab "$branch" "$source_ref" || return 1
+    retry_git 3 fetch origin "+refs/heads/${branch}:refs/remotes/origin/${branch}" || return 1
+    retry_git 3 fetch gitlab "+refs/heads/${branch}:refs/remotes/gitlab/${branch}" || return 1
+    tip="$(git rev-parse "${source_ref}^{commit}")" || return 1
+    origin_tip="$(git rev-parse "refs/remotes/origin/${branch}")" || return 1
+    gitlab_tip="$(git rev-parse "refs/remotes/gitlab/${branch}")" || return 1
+    if [ "$tip" = "$origin_tip" ] && [ "$tip" = "$gitlab_tip" ]; then return 0; fi
+    log "${branch} 在双推送期间有并发更新，继续汇合并同步（${attempt}/3）"
+  done
+  log "${branch} 未能同步到两个远端；保留现场，本次推送未完成"
+  return 1
 }
 
 # pull 带自愈：远端分叉时 pull 走 merge，dist/version.ts 机器产物冲突会让 pull 失败且
