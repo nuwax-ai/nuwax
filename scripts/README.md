@@ -22,7 +22,7 @@
 | 脚本 | 入口 | 作用 |
 | --- | --- | --- |
 | `sync-micro-apps.mjs` | `npm run sync:micro-apps`；`prebuild:*` 自动 | 按主仓 gitlink 隔离构建全部已登记微应用到 `public/micro-apps/`。不 fetch、不改子仓。输入不变时命中产物缓存（秒级），`MICRO_APP_CACHE=0` 强制重建；子模块未初始化时跳过（社区版），`MICRO_APP_REQUIRED=1` 禁止跳过 |
-| `upgrade-micro-apps.mjs` | `npm run upgrade:micro-apps -- <message\|repo\|all> [--dry-run] [--ref SHA]` | **常规升级通道**：fetch 子仓 main → 快进校验 → patch/overlay 预检 → 更新 HEAD 与 pin 并暂存；失败自动回滚并留恢复记录。patch 贴不上时报冲突文件，不自动改 patch |
+| `upgrade-micro-apps.mjs` | `npm run upgrade:micro-apps -- <message\|repo\|all> [--dry-run] [--ref SHA]` | **常规升级通道**：fetch 子仓 main → 快进校验 → patch/overlay 预检 → 更新 HEAD 与 pin 并暂存；失败自动回滚并留恢复记录。patch 贴不上时默认三方重算并暂存，`--no-rebase-patch` 关闭 |
 | `pull-micro-app-pins.mjs` | `npm run pull:micro-app-pins [-- repo\|message] [--offline]` | **适配负责人用**：先 `submodule update --init`，快进到远端 main，patch 贴不上时尝试三方合并**重算 adapter.patch** 并暂存。失败时 pin/子仓 HEAD 可能已改动（无回滚），需按提示手工收尾。`--offline` 只校验不改动 |
 
 ## 构建与发布

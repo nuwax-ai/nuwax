@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- 下载视频：向下箭头 + 托盘，同原 PNG 形态 -->
+  <g fill="none" stroke="#292832" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 170V610"/>
+    <path d="M370 470L512 615L654 470"/>
+    <path d="M190 690V816H834V690"/>
+  </g>
+</svg>

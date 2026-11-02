@@ -391,6 +391,34 @@ export const native = {
       };
     }
   },
+  /** Internal readers retain the host session; a failed/old host can keep inline preview. */
+  async openReadingWindow(path: string): Promise<{ success: boolean }> {
+    if (!isDesktopHost() || !getBridge()?.native?.openWindow)
+      return { success: false };
+    try {
+      const target = new URL(path, window.location.href);
+      if (
+        !['http:', 'https:'].includes(target.protocol) ||
+        target.username ||
+        target.password ||
+        !target.pathname.startsWith('/repo/')
+      )
+        return { success: false };
+      const context = await auth.getContext();
+      const origins = [
+        window.location.origin,
+        context?.businessOrigin,
+        context?.gatewayOrigin,
+      ].filter(Boolean);
+      if (!origins.includes(target.origin)) return { success: false };
+      const probe = getBridge()?.canUse;
+      if (probe && !(await probe('native.openWindow')))
+        return { success: false };
+      return await native.openWindow(target.href, { purpose: 'page' });
+    } catch {
+      return { success: false };
+    }
+  },
   /**
    * 打开宿主壳「客户端设置」弹窗（设置 UI 由壳 renderer 承载，经主进程转发打开）。
    * 仅新版商业宿主支持；浏览器 / 旧版宿主返回 {success:false}，调用方降级处理。

@@ -62,13 +62,13 @@ npm run sync:micro-apps                       # 验证构建（资料库类型�
 git commit -m "chore(micro-apps): <id> 子模块升级 <旧>-><新>——<上游变更摘要>"
 ```
 
-成功只暂存 `submodules/<repo>` 的 gitlink 与 `adapter.json`。失败会恢复 HEAD/pin/index，并在 `.cache/micro-apps/upgrades/` 留恢复记录。全链提测脚本步骤 2.5 会自动调用本工具（`UPGRADE_MICRO_APPS=0` 关闭）；快速通道也会在汇合 test 后自动调用并提交，通过质量门后再构建。快速通道允许起跑时只有未暂存的子模块版本偏差，自动对齐后升级；子仓文件改动和已暂存输入仍会保留并报错。
+成功只暂存 `submodules/<repo>` 的 gitlink 与 `adapter.json`；补丁贴不上时默认三方重算并一并暂存 `adapter.patch`。失败会恢复 HEAD/pin/index，并在 `.cache/micro-apps/upgrades/` 留恢复记录。全链提测脚本步骤 2.5 会自动调用本工具（`UPGRADE_MICRO_APPS=0` 关闭）；快速通道也会在汇合 test 后自动调用并提交，通过质量门后再构建。快速通道允许起跑时只有未暂存的子模块版本偏差，自动对齐后升级；子仓文件改动和已暂存输入仍会保留并报错。真冲突（两边改同一处）仍停止，可用 `--no-rebase-patch` 关闭自动重算。
 
 ### 4.2 预检报「adapter patch 与候选 main 冲突」（适配负责人）
 
-说明上游改到了 patch 修改过的位置，需要重制 patch。**其他同事无需处理**，等负责人提交重制版后拉分支重跑即可。
+说明上游改到了 patch 修改过的位置。`upgrade:micro-apps` 默认会先三方重算；只有两边改了同一处才会停下来。**其他同事无需处理**，等负责人提交重制版后拉分支重跑即可。
 
-先试自动三方合并：
+自动重算失败时再手工三方合并：
 
 ```bash
 npm run pull:micro-app-pins -- repo     # 快进 + 三方合并重算 adapter.patch，成功则 gitlink/pin/patch 一并暂存

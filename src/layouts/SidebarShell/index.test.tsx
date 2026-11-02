@@ -46,6 +46,11 @@ vi.mock('umi', () => ({
   },
 }));
 
+// 定位窗行为另有测试和三类宿主页面走查；此处只守卫壳的挂载槽位。
+vi.mock('@/features/conversation/react/ConversationMessageSearchRoute', () => ({
+  ConversationMessageSearchRoute: () => null,
+}));
+
 vi.mock('@/hooks/useCategory', () => ({
   default: () => ({ runQueryCategory: runQueryCategoryMock }),
 }));

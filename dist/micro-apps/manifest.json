@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "schemaVersion": 1,
+      "id": "repo",
+      "appName": "nuwax-repo-web",
+      "entry": "/micro-apps/repo/index.html",
+      "assetBase": "/micro-apps/repo/",
+      "businessBase": "/repo",
+      "source": {
+        "branch": "main",
+        "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
+        "commit": "db9f23a61e7f218873400cd9bf2ac3c1b258daeb"
+      },
+      "projectDir": ".",
+      "workspaceMode": "project-workspace",
+      "buildEnvironment": {},
+      "typecheck": {
+        "status": "matched-upstream-baseline",
+        "upstreamDiagnostics": 68,
+        "adapterDiagnostics": 68,
+        "newDiagnostics": 0,
+        "baselineSha256": "ef32dee08ff1523651f36df67b0130c2dd78fa85934c6151b3f4fd4f6c28cb59",
+        "command": [
+          "exec",
+          "tsc",
+          "-b",
+          "--pretty",
+          "false",
+          "--force"
+        ]
+      },
+      "adapter": {
+        "sha256": "ba744f25b967a4070ddf479e24586b4a20c95ebb4c272c936b10428a771c6c95",
+        "files": [
+          "adapter.json",
+          "adapter.patch",
+          "overlay/scope-styles.d.mts",
+          "overlay/scope-styles.mjs",
+          "overlay/src/host.css",
+          "overlay/src/HostRouter.tsx",
+          "overlay/src/hostRuntime.ts",
+          "overlay/src/lib/treeBroadcast.ts",
+          "overlay/src/main.tsx",
+          "overlay/src/qiankun-setup.ts",
+          "overlay/vite.config.ts"
+        ]
+      },
+      "toolchain": {
+        "node": "v24.14.0",
+        "pnpm": "10.27.0",
+        "qiankun": "2.10.17-beta.0",
+        "@tiny-codes/vite-plugin-qiankun": "2.4.0"
+      },
+      "builtAt": "2026-10-27T03:33:11.655Z",
+      "cache": {
+        "key": "23b28822b0fe4fc2f92b607bbdaab5ebffff4fb0ce336bf6846b4e900e30304e",
+        "hit": true,
+        "reusedAt": "2026-10-30T12:42:07.643Z"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "message",
+      "appName": "nuwax-im-web",
+      "entry": "/micro-apps/message/index.html",
+      "assetBase": "/micro-apps/message/",
+      "businessBase": "/instant-message",
+      "source": {
+        "branch": "main",
+        "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
+        "commit": "0c1773c3515e682a6b1abd1560491dd26f6d4cda"
+      },
+      "projectDir": "nuwax-im-web",
+      "workspaceMode": "standalone",
+      "buildEnvironment": {
+        "VITE_IM_AUTH_MODE": "platform"
+      },
+      "adapter": {
+        "sha256": "23b7874464df9561516928c1c2ccf15ae15dc74cef2f5909e61b2844909fb94d",
+        "files": [
+          "adapter.json",
+          "adapter.patch",
+          "overlay/index.html",
+          "overlay/scope-styles.d.mts",
+          "overlay/scope-styles.mjs",
+          "overlay/src/host.css",
+          "overlay/src/hostRuntime.ts",
+          "overlay/src/main.tsx",
+          "overlay/src/qiankun-setup.ts",
+          "overlay/src/unreadReconcile.ts",
+          "overlay/vite.config.ts"
+        ]
+      },
+      "toolchain": {
+        "node": "v24.14.0",
+        "pnpm": "10.27.0",
+        "qiankun": "2.10.17-beta.0",
+        "@tiny-codes/vite-plugin-qiankun": "2.4.0"
+      },
+      "builtAt": "2026-10-30T12:42:29.065Z",
+      "cache": {
+        "key": "885412be8a16aaa06b34a058449c1406ab17d0d9ab30fbe7662f682d1521bd9b",
+        "hit": false
+      }
+    }
+  ]
+}

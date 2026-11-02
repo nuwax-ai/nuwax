@@ -11,8 +11,8 @@ import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { formatRelativeTime } from '../../utils';
 import { useNow } from '../../useNow';
+import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
 
@@ -97,8 +97,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   // 行尾置顶/取消置顶：未置顶 hover 展开空心图钉、已置顶
   // 常显实心图钉可点击取消；接口与 ⋯菜单同源，成功后同步调用方列表
   const [pinning, setPinning] = useState(false);
+  const pinTooltipKey = `${item.id}:${pinned}`;
+  const [pinTooltipFor, setPinTooltipFor] = useState<string | null>(null);
   const handleTogglePinned = async () => {
     if (pinning) return;
+    setPinTooltipFor(null);
     setPinning(true);
     try {
       const next = !pinned;
@@ -181,7 +184,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               <span className={cx(styles['conversation-trailing'])}>
                 {/* 状态区静止时在时间前，hover 时在更多前；状态与置顶
                     操作共用一个固定槽位，标题起点始终不变。 */}
-                <span className={cx(styles['status-slot'])}>
+                <span
+                  className={cx(styles['status-slot'])}
+                  onMouseLeave={() => setPinTooltipFor(null)}
+                >
                   <span className={cx(styles['status-mark'])}>
                     <ConversationStatusMark
                       taskStatus={leadingMark ? item.taskStatus : undefined}
@@ -195,6 +201,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                     />
                   </span>
                   <Tooltip
+                    // 状态/禁用切换时销毁旧触发器，取消未触发的 hover 定时器。
+                    key={`${pinTooltipKey}:${pinning}`}
+                    open={!pinning && pinTooltipFor === pinTooltipKey}
+                    onOpenChange={(open) =>
+                      setPinTooltipFor(open && !pinning ? pinTooltipKey : null)
+                    }
                     title={dict(
                       pinned
                         ? 'PC.Components.ConversationContextMenu.unpin'

@@ -65,7 +65,7 @@ import {
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
-import type { KeyboardEvent, MouseEvent } from 'react';
+import type { FC, KeyboardEvent, MouseEvent } from 'react';
 import {
   forwardRef,
   useCallback,
@@ -75,14 +75,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { FC } from 'react';
 import { history } from 'umi';
 import {
   readCollapsedProjectKeys,
   writeCollapsedProjectKeys,
 } from '../../collapsePreference';
-import { formatRelativeTime } from '../../utils';
 import { useNow } from '../../useNow';
+import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
 import styles from './index.less';
@@ -91,6 +90,7 @@ import {
   findProjectKeyByConversation,
   hasMoreProjects,
   mergeFlagIds,
+  PROJECT_CONVERSATION_PAGE_SIZE,
   PROJECT_PAGE_SIZE,
   projectKeyOf,
   remainingProjects,
@@ -309,6 +309,9 @@ const ProjectPanel = forwardRef<
     const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() =>
       readCollapsedProjectKeys(),
     );
+    const [visibleChildCounts, setVisibleChildCounts] = useState<
+      Record<string, number>
+    >({});
     useEffect(() => {
       writeCollapsedProjectKeys(collapsedIds);
     }, [collapsedIds]);
@@ -910,6 +913,13 @@ const ProjectPanel = forwardRef<
 
     const handleProjectClick = (project: ProjectItem) => {
       const key = projectKeyOf(project);
+      if (!collapsedIds.has(key)) {
+        // 主动关闭项目结束本次浏览，下次打开从最近会话重新展开。
+        setVisibleChildCounts((previous) => ({
+          ...previous,
+          [key]: PROJECT_CONVERSATION_PAGE_SIZE,
+        }));
+      }
       setCollapsedIds((prev) => {
         const next = new Set(prev);
         if (next.has(key)) {
@@ -1084,11 +1094,20 @@ const ProjectPanel = forwardRef<
     useImperativeHandle(
       ref,
       () => ({
-        toggleAll: () =>
+        toggleAll: () => {
+          const allExpanded = visibleProjects.every(
+            (project) => !collapsedIds.has(projectKeyOf(project)),
+          );
+          if (allExpanded) {
+            setVisibleChildCounts((previous) => {
+              const next = { ...previous };
+              visibleProjects.forEach((project) => {
+                delete next[projectKeyOf(project)];
+              });
+              return next;
+            });
+          }
           setCollapsedIds((previous) => {
-            const allExpanded = visibleProjects.every(
-              (project) => !previous.has(projectKeyOf(project)),
-            );
             const next = new Set(previous);
             visibleProjects.forEach((project) => {
               const key = projectKeyOf(project);
@@ -1096,7 +1115,8 @@ const ProjectPanel = forwardRef<
               else next.delete(key);
             });
             return next;
-          }),
+          });
+        },
         hasExecutingChildren: () =>
           projectsRef.current.some((project) =>
             (project.children ?? []).some(
@@ -1695,7 +1715,20 @@ const ProjectPanel = forwardRef<
         className={cx(styles['project-panel'], { [styles.compact]: compact })}
       >
         {visibleProjects.map((project) => {
-          const expanded = !collapsedIds.has(projectKeyOf(project));
+          const projectKey = projectKeyOf(project);
+          const expanded = !collapsedIds.has(projectKey);
+          const children = project.children ?? [];
+          const visibleChildCount =
+            visibleChildCounts[projectKey] ?? PROJECT_CONVERSATION_PAGE_SIZE;
+          const visibleChildren = children.slice(0, visibleChildCount);
+          const activeChild = children.find(
+            (child) => String(child.id) === activeConversationId,
+          );
+          // 当前会话较旧时占用一个展示名额，保留选中定位，也不撑长侧栏。
+          if (activeChild && !visibleChildren.includes(activeChild)) {
+            visibleChildren.splice(-1, 1, activeChild);
+          }
+          const hasMoreChildren = children.length > visibleChildren.length;
           return (
             <div key={projectKeyOf(project)} className={cx(styles.project)}>
               <Dropdown
@@ -1874,7 +1907,7 @@ const ProjectPanel = forwardRef<
                       )}
                     </div>
                   )}
-                {(project.children ?? []).map((child) => {
+                {visibleChildren.map((child) => {
                   const isChildActive =
                     activeConversationId !== undefined &&
                     String(child.id) === activeConversationId;
@@ -2004,6 +2037,24 @@ const ProjectPanel = forwardRef<
                     </div>
                   );
                 })}
+                {hasMoreChildren && (
+                  <div className={styles['child-pagination']}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleChildCounts((previous) => ({
+                          ...previous,
+                          [projectKey]:
+                            visibleChildCount + PROJECT_CONVERSATION_PAGE_SIZE,
+                        }))
+                      }
+                    >
+                      {dict(
+                        'PC.Layouts.DynamicMenusLayout.NewHomeSection.expandSessions',
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
