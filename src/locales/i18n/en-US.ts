@@ -213,6 +213,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "Restart service",
   "PC.Components.ConversationBottomConsole.tabLogs": "Logs",
   "PC.Components.ConversationBottomConsole.tabTerminal": "Terminal",
+  "PC.Components.ConversationBottomConsole.cacheLimitReleased": "The session retention limit was reached. Terminals in an older session were disconnected. Close unused terminals before opening more sessions.",
   "PC.Components.ConversationBottomConsole.newTerminal": "New terminal",
   "PC.Components.ConversationBottomConsole.closeTerminal": "Close terminal",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "No terminal output yet",

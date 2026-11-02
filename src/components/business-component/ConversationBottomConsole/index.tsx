@@ -114,6 +114,8 @@ export interface ConversationBottomConsoleProps {
   preserveTerminalConnections?: boolean;
   /** 会话终端多开；环境终端保持原有开发 / 线上契约 */
   enableMultipleTerminals?: boolean;
+  /** 首次打开后报告驻留终端数量；隐藏面板不释放占用，关闭终端才释放。 */
+  onTerminalSessionCountChange?: (count: number) => void;
   /** 当前可见环境，仅 terminalSessions 模式使用 */
   terminalEnvironment?: ConsoleTerminalEnvironment;
   /**
@@ -210,6 +212,7 @@ const ConversationBottomConsoleInner: React.FC<
   enableKeepalivePolling = true,
   preserveTerminalConnections = false,
   enableMultipleTerminals = false,
+  onTerminalSessionCountChange,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -344,6 +347,10 @@ const ConversationBottomConsoleInner: React.FC<
     setTerminalIds(remaining);
     if (!remaining.length) {
       // 最后一个终端关闭后也释放容器保活，迟到的 ensure 不得重新启动轮询。
+      if (ensurePodOnDisconnectTimerRef.current !== null) {
+        window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
+        ensurePodOnDisconnectTimerRef.current = null;
+      }
       containerGenerationRef.current += 1;
       ensureInFlightRef.current = false;
       terminalActivatedRef.current = false;
@@ -738,6 +745,15 @@ const ConversationBottomConsoleInner: React.FC<
     terminalIds.length,
     visible,
   ]);
+
+  const terminalCountCallbackRef = useRef(onTerminalSessionCountChange);
+  terminalCountCallbackRef.current = onTerminalSessionCountChange;
+  useEffect(() => {
+    terminalCountCallbackRef.current?.(
+      terminalActivatedRef.current ? terminalIds.length : 0,
+    );
+  }, [terminalIds.length, layoutMode, visible]);
+  useEffect(() => () => terminalCountCallbackRef.current?.(0), []);
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
@@ -1215,10 +1231,15 @@ const ConversationBottomConsoleInner: React.FC<
                 if (ensurePodOnDisconnectTimerRef.current) {
                   window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
                 }
+                const disconnectGeneration = containerGenerationRef.current;
                 ensurePodOnDisconnectTimerRef.current = window.setTimeout(
                   () => {
                     ensurePodOnDisconnectTimerRef.current = null;
-                    if (!conversationId) {
+                    if (
+                      !conversationId ||
+                      disconnectGeneration !== containerGenerationRef.current ||
+                      !terminalActivatedRef.current
+                    ) {
                       return;
                     }
                     void ensurePodWithStage(conversationId).catch((error) => {

@@ -100,6 +100,7 @@ export class FullPageInstanceCacheManager {
   private scheduleTerminalRelease(entry: FullPageInstanceEntry) {
     this.clearTimer(entry.key);
     if (
+      entry.terminalSessionCount > 0 ||
       entry.lifecycle !== 'cached' ||
       entry.terminalAt === null ||
       entry.hiddenSince === null
@@ -115,6 +116,7 @@ export class FullPageInstanceCacheManager {
       const current = this.entries.get(entry.key);
       if (
         current?.lifecycle !== 'cached' ||
+        current.terminalSessionCount > 0 ||
         current.terminalAt === null ||
         current.hiddenSince === null
       ) {
@@ -212,6 +214,7 @@ export class FullPageInstanceCacheManager {
           : String(input.conversationId),
       lifecycle: 'active',
       running,
+      terminalSessionCount: current?.terminalSessionCount ?? 0,
       terminalAt,
       hiddenSince: null,
       createdAt: current?.createdAt ?? now,
@@ -239,6 +242,22 @@ export class FullPageInstanceCacheManager {
       this.entries.set(key, hidden);
       this.scheduleTerminalRelease(hidden);
     }
+    this.emit();
+  }
+
+  setTerminalSessionCount(key: string, count: number) {
+    const entry = this.entries.get(key);
+    if (!entry) return;
+    const terminalSessionCount = Number.isFinite(count)
+      ? Math.max(0, Math.floor(count))
+      : 0;
+    if (entry.terminalSessionCount === terminalSessionCount) return;
+    const next = { ...entry, terminalSessionCount };
+    // 最后一个终端关闭后从现在开始宽限，避免立即被旧终态时间淘汰。
+    if (terminalSessionCount === 0 && entry.terminalAt !== null)
+      next.terminalAt = Date.now();
+    this.entries.set(key, next);
+    this.scheduleTerminalRelease(next);
     this.emit();
   }
 

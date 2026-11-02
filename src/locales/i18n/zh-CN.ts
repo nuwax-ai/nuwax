@@ -213,6 +213,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "重启服务",
   "PC.Components.ConversationBottomConsole.tabLogs": "日志",
   "PC.Components.ConversationBottomConsole.tabTerminal": "终端",
+  "PC.Components.ConversationBottomConsole.cacheLimitReleased": "已达到会话保留上限，较早会话的终端连接已释放。请关闭不用的终端后再打开新会话。",
   "PC.Components.ConversationBottomConsole.newTerminal": "新建终端",
   "PC.Components.ConversationBottomConsole.closeTerminal": "关闭终端",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "暂无终端输出",

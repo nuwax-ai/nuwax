@@ -43,6 +43,7 @@ import {
 } from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { useTerminalPageRetention } from '@/features/conversation/react/useTerminalPageRetention';
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
@@ -190,6 +191,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   const pageCacheKey = useMemo(
     () => createConversationPageCacheKey('chat', id),
     [id],
+  );
+  const onTerminalSessionCountChange = useTerminalPageRetention(
+    freezeRouteLocation ? routeLocationSnapshot?.key : undefined,
   );
   const location = useLocation();
   const initialRouteRef = useRef({
@@ -1980,6 +1984,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         // 切到文件预览只是隐藏面板。连接留到本组件卸载再断，避免前台进程被新 shell 换掉
         preserveTerminalConnections
         enableMultipleTerminals
+        onTerminalSessionCountChange={onTerminalSessionCountChange}
         wsUrl={terminalWsUrl}
         wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
         wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}

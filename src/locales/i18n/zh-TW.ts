@@ -194,6 +194,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.retryStartContainer": "重啟服務",
   "PC.Components.ConversationBottomConsole.tabLogs": "日誌",
   "PC.Components.ConversationBottomConsole.tabTerminal": "終端",
+  "PC.Components.ConversationBottomConsole.cacheLimitReleased": "已達到會話保留上限，較早會話的終端連線已釋放。請關閉不用的終端後再開啟新會話。",
   "PC.Components.ConversationBottomConsole.newTerminal": "新增終端",
   "PC.Components.ConversationBottomConsole.closeTerminal": "關閉終端",
   "PC.Components.ConversationBottomConsole.terminalEmpty": "暫無終端輸出",

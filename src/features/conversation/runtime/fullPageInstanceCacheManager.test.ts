@@ -120,6 +120,57 @@ describe('整页实例缓存', () => {
     expect(manager.getEntry('chat-b')).toBeDefined();
   });
 
+  it('活动终端跨会话超过60秒仍保留，关闭最后终端后恢复宽限期', () => {
+    manager.activate({
+      key: 'chat-a',
+      kind: 'conversation',
+      conversationId: 10,
+      status: TaskStatus.COMPLETE,
+    });
+    manager.setTerminalSessionCount('chat-a', 2);
+    manager.activate({
+      key: 'chat-b',
+      kind: 'conversation',
+      conversationId: 11,
+    });
+    vi.advanceTimersByTime(180000);
+    expect(manager.getEntry('chat-a')?.terminalSessionCount).toBe(2);
+    manager.setTerminalSessionCount('chat-a', 1);
+    vi.advanceTimersByTime(60000);
+    expect(manager.getEntry('chat-a')).toBeDefined();
+    manager.setTerminalSessionCount('chat-a', 0);
+    vi.advanceTimersByTime(59999);
+    expect(manager.getEntry('chat-a')).toBeDefined();
+    vi.advanceTimersByTime(1);
+    expect(manager.getEntry('chat-a')).toBeUndefined();
+  });
+
+  it('容量上限不变，优先释放没有终端的页；全有终端时仍有界回收', () => {
+    for (let i = 0; i < 5; i++) {
+      manager.activate({
+        key: `chat-${i}`,
+        kind: 'conversation',
+        conversationId: i,
+        status: TaskStatus.COMPLETE,
+      });
+      if (i !== 2) manager.setTerminalSessionCount(`chat-${i}`, 1);
+    }
+    manager.activate({
+      key: 'chat-5',
+      kind: 'conversation',
+      conversationId: 5,
+    });
+    expect(manager.getSnapshot().entries).toHaveLength(5);
+    expect(manager.getEntry('chat-2')).toBeUndefined();
+    manager.setTerminalSessionCount('chat-5', 1);
+    manager.activate({
+      key: 'chat-6',
+      kind: 'conversation',
+      conversationId: 6,
+    });
+    expect(manager.getSnapshot().entries).toHaveLength(5);
+  });
+
   it('容量紧张时可提前释放终态页；删除按会话清除所有实例与 VNC 所有权', () => {
     manager.activate({
       key: 'chat-10',

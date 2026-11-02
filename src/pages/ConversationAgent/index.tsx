@@ -33,6 +33,7 @@ import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useLocalFilesContext } from '@/features/client-shell/localFileService';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { useTerminalPageRetention } from '@/features/conversation/react/useTerminalPageRetention';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import {
@@ -189,6 +190,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   const routeState = routeSnapshot ? routeSnapshot.state : location.state;
   const routeAction = routeSnapshot?.action ?? history.action;
   const routeKey = routeSnapshot?.key ?? location.key;
+  const onTerminalSessionCountChange = useTerminalPageRetention(
+    routeSnapshot?.key,
+  );
 
   /**
    * 从 URL query 参数中提取 agentId
@@ -1907,6 +1911,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             key={`${queryConversationId}:${finalSelectedComputerId}`}
             preserveTerminalConnections
             enableMultipleTerminals
+            onTerminalSessionCountChange={onTerminalSessionCountChange}
             // 在ConversationAgent中，conversationId 为 queryConversationId
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined

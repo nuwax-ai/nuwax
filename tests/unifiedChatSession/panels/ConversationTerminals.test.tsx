@@ -205,6 +205,46 @@ describe('会话内多终端的连接所有权', () => {
     expect(mocks.stopKeepalive).toHaveBeenCalled();
   });
 
+  it('报告打开终端占用：隐藏后保留，逐个关闭与卸载归零', () => {
+    const onCount = vi.fn();
+    const view = render(
+      <ConversationBottomConsole
+        {...props}
+        onTerminalSessionCountChange={onCount}
+      />,
+    );
+    expect(onCount).toHaveBeenLastCalledWith(1);
+    openAnother();
+    expect(onCount).toHaveBeenLastCalledWith(2);
+    view.rerender(
+      <ConversationBottomConsole
+        {...props}
+        visible={false}
+        onTerminalSessionCountChange={onCount}
+      />,
+    );
+    expect(onCount).toHaveBeenLastCalledWith(2);
+    close(1);
+    expect(onCount).toHaveBeenLastCalledWith(1);
+    close(2);
+    expect(onCount).toHaveBeenLastCalledWith(0);
+    view.unmount();
+    expect(onCount).toHaveBeenLastCalledWith(0);
+  });
+
+  it('关闭最后一个终端取消已经排队的断线预热请求', async () => {
+    render(<ConversationBottomConsole {...props} conversationId={100} />);
+    await act(async () => {});
+    const peer = Socket.all[0];
+    act(() => peer.open());
+    mocks.ensure.mockClear();
+    act(() => peer.close());
+    close(1);
+    await act(async () => vi.advanceTimersByTime(350));
+    expect(mocks.ensure).not.toHaveBeenCalled();
+    expect(Socket.all).toHaveLength(1);
+  });
+
   it('关闭断线重试中的终端会取消重连，换会话或沙箱释放全部旧连接', () => {
     const view = render(<ConversationBottomConsole {...props} />);
     act(() => Socket.all[0].open());
