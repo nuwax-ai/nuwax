@@ -1,3 +1,4 @@
+import { resolveTerminalTaskStatus } from '@/features/conversation/domain/taskStatus';
 import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -338,7 +339,8 @@ const preserveFinalizedMessagePresentation = (
   }
 
   // close / 网络错误只给本地占位收尾，并不证明回答已完整到达。
-  // 不能把这类空/中断消息冻结，否则后续落库快照中的完整回答永远被本地空值盖掉。
+  // 只有同消息且请求身份不冲突的协议终稿可恢复；complete/缺省状态本身
+  // 不能证明快照已完整，否则较短的落库旧版本会截断已显示的正文。
   const canRecoverInterruptedAnswer =
     local.role === AssistantRoleEnum.ASSISTANT &&
     !local.finalResult &&
@@ -347,9 +349,31 @@ const preserveFinalizedMessagePresentation = (
       local.status === MessageStatusEnum.Error ||
       !(local.text || '').trim()) &&
     !isIncompleteStatus(incoming.status) &&
+    resolveTerminalTaskStatus(
+      incoming.finalResult?.success,
+      incoming.finalResult,
+    ) !== undefined &&
+    (!local.requestId ||
+      !incoming.requestId ||
+      local.requestId === incoming.requestId) &&
     Boolean((incoming.text || incoming.finalResult?.outputText || '').trim());
   if (canRecoverInterruptedAnswer) {
-    return { ...incoming, clientRenderKey: local.clientRenderKey };
+    return {
+      ...incoming,
+      clientRenderKey: local.clientRenderKey,
+      requestId: incoming.requestId || local.requestId,
+      // 思考和本地附件可能只在流中出现，持久化终稿缺省时仍需保留。
+      think: incoming.think || local.think,
+      thinkBlocks: incoming.thinkBlocks?.length
+        ? incoming.thinkBlocks
+        : local.thinkBlocks,
+      attachments: incoming.attachments?.length
+        ? incoming.attachments
+        : local.attachments,
+      processingList: incoming.processingList?.length
+        ? incoming.processingList
+        : local.processingList,
+    };
   }
 
   // 流式中的消息（loading/incomplete）仍以快照为准；已终态

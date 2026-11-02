@@ -699,6 +699,81 @@ describe('preserveOptimisticMessageTail', () => {
     },
   );
 
+  it.each([undefined, MessageStatusEnum.Complete])(
+    '短旧快照 status=%s 不截断中断回答，后到终稿仍能恢复',
+    (status) => {
+      const local = {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        clientRenderKey: optimisticAsstId,
+        requestId: 'round-a',
+        text: '本地已经接收的较完整回答',
+        think: '仅流式携带的思考',
+        thinkBlocks: ['思考块'],
+        attachments: [
+          {
+            fileName: 'result.txt',
+            fileUrl: '/fixture/result.txt',
+            fileKey: 'fixture-result',
+            mimeType: 'text/plain',
+          },
+        ],
+        status: MessageStatusEnum.Stopped,
+      } as MessageInfo;
+      const stale = {
+        ...local,
+        text: '本地已经',
+        think: undefined,
+        thinkBlocks: undefined,
+        attachments: undefined,
+        clientRenderKey: undefined,
+        status,
+      };
+      const merged = reconcileConversationSnapshotMessages([local], [stale]);
+      expect(merged[0]).toMatchObject({
+        text: local.text,
+        think: local.think,
+        attachments: local.attachments,
+      });
+      const final = {
+        ...stale,
+        status: MessageStatusEnum.Complete,
+        text: '终稿',
+        finalResult: { success: true, outputText: '终稿' },
+      } as MessageInfo;
+      const recovered = reconcileConversationSnapshotMessages(merged, [final]);
+      // 有协议终稿时允许权威纠正为更短正文，不拿字数代替终态证据。
+      expect(recovered[0]).toMatchObject({
+        text: '终稿',
+        finalResult: final.finalResult,
+        think: local.think,
+        thinkBlocks: local.thinkBlocks,
+        attachments: local.attachments,
+        clientRenderKey: optimisticAsstId,
+      });
+    },
+  );
+
+  it('同消息ID但请求身份冲突的终稿不能覆盖本地中断轮', () => {
+    const local = {
+      id: 103,
+      role: AssistantRoleEnum.ASSISTANT,
+      clientRenderKey: optimisticAsstId,
+      requestId: 'round-a',
+      text: '本轮中断正文',
+      status: MessageStatusEnum.Stopped,
+    } as MessageInfo;
+    const foreign = {
+      ...local,
+      requestId: 'round-b',
+      text: '其他轮正文',
+      finalResult: { success: true },
+    } as MessageInfo;
+    expect(
+      reconcileConversationSnapshotMessages([local], [foreign])[0],
+    ).toMatchObject({ text: local.text, requestId: 'round-a' });
+  });
+
   it('恢复中的残缺快照不能覆盖本地中断前内容', () => {
     const local = {
       id: 103,
