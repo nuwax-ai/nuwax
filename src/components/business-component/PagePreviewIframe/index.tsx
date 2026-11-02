@@ -22,11 +22,11 @@ import { debounce } from 'lodash';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 import TurndownService from 'turndown';
 import styles from './index.less';
 import { observePreviewDocument } from './observePreviewDocument';
@@ -128,7 +128,27 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const readerRef = useRef<HTMLDialogElement>(null);
+  const modalReader = useRef(false);
   const [maximized, setMaximized] = useState(false);
+  useLayoutEffect(() => {
+    const reader = readerRef.current;
+    if (!reader) return;
+    // Top-layer display escapes ancestor clipping without moving the iframe.
+    if (maximized && !modalReader.current && reader.showModal) {
+      try {
+        reader.close();
+        reader.showModal();
+        modalReader.current = true;
+      } catch {
+        reader.open = true;
+      }
+    } else if (!maximized && modalReader.current) {
+      reader.close();
+      reader.show();
+      modalReader.current = false;
+    }
+  }, [maximized]);
 
   // 历史记录状态管理
   const navigableHistoryRef = useRef<
@@ -638,18 +658,38 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     }
   };
 
-  const preview = (
-    <div
+  return (
+    <dialog
+      ref={readerRef}
+      open
+      onCancel={(event) => {
+        event.preventDefault();
+        setMaximized(false);
+      }}
       className={cx(styles['page-preview-iframe-container'], className)}
       style={
         maximized
           ? {
+              padding: 0,
+              border: 0,
+              margin: 0,
+              maxWidth: 'none',
+              maxHeight: 'none',
               position: 'fixed',
               inset: 0,
               zIndex: 2000,
               background: 'var(--colorBgContainer, white)',
             }
-          : style
+          : {
+              padding: 0,
+              border: 0,
+              margin: 0,
+              maxWidth: 'none',
+              maxHeight: 'none',
+              position: 'static',
+              color: 'inherit',
+              ...style,
+            }
       }
     >
       {/* 标题栏 */}
@@ -810,9 +850,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           }}
         />
       </div>
-    </div>
+    </dialog>
   );
-  return maximized ? createPortal(preview, document.body) : preview;
 };
 
 export default PagePreviewIframe;

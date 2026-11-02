@@ -52,24 +52,29 @@ describe('PagePreviewIframe commandKey 命令通道', () => {
     eventBus.clear();
   });
 
-  it('资料库旧预览可放大到body，Esc还原；隐藏实例退出放大', () => {
+  it('资料库放大/还原保持同一iframe与src，隐藏实例退出放大', () => {
     const data = { uri: 'https://example.com/repo/doc/one' };
     const view = render(<PagePreviewIframe pagePreviewData={data} />);
+    const iframe = view.container.querySelector('iframe')!;
+    const srcWrite = vi.spyOn(iframe, 'src', 'set');
     const label = 'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview';
     fireEvent.click(screen.getByLabelText(label));
     expect(screen.getByLabelText(label)).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(view.container.querySelector('iframe')).toBeNull();
+    expect(view.container.querySelector('iframe')).toBe(iframe);
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(view.container.querySelector('iframe')?.src).toBe(data.uri);
+    expect(view.container.querySelector('iframe')).toBe(iframe);
+    expect(iframe.src).toBe(data.uri);
     fireEvent.click(screen.getByLabelText(label));
     view.rerender(<PagePreviewIframe pagePreviewData={data} active={false} />);
     expect(screen.getByLabelText(label)).toHaveAttribute(
       'aria-pressed',
       'false',
     );
+    expect(view.container.querySelector('iframe')).toBe(iframe);
+    expect(srcWrite).not.toHaveBeenCalled();
   });
 
   it('非资料库业务预览不新增放大入口', () => {
