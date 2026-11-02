@@ -9,6 +9,8 @@ export const OPEN_APP_CHROME_FLAG_KEYS = [
   'hideTitle',
   'hideTerminal',
   'hideTree',
+  'showTree',
+  'hideChatBox',
 ] as const;
 
 export type OpenAppChromeFlagKey = (typeof OPEN_APP_CHROME_FLAG_KEYS)[number];
@@ -24,6 +26,10 @@ export interface OpenAppChromeFlags {
   hideTerminal: boolean;
   /** 隐藏文件树图标 */
   hideTree: boolean;
+  /** 打开文件预览，并展开文件树 */
+  showTree: boolean;
+  /** 隐藏中间会话区和聊天输入框 */
+  hideChatBox: boolean;
 }
 
 export const EMPTY_OPEN_APP_CHROME_FLAGS: OpenAppChromeFlags = {
@@ -32,6 +38,8 @@ export const EMPTY_OPEN_APP_CHROME_FLAGS: OpenAppChromeFlags = {
   hideTitle: false,
   hideTerminal: false,
   hideTree: false,
+  showTree: false,
+  hideChatBox: false,
 };
 
 /** query 值为字面量 `true` 时视为开启 */
@@ -55,6 +63,8 @@ export const parseOpenAppChromeFlags = (
     hideTitle: isQueryFlagTrue(params.get('hideTitle')),
     hideTerminal: isQueryFlagTrue(params.get('hideTerminal')),
     hideTree: isQueryFlagTrue(params.get('hideTree')),
+    showTree: isQueryFlagTrue(params.get('showTree')),
+    hideChatBox: isQueryFlagTrue(params.get('hideChatBox')),
   };
 };
 

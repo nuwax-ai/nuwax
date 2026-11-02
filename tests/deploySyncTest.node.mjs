@@ -206,6 +206,41 @@ async function snapshot(root) {
   };
 }
 
+test('dual-remote push reconciles a late GitLab commit back to GitHub', async (t) => {
+  const state = await fixture(t);
+  await git(state.root, 'checkout', 'dev');
+  await fs.writeFile(path.join(state.root, 'local-dev.txt'), 'local change\n');
+  await git(state.root, 'add', 'local-dev.txt');
+  await git(state.root, 'commit', '-m', 'local development');
+  const localHead = await git(state.root, 'rev-parse', 'HEAD');
+  const late = await remoteCommit(state, 'gitlab', 'dev', 'late-dev.txt', 'late GitLab change\n');
+  await run(state.root, 'bash', ['-c',
+    'set -euo pipefail; source "$1"; retry_git() { shift; git "$@"; }; push_both_remotes dev',
+    'dual-push-fixture', library]);
+  const delivered = await remoteHead(state, 'origin', 'dev');
+  assert.equal(await remoteHead(state, 'gitlab', 'dev'), delivered);
+  for (const ancestor of [localHead, late.head])
+    await git(state.root, 'merge-base', '--is-ancestor', ancestor, delivered);
+});
+
+test('dual-remote push reports failure when GitLab rejects the second publish', async (t) => {
+  const state = await fixture(t);
+  await git(state.root, 'checkout', 'dev');
+  await fs.writeFile(path.join(state.root, 'local-dev.txt'), 'local change\n');
+  await git(state.root, 'add', 'local-dev.txt');
+  await git(state.root, 'commit', '-m', 'local development');
+  const localHead = await git(state.root, 'rev-parse', 'HEAD');
+  const before = await remoteHead(state, 'gitlab', 'dev');
+  const bare = await git(state.root, 'remote', 'get-url', 'gitlab');
+  await fs.writeFile(path.join(bare, 'hooks/pre-receive'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  await assert.rejects(run(state.root, 'bash', ['-c',
+    'set -euo pipefail; source "$1"; retry_git() { shift; git "$@"; }; push_both_remotes dev',
+    'dual-push-fixture', library]));
+  assert.equal(await remoteHead(state, 'origin', 'dev'), localHead);
+  assert.equal(await remoteHead(state, 'gitlab', 'dev'), before);
+  assert.equal(await git(state.root, 'rev-parse', 'HEAD'), localHead);
+});
+
 test('dirty dry-run preserves foreign worktrees, refs, index and mismatched adapter bytes', async (t) => {
   const state = await fixture(t);
   const foreign = path.join(state.temporary, '.nuwax-deploy-worktree');
@@ -435,7 +470,7 @@ test('registered destination with unfinished work or another branch is not repur
   assert.deepEqual(await snapshot(state.deploy), before);
 });
 
-test('GitLab dev source not yet in GitLab test enters both test outputs without pushing dev', async (t) => {
+test('GitLab dev source reaches both test outputs and synchronizes every delivery branch', async (t) => {
   const state = await fixture(t);
   await instrumentTools(state);
   const gitlabDev = await remoteCommit(
@@ -445,7 +480,6 @@ test('GitLab dev source not yet in GitLab test enters both test outputs without 
     'gitlab-only.txt',
     'pending GitLab development\n',
   );
-  const originDevBefore = await remoteHead(state, 'origin', 'dev');
   const testBefore = await remoteHead(state, 'gitlab', 'test');
   const result = await deploy(state, state.root, { USE_WORKTREE: '1' });
   assert.match(result.stdout, /步骤 6.1：汇合 gitlab\/dev/);
@@ -465,8 +499,9 @@ test('GitLab dev source not yet in GitLab test enters both test outputs without 
       'pending GitLab development',
     );
   }
-  assert.equal(await remoteHead(state, 'gitlab', 'dev'), gitlabDev.head);
-  assert.equal(await remoteHead(state, 'origin', 'dev'), originDevBefore);
+  for (const branch of [feature, version, 'dev', 'test'])
+    assert.equal(await remoteHead(state, 'origin', branch), await remoteHead(state, 'gitlab', branch));
+  await git(state.root, 'merge-base', '--is-ancestor', gitlabDev.head, await remoteHead(state, 'origin', 'dev'));
   assert.equal((await logLines(state.env.FIXTURE_GATE_LOG)).length, 1);
 });
 
@@ -535,8 +570,10 @@ test('divergent dev and test remotes preserve both histories, source additions a
     'source.txt': 'new personal source',
   }))
     assert.equal(await git(state.root, 'show', `${testHead}:${file}`), value);
-  assert.equal(await remoteHead(state, 'origin', 'dev'), originDev.head);
-  assert.equal(await remoteHead(state, 'gitlab', 'dev'), gitlabDev.head);
+  const deliveredDev = await remoteHead(state, 'origin', 'dev');
+  assert.equal(await remoteHead(state, 'gitlab', 'dev'), deliveredDev);
+  for (const ancestor of [originDev.head, gitlabDev.head])
+    await git(state.root, 'merge-base', '--is-ancestor', ancestor, deliveredDev);
   assert.equal(
     await fs.readFile(
       path.join(state.root, 'src/constants/version.ts'),
@@ -653,7 +690,8 @@ test('dev and test source conflicts stop instead of silently discarding dev chan
   );
   assert.equal(await remoteHead(state, 'origin', 'test'), originTestBefore);
   assert.equal(await remoteHead(state, 'gitlab', 'test'), gitlabTest.head);
-  assert.equal(await remoteHead(state, 'gitlab', 'dev'), gitlabDev.head);
+  assert.equal(await remoteHead(state, 'gitlab', 'dev'), await remoteHead(state, 'origin', 'dev'));
+  await git(state.root, 'merge-base', '--is-ancestor', gitlabDev.head, await remoteHead(state, 'gitlab', 'dev'));
   assert.equal(await git(state.deploy, 'ls-files', '-u'), '');
   assert.equal(
     await git(state.root, 'show', 'dev:source.txt'),

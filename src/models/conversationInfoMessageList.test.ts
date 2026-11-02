@@ -653,6 +653,146 @@ describe('preserveOptimisticMessageTail', () => {
     ]);
   });
 
+  it.each([
+    [MessageStatusEnum.Stopped, ''],
+    [MessageStatusEnum.Stopped, '部分输出'],
+    [MessageStatusEnum.Error, ''],
+    [MessageStatusEnum.Complete, ''],
+  ])(
+    '恢复快照能补齐未收到协议终态的本地 %s 消息（正文 %s）',
+    (status, text) => {
+      const current = [
+        {
+          ...persistedUser('first question', 101),
+          clientRenderKey: optimisticUserId,
+        },
+        {
+          id: 103,
+          role: AssistantRoleEnum.ASSISTANT,
+          clientRenderKey: optimisticAsstId,
+          text,
+          status,
+        } as MessageInfo,
+      ];
+      const recovered = {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '服务端完整回答',
+        status: MessageStatusEnum.Complete,
+        finalResult: { success: true, outputText: '服务端完整回答' },
+      } as MessageInfo;
+      const merged = reconcileConversationSnapshotMessages(current, [
+        persistedUser('first question', 101),
+        recovered,
+      ]);
+      expect(merged[1]).toMatchObject({
+        ...recovered,
+        clientRenderKey: optimisticAsstId,
+      });
+      // 接受已落库终态后仍维持已有防闪烁合同。
+      expect(
+        reconcileConversationSnapshotMessages(merged, [
+          persistedUser('first question', 101),
+          { ...recovered, text: '滞后快照' },
+        ])[1].text,
+      ).toBe('服务端完整回答');
+    },
+  );
+
+  it.each([undefined, MessageStatusEnum.Complete])(
+    '短旧快照 status=%s 不截断中断回答，后到终稿仍能恢复',
+    (status) => {
+      const local = {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        clientRenderKey: optimisticAsstId,
+        requestId: 'round-a',
+        text: '本地已经接收的较完整回答',
+        think: '仅流式携带的思考',
+        thinkBlocks: ['思考块'],
+        attachments: [
+          {
+            fileName: 'result.txt',
+            fileUrl: '/fixture/result.txt',
+            fileKey: 'fixture-result',
+            mimeType: 'text/plain',
+          },
+        ],
+        status: MessageStatusEnum.Stopped,
+      } as MessageInfo;
+      const stale = {
+        ...local,
+        text: '本地已经',
+        think: undefined,
+        thinkBlocks: undefined,
+        attachments: undefined,
+        clientRenderKey: undefined,
+        status,
+      };
+      const merged = reconcileConversationSnapshotMessages([local], [stale]);
+      expect(merged[0]).toMatchObject({
+        text: local.text,
+        think: local.think,
+        attachments: local.attachments,
+      });
+      const final = {
+        ...stale,
+        status: MessageStatusEnum.Complete,
+        text: '终稿',
+        finalResult: { success: true, outputText: '终稿' },
+      } as MessageInfo;
+      const recovered = reconcileConversationSnapshotMessages(merged, [final]);
+      // 有协议终稿时允许权威纠正为更短正文，不拿字数代替终态证据。
+      expect(recovered[0]).toMatchObject({
+        text: '终稿',
+        finalResult: final.finalResult,
+        think: local.think,
+        thinkBlocks: local.thinkBlocks,
+        attachments: local.attachments,
+        clientRenderKey: optimisticAsstId,
+      });
+    },
+  );
+
+  it('同消息ID但请求身份冲突的终稿不能覆盖本地中断轮', () => {
+    const local = {
+      id: 103,
+      role: AssistantRoleEnum.ASSISTANT,
+      clientRenderKey: optimisticAsstId,
+      requestId: 'round-a',
+      text: '本轮中断正文',
+      status: MessageStatusEnum.Stopped,
+    } as MessageInfo;
+    const foreign = {
+      ...local,
+      requestId: 'round-b',
+      text: '其他轮正文',
+      finalResult: { success: true },
+    } as MessageInfo;
+    expect(
+      reconcileConversationSnapshotMessages([local], [foreign])[0],
+    ).toMatchObject({ text: local.text, requestId: 'round-a' });
+  });
+
+  it('恢复中的残缺快照不能覆盖本地中断前内容', () => {
+    const local = {
+      id: 103,
+      role: AssistantRoleEnum.ASSISTANT,
+      clientRenderKey: optimisticAsstId,
+      text: '中断前输出',
+      status: MessageStatusEnum.Stopped,
+    } as MessageInfo;
+    const incoming = {
+      ...local,
+      clientRenderKey: undefined,
+      text: '',
+      status: MessageStatusEnum.Incomplete,
+    };
+    expect(
+      reconcileConversationSnapshotMessages([local], [incoming])[0].text,
+    ).toBe('中断前输出');
+  });
+
   it('keeps locally finalized assistant content when the persisted snapshot differs', () => {
     const localFinalResult = {
       success: true,

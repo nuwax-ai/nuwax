@@ -1,3 +1,4 @@
+import { hasHostBridge, isDesktopHost, native } from '@/utils/hostBridge';
 import { resolveRepoDocEmbedUrl } from '@/utils/repoDocLink';
 import { useEffect, type RefObject } from 'react';
 
@@ -30,6 +31,7 @@ export const useRepoDocLinkPreview = ({
     if (!active) {
       return;
     }
+    let disposed = false;
 
     const handleClick = (event: MouseEvent) => {
       if (event.button !== 0) {
@@ -63,11 +65,18 @@ export const useRepoDocLinkPreview = ({
 
       event.preventDefault();
       event.stopPropagation();
-      onOpen(embedUrl);
+      if (isDesktopHost() && hasHostBridge()) {
+        void native.openReadingWindow(embedUrl).then((result) => {
+          if (!result.success && !disposed) onOpen(embedUrl);
+        });
+      } else {
+        onOpen(embedUrl);
+      }
     };
 
     document.addEventListener('click', handleClick, true);
     return () => {
+      disposed = true;
       document.removeEventListener('click', handleClick, true);
     };
   }, [active, containerRef, onOpen]);

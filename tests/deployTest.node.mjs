@@ -405,6 +405,7 @@ test('source pushed directly to gitlab dev reaches the delivered test', async (t
     'gitlab dev direct push\n',
   );
   await deploy(state);
+  assert.equal(await remoteHead(state, 'origin', 'dev'), await remoteHead(state, 'gitlab', 'dev'));
   for (const remote of ['origin', 'gitlab']) {
     await git(
       state.root,
