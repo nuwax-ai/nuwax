@@ -6,6 +6,43 @@ const img = (type = 'image/png') => ({ kind: 'file', type });
 const text = (type = 'text/plain') => ({ kind: 'string', type });
 
 describe('resolvePasteAction (NW-128 粘贴转图)', () => {
+  it('只有可见 HTML 文字才能压过图片，隐藏节点及隐藏样式不参与取文', () => {
+    const html = `<div hidden>隐藏</div><div style="display: none">隐藏</div>
+      <div style="visibility: hidden">隐藏</div><div style="mso-hide:all">隐藏</div>
+      <img alt="截图" src="x">`;
+    const value = resolvePasteText('', html);
+    expect(value).toBe('');
+    expect(resolvePasteAction({ items: [img()], text: value })).toBe(
+      'upload-files',
+    );
+    expect(resolvePasteText('', `${html}<p>可见正文</p>`)).toBe('可见正文');
+  });
+
+  it('HTML PRE 保留制表、换行和连续空白，普通段落仍按段落分行', () => {
+    expect(
+      resolvePasteText('', '<p>前言</p><pre>A\tB\nC  D</pre><p>结尾</p>'),
+    ).toBe('前言\nA\tB\nC  D\n结尾');
+    expect(resolvePasteText('', '<pre>  A\n\tB  </pre>')).toBe('  A\n\tB  ');
+  });
+
+  it('空白 plain 回退到可见 HTML；无可见文字时保留截图上传', () => {
+    expect(resolvePasteText(' \n\t', '<p>可见正文</p>')).toBe('可见正文');
+    const value = resolvePasteText(
+      ' \n\t',
+      '<div hidden>隐藏</div><img src="x">',
+    );
+    expect(value).toBe('');
+    expect(resolvePasteAction({ items: [img()], text: value })).toBe(
+      'upload-files',
+    );
+    expect(resolvePasteText('  原始\t文本\n', '<p>其他</p>')).toBe(
+      '  原始\t文本\n',
+    );
+    expect(resolvePasteAction({ items: [img()], text: ' \n\t' })).toBe(
+      'upload-files',
+    );
+  });
+
   it('HTML 仅在 plain 为空时补文字；表格换行，不读取图片 alt 或脚本样式', () => {
     expect(resolvePasteText('原始\t文本\n', '<p>另一份</p>')).toBe(
       '原始\t文本\n',
@@ -57,9 +94,7 @@ describe('resolvePasteAction (NW-128 粘贴转图)', () => {
     ).toBe('insert-plain-text');
   });
 
-  it('文字+快照图场景下，修饰键无从读取也无需区分：结果恒为文字优先', () => {
-    // ClipboardEvent 无 shiftKey 属性，文字优先规则使普通粘贴与
-    // Ctrl/Cmd+Shift+V 结果一致（均不转图），无需修饰键检测
+  it('同一组文字+快照图格式始终按文字优先分诊', () => {
     expect(
       resolvePasteAction({
         items: [img(), text()],

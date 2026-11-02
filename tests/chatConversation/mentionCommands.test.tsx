@@ -172,12 +172,14 @@ describe('Office HTML 粘贴（NW-128）', () => {
           items: [{ kind: 'file', type: 'image/png' }],
           getData: (type: string) =>
             type === 'text/html'
-              ? '<html><head><style>.MsoNormal{color:red}</style></head><body><!--StartFragment--><p class="MsoNormal">季度<span onclick="bad()">报告</span></p><p>下一页<br>总结</p><img src="file:///snapshot.png"><!--EndFragment--></body></html>'
-              : '',
+              ? '<html><head><style>.MsoNormal{color:red}</style></head><body><!--StartFragment--><div hidden>隐藏元数据</div><p class="MsoNormal">季度<span onclick="bad()">报告</span></p><pre>下一页\t甲\n总结  乙</pre><img src="file:///snapshot.png"><!--EndFragment--></body></html>'
+              : ' \n\t',
         },
       });
       expect(onPaste).not.toHaveBeenCalled();
-      expect(getSerializedEditorText(editor)).toBe('季度报告\n下一页\n总结');
+      expect(getSerializedEditorText(editor)).toBe(
+        '季度报告\n下一页\t甲\n总结  乙',
+      );
       expect(editor.querySelector('p, span, img, style, [onclick]')).toBeNull();
       expect(onChange).toHaveBeenCalled();
     } finally {

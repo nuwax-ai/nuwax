@@ -2198,7 +2198,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           return;
         }
 
-        // 2. 纯文本方式粘贴（无文件，或文字优先/显式 Shift+V），去掉所有样式/属性
+        // 2. 纯文本方式粘贴（无文件或文字优先），去掉所有样式/属性
         e.preventDefault();
 
         if (!text) return;
