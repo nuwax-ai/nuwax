@@ -957,6 +957,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.PageCard.newVersion": "有版本更新",
   "PC.Components.PageCard.noPreview": "无可用预览图",
   "PC.Components.PageCard.startUsing": "开始使用",
+  "PC.Components.PagePreviewIframe.openReader": "在独立窗口阅读",
   "PC.Components.PagePreviewIframe.copyTemplate": "复制模板",
   "PC.Components.PagePreviewIframe.defaultPageTitle": "页面预览",
   "PC.Components.PagePreviewIframe.tooltipBack": "后退",

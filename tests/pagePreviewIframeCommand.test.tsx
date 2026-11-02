@@ -9,7 +9,7 @@ import eventBus, {
   EVENT_NAMES,
   type AppTabPreviewCommandPayload,
 } from '@/utils/eventBus';
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({ copy: vi.fn() }));
@@ -50,6 +50,39 @@ describe('PagePreviewIframe commandKey 命令通道', () => {
   beforeEach(() => {
     h.copy.mockReset();
     eventBus.clear();
+  });
+
+  it('资料库旧预览可放大到body，Esc还原；隐藏实例退出放大', () => {
+    const data = { uri: 'https://example.com/repo/doc/one' };
+    const view = render(<PagePreviewIframe pagePreviewData={data} />);
+    const label = 'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview';
+    fireEvent.click(screen.getByLabelText(label));
+    expect(screen.getByLabelText(label)).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(view.container.querySelector('iframe')).toBeNull();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(view.container.querySelector('iframe')?.src).toBe(data.uri);
+    fireEvent.click(screen.getByLabelText(label));
+    view.rerender(<PagePreviewIframe pagePreviewData={data} active={false} />);
+    expect(screen.getByLabelText(label)).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('非资料库业务预览不新增放大入口', () => {
+    render(
+      <PagePreviewIframe
+        pagePreviewData={{ uri: 'https://example.com/app' }}
+      />,
+    );
+    expect(
+      screen.queryByLabelText(
+        'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview',
+      ),
+    ).toBeNull();
   });
 
   it('匹配 routePath 的 reload：iframe 销毁重建（key 重挂）', () => {

@@ -9,6 +9,13 @@ import eventBus, {
   EVENT_NAMES,
   type AppTabPreviewCommandPayload,
 } from '@/utils/eventBus';
+import { isDesktopHost, native } from '@/utils/hostBridge';
+import { isRepoLibraryPath } from '@/utils/repoDocLink';
+import {
+  FullscreenExitOutlined,
+  FullscreenOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { debounce } from 'lodash';
@@ -19,6 +26,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import TurndownService from 'turndown';
 import styles from './index.less';
 import { observePreviewDocument } from './observePreviewDocument';
@@ -120,6 +128,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [maximized, setMaximized] = useState(false);
 
   // 历史记录状态管理
   const navigableHistoryRef = useRef<
@@ -138,6 +147,18 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     () => !document.hidden,
   );
   const uiVisible = active && hostVisible && documentVisible;
+  useEffect(() => {
+    if (!uiVisible) setMaximized(false);
+  }, [uiVisible]);
+  useEffect(() => setMaximized(false), [pagePreviewData?.uri]);
+  useEffect(() => {
+    if (!maximized) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMaximized(false);
+    };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [maximized]);
   const uiVisibleRef = useRef(uiVisible);
   uiVisibleRef.current = uiVisible;
   const observerRef = useRef<ReturnType<typeof observePreviewDocument> | null>(
@@ -617,10 +638,19 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     }
   };
 
-  return (
+  const preview = (
     <div
       className={cx(styles['page-preview-iframe-container'], className)}
-      style={style}
+      style={
+        maximized
+          ? {
+              position: 'fixed',
+              inset: 0,
+              zIndex: 2000,
+              background: 'var(--colorBgContainer, white)',
+            }
+          : style
+      }
     >
       {/* 标题栏 */}
       {showHeader && (
@@ -631,6 +661,43 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '12px' }}>
+            {isRepoLibraryPath(pageUrl) && (
+              <Tooltip
+                title={t(
+                  'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview',
+                )}
+              >
+                <Button
+                  type="text"
+                  aria-label={t(
+                    'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview',
+                  )}
+                  aria-pressed={maximized}
+                  icon={
+                    maximized ? (
+                      <FullscreenExitOutlined />
+                    ) : (
+                      <FullscreenOutlined />
+                    )
+                  }
+                  onClick={() => setMaximized((value) => !value)}
+                />
+              </Tooltip>
+            )}
+            {isDesktopHost() && isRepoLibraryPath(pageUrl) && (
+              <Tooltip title={t('PC.Components.PagePreviewIframe.openReader')}>
+                <Button
+                  type="text"
+                  aria-label={t('PC.Components.PagePreviewIframe.openReader')}
+                  icon={<SearchOutlined />}
+                  onClick={() => {
+                    void native.openReadingWindow(pageUrl).then((result) => {
+                      if (!result.success) setMaximized(true);
+                    });
+                  }}
+                />
+              </Tooltip>
+            )}
             {/* 复制模板按钮 */}
             {showCopyButton && allowCopy && onCopyClick && (
               <Button
@@ -745,6 +812,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       </div>
     </div>
   );
+  return maximized ? createPortal(preview, document.body) : preview;
 };
 
 export default PagePreviewIframe;

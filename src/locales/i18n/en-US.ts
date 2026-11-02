@@ -950,6 +950,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.PageCard.newVersion": "New version available",
   "PC.Components.PageCard.noPreview": "No preview available",
   "PC.Components.PageCard.startUsing": "Start Using",
+  "PC.Components.PagePreviewIframe.openReader": "Read in a new window",
   "PC.Components.PagePreviewIframe.copyTemplate": "Copy template",
   "PC.Components.PagePreviewIframe.defaultPageTitle": "Page preview",
   "PC.Components.PagePreviewIframe.tooltipBack": "Back",

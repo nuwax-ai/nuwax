@@ -828,6 +828,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.PageCard.newVersion": "新しいバージョンが利用可能になりました",
   "PC.Components.PageCard.noPreview": "プレビューは利用できません",
   "PC.Components.PageCard.startUsing": "使い始める",
+  "PC.Components.PagePreviewIframe.openReader": "別ウィンドウで読む",
   "PC.Components.PagePreviewIframe.copyTemplate": "テンプレートをコピー",
   "PC.Components.PagePreviewIframe.defaultPageTitle": "ページのプレビュー",
   "PC.Components.PagePreviewIframe.tooltipBack": "戻る",
