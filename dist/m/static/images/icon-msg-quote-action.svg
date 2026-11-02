@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- 引用/回复：会话气泡 + 两行文本（同原 PNG 形态，矢量重绘） -->
+  <g fill="none" stroke="#292832" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 190H724A170 170 0 0 1 894 360V510A170 170 0 0 1 724 680H470L300 830V680A170 170 0 0 1 130 510V360A170 170 0 0 1 300 190Z"/>
+    <path d="M300 370H724"/>
+    <path d="M300 490H560"/>
+  </g>
+</svg>

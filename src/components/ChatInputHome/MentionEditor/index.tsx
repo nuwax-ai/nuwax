@@ -55,7 +55,7 @@ import type {
   MentionItem,
 } from '../MentionPopup/types';
 import styles from './index.less';
-import { resolvePasteAction } from './resolvePasteAction';
+import { resolvePasteAction, resolvePasteText } from './resolvePasteAction';
 
 const cx = classNames.bind(styles);
 
@@ -1557,6 +1557,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
+      hasFocus: () => !!editorRef.current?.contains(document.activeElement),
       clear,
       setEditorText,
       getPlainText,
@@ -2175,7 +2176,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const handlePasteEvent = useCallback(
       (e: React.ClipboardEvent<HTMLDivElement>) => {
         const clipboardData = e.clipboardData;
-        const text = clipboardData?.getData('text/plain') ?? '';
+        const text = resolvePasteText(
+          clipboardData?.getData('text/plain') ?? '',
+          clipboardData?.getData('text/html') ?? '',
+        );
 
         const action = resolvePasteAction({
           items: clipboardData?.items
@@ -2194,7 +2198,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           return;
         }
 
-        // 2. 纯文本方式粘贴（无文件，或文字优先/显式 Shift+V），去掉所有样式/属性
+        // 2. 纯文本方式粘贴（无文件或文字优先），去掉所有样式/属性
         e.preventDefault();
 
         if (!text) return;

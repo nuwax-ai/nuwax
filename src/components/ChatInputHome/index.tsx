@@ -60,6 +60,7 @@ import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 import SpaceSelector from './SpaceSelector';
+import { useNativeCapture } from './useNativeCapture';
 import { useSlashPlugins } from './useSlashPlugins';
 import WorkspaceDirPickerModal from './WorkspaceDirPickerModal';
 
@@ -569,6 +570,15 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       },
       [applyServerUploadResult, getDefaultFileName, wholeDisabled],
     );
+
+    useNativeCapture({
+      editorRef: mentionEditorRef,
+      scope: `${stopConversationIdOverride ?? conversationInfo?.id ?? 'new'}:${
+        agentId ?? ''
+      }`,
+      disabled: wholeDisabled || !hasPermission || isSandboxUnavailable,
+      onFiles: uploadFilesToServer,
+    });
 
     /**
      * 处理粘贴事件，支持粘贴多种文件上传

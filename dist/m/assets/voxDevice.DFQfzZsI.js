@@ -1,0 +1,1 @@
+class s{constructor(){this.deviceId="",this.displayName=""}}class t{constructor(){this.deviceName="",this.deviceRole="",this.wakeWord=""}}class e{constructor(){this.voiceBroadcastEnabled=null,this.volumePercent=null,this.ttsRate=null,this.ttsVoice=null}}export{s as A,e as a,t as b};

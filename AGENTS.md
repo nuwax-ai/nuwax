@@ -9,10 +9,21 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 - 会话合同网:`npm run test:conversation`;会话 E2E:`e2e:conversation`(需 dev server + ego-browser 登录态)、`e2e:mock-chat`(mock 场景走查);组合 `verify:conversation`
 - 分层依赖检查:`npm run lint:arch`(depcruise;存量豁免基线 `.dependency-cruiser-known-violations.json`)
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
-- 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支 → 版本分支(如 feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `scripts/deploy_sync_test.env.example`,`FEATURE_BRANCH`/`VERSION_BRANCH` 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
-- 快速提测:`bash deploy_test.sh` —— 代码已在 dev 时使用，本地汇合双远端 dev → test，自动升级微应用并过质量门，构建后推 origin/test+gitlab/test，不推远端 dev。全链与快速通道的选源、隔离、重试及冲突规则统一见 [提测手册](./docs/deploy-sync-test-runbook.md)。
+- 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支 → 版本分支(当前 feat-2026.11，双远端)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `scripts/deploy_sync_test.env.example`,`FEATURE_BRANCH`/`VERSION_BRANCH` 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
+- 快速提测:`bash deploy_test.sh` —— 代码已在 dev 时使用，本地汇合双远端 dev → test，自动升级微应用并过质量门，所有个人/版本/dev/test 分支合并及提交后均同步 origin+gitlab，任一失败不得记完成。全链与快速通道的选源、隔离、重试及冲突规则统一见 [提测手册](./docs/deploy-sync-test-runbook.md)。
 - 提测提速三约定(2026-09-30):① 主区不干净时脚本自动转入 `.deploy-worktree` 隔离跑全链(主区/并行开发零互抢,`USE_WORKTREE=0/1` 控制)② 网络抖动(SSL 瞬断/fetch 断)脚本自动退避重试,勿手工重启整链;提测前**不再本地预跑质量门**(脚本步骤 4 即门,断点续跑免重付)
 - 产物哈希稳定性(2026-10-08):① `src/constants/version.ts` 不再烤 git 哈希(只含 APP_VERSION/APP_NAME,随 standard-version 发版变);gitHash 由 `dist/version.json` 运行时读取,勿再向源码烤提交哈希 ② deploy 构建 `DIST_RETENTION=1` 自动保留上一版 dist 的旧哈希资源(默认 3 代,`DIST_RETAIN_GENERATIONS` 可调,机制见 `scripts/deploy-asset-retention.mjs`),防发版后旧页面 chunk 404 弹「资源加载失败」;本地构建不设该变量零影响 ③ webpack runtime 已抽 `runtimeChunk: 'single'`,增量发版未改动页面的缓存仍可命中
+
+## Git 远端与提交交付规范（2026-11-02）
+
+- `origin` 为 GitHub `https://github.com/nuwax-ai/nuwax.git`，是默认拉取/推送及分支上游；`gitlab` 为内网 `https://git.yichamao.com/agent-platform/nuwax.git`，推送时显式指定。
+- **每次代码合并与提交完成后，必须同步推送 GitHub 和 GitLab 的对应分支**，包括个人分支、`feat-2026.11`、`dev`、`test` 与构建产物提交。不能只推一个远端后报告完成。
+- 先 fetch 两端并保留双方已有提交，普通推送，不强推。手动交付用 `git push origin <分支>` 与 `git push gitlab <分支>`；任一失败保留现场、补齐另一个远端，并核对两个远端 HEAD 一致后才算交付完成。
+- 两条提测脚本使用共享 `push_both_remotes`，第二端并发更新产生合并时会回推第一端；失败不得绕过质量门或把单端成功记为双端成功。
+
+## 当前交付排除项（2026-11-02）
+
+- 按用户决定，终端持久化、跨会话终端保活、多终端及运行实例管理暂不合入 `feat-2026.11` / `dev` / `test`，也不得通过客户端源码或产物 pin 带入 `release/v3.1.0`。候选仅保留在独立历史/分支，重新纳入须用户明确授权。任务终态恢复修复（NW-081）继续保留。
 
 ## 核心业务入口
 

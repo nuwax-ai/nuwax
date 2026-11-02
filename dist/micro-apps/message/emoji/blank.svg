@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="无语">
+  <title>无语</title>
+  <circle cx="32" cy="32" r="30" fill="#d9d9d9"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#1f2329" stroke-opacity=".12" stroke-width="2"/>
+  <path d="M18 26h8" fill="none" stroke="#1f2329" stroke-width="3.6" stroke-linecap="round"/><path d="M38 26h8" fill="none" stroke="#1f2329" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M22 42h20" fill="none" stroke="#1f2329" stroke-width="3.6" stroke-linecap="round"/>
+</svg>

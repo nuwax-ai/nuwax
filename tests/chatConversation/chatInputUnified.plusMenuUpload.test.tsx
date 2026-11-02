@@ -7,6 +7,7 @@
  */
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import type { CaptureBridge } from '@/types/interfaces/hostBridge';
 import * as businessAuth from '@/utils/businessAuth';
 import {
   act,
@@ -49,11 +50,14 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
   return {
     DEFAULT_CAPABILITY_RESOURCE_TYPES: ['skill', 'connector', 'knowledge'],
     default: React.forwardRef((props: any, ref: any) => {
+      const input = React.useRef<HTMLInputElement>(null);
       React.useImperativeHandle(ref, () => ({
+        hasFocus: () => document.activeElement === input.current,
         focus: vi.fn(),
         clear: vi.fn(),
       }));
       return React.createElement('input', {
+        ref: input,
         'data-testid': 'mention-editor-stub',
         onChange: (e: any) => props.onChange?.(e.target.value),
         onKeyDown: (e: any) => {
@@ -225,6 +229,59 @@ const IMG_SUCCESS_RESP = {
 };
 
 describe('+ 号菜单附件上传（常驻文件选择器）', () => {
+  it('客户端截图进入当前 Agent 附件，确认上传后由用户发送', async () => {
+    let listener: { canHandle(): boolean; run(action: 'screenshot'): void };
+    const release = vi.fn(async () => {});
+    window.NuwaClawBridge = {
+      capture: {
+        onShortcut: (
+          value: Parameters<NonNullable<CaptureBridge['onShortcut']>>[0],
+        ) => {
+          listener = value;
+          return () => {};
+        },
+        interactive: async () => ({
+          success: true,
+          resultId: 'shot',
+          mime: 'image/png',
+          bytes: 4,
+        }),
+        screenshot: async () => ({ success: false, code: 'canceled' }),
+        record: async () => ({ success: false, code: 'canceled' }),
+        copy: async () => ({ success: true, kind: 'image' }),
+        readChunk: async () => new Uint8Array([137, 80, 78, 71]).buffer,
+        release,
+      } as any,
+    };
+    try {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue({ json: async () => IMG_SUCCESS_RESP });
+      vi.stubGlobal('fetch', fetchMock);
+      const onEnter = vi.fn();
+      // visible 只控制滚动到底部按钮，正常会话里通常为 false。
+      renderInput({ onEnter, conversationInfo: { id: 101 }, visible: false });
+      expect(listener!.canHandle()).toBe(false);
+      screen.getByTestId('mention-editor-stub').focus();
+      expect(listener!.canHandle()).toBe(true);
+      listener!.run('screenshot');
+      await waitFor(() =>
+        expect(uploadListState.files[0]?.status).toBe('done'),
+      );
+      expect(uploadListState.files).toHaveLength(1);
+      expect(uploadListState.files[0].type).toBe('image/png');
+      expect(onEnter).not.toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(release).toHaveBeenCalledWith('shot');
+      fireEvent.keyDown(screen.getByTestId('mention-editor-stub'), {
+        key: 'Enter',
+      });
+      expect(onEnter).toHaveBeenCalledOnce();
+      expect(onEnter.mock.calls[0][1][0].url).toBe(IMG_SUCCESS_RESP.data.url);
+    } finally {
+      delete window.NuwaClawBridge;
+    }
+  });
   it('本地开发上传复用统一鉴权，携带该环境的 Bearer Token', async () => {
     vi.spyOn(businessAuth, 'getBusinessRequestAuth').mockReturnValue({
       credentials: 'same-origin',
