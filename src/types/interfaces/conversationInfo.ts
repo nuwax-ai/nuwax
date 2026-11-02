@@ -468,9 +468,11 @@ export interface ConversationInfo {
   sandboxSessionId: string;
   /**
    * 会话记录的工作目录（创建会话时传入，仅个人电脑沙箱生效）。
-   * 打开会话时以此目录作为文件树本地目录数据源的初始根（wiki #17 会话上记录目录）。
+   * 兼容旧会话 DTO；文件访问目录以 fileWorkspacePath 为准。
    */
   workspacePath?: string;
+  /** 后端解析的文件访问目录（文件服务视角）；旧记录可能为空。 */
+  fileWorkspacePath?: string | null;
   // 已分享的URI地址，比对上了则不需要认证
   sharedUris: string[];
   /** 是否有权限使用该智能体 */

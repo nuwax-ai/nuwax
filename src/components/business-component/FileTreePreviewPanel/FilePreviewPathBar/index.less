@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/color';
 @import '@/styles/token';
 
@@ -15,11 +16,35 @@
   padding: 0 8px 0 16px;
   overflow: hidden;
   font-size: 13px;
-  line-height: 49px;
+  line-height: 22px;
   color: @colorTextTertiary;
   // 与会话文件树容器 LeftContent .file-tree-container 一致
   background: #f5f5f5;
   border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+  container-type: inline-size;
+}
+
+.saveStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+
+  &[data-state='error'] {
+    color: @colorErrorText;
+  }
+
+  &[data-state='dirty'] {
+    color: @colorWarningText;
+  }
+}
+
+@container (max-width: 360px) {
+  .saveStatusText {
+    display: none;
+  }
 }
 
 .pathLabel {
@@ -30,6 +55,11 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.viewToggle {
+  flex-shrink: 0;
+  line-height: normal;
 }
 
 .refreshButton {

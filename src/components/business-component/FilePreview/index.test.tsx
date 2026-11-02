@@ -5,6 +5,7 @@ import {
   render,
   screen,
 } from '@testing-library/react';
+import { message } from 'antd';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,6 +20,7 @@ vi.mock('@/features/client-shell/localFileService', () => ({
   getLocalFileReference: local.reference,
   getLocalFilesContextKey: () => 'ctx',
   prepareLocalFilePreview: local.prepare,
+  retryLocalFilesContext: vi.fn(),
   saveLocalFile: local.save,
 }));
 
@@ -210,6 +212,58 @@ describe('FilePreview 本机流式预览', () => {
     expect(screen.queryByText('旧缓存')).not.toBeInTheDocument();
   });
 
+  it('本机 Markdown 内的同会话静态图片也改走授权来源', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        '![本机](/api/computer/static/9/images/a.png)\n![绝对](https://business.example/api/computer/static/9/images/b.png)',
+      ),
+    );
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        fileType="markdown"
+      />,
+    );
+    await settlePreview();
+    expect(screen.getByAltText('本机')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/a.png',
+    );
+    expect(screen.getByAltText('绝对')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/b.png',
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      grant.url,
+      expect.objectContaining({ credentials: 'omit' }),
+    );
+  });
+
+  it('空目录参数沿用默认根，显式根交给原生协议校验', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        '![空根](/api/computer/static/9/images/a.png?customTargetDir=)\n![显式根](/api/computer/static/9/images/b.png?customTargetDir=%2Fwork)\n![其他会话](/api/computer/static/10/secret.png)',
+      ),
+    );
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/report.md"
+        fileType="markdown"
+      />,
+    );
+    await settlePreview();
+    expect(screen.getByAltText('空根')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/images/a.png?customTargetDir=',
+    );
+    expect(screen.getByAltText('显式根')).toHaveAttribute(
+      'src',
+      'nuwax-local://grant/api/computer/static/9/images/b.png?customTargetDir=%2Fwork',
+    );
+    expect(screen.getByAltText('其他会话')).toHaveAttribute('src', '');
+  });
+
   it('下载取消由宿主消费，不创建浏览器下载或错误', async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
     const onError = vi.fn();
@@ -233,6 +287,44 @@ describe('FilePreview 本机流式预览', () => {
     expect(onError).not.toHaveBeenCalled();
     click.mockRestore();
   });
+
+  it.each(['expired', 'permission-denied'])(
+    '本机下载失败 %s 保留失败回调，仅 expired 不弹窗且不回退浏览器下载',
+    async (code) => {
+      const error = Object.assign(new Error(`download ${code}`), { code });
+      local.save.mockRejectedValueOnce(error);
+      const toast = vi
+        .spyOn(message, 'error')
+        .mockImplementation(() => undefined as never);
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+      const onError = vi.fn();
+      try {
+        render(
+          <FilePreview
+            src="/api/computer/static/9/docs/report.md"
+            fileType="image"
+            showDownload
+            onError={onError}
+          />,
+        );
+        await act(async () => {
+          await Promise.resolve();
+        });
+        fireEvent.click(screen.getByRole('button', { name: /download/ }));
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(local.save).toHaveBeenCalledOnce();
+        expect(onError).toHaveBeenCalledWith(error);
+        expect(click).not.toHaveBeenCalled();
+        if (code === 'expired') expect(toast).not.toHaveBeenCalled();
+        else expect(toast).toHaveBeenCalledWith(error.message);
+      } finally {
+        toast.mockRestore();
+        click.mockRestore();
+      }
+    },
+  );
 });
 
 describe('FilePreview Markdown 渲染隔离', () => {

@@ -3,6 +3,7 @@
  * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
  * 组件根不带内边距——间距由使用方经 className 决定。
  */
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/token';
 
 @conn-text: @colorText;
@@ -70,17 +71,19 @@
   padding: 8px 0;
 }
 
-// ---- grid 变体卡片（两栏，与技能/专家卡同款简化布局，总高 70px） ----
+// ---- grid 变体卡片（两栏；宽时单行高 70px，窄时改为纵向，高度随内容增高） ----
 .card {
   display: flex;
   flex-direction: column;
   justify-content: center;
   box-sizing: border-box;
-  height: 70px;
+  min-height: 70px;
   padding: 14px;
   border: 1px solid @conn-border;
   border-radius: 8px;
   background: @colorBgContainer;
+  container-type: inline-size;
+  container-name: connector-card;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 
   &:hover {
@@ -156,6 +159,33 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+// 写在基础样式之后，避免被 .card-head / .card-actions 的 align-items 盖掉。
+// 窄卡仍是整列：图标靠左，连接状态和开关靠右。
+@container connector-card (max-width: 260px) {
+  .card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-icon {
+    align-self: flex-start;
+  }
+
+  .card-heading {
+    flex: none;
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .card-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    align-self: stretch;
+    width: 100%;
+    gap: 8px;
+  }
 }
 
 // 连接状态槽：常驻状态标定宽占位，「断开」绝对定位等宽覆盖

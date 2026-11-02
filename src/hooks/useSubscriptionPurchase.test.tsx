@@ -141,6 +141,7 @@ describe('支付收银台独立窗口', () => {
     expect(mocks.openNative).toHaveBeenCalledTimes(1);
     expect(mocks.openNative).toHaveBeenCalledWith(
       'https://cashier.example/order/81',
+      { purpose: 'payment' },
     );
     expect(result.current.loading).toBe(true);
     act(() => result.current.handlePayCredits(8));

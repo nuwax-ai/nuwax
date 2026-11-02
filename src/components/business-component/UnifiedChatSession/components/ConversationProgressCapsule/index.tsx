@@ -111,6 +111,11 @@ interface ConversationProgressCapsuleProps {
   open: boolean;
   /** 请求收起面板：关闭按钮 / 外点 / Esc / 新轮次时回调，由外部置 open=false */
   onClose: () => void;
+  /**
+   * 打开 task-result 产物。传入时覆盖默认「开预览 + 选中文件」。
+   * AppDevPro 需先切到文件树工作区，故由页面注入。
+   */
+  onOpenTaskResultFile?: (file: string) => void | Promise<void>;
 }
 
 /** 触发器右侧「更改」统计（git 口径优先，回退 V2 编辑行数聚合） */
@@ -262,6 +267,7 @@ const ConversationProgressCapsule: React.FC<
   onCommitOrPush,
   open,
   onClose,
+  onOpenTaskResultFile,
 }) => {
   const projectConversation = useMemo(
     () => createConversationProjector(),
@@ -302,6 +308,10 @@ const ConversationProgressCapsule: React.FC<
 
   /** 打开任务结果产物文件：对齐会话输出 <task-result> 的点击口径 */
   const handleOpenTaskResult = async (file: string) => {
+    if (onOpenTaskResultFile) {
+      await onOpenTaskResultFile(file);
+      return;
+    }
     if (!conversationId) return;
     let fileId = file.split(`${conversationId}/`).pop();
     if (fileId?.endsWith('/')) fileId = fileId.slice(0, -1);

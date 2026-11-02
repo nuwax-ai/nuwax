@@ -20,9 +20,9 @@ export interface InstantMessageContactItem {
  * 尽力而为：IM 未部署/未登录等失败场景静默返回 null（skipErrorHandler 抑制
  * 全局错误弹窗），调用方回退 nickName || userName 的原有取名。
  */
-export async function apiInstantMessageContacts(): Promise<
-  RequestResponse<{ items?: InstantMessageContactItem[] }> | null
-> {
+export async function apiInstantMessageContacts(): Promise<RequestResponse<{
+  items?: InstantMessageContactItem[];
+}> | null> {
   try {
     return await request('/api/instant-message/contacts', {
       method: 'GET',

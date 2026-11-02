@@ -214,6 +214,12 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     () => parseOpenAppChromeFlags(routeLocation.search),
     [routeLocation.search],
   );
+  /**
+   * 地址参数 showTree=true 与 defaultFileTreeVisible 相同：
+   * 打开文件预览并展开文件树。hideTree 仍优先隐藏文件树。
+   */
+  const openFileTreeByDefault =
+    (defaultFileTreeVisible || chromeFlags.showTree) && !chromeFlags.hideTree;
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
   const stateToUse = freezeRouteLocation
     ? routeLocation.state
@@ -378,6 +384,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 处理文件列表刷新事件
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     openPreviewView,
     openDesktopView,
     ensureDesktopConnection,
@@ -438,6 +447,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
   const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: id,
     enabled: active && isFileTreeVisible,
     fileTreeRefreshTrigger,
@@ -516,7 +526,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       ? {
           cId: id,
           sandboxId: String(finalSelectedId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,
@@ -834,9 +844,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
     const preferredView =
       conversationPageCacheManager.getPanelPreference(pageCacheKey);
-    if (!defaultFileTreeVisible && preferredView === undefined) {
+    if (!openFileTreeByDefault && preferredView === undefined) {
       handleOpenPreview(targetAgent, true);
-    } else if (!defaultFileTreeVisible && preferredView === 'pagePreview') {
+    } else if (!openFileTreeByDefault && preferredView === 'pagePreview') {
       handleOpenPreview(targetAgent, false);
     } else {
       showPagePreview(null);
@@ -845,7 +855,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     agentId,
     id,
     pageCacheKey,
-    defaultFileTreeVisible,
+    openFileTreeByDefault,
     defaultAgentDetail,
     conversationInfo?.agent,
     handleOpenPreview,
@@ -1124,6 +1134,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     handleExportProject,
   } = useChatFiles({
     id,
+    conversationName: conversationInfo?.topic,
     fileTreeData: workspaceDirectoryFiles.files,
     handleRefreshFileList: async (_id, path) =>
       workspaceDirectoryFiles.refresh(path),
@@ -1151,6 +1162,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
       refreshFileListImmediately,
       refreshGitListRef,
       openPreviewView,
@@ -1259,6 +1271,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    onPreviewFileIdChange: setPreviewFileId,
     originalFiles: workspaceDirectoryFiles.files,
     fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
@@ -1274,11 +1288,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           : node,
       ),
     onSaveFiles: handleSaveFiles,
-    onSaveFileContent: async (fileId, content, originalFileContent) => {
+    onSaveFileContent: async (
+      fileId,
+      content,
+      originalFileContent,
+      options,
+    ) => {
       const result = await handleSaveFileContent(
         fileId,
         content,
         originalFileContent,
+        options,
       );
       return result ?? false;
     },
@@ -1778,7 +1798,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
     restoredWorkspaceKeyRef.current = pageCacheKey;
     const targetView =
-      defaultFileTreeVisible && entry.view === 'closed'
+      openFileTreeByDefault && entry.view === 'closed'
         ? 'filePreview'
         : entry.view;
     if (targetView !== entry.view) rememberWorkspaceView(targetView);
@@ -1803,7 +1823,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     active,
     pageCacheKey,
     agentId,
-    defaultFileTreeVisible,
+    openFileTreeByDefault,
     rememberWorkspaceView,
   ]);
 
@@ -2168,6 +2188,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     hideTitle: chromeFlags.hideTitle,
     hideTerminal: chromeFlags.hideTerminal,
     hideTree: chromeFlags.hideTree,
+    hideChatBox: chromeFlags.hideChatBox,
     agentId,
     conversationInfo,
     setConversationInfo,

@@ -35,5 +35,6 @@
 - 请求失败必须消费拒绝；自动化应断言保留输入、允许重试及无错误成功副作用，而非只断言 mock 被调用。
 - 类型检查使用分域 `typecheck`。全库 tsc 的历史诊断不作为门，改动路径零新增。
 - E2E：`e2e:conversation` 需要 dev server 与登录态；`e2e:mock-chat` 使用本地供数，保留数据线 × 渲染线验证，不需要真实账号。
+- 历史滚动使用 `E2E_CHAT_URL=http://localhost:3000/home/chat/<会话ID>/<智能体ID> npm run e2e:history-scroll`：需要登录态及至少两页历史，只读取会话；覆盖两条数据线的历史前插和加载期间/落地后的主动滚动。可用 `E2E_BASE_URL` 指定开发端口，结果写入临时目录 `nuwax-history-scroll-acceptance.json`。
 
 CI 现有 `conversation-tests.yml`、`typecheck.yml` 和 `sdlc-evals.yml` 继续运行。脚本层及分层 CI 的后续安排见 [架构排查表](architecture/optimization-roadmap.md)，本次不增加新门禁。

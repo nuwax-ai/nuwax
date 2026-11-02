@@ -18,6 +18,7 @@ import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
 import './ds-markdown.css';
 import genCustomPlugin from './genCustomPlugin';
+import { getMarkdownLocale, getSafeCurrentLang } from './getMarkdownLocale';
 import { replaceMathBracket, unwrapLatexInlineCode } from './utils';
 
 const cx = classNames.bind(styles);
@@ -67,6 +68,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     );
     // 使用导入的 mermaidConfig，而不是重新创建
     const mermaidProvider = useMemo(() => mermaidConfig, []);
+    const currentLang = getSafeCurrentLang();
+    const markdownLocale = useMemo(() => getMarkdownLocale(), [currentLang]);
 
     return (
       <div
@@ -76,7 +79,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         data-key={`${requestId}`}
         className={cx(styles['markdown-container'], className)}
       >
-        <ConfigProvider mermaidConfig={mermaidProvider}>
+        <ConfigProvider
+          key={currentLang}
+          locale={markdownLocale}
+          mermaidConfig={mermaidProvider}
+        >
           {/* 用ds-markdown替换react-markdown，传递自定义components插件 */}
           <div
             className={cx(styles['markdown-cmd-container'], {
@@ -162,6 +169,8 @@ const PureMarkdownRenderer = memo(
       () => unwrapLatexInlineCode(children),
       [children],
     );
+    const currentLang = getSafeCurrentLang();
+    const markdownLocale = useMemo(() => getMarkdownLocale(), [currentLang]);
     return (
       <div
         key={`${requestId}`}
@@ -169,7 +178,7 @@ const PureMarkdownRenderer = memo(
         data-key={`${requestId}`}
         className={cx(styles['markdown-container'], className)}
       >
-        <ConfigProvider>
+        <ConfigProvider key={currentLang} locale={markdownLocale}>
           <DsMarkdown
             interval={interval}
             timerType={timerType}

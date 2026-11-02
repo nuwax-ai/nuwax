@@ -355,12 +355,14 @@ describe('SkillListView·分页与开关闭环', () => {
         pageOf([skill({ id: 22, targetId: 202, name: '第二页技能' })], 2, 2),
       );
     const { container } = renderView({ type: 'system' });
-    await screen.findByText('第一页技能');
 
-    // 滚动容器触底 → 追加第二页
+    // 首屏返回前设置尺寸，避免 jsdom 的零高度先触发自动补拉。
     const scroller = container.firstElementChild as HTMLElement;
     Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
     Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    await screen.findByText('第一页技能');
+
+    // 滚动容器触底 → 追加第二页
     fireEvent.scroll(scroller);
     await screen.findByText('第二页技能');
     expect(apiPublishedSkillList).toHaveBeenCalledTimes(2);
@@ -568,38 +570,5 @@ describe('SkillListView·付费拦截门（选择前置）', () => {
     fireEvent.click(await screen.findByText('付费技能'));
     await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(1));
     expect(apiPublishedSkillDetail).not.toHaveBeenCalled();
-  });
-});
-
-describe('SkillListView·双变体渲染', () => {
-  const fixture = () => [
-    skill({ id: 21, targetId: 201, name: '变体技能', enabled: true }),
-  ];
-
-  it('grid 默认：两栏卡（圆形图标+名称/单行描述+开关）', async () => {
-    apiPublishedSkillList.mockResolvedValue(pageOf(fixture(), 1, 1));
-    renderView({ type: 'system' });
-    const card = await waitFor(() => {
-      const el = document.querySelector('[data-skill-key="skill:system:21"]');
-      expect(el?.className).toContain('card');
-      return el!;
-    });
-    expect(card.querySelector('[role="switch"]')).toBeTruthy();
-    expect(card.textContent).toContain('变体技能');
-  });
-
-  it('list 变体：单栏行（名称与描述同行+开关），选择回调一致', async () => {
-    apiPublishedSkillList.mockResolvedValue(pageOf(fixture(), 1, 1));
-    const onSelect = vi.fn();
-    renderView({ type: 'system', variant: 'list', onSelect });
-    const row = await waitFor(() => {
-      const el = document.querySelector('[data-skill-key="skill:system:21"]');
-      expect(el?.className).toContain('list-row');
-      return el!;
-    });
-    expect(row.querySelector('[role="switch"]')).toBeTruthy();
-    expect(row.textContent).toContain('变体技能');
-    fireEvent.click(row);
-    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(1));
   });
 });

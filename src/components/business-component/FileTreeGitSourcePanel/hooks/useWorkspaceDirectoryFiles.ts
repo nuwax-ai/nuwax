@@ -1,3 +1,4 @@
+import { isExpiredLocalFileError } from '@/components/business-component/FilePreview/localFileActionMessages';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   getLocalFilesContextKey,
@@ -60,8 +61,9 @@ export function useWorkspaceDirectoryFiles(
    */
   const prefetchedDirectoryPathsRef = useRef(new Set<string>());
   const directoryRequestTokensRef = useRef(new Map<string, number>());
-  /** 在途目录请求集合（loadDirectory 写入/finally 清除；首拉与刷新去重用） */
-  const inflightDirectoryRequestsRef = useRef(new Set<string>());
+  /** 含静默请求的在途计数；重叠请求全部结束后才可补刷。 */
+  const inflightDirectoryRequestsRef = useRef(new Map<string, number>());
+  const pendingDirectoryRefreshesRef = useRef(new Set<string>());
   /** 同一目录可能重叠请求，用计数保证最后一次结束才关掉 loading */
   const directoryLoadingCountRef = useRef(new Map<string, number>());
   const activeRequestCountRef = useRef(0);
@@ -74,6 +76,7 @@ export function useWorkspaceDirectoryFiles(
     directoryRequestTokensRef.current.clear();
     prefetchedDirectoryPathsRef.current.clear();
     inflightDirectoryRequestsRef.current.clear();
+    pendingDirectoryRefreshesRef.current.clear();
     directoryLoadingCountRef.current.clear();
     activeRequestCountRef.current = 0;
     setCurrentPath('');
@@ -82,6 +85,10 @@ export function useWorkspaceDirectoryFiles(
     setLoading(false);
     setFileListLoaded(false);
     setLoadingDirectoryPaths(new Set());
+    return () => {
+      contextEpochRef.current += 1;
+      pendingDirectoryRefreshesRef.current.clear();
+    };
   }, [conversationId, localContextKey]);
 
   /**
@@ -90,9 +97,14 @@ export function useWorkspaceDirectoryFiles(
    * 同一目录的后发请求会使先发响应失效，避免旧列表盖住新列表。
    */
   const loadDirectory = useCallback(
-    async (path: string, loadOptions?: { silent?: boolean }) => {
+    async (path: string, loadOptions?: { silent?: boolean }): Promise<void> => {
       if (!conversationId) return;
       const contextEpoch = contextEpochRef.current;
+      // 常驻页可能已暂停渲染；授权释放先于下一次 effect，不能只看旧页面代次。
+      const isCurrentRequest = () =>
+        conversationIdRef.current === conversationId &&
+        contextEpochRef.current === contextEpoch &&
+        getLocalFilesContextKey(conversationId) === localContextKey;
       const silent = loadOptions?.silent === true;
       // 工作区相对路径，去掉首尾斜杠；根目录是空字符串
       const requestPath = path.replace(/^\/+|\/+$/g, '');
@@ -100,7 +112,10 @@ export function useWorkspaceDirectoryFiles(
       const token =
         (directoryRequestTokensRef.current.get(requestPath) || 0) + 1;
       directoryRequestTokensRef.current.set(requestPath, token);
-      inflightDirectoryRequestsRef.current.add(requestPath);
+      inflightDirectoryRequestsRef.current.set(
+        requestPath,
+        (inflightDirectoryRequestsRef.current.get(requestPath) || 0) + 1,
+      );
       // 已有下级时静默补下下级，不进入文件夹 loading
       if (!silent) {
         // 重叠请求用计数，最后一次结束才关掉该目录的 loading
@@ -126,8 +141,7 @@ export function useWorkspaceDirectoryFiles(
         });
         // 会话已切换，或同目录有更新的请求：不再写入，避免串数据
         if (
-          conversationIdRef.current !== conversationId ||
-          contextEpochRef.current !== contextEpoch ||
+          !isCurrentRequest() ||
           directoryRequestTokensRef.current.get(requestPath) !== token
         ) {
           return;
@@ -204,10 +218,7 @@ export function useWorkspaceDirectoryFiles(
           return next;
         });
       } catch (error) {
-        if (
-          conversationIdRef.current === conversationId &&
-          contextEpochRef.current === contextEpoch
-        ) {
+        if (isCurrentRequest() && !isExpiredLocalFileError(error)) {
           message.error(
             error instanceof Error && error.message
               ? error.message
@@ -216,14 +227,8 @@ export function useWorkspaceDirectoryFiles(
         }
       } finally {
         // 只结束当前代次的加载状态；清理不能覆盖请求原本的返回或异常。
-        if (
-          conversationIdRef.current === conversationId &&
-          contextEpochRef.current === contextEpoch
-        ) {
-          if (silent) {
-            // 静默补层不占 loading，只释放当前目录的在途标记。
-            inflightDirectoryRequestsRef.current.delete(requestPath);
-          } else {
+        if (isCurrentRequest()) {
+          if (!silent) {
             const loadingCount = Math.max(
               0,
               (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
@@ -232,7 +237,6 @@ export function useWorkspaceDirectoryFiles(
               directoryLoadingCountRef.current.set(requestPath, loadingCount);
             } else {
               directoryLoadingCountRef.current.delete(requestPath);
-              inflightDirectoryRequestsRef.current.delete(requestPath);
               setLoadingDirectoryPaths((previous) => {
                 if (!previous.has(requestPath)) return previous;
                 const next = new Set(previous);
@@ -246,6 +250,18 @@ export function useWorkspaceDirectoryFiles(
             );
             setLoading(activeRequestCountRef.current > 0);
           }
+          const remaining =
+            (inflightDirectoryRequestsRef.current.get(requestPath) || 1) - 1;
+          if (remaining > 0) {
+            inflightDirectoryRequestsRef.current.set(requestPath, remaining);
+          } else {
+            inflightDirectoryRequestsRef.current.delete(requestPath);
+            // 变更可能发生在旧列表已读出、但响应尚未返回时。合并补刷一次，
+            // 不能把在途请求当成已经覆盖了后来的文件变更。
+            if (pendingDirectoryRefreshesRef.current.delete(requestPath)) {
+              void loadDirectory(requestPath);
+            }
+          }
         }
       }
     },
@@ -257,10 +273,13 @@ export function useWorkspaceDirectoryFiles(
     [currentPath, loadDirectory],
   );
 
-  /** 同目录在途时跳过（首拉门控与刷新信号同拍触发的去重；用户导航/手动刷新不走此入口） */
+  /** 首拉只去重；文件变更遇到在途请求时保留一次后续刷新。 */
   const loadDirectoryIfIdle = useCallback(
-    (path: string) => {
-      if (inflightDirectoryRequestsRef.current.has(path)) return;
+    (path: string, refresh = false) => {
+      if (inflightDirectoryRequestsRef.current.has(path)) {
+        if (refresh) pendingDirectoryRefreshesRef.current.add(path);
+        return;
+      }
       void loadDirectory(path);
     },
     [loadDirectory],
@@ -277,14 +296,17 @@ export function useWorkspaceDirectoryFiles(
   /**
    * 刷新全部已加载目录（含根层——切会话后集合为空也不漏）：
    * 「打开的目录不刷新」修复——刷新信号到达时不止刷 currentPath 单层，
-   * 已展开已加载的目录一并重拉（外层 5s 节流兜底）。在途目录跳过防重复。
+   * 已展开已加载的目录一并重拉（外层 5s 节流兜底）。在途目录合并补刷。
    */
   const refreshAllLoaded = useCallback(() => {
-    loadDirectoryIfIdle('');
-    loadedDirectoryPaths.forEach((path) => {
-      if (path) loadDirectoryIfIdle(path);
-    });
-  }, [loadDirectoryIfIdle, loadedDirectoryPaths]);
+    const paths = new Set([
+      '',
+      ...loadedDirectoryPathsRef.current,
+      // 首次展开尚未返回的目录也可能读到了变更前的快照。
+      ...inflightDirectoryRequestsRef.current.keys(),
+    ]);
+    paths.forEach((path) => loadDirectoryIfIdle(path, true));
+  }, [loadDirectoryIfIdle]);
 
   const navigate = useCallback(
     (path: string) => {

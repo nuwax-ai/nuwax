@@ -202,13 +202,27 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, []);
 
   // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务、
-  // 应用菜单「文件 → 搜索」（⌘K 菜单化）经此通道下发）
+  // 应用菜单「文件 → 搜索」（⌘K 菜单化）、系统通知点击进入对应会话经此通道下发）
   useEffect(() => {
     return initHostBridgeEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
       createNewTask: handleNewTask,
       newTaskAvailable,
       openSearch: () => setOpenSearchModal(true),
+      openConversation: (target) => {
+        const convId = typeof target === 'string' ? target : target?.convId;
+        if (!convId || !convId.trim()) return;
+        const params = new URLSearchParams({ convId: convId.trim() });
+        if (typeof target === 'object' && target !== null) {
+          if (target.spaceId && target.spaceId.trim()) {
+            params.set('spaceId', target.spaceId.trim());
+          }
+          if (target.msgId && target.msgId.trim()) {
+            params.set('msgId', target.msgId.trim());
+          }
+        }
+        jumpTo(`/instant-message?${params.toString()}`);
+      },
     });
   }, [
     setIsSecondMenuCollapsed,

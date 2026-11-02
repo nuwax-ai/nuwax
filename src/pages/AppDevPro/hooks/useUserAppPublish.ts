@@ -10,28 +10,33 @@ import {
   apiUserAppProdDeployable,
   apiUserAppProdStart,
   apiUserAppProdStop,
+  apiUserAppReadiness,
+  apiUserAppTasksActive,
+  UserAppReadinessStatusEnum,
+  type UserAppReadiness,
 } from '../services/appDevPro';
 import {
   apiUserAppDomainList,
   normalizeUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from '../services/appDomain';
-import type {
-  UserAppDeployFailedStage,
-  UserAppDevTaskInfo,
-  UserAppInfo,
-  UserAppPublishPhase,
-  UserAppTaskLogEvent,
-  UserAppTaskServiceProgress,
-  UserAppTaskTerminalStatus,
+import {
+  UserAppTaskTypeEnum,
+  type UserAppDeployFailedStage,
+  type UserAppDevTaskInfo,
+  type UserAppInfo,
+  type UserAppPublishPhase,
+  type UserAppTaskLogEvent,
+  type UserAppTaskServiceProgress,
+  type UserAppTaskTerminalStatus,
 } from '../type';
 import { pollUserAppReadiness } from '../utils/previewHealthCheck';
 import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
 import {
-  USER_APP_BUILD_SSE_EVENT,
   getTaskTerminalStatus,
   mergeTaskServiceProgress,
   normalizeTaskStatus,
+  USER_APP_BUILD_SSE_EVENT,
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
@@ -42,6 +47,35 @@ import {
 
 const DEPLOYABLE_POLL_INTERVAL_MS = 2000;
 const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * 跳过 prod/start、等待他处部署完成时的就绪探测次数。
+ * 3s × 20 ≈ 60s：比常规 5 次长，覆盖应用仍处于启动中 / 停止中的阶段。
+ */
+const SKIPPED_START_READINESS_MAX_ATTEMPTS = 20;
+
+/**
+ * 承接他处进行中的构建任务时，调 prod/start 前探测线上应用状态的次数与间隔。
+ * 对方构建结束到发起部署之间有间隙，多探几次可等到状态变为启动中，避免重复 start；
+ * active 判定可直接构建（本页签自己发起）时只探一次。
+ */
+const EXISTING_DEPLOY_READINESS_PROBE_ATTEMPTS = 4;
+const EXISTING_DEPLOY_READINESS_PROBE_INTERVAL_MS = 3000;
+
+/**
+ * 线上应用处于这些状态时，服务正在启动或停止，部署已在进行中，
+ * 部署服务阶段无需再调 prod/start，直接等就绪即可。
+ * ready 等其它状态仍需显式 start，也可能是在服务上一个 release，必须切版本。
+ */
+const PROD_SERVICE_TRANSITION_STATUSES = new Set<string>([
+  UserAppReadinessStatusEnum.Starting,
+  UserAppReadinessStatusEnum.Stopping,
+]);
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
@@ -82,6 +116,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const [prodAccessUrl, setProdAccessUrl] = useState<string>('');
   /** 部署成功后线上环境是否已就绪。未就绪时仍展示域名，并在域名下提示稍后再试 */
   const [prodReady, setProdReady] = useState<boolean>(true);
+  /** 本次部署跳过 prod/start（他处已发起部署）。为 true 时不展示「停止部署」 */
+  const [startSkipped, setStartSkipped] = useState<boolean>(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef<boolean>(false);
@@ -92,6 +128,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const startServicesRef = useRef<UserAppTaskServiceProgress[]>([]);
   const streamStageRef = useRef<'build' | 'start'>('build');
   const releaseIdRef = useRef<string>('');
+  /** 与 startSkipped 同步的即时值，供就绪轮询读取 */
+  const startSkippedRef = useRef<boolean>(false);
   const buildSucceededRef = useRef<boolean>(false);
   const checkPassedRef = useRef<boolean>(false);
   /** 当前进行中的步骤，取消时用于标记错误落点 */
@@ -128,6 +166,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     setTaskId('');
     setProdAccessUrl('');
     setProdReady(true);
+    setStartSkipped(false);
+    startSkippedRef.current = false;
     taskIdRef.current = '';
     lastSeqRef.current = undefined;
     terminalRef.current = null;
@@ -244,6 +284,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   /**
    * 生产部署接口成功后，轮询线上环境是否可访问。
    * 用户停止部署时结束，不进入成功态。
+   * 跳过 prod/start 时应用可能仍在启动中 / 停止中，探测次数放宽到 60s 量级。
    * 轮询到上限仍未就绪时不抛错，交给调用方继续展示部署成功，并标记未就绪。
    * @returns 线上环境是否已就绪
    */
@@ -256,6 +297,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       appId,
       UserAppDbEnvEnum.Prod,
       () => cancelledRef.current,
+      startSkippedRef.current
+        ? { maxAttempts: SKIPPED_START_READINESS_MAX_ATTEMPTS }
+        : undefined,
     );
   }, [appId, setPublishPhase]);
 
@@ -301,64 +345,156 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId, onDomainList, onProjectInfo]);
 
   /**
-   * 构建成功后启动生产服务，并监听启动任务 SSE。
+   * 探测线上应用状态，判断是否正在启动 / 停止（部署已在进行）。
+   * 只看顶层业务 status，不看容器状态：容器 running 时线上可能仍在服务旧 release，
+   * 需显式 start 才会切版本。
+   * 探测失败、业务码非成功或回包没有 status 时按未命中处理，
+   * 调用方按原逻辑调用 prod/start，避免因探测异常漏掉启动。
+   *
+   * @param maxAttempts 探测次数，默认 1；承接他处部署时多探几次等状态切换
+   * @returns 是否可以跳过 prod/start
    */
-  const submitProdStart = useCallback(async () => {
-    if (!appId) {
-      throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
-    }
-    setPublishPhase('deploying');
-    stopStream();
-    lastSeqRef.current = undefined;
-    streamStageRef.current = 'start';
-    startServicesRef.current = [];
-    setStartServices([]);
-
-    const task = unwrapUserAppResponse(
-      await apiUserAppProdStart({
-        appId,
-        releaseId: releaseIdRef.current || undefined,
-      }),
-      dict('PC.Pages.AppDevPro.startFailed'),
-    ) as UserAppDevTaskInfo | undefined;
-
-    const currentTaskId = pickUserAppTaskId(task);
-    if (currentTaskId) {
-      setTaskId(currentTaskId);
-      taskIdRef.current = currentTaskId;
-    }
-
-    if (cancelledRef.current) {
-      if (currentTaskId) {
-        await apiUserAppBuildCancel(currentTaskId);
+  const isProdServiceTransitioning = useCallback(
+    async (maxAttempts = 1): Promise<boolean> => {
+      if (!appId) {
+        return false;
       }
-      markCancelled();
-      return;
-    }
+      const attempts = Math.max(1, maxAttempts);
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        if (cancelledRef.current) {
+          return false;
+        }
+        try {
+          const result = await apiUserAppReadiness(
+            appId,
+            UserAppDbEnvEnum.Prod,
+          );
+          const codeOk =
+            !result ||
+            typeof result !== 'object' ||
+            !('code' in result) ||
+            result.code === SUCCESS_CODE;
+          if (codeOk) {
+            const payload = (
+              result && typeof result === 'object' && 'data' in result
+                ? result.data
+                : result
+            ) as UserAppReadiness | undefined;
+            const status = payload?.status;
+            // 探到启动中 / 停止中立即结束等待，不再往后轮询
+            if (status && PROD_SERVICE_TRANSITION_STATUSES.has(status)) {
+              return true;
+            }
+          }
+        } catch {
+          // 单次探测失败继续下一轮，直到次数用尽后回落 prod/start
+        }
+        if (cancelledRef.current) {
+          return false;
+        }
+        if (attempt < attempts - 1) {
+          await sleep(EXISTING_DEPLOY_READINESS_PROBE_INTERVAL_MS);
+        }
+      }
+      return false;
+    },
+    [appId],
+  );
 
-    const immediate = getTaskTerminalStatus(task?.status);
-    if (immediate === 'failed') {
-      throw new Error(task?.error || dict('PC.Pages.AppDevPro.startFailed'));
-    }
-    if (immediate === 'cancelled') {
-      markCancelled();
-      return;
-    }
+  /**
+   * 构建成功后启动生产服务，并监听启动任务 SSE。
+   *
+   * @param options.skipIfServiceTransitioning 为 true 时先探测线上应用状态：
+   * starting / stopping 说明服务正在启停（可能来自其他页签），跳过 prod/start。
+   * 其它状态（含 ready）仍需显式 start 切版本；历史版本部署不传该参数。
+   * @param options.transitionProbeAttempts 探测次数，默认 1；
+   * 承接他处进行中的部署时传多次，等对方真正发起部署后再判断。
+   */
+  const submitProdStart = useCallback(
+    async (options?: {
+      skipIfServiceTransitioning?: boolean;
+      transitionProbeAttempts?: number;
+    }) => {
+      if (!appId) {
+        throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
+      }
+      setPublishPhase('deploying');
+      stopStream();
+      lastSeqRef.current = undefined;
+      streamStageRef.current = 'start';
+      startServicesRef.current = [];
+      setStartServices([]);
 
-    if (currentTaskId && immediate !== 'succeeded') {
-      const streamResult = await listenBuildProgress(
-        currentTaskId,
+      if (options?.skipIfServiceTransitioning) {
+        const serviceTransitioning = await isProdServiceTransitioning(
+          options.transitionProbeAttempts,
+        );
+        if (cancelledRef.current) {
+          markCancelled();
+          return;
+        }
+        if (serviceTransitioning) {
+          // 部署由他处发起，本页签不再调用 prod/stop，隐藏停止入口
+          startSkippedRef.current = true;
+          setStartSkipped(true);
+          return;
+        }
+      }
+
+      const task = unwrapUserAppResponse(
+        await apiUserAppProdStart({
+          appId,
+          releaseId: releaseIdRef.current || undefined,
+        }),
         dict('PC.Pages.AppDevPro.startFailed'),
-      );
-      if (streamResult === 'cancelled' || cancelledRef.current) {
+      ) as UserAppDevTaskInfo | undefined;
+
+      const currentTaskId = pickUserAppTaskId(task);
+      if (currentTaskId) {
+        setTaskId(currentTaskId);
+        taskIdRef.current = currentTaskId;
+      }
+
+      if (cancelledRef.current) {
+        if (currentTaskId) {
+          await apiUserAppBuildCancel(currentTaskId);
+        }
         markCancelled();
         return;
       }
-      if (streamResult === 'failed') {
-        throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
+
+      const immediate = getTaskTerminalStatus(task?.status);
+      if (immediate === 'failed') {
+        throw new Error(task?.error || dict('PC.Pages.AppDevPro.startFailed'));
       }
-    }
-  }, [appId, listenBuildProgress, markCancelled, stopStream]);
+      if (immediate === 'cancelled') {
+        markCancelled();
+        return;
+      }
+
+      if (currentTaskId && immediate !== 'succeeded') {
+        const streamResult = await listenBuildProgress(
+          currentTaskId,
+          dict('PC.Pages.AppDevPro.startFailed'),
+        );
+        if (streamResult === 'cancelled' || cancelledRef.current) {
+          markCancelled();
+          return;
+        }
+        if (streamResult === 'failed') {
+          throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
+        }
+      }
+    },
+    [
+      appId,
+      isProdServiceTransitioning,
+      listenBuildProgress,
+      markCancelled,
+      setPublishPhase,
+      stopStream,
+    ],
+  );
 
   /**
    * 历史构建包版本：跳过构建与检测，直接部署指定 releaseId。
@@ -393,6 +529,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setOpen(true);
 
       try {
+        // 指定历史版本要切换线上版本，始终显式调用 prod/start
         await submitProdStart();
         if (cancelledRef.current) {
           markCancelled();
@@ -437,12 +574,30 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   );
 
   /**
-   * 点击部署：创建构建任务，监听进度，成功后调用生产部署。
+   * 关闭刚打开、尚未进入构建的部署弹窗。
+   * 用于 tasks/active 判定当前不能构建时直接回到页面。
    */
-  const startPublish = useCallback(async () => {
+  const abortPublishBeforeBuild = useCallback(() => {
+    setOpen(false);
+    setPhase('idle');
+  }, []);
+
+  /**
+   * 点击部署：先打开部署弹窗，查 tasks/active。
+   * buildAllowed 为 true 时创建构建任务。
+   * 为 false 且已有带 taskId 的 build 任务时，跳过构建接口，直接接该任务的日志流并继续部署。
+   * 部署服务前先探测线上应用状态，starting / stopping 则不再调 prod/start，
+   * 避免多页签并发或承接他处构建任务时重复发起部署；
+   * 承接他处构建任务时多探几次等对方发起部署，自己构建时只探一次；
+   * 其它状态始终显式 prod/start，避免新版本没切到线上。
+   * 没有可接入的构建任务时提示并关闭弹窗。
+   *
+   * @returns 是否已进入构建。false 表示未开始构建，调用方需恢复 tasks/active 轮询
+   */
+  const startPublish = useCallback(async (): Promise<boolean> => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
-      return;
+      return false;
     }
     if (
       phase === 'starting' ||
@@ -452,18 +607,54 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       phase === 'checkingReadiness'
     ) {
       setOpen(true);
-      return;
+      return true;
     }
 
     resetTaskState();
     setOpen(true);
     setPublishPhase('starting');
 
+    /** buildAllowed 为 false 时，active 里可直接接入的进行中构建任务 */
+    let existingBuildTask: UserAppDevTaskInfo | null = null;
     try {
-      const task = unwrapUserAppResponse(
-        await apiUserAppBuild({ appId }),
-        dict('PC.Pages.AppDevPro.buildStatusFailed'),
-      ) as UserAppDevTaskInfo;
+      const active = unwrapUserAppResponse(
+        await apiUserAppTasksActive(appId),
+        dict('PC.Pages.AppDevPro.buildNotAllowed'),
+      );
+      if (cancelledRef.current) {
+        markCancelled();
+        return true;
+      }
+      if (active?.buildAllowed !== true) {
+        existingBuildTask =
+          (active?.tasks || []).find(
+            (item) =>
+              item.taskType === UserAppTaskTypeEnum.Build && !!item.taskId,
+          ) ?? null;
+        if (!existingBuildTask) {
+          message.warning(dict('PC.Pages.AppDevPro.buildNotAllowed'));
+          abortPublishBeforeBuild();
+          return false;
+        }
+      }
+    } catch (error) {
+      if (cancelledRef.current) {
+        markCancelled();
+        return true;
+      }
+      // 业务失败已由全局 errorHandler 提示，这里只退出部署弹窗
+      console.error('[AppDevPro] Check buildAllowed failed:', error);
+      abortPublishBeforeBuild();
+      return false;
+    }
+
+    try {
+      const task =
+        existingBuildTask ??
+        (unwrapUserAppResponse(
+          await apiUserAppBuild({ appId }),
+          dict('PC.Pages.AppDevPro.buildStatusFailed'),
+        ) as UserAppDevTaskInfo);
 
       const currentTaskId = pickUserAppTaskId(task);
       if (!currentTaskId) {
@@ -475,7 +666,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       if (cancelledRef.current) {
         await apiUserAppBuildCancel(currentTaskId);
         markCancelled();
-        return;
+        return true;
       }
 
       const immediate = getTaskTerminalStatus(task.status);
@@ -486,7 +677,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       }
       if (immediate === 'cancelled') {
         markCancelled();
-        return;
+        return true;
       }
 
       if (immediate !== 'succeeded') {
@@ -494,7 +685,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         const streamResult = await listenBuildProgress(currentTaskId);
         if (streamResult === 'cancelled' || cancelledRef.current) {
           markCancelled();
-          return;
+          return true;
         }
         if (streamResult === 'failed') {
           throw new Error(dict('PC.Pages.AppDevPro.buildStatusFailed'));
@@ -503,7 +694,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       if (!releaseIdRef.current) {
@@ -514,20 +705,27 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       await waitUntilProdDeployable();
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
-      await submitProdStart();
+      // 线上应用可能已在启动中 / 停止中（其他页签或他处发起的部署），先探测再决定是否调用 prod/start。
+      // 承接他处进行中的构建任务时多探几次，等对方构建结束后真正发起部署；自己发起构建时只探一次。
+      await submitProdStart({
+        skipIfServiceTransitioning: true,
+        transitionProbeAttempts: existingBuildTask
+          ? EXISTING_DEPLOY_READINESS_PROBE_ATTEMPTS
+          : 1,
+      });
 
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       const ready = await waitUntilProdReady();
       if (cancelledRef.current) {
         markCancelled();
-        return;
+        return true;
       }
 
       setProdReady(ready);
@@ -539,7 +737,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         (error instanceof Error && error.name === 'AbortError')
       ) {
         markCancelled();
-        return;
+        return true;
       }
       const stage: UserAppDeployFailedStage = !buildSucceededRef.current
         ? 'build'
@@ -557,7 +755,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setErrorMessage(text);
       setPhase('failed');
     }
+    return true;
   }, [
+    abortPublishBeforeBuild,
     appId,
     listenBuildProgress,
     markCancelled,
@@ -630,8 +830,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
   /**
    * 关闭进度弹窗（进行中需先取消）。
+   * 跳过 prod/start 时部署由他处发起：只收起弹窗，后台继续等就绪，
+   * 页面预览由自身的 readiness 轮询恢复，不打断也不重置本次流程。
    */
   const closeModal = useCallback(() => {
+    if (startSkippedRef.current) {
+      setOpen(false);
+      return;
+    }
     if (
       phase === 'starting' ||
       phase === 'building' ||
@@ -673,5 +879,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     startServices,
     prodAccessUrl,
     prodReady,
+    /** 本次部署跳过了 prod/start，弹窗据此隐藏「停止部署」 */
+    startSkipped,
   };
 }

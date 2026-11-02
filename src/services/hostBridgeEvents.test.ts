@@ -216,6 +216,52 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
     );
   });
 
+  it('open-conversation 命令 → 将结构化载荷传给 openConversation', () => {
+    const openConversation = vi.fn();
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask: vi.fn(),
+      openConversation,
+    });
+
+    const payload = {
+      type: 'open-conversation' as const,
+      convId: '123456789',
+      convType: 4,
+      senderType: 1,
+      msgType: 'text',
+      spaceId: 'space-99',
+      msgId: 'msg-101',
+    };
+    registeredHandler!(payload);
+    expect(openConversation).toHaveBeenCalledWith(payload);
+  });
+
+  it('open-conversation 命令 → 忽略空/无效 convId', () => {
+    const openConversation = vi.fn();
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask: vi.fn(),
+      openConversation,
+    });
+
+    registeredHandler!({ type: 'open-conversation', convId: '' });
+    registeredHandler!({ type: 'open-conversation', convId: '   ' });
+    registeredHandler!({ type: 'open-conversation', convId: null as any });
+    expect(openConversation).not.toHaveBeenCalled();
+  });
+
+  it('open-conversation 未注入 → 静默 no-op 不抛错', () => {
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask: vi.fn(),
+    });
+
+    expect(() =>
+      registeredHandler!({ type: 'open-conversation', convId: '123' }),
+    ).not.toThrow();
+  });
+
   it('未知命令类型 → 不调用 setSecondMenuCollapsed（仅 console.warn）', () => {
     const setSecondMenuCollapsed = vi.fn();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

@@ -53,8 +53,10 @@ export const seedWorkbenchHistoryBaseAtBoot = (): void => {
 
   bootSeeded = true;
   const { href } = window.location;
-  window.history.replaceState(null, '', WORKBENCH_HISTORY_BASE_URL);
-  window.history.pushState(null, '', href);
+  // 与 history@5 的索引约定对齐：否则 router 会把工作台条目初始化成 idx=0，
+  // layout 误认为仍在壳启动链栈首，再垫一次 /home；返回拦截也需要栈底有索引。
+  window.history.replaceState({ idx: 0 }, '', WORKBENCH_HISTORY_BASE_URL);
+  window.history.pushState({ idx: 1 }, '', href);
 };
 
 seedWorkbenchHistoryBaseAtBoot();

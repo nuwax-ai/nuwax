@@ -10,7 +10,6 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
-import { isBareOpenUiFileName, isOpenUiFileName } from '@/utils/openUiArtifact';
 import {
   BranchesOutlined,
   CloseOutlined,
@@ -19,7 +18,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
+import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import LocalFileActions from '../../FilePreview/LocalFileActions';
@@ -29,25 +28,6 @@ import ShareDesktopModal from './ShareDesktopModal';
 import type { FilePathHeaderProps } from './type';
 
 const cx = classNames.bind(styles);
-
-/**
- * 是否支持「预览 / 代码」双模式切换。
- * 与 html、markdown 一致，`.openui.json`（及内容可嗅探的裸 `.openui`）也走同一套 Segmented。
- *
- * @param fileName - 当前选中文件名
- * @returns 是否展示预览/代码切换按钮
- */
-const supportsPreviewCodeToggle = (fileName?: string): boolean => {
-  if (!fileName) {
-    return false;
-  }
-  return (
-    fileName.includes('.htm') ||
-    isMarkdownFile(fileName) ||
-    isOpenUiFileName(fileName) ||
-    isBareOpenUiFileName(fileName)
-  );
-};
 
 /**
  * Chat 页文件预览 Header
@@ -68,8 +48,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   showFullscreenIcon = true,
   isDownloadingFile = false,
   showMoreActions = true,
-  viewFileType = 'preview',
-  onViewFileTypeChange,
   onDownloadFileByUrl,
   isShowShare = true,
   isShowDownloadButton = true,
@@ -133,18 +111,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     }
   };
 
-  // 「预览 / 代码」双模式切换：html / md / .openui.json 存在内容或代理 URL 时展示。
-  // 独立放第二行右侧，不再与文件名、操作按钮挤首行（窄宽度下会被裁切）。
-  const showViewToggle =
-    viewMode === 'preview' &&
-    Boolean(
-      targetNode?.fileProxyUrl ||
-        (targetNode?.content !== undefined && targetNode?.content !== null),
-    ) &&
-    supportsPreviewCodeToggle(fileName);
-
   const hasFileInfoContent = useMemo(() => {
-    // 仅 desktop 分支消费（preview 分支的 fileInfo 始终渲染，切换入口已独立成行）
     return viewMode !== 'preview' || (!isFileTreeVisible && Boolean(fileName));
   }, [viewMode, isFileTreeVisible, fileName]);
 
@@ -440,41 +407,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           )}
         </div>
       </div>
-
-      {/* 「预览 / 代码」切换入口放第二行右侧，避免与文件名、操作按钮挤首行被裁切 */}
-      {showViewToggle && (
-        <div className={styles.viewToggleRow}>
-          <ConfigProvider
-            theme={{
-              components: {
-                Segmented: {
-                  itemSelectedBg: '#fff',
-                  itemSelectedColor: '#5147FF',
-                  itemColor: 'rgba(0, 0, 0, 0.45)',
-                  itemHoverColor: 'rgba(0, 0, 0, 0.65)',
-                  trackBg: 'rgba(12, 20, 102, 0.04)',
-                  trackPadding: 2,
-                },
-              },
-            }}
-          >
-            <Segmented
-              value={viewFileType}
-              onChange={onViewFileTypeChange}
-              options={[
-                {
-                  label: dict('PC.Components.FilePathHeader.preview'),
-                  value: 'preview',
-                },
-                {
-                  label: dict('PC.Components.FilePathHeader.code'),
-                  value: 'code',
-                },
-              ]}
-            />
-          </ConfigProvider>
-        </div>
-      )}
 
       <ShareDesktopModal
         fileProxyUrl={targetNode?.fileProxyUrl || null}

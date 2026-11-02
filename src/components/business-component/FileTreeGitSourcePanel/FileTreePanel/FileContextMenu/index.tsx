@@ -1,3 +1,4 @@
+import { localFileActionErrorKey } from '@/components/business-component/FilePreview/localFileActionMessages';
 import {
   getLocalFileReference,
   openLocalFile,
@@ -33,6 +34,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onClose,
   onDelete,
   onRename,
+  onMove,
   onUploadFiles,
   onUploadFolder,
   onCreateFile,
@@ -59,9 +61,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   const localAction = (operation: typeof openLocalFile) => {
     if (!localFile) return;
     handleMenuItemClick(() => {
-      void operation(localFile).catch((error) =>
-        message.error(error instanceof Error ? error.message : String(error)),
-      );
+      void operation(localFile)
+        .then((done) => {
+          if (done === false)
+            message.error(dict('PC.Components.FilePreview.localActionFailed'));
+        })
+        .catch((error) => message.error(dict(localFileActionErrorKey(error))));
     });
   };
 
@@ -456,6 +461,16 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
         ]
       : [];
   const menuItems = [
+    ...(targetNode && onMove && !disabledDelete
+      ? [
+          {
+            key: 'move',
+            label: dict('PC.Components.FileContextMenu.move'),
+            icon: <FolderOpenOutlined />,
+            onClick: () => handleMenuItemClick(() => onMove(targetNode)),
+          },
+        ]
+      : []),
     ...localMenuItems,
     ...(disabledDelete
       ? allMenuItems.filter(

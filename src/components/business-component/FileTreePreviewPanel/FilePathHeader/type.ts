@@ -33,7 +33,7 @@ export interface FilePathHeaderProps {
   isDownloadingFile?: boolean;
   /** 是否显示更多操作菜单 */
   showMoreActions?: boolean;
-  /** 文件视图类型：预览或代码（html / md / .openui.json） */
+  /** 文件视图类型：预览或代码（html / md / .openui.json）。切换控件在路径栏刷新按钮左侧 */
   viewFileType?: 'preview' | 'code';
   /** 针对 html、md、.openui.json 文件，切换预览和代码视图 */
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;

@@ -39,6 +39,7 @@ import type {
   SkillListSourceType,
 } from '@/components/business-component/SkillListView';
 import SkillListView from '@/components/business-component/SkillListView';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
@@ -851,7 +852,14 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             }
             items={menus.map((menu) => ({
               key: menu.type,
-              label: t(menu.labelKey),
+              // 窄侧栏文案溢出才出气泡；未截断时不提示
+              label: (
+                <EllipsisTooltip
+                  className={styles['menu-label']}
+                  text={t(menu.labelKey)}
+                  placement="right"
+                />
+              ),
               icon: (
                 <span
                   className={cx(

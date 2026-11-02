@@ -137,6 +137,18 @@ describe('parseMessageSegments', () => {
     })}最终回答内容`;
     expect(stripCustomTags(text)).toBe('最终回答内容');
   });
+
+  it.each(['- 项目一\n- 项目二', '1. 项目一\n2. 项目二'])(
+    '剥离包装时保留列表块边界：%s',
+    (items) => {
+      expect(stripCustomTags(`补充说明：\n<div>\n${items}\n</div>`)).toBe(
+        `补充说明：\n\n${items}`,
+      );
+      expect(stripCustomTags(`<div>前文</div><p>${items}</p>`)).toBe(
+        `前文\n\n${items}`,
+      );
+    },
+  );
 });
 
 describe('projectConversation · 轮次分组', () => {

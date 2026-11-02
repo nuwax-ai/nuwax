@@ -139,7 +139,7 @@ export function useConversationAgentChatSession(
             agentSandboxId: conversationInfo.agent?.sandboxId,
             sandboxServerId: conversationInfo.sandboxServerId,
           }),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,

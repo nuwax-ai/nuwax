@@ -3,6 +3,7 @@
  * 颜色全部走 token.less（--xagi-* 主题变量），随亮/暗主题自动切换。
  */
 @import '@/styles/token';
+@import '@/styles/scrollbar.less';
 @import '@/styles/nav-item-state';
 
 @capability-accent: @colorPrimary;
@@ -88,8 +89,22 @@
   // hover / 选中对齐主导航菜单（nav-item-state.less 统一交互态）：hover 灰底；
   // 选中为容器白卡 + 阴影、文字近黑字重 500、仅图标取主色——底色不随主题色变
   // （antd 默认选中底对近黑自定义色会算成深灰）
-  &.menu :global(.ant-menu-item) {
+  // 竖向菜单项默认是单行块级。文案若换成块级元素会掉到图标下一行，
+  // 被固定行高裁掉，所以改成与图标同一行，标题槽吃掉剩余宽度
+  &.menu.menu :global(.ant-menu-item) {
+    display: flex;
+    align-items: center;
     .nav-row-hover();
+  }
+
+  &.menu.menu :global(.ant-menu-item-icon) {
+    flex: none;
+  }
+
+  &.menu.menu :global(.ant-menu-title-content) {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
   }
 
   &.menu :global(.ant-menu-item-selected),
@@ -110,6 +125,12 @@
     outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
     outline-offset: -2px;
   }
+}
+
+// 文案在标题槽内省略；宽度跟随槽位，避免百分比宽度把文字压没
+.menu-label {
+  display: block;
+  max-width: 100%;
 }
 
 .menu-icon {
@@ -230,6 +251,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 56px;
   padding: 12px 20px;
   box-sizing: border-box;
@@ -242,10 +265,12 @@
   gap: 6px;
   min-width: 0;
   overflow-x: auto;
-  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  // 默认隐藏，鼠标移入才显示横向滚动条
+  .scrollbar-auto-hide(4px);
 
   &::-webkit-scrollbar {
-    display: none;
+    height: 4px;
   }
 }
 

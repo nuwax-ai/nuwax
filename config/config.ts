@@ -3,6 +3,7 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import path from 'path';
 import { defineConfig } from 'umi';
+import { readPdfCharacterMaps } from '../scripts/pdf-character-maps';
 import routes from '../src/routes';
 
 export default defineConfig({
@@ -36,7 +37,10 @@ export default defineConfig({
     loading: '@/components/business-component/AppStartup/Loading',
   },
   request: {},
-  define: { 'process.env.RELEASE0930_LICENSE_MOCK': '0' },
+  define: {
+    'process.env.RELEASE0930_LICENSE_MOCK': '0',
+    NUWAX_PDF_CMAPS: readPdfCharacterMaps(),
+  },
   // 实例由 SidebarShell 的持久宿主管理；资源目录与 /repo 业务路由分开。
   qiankun: {
     master: {

@@ -1,7 +1,13 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * NW-028 回归：发布链路「先 build（打包部署）再 publish/apply（提交发布申请）」。
@@ -91,9 +97,9 @@ vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: () => 'cls' }),
 }));
 
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { apiPublishApply } from '@/services/publish';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 
 const baseProps = {
   mode: AgentComponentTypeEnum.Agent,
@@ -119,13 +125,18 @@ describe('PublishComponentModal 发布前置钩子阻断（NW-028）', () => {
   it('前置钩子返回 false（构建失败）时不提交发布申请', async () => {
     const onBeforePublishFn = vi.fn().mockResolvedValue(false);
     render(
-      <PublishComponentModal {...baseProps} onBeforePublishFn={onBeforePublishFn} />,
+      <PublishComponentModal
+        {...baseProps}
+        onBeforePublishFn={onBeforePublishFn}
+      />,
     );
 
     await submitForm();
     // 留出异步链时间，确认 publish/apply 始终未被调用
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
     });
 
     expect(onBeforePublishFn).toHaveBeenCalledTimes(1);
@@ -136,12 +147,17 @@ describe('PublishComponentModal 发布前置钩子阻断（NW-028）', () => {
   it('前置钩子抛错（构建网络异常）时不提交发布申请', async () => {
     const onBeforePublishFn = vi.fn().mockRejectedValue(new Error('network'));
     render(
-      <PublishComponentModal {...baseProps} onBeforePublishFn={onBeforePublishFn} />,
+      <PublishComponentModal
+        {...baseProps}
+        onBeforePublishFn={onBeforePublishFn}
+      />,
     );
 
     await submitForm();
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
     });
 
     expect(apiPublishApply).not.toHaveBeenCalled();
@@ -151,7 +167,10 @@ describe('PublishComponentModal 发布前置钩子阻断（NW-028）', () => {
   it('前置钩子成功时发布申请正常提交（既有链路不回归）', async () => {
     const onBeforePublishFn = vi.fn().mockResolvedValue(true);
     render(
-      <PublishComponentModal {...baseProps} onBeforePublishFn={onBeforePublishFn} />,
+      <PublishComponentModal
+        {...baseProps}
+        onBeforePublishFn={onBeforePublishFn}
+      />,
     );
 
     await submitForm();

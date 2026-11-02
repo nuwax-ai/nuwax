@@ -111,7 +111,31 @@ async function fixture(t, { skipGitlabRemote = false } = {}) {
   }
   await fs.writeFile(
     path.join(tools, 'pnpm'),
-    '#!/bin/sh\n[ "$2" = "test:conversation" ] || exit 0\ngit rev-parse HEAD >> "$FIXTURE_GATE_LOG"\n[ -z "${FIXTURE_FAIL_GATE:-}" ] || exit 1\nexit 0\n',
+    `#!/bin/sh
+[ "$2" = "test:conversation" ] || exit 0
+git rev-parse HEAD >> "$FIXTURE_GATE_LOG"
+if [ -n "\${FIXTURE_FAIL_GATE:-}" ]; then
+  exit 1
+fi
+if [ -n "\${FIXTURE_GATE_ASSERT:-}" ]; then
+  echo " FAIL  tests/fixture/contract.test.ts > assertion drifted"
+  echo "     → expected 1 to equal 2"
+  exit 1
+fi
+if [ -n "\${FIXTURE_GATE_TIMEOUTS:-}" ]; then
+  count_file="\${FIXTURE_GATE_TIMEOUT_COUNT}"
+  n=0
+  [ -f "$count_file" ] && n=$(cat "$count_file")
+  n=$((n + 1))
+  printf '%s\\n' "$n" > "$count_file"
+  if [ "$n" -le "$FIXTURE_GATE_TIMEOUTS" ]; then
+    echo " FAIL  tests/fixture/slow.test.tsx > timed out under load"
+    echo "     → Test timed out in 5000ms."
+    exit 1
+  fi
+fi
+exit 0
+`,
     { mode: 0o755 },
   );
   await fs.writeFile(
@@ -463,6 +487,92 @@ test('quality gate runs for new source, fails closed, and is skipped when only a
   // 源码与已部署的 gitlab/test 一致时不再付门的成本。
   await deploy(state);
   assert.equal((await logLines(state.env.FIXTURE_GATE_LOG)).length, 2);
+});
+
+test('quality gate retries when every failure is a timeout and stops on assertion failures', async (t) => {
+  const state = await fixture(t);
+  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'jitter then pass\n');
+  const timeoutCount = path.join(state.temporary, 'timeouts.txt');
+  const result = await deploy(state, {
+    FIXTURE_GATE_TIMEOUTS: '1',
+    FIXTURE_GATE_TIMEOUT_COUNT: timeoutCount,
+    GATE_JITTER_RETRIES: '1',
+    GATE_JITTER_BACKOFF: '0',
+  });
+  assert.match(result.stdout, /疑似负载抖动/);
+  assert.equal((await logLines(state.env.FIXTURE_GATE_LOG)).length, 2);
+  assert.match(result.stdout, /快速通道提测完成/);
+
+  const assertState = await fixture(t);
+  await remoteCommit(assertState, 'origin', 'dev', 'source.txt', 'real regression\n');
+  const before = await remoteHead(assertState, 'gitlab', 'test');
+  const failure = await deploy(assertState, {
+    FIXTURE_GATE_ASSERT: '1',
+    GATE_JITTER_RETRIES: '2',
+    GATE_JITTER_BACKOFF: '0',
+  }).then(
+    () => assert.fail('断言失败不能靠重试放行'),
+    (error) => error,
+  );
+  assert.match(failure.stderr, /未放行失败/);
+  assert.doesNotMatch(failure.stdout, /疑似负载抖动/);
+  assert.equal((await logLines(assertState.env.FIXTURE_GATE_LOG)).length, 1);
+  assert.equal(await remoteHead(assertState, 'gitlab', 'test'), before);
+});
+
+test('divergent micro-app pins are replaced with latest main instead of stopping', async (t) => {
+  const state = await microAppFixture(t);
+  await git(state.upstream, 'checkout', '-q', '-b', 'side', state.v1);
+  await fs.writeFile(path.join(state.upstream, 'side.txt'), 'side\n');
+  await git(state.upstream, 'add', '.');
+  await git(state.upstream, 'commit', '-m', 'side');
+  const side = await git(state.upstream, 'rev-parse', 'HEAD');
+  await git(state.upstream, 'checkout', '-q', 'main');
+
+  async function pinBranch(branch, sha) {
+    await git(state.root, 'checkout', '-q', branch);
+    await run(
+      state.root,
+      'git',
+      ['-C', state.sourceDir, 'fetch', state.upstream, sha],
+      fileProtocol,
+    );
+    await git(state.source, 'checkout', '-q', '--detach', sha);
+    const adapter = JSON.parse(
+      await fs.readFile(path.join(state.root, state.adapterPath), 'utf8'),
+    );
+    adapter.pin = sha;
+    await fs.writeFile(
+      path.join(state.root, state.adapterPath),
+      `${JSON.stringify(adapter, null, 2)}\n`,
+    );
+    await git(state.root, 'add', state.adapterPath, state.sourceDir);
+    await git(state.root, 'commit', '-m', `pin ${branch}`);
+    for (const remote of ['origin', 'gitlab']) {
+      await git(state.root, 'push', remote, branch);
+    }
+  }
+
+  await pinBranch('test', side);
+  await pinBranch('dev', state.v2);
+  await git(state.root, 'checkout', '-q', start);
+  const result = await deploy(state, {
+    ...fileProtocol,
+    FIXTURE_SUBMODULE_DIR: state.sourceDir,
+  });
+  assert.match(result.stdout, /拉取 submodules\/app 的 origin\/main 最新/);
+  for (const remote of ['origin', 'gitlab']) {
+    const head = await remoteHead(state, remote, 'test');
+    assert.equal(
+      await git(state.root, 'rev-parse', `${head}:${state.sourceDir}`),
+      state.v3,
+    );
+    assert.equal(
+      JSON.parse(await remoteShow(state, remote, `test:${state.adapterPath}`))
+        .pin,
+      state.v3,
+    );
+  }
 });
 
 test('GATE=0 skips the quality gate explicitly', async (t) => {

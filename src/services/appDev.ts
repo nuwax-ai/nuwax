@@ -24,7 +24,7 @@ import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
 import { parseLogEntry } from '@/utils/devLogParser';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import { exportNamedDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
@@ -464,9 +464,13 @@ export const getProjectInfo = async (
 /**
  * 导出用户前端项目为zip文件
  * @param projectId 项目ID
+ * @param projectName 项目名称（用于保存弹窗默认文件名，避免泛名 export.zip，NW-273）
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
  */
-export async function exportProject(projectId: string): Promise<void> {
+export async function exportProject(
+  projectId: string,
+  projectName?: string,
+): Promise<void> {
   try {
     // 导出项目链接地址
     const linkUrl =
@@ -475,8 +479,8 @@ export async function exportProject(projectId: string): Promise<void> {
         projectId,
       )}`;
 
-    // 通过浏览器下载文件
-    const saved = await exportFileViaBrowserDownload(linkUrl);
+    // 通过浏览器下载文件；默认文件名带项目名
+    const saved = await exportNamedDownload(linkUrl, projectName);
     if (saved) message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
   } catch (error) {
     // 改进错误处理，兼容不同的错误格式

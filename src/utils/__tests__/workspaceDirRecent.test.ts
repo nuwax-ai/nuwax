@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addRecentWorkspaceDir,
   loadRecentWorkspaceDirs,
+  renameRecentWorkspaceDir,
   WORKSPACE_DIR_RECENT_LIMIT,
   WORKSPACE_DIR_RECENT_STORAGE_KEY,
 } from '../workspaceDirRecent';
@@ -51,5 +52,19 @@ describe('workspaceDirRecent 最近目录', () => {
       JSON.stringify(['/ok', 3, null, '']),
     );
     expect(loadRecentWorkspaceDirs()).toEqual(['/ok']);
+  });
+  it('keeps recent paths and renames within the selected computer', () => {
+    localStorage.clear();
+    addRecentWorkspaceDir('/legacy-unscoped');
+    addRecentWorkspaceDir('C:\\work', 'windows');
+    addRecentWorkspaceDir('/Users/louis/work', 'mac');
+    expect(loadRecentWorkspaceDirs('windows')).toEqual(['C:\\work']);
+    expect(loadRecentWorkspaceDirs('mac')).toEqual(['/Users/louis/work']);
+    expect(loadRecentWorkspaceDirs('other')).toEqual([]);
+    expect(
+      renameRecentWorkspaceDir('C:\\work', 'C:\\renamed', 'windows'),
+    ).toEqual(['C:\\renamed']);
+    expect(loadRecentWorkspaceDirs('mac')).toEqual(['/Users/louis/work']);
+    expect(loadRecentWorkspaceDirs()).toEqual(['/legacy-unscoped']);
   });
 });

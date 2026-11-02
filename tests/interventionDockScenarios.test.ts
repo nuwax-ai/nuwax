@@ -240,7 +240,8 @@ describe('mock 场景 ↔ 干预 applier 合同', () => {
       (final?.data?.outputText as string) || '',
     );
     expect(taskResult.hasTaskResult).toBe(true);
-    expect(taskResult.file).toBe('999999/report/index.html');
+    // 多个 task-result 时取最后一个（与 Chat settle / AppDevPro 结束自动打开同口径）
+    expect(taskResult.file).toBe('999999/report/summary.md');
   });
 
   it('会话续接场景：半途快照 + sub 流从断点继续 + 不重复输出', () => {

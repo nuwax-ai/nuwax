@@ -12,6 +12,7 @@ vi.mock('@/features/client-shell/localFileService', () => ({
   getLocalFileReference: api.reference,
   getLocalFilesContextKey: api.key,
   prepareLocalFilePreview: api.prepare,
+  retryLocalFilesContext: vi.fn(),
 }));
 const ref = { contextId: 'ctx', cId: '9', path: 'docs/a.md' };
 const preview = (name: string) => ({

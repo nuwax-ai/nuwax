@@ -38,7 +38,8 @@ export function preparePaymentWindow(): PaymentWindow | null {
         const target = new URL(url, window.location.href);
         if (!['http:', 'https:'].includes(target.protocol)) return false;
         if (hosted && isDesktopHost()) {
-          return (await native.openWindow(target.href)).success;
+          return (await native.openWindow(target.href, { purpose: 'payment' }))
+            .success;
         }
         if (hosted) {
           // 社区宿主沿用普通弹窗；Electron 无需预开且会拒绝 about:blank。

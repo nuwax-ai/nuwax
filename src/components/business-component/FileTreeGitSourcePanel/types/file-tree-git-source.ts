@@ -156,6 +156,7 @@ export interface FileTreeContainerProps {
   handleDelete: (node: FileNode) => Promise<void>;
   /** 从右键菜单进入重命名状态 */
   handleRenameFromMenu: (node: FileNode) => void;
+  handleMoveFromMenu?: (node: FileNode) => void;
   /** 从右键菜单上传文件到指定目录 */
   handleUploadMultipleFiles: (node: FileNode | null) => Promise<void>;
   /** 从右键菜单/工具栏上传文件夹到指定目录（保留子目录结构） */

@@ -114,6 +114,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const {
     setCardList,
     handleRefreshFileList,
+    refreshSelectedFileContentThrottled,
     refreshFileListImmediately,
     refreshGitListRef,
     setFileTreeRefreshTrigger,
@@ -676,6 +677,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
       refreshFileListImmediately,
       refreshGitListRef,
       openPreviewView,

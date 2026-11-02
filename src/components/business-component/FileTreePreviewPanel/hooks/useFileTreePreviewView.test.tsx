@@ -14,11 +14,21 @@ const mocks = vi.hoisted(() => ({
   assertReference: vi.fn(),
   download: vi.fn(),
   save: vi.fn(),
+  contextKey: vi.fn(),
+  search: vi.fn(),
+  editor: null as any,
 }));
 vi.mock('@/features/client-shell/localFileService', () => ({
   getLocalFileReference: mocks.localReference,
   assertLocalFileReferenceCurrent: mocks.assertReference,
   useLocalFilesRevision: () => 0,
+  getLocalFilesContextKey: mocks.contextKey,
+  LocalFileAccessError: class extends Error {
+    constructor(public readonly code: string) {
+      super(code);
+      this.name = 'LocalFileAccessError';
+    }
+  },
   isAbsoluteFileUrl: (url: string) =>
     /^[a-z][a-z0-9+.-]*:/i.test(url) || url.startsWith('//'),
   saveLocalFile: mocks.save,
@@ -55,15 +65,22 @@ vi.mock('@/components/business-component/OpenUiArtifactView', () => ({
   OpenUiRuntimeFrame: () => <div data-testid="openui" />,
 }));
 vi.mock('@/components/CodeViewer', () => ({
-  default: ({ content, readOnly }: { content: string; readOnly?: boolean }) => (
-    <div data-testid="code" data-readonly={readOnly}>
-      {content}
-    </div>
-  ),
+  default: (props: any) => {
+    mocks.editor = props;
+    return (
+      <div data-testid="code" data-readonly={props.readOnly}>
+        {props.content}
+      </div>
+    );
+  },
 }));
 vi.mock('@/components/custom/Loading', () => ({ default: () => null }));
 vi.mock('@/pages/AppDev/components', () => ({ ImageViewer: () => null }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
+vi.mock('@/services/vncDesktop', () => ({
+  apiUpdateStaticFile: vi.fn(),
+  apiSearchFiles: mocks.search,
+}));
 vi.mock('@/services/skill', () => ({
   fetchContentFromUrl: mocks.fetchContent,
   isPreviewFileTooLargeError: (error: unknown) =>
@@ -115,6 +132,11 @@ beforeEach(() => {
   mocks.assertReference.mockReset();
   mocks.download.mockReset();
   mocks.save.mockReset();
+  mocks.contextKey.mockReset().mockReturnValue('');
+  mocks.search
+    .mockReset()
+    .mockResolvedValue({ code: '0000', data: { files: [] } });
+  mocks.editor = null;
   vi.spyOn(Date, 'now').mockReturnValue(1000);
 });
 
@@ -125,6 +147,459 @@ afterEach(() => {
 });
 
 describe('Markdown 文件树刷新', () => {
+  const localRows = (contextId: string) => [
+    {
+      name: 'first.md',
+      fileProxyUrl: '/api/computer/static/9/first.md',
+      localFile: { contextId, cId: '9', path: 'first.md' },
+    },
+  ];
+
+  it('同名同URL文件换授权后更新树引用，清理旧预览，重新点击才读取新工作区', async () => {
+    mocks.contextKey.mockReturnValue('ctx-old');
+    mocks.fetchContent.mockImplementation(async (_url, ref) =>
+      ref.contextId === 'ctx-old' ? 'old body' : 'new body',
+    );
+    const { rerender } = render(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-old')}
+        initViewFileType="code"
+      />,
+    );
+    await selectFile('first.md');
+    expect(screen.getByTestId('code')).toHaveTextContent('old body');
+    mocks.contextKey.mockReturnValue('ctx-new');
+    rerender(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-new')}
+        initViewFileType="code"
+      />,
+    );
+    expect(view.preview.selectedFileId).toBe('');
+    expect(mocks.fetchContent).toHaveBeenCalledOnce();
+    await selectFile('first.md');
+    expect(mocks.fetchContent).toHaveBeenLastCalledWith(
+      '/api/computer/static/9/first.md',
+      localRows('ctx-new')[0].localFile,
+    );
+    expect(screen.getByTestId('code')).toHaveTextContent('new body');
+  });
+
+  it('旧文件选择回调和迟到搜索结果不能重新打开已换授权的工作区', async () => {
+    let finish!: (result: unknown) => void;
+    mocks.search.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    mocks.contextKey.mockReturnValue('ctx-old');
+    const { rerender } = render(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-old')}
+        initViewFileType="code"
+      />,
+    );
+    const oldSelect = view.tree.handleFileSelect;
+    let pending!: Promise<void>;
+    act(() => {
+      pending = oldSelect('workspace:other.md') as Promise<void>;
+    });
+    mocks.contextKey.mockReturnValue('ctx-new');
+    rerender(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-new')}
+        initViewFileType="code"
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => {
+      finish({
+        code: '0000',
+        data: {
+          files: [
+            {
+              name: 'other.md',
+              isDir: false,
+              fileProxyUrl: '/api/computer/static/9/other.md',
+              localFile: { contextId: 'ctx-old', cId: '9', path: 'other.md' },
+            },
+          ],
+        },
+      });
+      await pending;
+      await oldSelect('first.md');
+    });
+    expect(mocks.fetchContent).toHaveBeenCalledOnce();
+    expect(view.preview.selectedFileNode?.localFile?.contextId).toBe('ctx-new');
+  });
+
+  it.each(['resolve', 'reject'])(
+    '换授权后重新打开同路径，旧读取迟到 %s 不能污染新正文或错误状态',
+    async (finishKind) => {
+      let finish!: (content: string) => void, fail!: (error: unknown) => void;
+      mocks.contextKey.mockReturnValue('ctx-old');
+      mocks.fetchContent
+        .mockImplementationOnce(
+          () =>
+            new Promise<string>((resolve, reject) => {
+              finish = resolve;
+              fail = reject;
+            }),
+        )
+        .mockResolvedValue('new body');
+      const { rerender } = render(
+        <Harness
+          targetId="9"
+          originalFiles={localRows('ctx-old')}
+          initViewFileType="code"
+        />,
+      );
+      let pending!: Promise<void>;
+      act(() => {
+        pending = view.tree.handleFileSelect('first.md') as Promise<void>;
+      });
+      mocks.contextKey.mockReturnValue('ctx-new');
+      rerender(
+        <Harness
+          targetId="9"
+          originalFiles={localRows('ctx-new')}
+          initViewFileType="code"
+        />,
+      );
+      await selectFile('first.md');
+      await act(async () => {
+        if (finishKind === 'resolve') finish('stale old body');
+        else
+          fail(
+            Object.assign(new Error('old expired'), {
+              code: 'expired',
+              name: 'LocalFileAccessError',
+            }),
+          );
+        await pending;
+      });
+      expect(screen.getByTestId('code')).toHaveTextContent('new body');
+      expect(view.preview.selectedFileNode?.localFile?.contextId).toBe(
+        'ctx-new',
+      );
+    },
+  );
+
+  it('PDF读取期间工作区换代，即使旧请求成功也不能导出旧正文或空文档', async () => {
+    let finish!: (content: string) => void;
+    mocks.contextKey.mockReturnValue('ctx-old');
+    mocks.fetchContent.mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { rerender } = render(
+      <Harness targetId="9" originalFiles={localRows('ctx-old')} />,
+    );
+    await selectFile('first.md');
+    let pending: unknown;
+    act(() => {
+      pending = view.preview.filePathHeaderProps.onExportPdf?.(
+        view.preview.selectedFileNode!,
+      );
+    });
+    mocks.contextKey.mockReturnValue('ctx-new');
+    rerender(<Harness targetId="9" originalFiles={localRows('ctx-new')} />);
+    await act(async () => {
+      finish('old pdf body');
+      await pending;
+    });
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
+
+  it('同一会话授权换代后，旧保存回执不能覆盖新授权的编辑状态', async () => {
+    const finishes: Array<(saved: boolean) => void> = [];
+    const save = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    mocks.contextKey.mockReturnValue('ctx-old');
+    const { rerender } = render(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-old')}
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'old draft'));
+    mocks.contextKey.mockReturnValue('ctx-new');
+    rerender(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-new')}
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'new draft'));
+    await act(async () => finishes[0](true));
+    expect(view.preview.fileSaveState).toBe('saving');
+    expect(screen.getByTestId('code')).toHaveTextContent('new draft');
+    await act(async () => finishes[1](true));
+    expect(view.preview.fileSaveState).toBe('saved');
+  });
+
+  it('旧编辑器延迟触发的输入不能写入同路径的新工作区', async () => {
+    const save = vi.fn().mockResolvedValue(true);
+    mocks.contextKey.mockReturnValue('ctx-old');
+    const { rerender } = render(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-old')}
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    const oldChange = mocks.editor.onContentChange;
+    mocks.contextKey.mockReturnValue('ctx-new');
+    rerender(
+      <Harness
+        targetId="9"
+        originalFiles={localRows('ctx-new')}
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => oldChange('first.md', 'late old input'));
+    expect(save).not.toHaveBeenCalled();
+    act(() => mocks.editor.onContentChange('first.md', 'new input'));
+    expect(save).toHaveBeenCalledOnce();
+  });
+
+  it('切换来源后旧写入回执不能覆盖新来源的编辑状态', async () => {
+    const finishes: Array<(saved: boolean) => void> = [];
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    const props = {
+      initViewFileType: 'code' as const,
+      readOnly: false,
+      onSaveFileContent: save,
+    };
+    const { rerender } = render(<Harness {...props} />);
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'old source draft'));
+    rerender(<Harness {...props} targetId="two" originalFiles={[...files]} />);
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'new source draft'));
+    await act(async () => finishes[0](true));
+    expect(view.preview.fileSaveState).toBe('saving');
+    expect(screen.getByTestId('code')).toHaveTextContent('new source draft');
+    await act(async () => finishes[1](true));
+    expect(view.preview.fileSaveState).toBe('saved');
+  });
+
+  it('删除前串行完成草稿，等待期间禁止继续编辑旧路径', async () => {
+    const finishes: Array<(saved: boolean) => void> = [];
+    let deleted!: (success: boolean) => void;
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    const remove = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          deleted = resolve;
+        }),
+    );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+        onDeleteFile={remove}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'draft'));
+    let pending!: Promise<void>;
+    act(() => {
+      pending = view.tree.handleDelete(view.preview.selectedFileNode!);
+    });
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      'draft',
+      expect.any(String),
+      { immediate: true },
+    );
+    expect(remove).not.toHaveBeenCalled();
+    expect(mocks.editor.readOnly).toBe(true);
+    act(() => mocks.editor.onContentChange('first.md', 'blocked edit'));
+    expect(save).toHaveBeenCalledTimes(2);
+    await act(async () => finishes.forEach((finish) => finish(true)));
+    expect(remove).toHaveBeenCalledOnce();
+    await act(async () => {
+      deleted(true);
+      await pending;
+    });
+    expect(view.preview.selectedFileNode).toBeNull();
+  });
+
+  it('重命名前保存失败保留草稿并阻止路径变化', async () => {
+    const save = vi.fn().mockResolvedValue(false);
+    const rename = vi.fn();
+    vi.spyOn(message, 'error').mockImplementation(() => (() => {}) as any);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+        onRenameFile={rename}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    await act(async () =>
+      view.tree.handleRenameFile(view.preview.selectedFileNode!, 'new.md'),
+    );
+    expect(rename).not.toHaveBeenCalled();
+    expect(mocks.editor.readOnly).toBe(false);
+    expect(screen.getByTestId('code')).toHaveTextContent('draft');
+    expect(view.preview.fileSaveState).toBe('error');
+  });
+
+  it('保存实际完成前保留草稿，失败显示重试，手动保存走同一回执', async () => {
+    const save = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    expect(view.preview.fileSaveState).toBe('error');
+    expect(screen.getByTestId('code')).toHaveTextContent('draft');
+    expect(
+      view.preview.changeFiles.some((file) => file.fileContent === 'draft'),
+    ).toBe(true);
+    await act(async () => {
+      expect(await view.preview.saveCurrentFile?.()).toBe(true);
+    });
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      'draft',
+      expect.any(String),
+      { immediate: true },
+    );
+    expect(view.preview.fileSaveState).toBe('saved');
+    expect(
+      view.preview.changeFiles.some((file) => file.fileId === 'first.md'),
+    ).toBe(false);
+  });
+  it('旧保存回执不能把较新草稿标为已保存', async () => {
+    const finishes: Array<(value: boolean) => void> = [];
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    act(() => mocks.editor.onContentChange('first.md', 'first draft'));
+    act(() => mocks.editor.onContentChange('first.md', 'latest draft'));
+    await act(async () => finishes[0](true));
+    expect(view.preview.fileSaveState).toBe('saving');
+    expect(screen.getByTestId('code')).toHaveTextContent('latest draft');
+    await act(async () => finishes[1](true));
+    expect(view.preview.fileSaveState).toBe('saved');
+  });
+  it('回到初始内容也会覆盖在途旧输入，避免撤销后磁盘仍是旧草稿', async () => {
+    const finishes: Array<(value: boolean) => void> = [];
+    const save = vi.fn().mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    const original = mocks.editor.content;
+    act(() => mocks.editor.onContentChange('first.md', 'draft'));
+    act(() => mocks.editor.onContentChange('first.md', original));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith(
+      'first.md',
+      original,
+      expect.any(String),
+      undefined,
+    );
+    await act(async () => {
+      finishes.forEach((finish) => finish(true));
+    });
+    expect(view.preview.fileSaveState).toBe('saved');
+    expect(screen.getByTestId('code')).toHaveTextContent(original);
+  });
+  it('写入拒绝保留草稿；刷新页面前有未保存提示，保存后解除提示', async () => {
+    const save = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(true);
+    render(
+      <Harness
+        initViewFileType="code"
+        readOnly={false}
+        onSaveFileContent={save}
+      />,
+    );
+    await selectFile('first.md');
+    await act(async () => mocks.editor.onContentChange('first.md', 'draft'));
+    expect(view.preview.fileSaveState).toBe('error');
+    const before = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(before);
+    expect(before.defaultPrevented).toBe(true);
+    await act(async () => {
+      await view.preview.saveCurrentFile?.();
+    });
+    const after = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(after);
+    expect(after.defaultPrevented).toBe(false);
+  });
+
   it('本机链接文件可以预览、刷新和读取代码视图', async () => {
     const reference = { contextId: 'live', cId: '9', path: 'linked.md' };
     render(
@@ -213,7 +688,10 @@ describe('Markdown 文件树刷新', () => {
     },
   ];
   const expired = () =>
-    Object.assign(new Error('expired'), { name: 'LocalFileAccessError' });
+    Object.assign(new Error('expired'), {
+      name: 'LocalFileAccessError',
+      code: 'expired',
+    });
   it.each(['clear', 'switch'])(
     '代码视图刷新在 %s 后仍携带旧引用，错误不换成云端或新root正文',
     async (change) => {
@@ -252,14 +730,16 @@ describe('Markdown 文件树刷新', () => {
         '/api/computer/static/9/first.md',
         oldReference,
       );
-      expect(screen.getByText('expired')).toBeInTheDocument();
+      expect(
+        screen.getByText('PC.Components.FilePreview.localSourceChanged'),
+      ).toBeInTheDocument();
       expect(cloudOrNewRootRead).not.toHaveBeenCalled();
       expect(screen.queryByText('新root正文')).toBeNull();
     },
   );
 
   it.each(['clear', 'switch'])(
-    'PDF导出在 %s 后拒绝旧引用并提示expired，不继续空正文转换',
+    'PDF导出在 %s 后静默拒绝旧引用，不继续空正文转换',
     async (change) => {
       const toast = vi
         .spyOn(message, 'error')
@@ -282,11 +762,11 @@ describe('Markdown 文件树刷新', () => {
       expect(mocks.assertReference).toHaveBeenCalledWith(oldReference);
       expect(mocks.fetchContent).not.toHaveBeenCalled();
       expect(mocks.download).not.toHaveBeenCalled();
-      expect(toast).toHaveBeenCalledWith('expired');
+      expect(toast).not.toHaveBeenCalled();
     },
   );
 
-  it('PDF读取期间失效会停止导出并提示expired，不把失败转为空文档', async () => {
+  it('PDF读取期间失效会静默停止导出，不把失败转为空文档', async () => {
     const toast = vi
       .spyOn(message, 'error')
       .mockImplementation(() => undefined as never);
@@ -304,7 +784,7 @@ describe('Markdown 文件树刷新', () => {
       oldReference,
     );
     expect(mocks.download).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('expired');
+    expect(toast).not.toHaveBeenCalled();
   });
   it('确定本机的代码读取失败直接显示权限错误，不显示空编辑器', async () => {
     const error = new Error('权限不足');

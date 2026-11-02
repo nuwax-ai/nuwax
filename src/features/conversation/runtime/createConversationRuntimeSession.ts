@@ -4,7 +4,7 @@ import {
   isTerminalTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/features/conversation/domain/taskStatus';
-import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
+import { classifyWorkspaceFileRefresh } from '@/features/conversation/domain/workspaceFileChange';
 import {
   AssistantRoleEnum,
   DefaultSelectedEnum,
@@ -307,12 +307,15 @@ export function createConversationRuntimeSession(
       const processing = (reduction.processing ?? data) as Record<string, any>;
       const input = processing?.result?.input ?? {};
       // 编辑/新增等结束后才刷新；搜索和工具开始不代表树有变化。
-      // live / sub 与旧线使用同一语义，消费端继续保留 5s 节流与可见性门控。
-      if (shouldRefreshWorkspaceFiles(processing)) {
+      // 编辑当前预览文件只重拉正文，新增/删除/移动/重命名刷树。消费端保留节流。
+      const fileRefresh = classifyWorkspaceFileRefresh(processing);
+      if (fileRefresh.scope !== 'none') {
         runtime.effects.dispatch({
           type: 'preview.file.refresh',
           conversationId: conversationId as number,
           mode: 'throttled',
+          scope: fileRefresh.scope,
+          paths: fileRefresh.paths,
         });
       }
       // 页面预览 / 链接打开（对齐旧线 PROCESSING 分支）

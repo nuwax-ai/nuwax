@@ -36,6 +36,7 @@ export interface FileContextMenuProps {
   onDelete: (node: FileNode, event: React.MouseEvent) => void;
   /** 重命名文件回调 */
   onRename?: (node: FileNode) => void;
+  onMove?: (node: FileNode) => void;
   /** 上传多个文件回调（直接调用，不弹窗） */
   onUploadFiles?: (node: FileNode | null) => void;
   /** 上传文件夹回调（保留子目录结构） */

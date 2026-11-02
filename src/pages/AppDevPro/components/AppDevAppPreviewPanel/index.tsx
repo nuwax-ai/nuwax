@@ -17,7 +17,7 @@ import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import {
   getUserAppReadinessUiKind,
   UserAppContainerStatusEnum,
-  type UserAppReadinessStatusEnum,
+  UserAppReadinessStatusEnum,
 } from '../../services/appDevPro';
 import type {
   UserAppPublishPhase,
@@ -121,11 +121,24 @@ export interface AppDevAppPreviewPanelProps {
    */
   readinessContainerStatus?: string | null;
   /**
+   * readiness 回包里容器当前意图操作的类型，如 restart / stop。
+   * 线上 start / restart 都会先重启容器：容器还在过渡中时用它区分
+   * 「重启容器」与普通应用启动，让非操作页签与操作页签展示一致。
+   */
+  readinessContainerOperationAction?: string | null;
+  /**
    * 当前环境的预览是否已经正常渲染过。
    * 为 true 时不再用就绪状态提示替换正在看的页面。
    */
   previewAlreadyPresented?: boolean;
-  /** 用户主动停止当前环境时，不展示「将自动重启」这类就绪提示 */
+  /**
+   * 本页签主动停止过当前环境（父页面本地停止标记）。
+   * 生命周期展示跟随 readiness；本标记只在 stop 成功但 readiness 还停在
+   * ready 的滞后窗口里拦下 iframe 并显示停止中过渡（stopPendingReadiness），
+   * 另在未部署空项目提示里避免把停止态误报成「暂无可预览的项目」。
+   * readiness 经过 starting（或从 stopping/stopped 跳到就绪）后父页面会
+   * 清掉本标记，ready 即可正常打开。
+   */
   suppressReadinessStatus?: boolean;
   /** iframe 已正常打开，通知页面记住这个环境已经渲染过 */
   onPreviewPresented?: () => void;
@@ -258,6 +271,61 @@ const PreviewIframeLoading: React.FC = () => (
 );
 
 /**
+ * 预览 iframe 展示框：挂载即未加载，先盖应用加载动画，iframe 真实 load 后
+ * 才收起动画展示页面；加载失败时收起动画，露 AppDevProIframe 自己的失败提示。
+ * 加载状态只活在本组件内：被状态提示替换（卸载）后重新挂载，动画必然重新
+ * 出现，不再有跨挂载残留的「已加载」标记把动画跳过、只剩白屏。
+ * 地址或刷新计数变化时由父级换 key 重挂，同样重新走动画。
+ *
+ * @param props.src 预览地址
+ * @param props.iframeKey iframe 重挂标记（地址 + 刷新计数）
+ * @param props.title 无障碍标题
+ * @param props.onPreviewPresented iframe 首次真实加载完成时通知父级
+ * @returns 带加载动画的 iframe 展示框
+ */
+const PreviewIframeFrame: React.FC<{
+  src: string;
+  iframeKey: string;
+  title: string;
+  onPreviewPresented?: () => void;
+}> = ({ src, iframeKey, title, onPreviewPresented }) => {
+  const [loaded, setLoaded] = useState(false);
+  const onPreviewPresentedRef = useRef(onPreviewPresented);
+  onPreviewPresentedRef.current = onPreviewPresented;
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+    onPreviewPresentedRef.current?.();
+  }, []);
+  /** 加载失败时收起动画，露出 iframe 自己的失败提示与刷新按钮 */
+  const handleError = useCallback(() => {
+    setLoaded(true);
+  }, []);
+  /** 点刷新重试时重新盖上动画 */
+  const handleRetry = useCallback(() => {
+    setLoaded(false);
+  }, []);
+
+  return (
+    <div className={cx(styles.iframeWrap)}>
+      <AppDevProIframe
+        src={src}
+        iframeKey={iframeKey}
+        title={title}
+        onLoad={handleLoad}
+        onError={handleError}
+        onRetry={handleRetry}
+      />
+      {!loaded ? (
+        <div className={cx(styles.loadingOverlay)}>
+          <PreviewIframeLoading />
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+/**
  * 居中提示（准备中 / 启动预览）。
  *
  * @param props.title 标题
@@ -331,6 +399,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   readinessStatus = null,
   readinessReady = null,
   readinessContainerStatus = null,
+  readinessContainerOperationAction = null,
   previewAlreadyPresented = false,
   suppressReadinessStatus = false,
   onPreviewPresented,
@@ -354,24 +423,29 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     }
     return lines;
   }, [errorMessage, services]);
-  /**
-   * 用地址 + 刷新计数标记当前预览实例。
-   * 换地址时当帧就判定未加载，避免 effect 晚一拍时空白 iframe 先露出来。
-   */
-  const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
-  const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
   /** 启动日志默认收起，点击「查看详情」后展开日志流 */
   const [logDetailOpen, setLogDetailOpen] = useState(false);
   const openStartLogs = useCallback(() => {
     setLogDetailOpen(true);
   }, []);
-  const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
+  /**
+   * stream 开始或结束时把日志展开状态重置回默认隐藏：展开只有打开、没有
+   * 收起入口，不重置的话用户点过一次「查看详情」后，本次失败日志和后续
+   * 每次 stream 都会一直摊开，只能刷新页面恢复。成功、失败、取消都算结束。
+   */
+  const prevIsStartingRef = useRef(isStarting);
+  useEffect(() => {
+    if (prevIsStartingRef.current === isStarting) {
+      return;
+    }
+    prevIsStartingRef.current = isStarting;
+    setLogDetailOpen(false);
+  }, [isStarting]);
   const startFailed = phase === 'failed' || phase === 'cancelled';
-  /** 仅真正失败时把「启动失败」标红，取消启动不算失败 */
+  /** 真正失败（不含用户主动取消）：不显示失败标题、直接展开日志详情 */
   const startError = phase === 'failed';
-  const canShowIframe = !!previewUrl && running;
   const loadErrorText = previewLoadError.trim();
   /** 启动已成功但页面打不开：不要复用进度流日志板 */
   const previewLoadErrorHero = loadErrorText ? (
@@ -390,17 +464,46 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     </div>
   ) : null;
 
-  const handleIframeLoad = useCallback(() => {
-    setLoadedInstanceKey((prev) =>
-      prev === previewInstanceKey ? prev : previewInstanceKey,
-    );
-    onPreviewPresented?.();
-  }, [onPreviewPresented, previewInstanceKey]);
-
   const readinessKind = getUserAppReadinessUiKind(
     readinessStatus,
     readinessReady,
   );
+  /** readiness 实测的容器状态：回包里 container.status 为 running */
+  const readinessContainerRunning =
+    readinessContainerStatus === UserAppContainerStatusEnum.Running;
+  /**
+   * 判断应用状态前先看容器：容器还没 running 时应用层无从谈起，
+   * 预览区走容器启动提示（下方 containerStatus 分支），不按 starting / ready 判断应用。
+   * 以页面层容器状态（containerStatus）为准；但 readiness 已实测容器 running 时，
+   * 本地容器状态（尤其其他页签 ensure 成功前本页签留下的 error）视为过期，
+   * 不再挡住应用状态判断与就绪预览。没有页面层容器状态时视为不拦。
+   */
+  const containerRunningForReadiness =
+    !containerStatus ||
+    containerStatus === 'running' ||
+    readinessContainerRunning;
+  /**
+   * readiness 已确认可访问（status 为 ready 且 ready 为 true）时以它为准打开预览。
+   * 本地 running 只代表本页签 runtime 的视角：多页签下服务是其他页签拉起的，
+   * 本页签 running 可能仍为 false，不能因此挡住已就绪的预览。
+   * 本页签的本地停止标记（suppress / 父页面 previewUserStopped）只用于防自动
+   * 拉起和决定再启动走 start 还是 restart。展示按 readiness 判断，但本地刚
+   * stop 成功、readiness 还停在 ready 的滞后窗口除外：此时服务其实正在下线，
+   * 挂 iframe 只会打到预览代理返回的后端「服务已停止」页（见下方
+   * stopPendingReadiness 的停止中过渡）。被其他页签重新拉起时，父页面会在
+   * readiness 经过 starting（或从 stopping/stopped 跳到就绪）时清掉本地标记，
+   * 之后 readiness 说可访问就正常打开。
+   * 容器未 running 时不打开，应用状态不作数。
+   */
+  const readinessAccessible =
+    readinessKind === 'access' &&
+    !!previewUrl &&
+    !suppressReadinessStatus &&
+    containerRunningForReadiness;
+  // 容器未 running 时一律不挂 iframe，避免打到还没起来的预览域名
+  const canShowIframe =
+    ((!!previewUrl && running) || readinessAccessible) &&
+    containerRunningForReadiness;
   /**
    * 容器已经 running，应用还在准备资源。
    * 容器未 running 时仍走容器启动提示，不提前说容器已启动。
@@ -416,7 +519,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     startFailed &&
     readinessKind === 'access' &&
     !!previewUrl &&
-    !suppressReadinessStatus;
+    containerRunningForReadiness;
   /**
    * 页面还没正常打开时，才用就绪状态替换预览。
    * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
@@ -428,21 +531,55 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const conversationInProgress =
     isGeneratingFiles || isWaitingForUserConfirmation;
-  const showReadinessHero =
-    !previewAlreadyPresented &&
-    !suppressReadinessStatus &&
-    !startFailed &&
-    !isStarting &&
+  /**
+   * 已展示过预览的环境，服务明确停止 / 停止中 / 启动中时，
+   * 就绪提示要重新挂回来：服务端侧重启（先停后起）不会走「电脑重启」
+   * 复位 previewAlreadyPresented，不补这块 iframe 会直出 503 英文原文（NW-286）。
+   * starting 在容器已 running 时按启动中展示（多页签下以 readiness 为准，
+   * 不再当作瞬时抖动放行旧 iframe）；容器未 running 时不判断应用，
+   * 由容器启动提示接管。待 status 为 ready 且 ready 为 true
+   * 后自然落回 iframe 打开预览。
+   */
+  const readinessRegressed =
+    readinessKind === 'stopping' ||
+    readinessKind === 'stopped' ||
+    (readinessKind === 'starting' && containerRunningForReadiness);
+  /**
+   * starting / stopping / stopped 是 readiness 明确给出的应用生命周期状态：
+   * 只要本地没有正在跑的启动 stream，就直接按它展示，不再被「是否展示
+   * 过预览」、本地陈旧的 startFailed 和本地停止标记挡住。
+   * 多页签下其他页签启停时，本页签 runtime 的 phase 可能是上一次重复 start
+   * 失败留下的 failed，若仍要求 !startFailed，启动中提示永远挂不出来，
+   * 页面会一直停在已停止空态（顶栏徽标已是启动中，预览区却不变）。
+   * 其余状态（provisioning / notDeployed / failed / incomplete）维持原有条件。
+   * 容器未 running 时下方 containerStatus 分支会先于本提示返回，不受影响。
+   */
+  // checking 是 stream 已成功、等应用可访问的收尾阶段：本地 phase 还停在
+  // building，但展示要跟随 readiness 各状态本身，不能因为本地 stream
+  // 还没收尾就把状态提示挡住，更不能提前盖 iframe 加载动画——加载动画
+  // 只在应用 ready 后、iframe 加载出来之前出现（PreviewIframeFrame 内部）。
+  const streamBlockingHero = isStarting && !checking;
+  const readinessLifecycleHero =
+    // 展示直接跟随 readiness：stop 接口成功只是受理，服务可能还在下线中，
+    // 本地停止标记不再压制任何生命周期状态——stopping 显示停止中、
+    // stopped 才显示已停止、starting 显示启动中。再启动走 start 还是
+    // restart 由父页面按本地停止标记选 onStart，与展示无关。
+    !streamBlockingHero &&
     (readinessKind === 'starting' ||
-      showProvisioning ||
       readinessKind === 'stopping' ||
-      readinessKind === 'stopped' ||
-      (readinessKind === 'notDeployed' &&
-        hasValidProjectFiles === true &&
-        !conversationInProgress &&
-        readinessContainerStatus !== UserAppContainerStatusEnum.Running) ||
-      readinessKind === 'failed' ||
-      readinessKind === 'incomplete');
+      readinessKind === 'stopped');
+  const showReadinessHero =
+    readinessLifecycleHero ||
+    ((!previewAlreadyPresented || readinessRegressed) &&
+      !startFailed &&
+      !streamBlockingHero &&
+      (showProvisioning ||
+        (readinessKind === 'notDeployed' &&
+          hasValidProjectFiles === true &&
+          !conversationInProgress &&
+          readinessContainerStatus !== UserAppContainerStatusEnum.Running) ||
+        readinessKind === 'failed' ||
+        readinessKind === 'incomplete'));
   const readinessTitle = (() => {
     switch (readinessKind) {
       case 'provisioning':
@@ -464,14 +601,58 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     readinessKind === 'notDeployed' || readinessKind === 'failed';
   const readinessIsError =
     readinessKind === 'failed' || readinessKind === 'incomplete';
+  /**
+   * 已停止（多为其他页签停的，本页签 suppressReadinessStatus 为 false）：
+   * 与本页签主动停止后的空态一致，不转圈、不落到默认的「服务正在启动中」，
+   * 展示已停止提示并提供「启动预览」。stopping 仍走上面的转圈提示。
+   */
+  const readinessStopped = readinessKind === 'stopped';
   const readinessHero = showReadinessHero ? (
     <div className={cx(styles.container, styles.stage)}>
       <PreviewHero
-        spinning={!readinessIsError && readinessKind !== 'notDeployed'}
+        spinning={
+          !readinessStopped &&
+          !readinessIsError &&
+          readinessKind !== 'notDeployed'
+        }
         error={readinessIsError}
-        title={readinessTitle}
+        title={
+          readinessStopped
+            ? undefined
+            : readinessKind === 'stopping'
+            ? // 与本页签停止中的提示同一套文案，避免多页签下 stopping 阶段展示不一致
+              dict('PC.Pages.AppDevPro.previewStopping')
+            : readinessTitle
+        }
+        hint={
+          readinessStopped
+            ? dict('PC.Pages.AppDevPro.previewStartHint')
+            : readinessKind === 'stopping'
+            ? dict('PC.Pages.AppDevPro.previewStoppingHint')
+            : undefined
+        }
         action={
-          showReadinessRestart && onRetryStart ? (
+          readinessStopped ? (
+            onStart ? (
+              <Tooltip
+                title={
+                  devActionLocked
+                    ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : undefined
+                }
+              >
+                <span>
+                  <Button
+                    type="primary"
+                    disabled={devActionLocked}
+                    onClick={onStart}
+                  >
+                    {dict('PC.Pages.AppDevPro.previewStartTitle')}
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : null
+          ) : showReadinessRestart && onRetryStart ? (
             <Tooltip
               title={
                 devActionLocked
@@ -496,17 +677,55 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     </div>
   ) : null;
 
-  /** iframe 加载失败时收起加载遮罩，露出失败提示 */
-  const handleIframeError = useCallback(() => {
-    setLoadedInstanceKey((prev) =>
-      prev === previewInstanceKey ? prev : previewInstanceKey,
-    );
-  }, [previewInstanceKey]);
+  /**
+   * 本页签刚 stop 成功、readiness 还没跟上的过渡态：后端其实已经在下线，
+   * readiness 却还停在 ready（滞后一两轮轮询）。这段时间不能按 ready 挂
+   * iframe，否则会加载到预览代理返回的后端「服务已停止」页；也不能先报
+   * 已停止。统一显示停止中，等 readiness 走到 stopping / stopped 再切换。
+   * ready 但 ready 标记已先掉（kind 为 null）同理。
+   */
+  const stopPendingReadiness =
+    suppressReadinessStatus &&
+    !isStarting &&
+    (readinessKind === 'access' ||
+      (readinessStatus === UserAppReadinessStatusEnum.Ready &&
+        readinessReady !== true));
+  const stopPendingHero = stopPendingReadiness ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        spinning
+        title={dict('PC.Pages.AppDevPro.previewStopping')}
+        hint={dict('PC.Pages.AppDevPro.previewStoppingHint')}
+      />
+    </div>
+  ) : null;
 
-  /** 刷新 iframe 时重新展示加载遮罩 */
-  const handleIframeRetry = useCallback(() => {
-    setLoadedInstanceKey('');
-  }, []);
+  /**
+   * 线上 start / restart 都会先重启容器、再启动应用：容器还在 stopping 等
+   * 过渡状态时，应用层 readiness 会先报 starting。操作页签靠本地 restarting
+   * 显示「正在重启服务」，其他页签若只按应用状态会显示「服务正在启动中」，
+   * 两边不一致。容器处于重启过渡（容器 stopping / restarting，或容器意图
+   * 操作是 restart 且容器还没回到 running）且应用在 starting 时，非操作
+   * 页签统一改为与操作页签相同的重启提示；容器回到 running 后再按应用
+   * 状态展示启动中。本页签正在跑本地任务时不介入，走本地流程自己的提示。
+   */
+  const readinessContainerRestarting =
+    directPreview &&
+    !streamBlockingHero &&
+    readinessKind === 'starting' &&
+    readinessContainerStatus !== UserAppContainerStatusEnum.Running &&
+    (readinessContainerStatus === UserAppContainerStatusEnum.Stopping ||
+      readinessContainerStatus === UserAppContainerStatusEnum.Restarting ||
+      readinessContainerOperationAction === 'restart');
+  const containerRestartHero = readinessContainerRestarting ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        spinning
+        title={dict('PC.Pages.AppDevPro.previewRestarting')}
+        hint={dict('PC.Pages.AppDevPro.previewRestartingHint')}
+      />
+    </div>
+  ) : null;
 
   if (prodUndeployed) {
     return (
@@ -527,7 +746,27 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }
 
   // 容器启动失败时展示失败提示。资源准备中且容器已 running 时改走下面的就绪提示。
-  if (containerStatus && containerStatus !== 'running' && !showProvisioning) {
+  // readiness 已实测容器 running 时，本地 error/starting 是过期状态（多页签下容器
+  // 是其他页签拉起的），不展示失败，跟随 readiness 的应用状态走。
+  // readiness 已给出明确的应用生命周期（启动中 / 停止中 / 已停止），或容器
+  // 正在过渡中时同样让行：本地容器状态可能只是 ensure 被「操作进行中」
+  // 拒绝留下的误报，展示必须跟随 readiness，不能被本地错误盖住。
+  const readinessLifecycleActive =
+    readinessKind === 'starting' ||
+    readinessKind === 'stopping' ||
+    readinessKind === 'stopped';
+  const readinessContainerInTransition =
+    readinessContainerStatus === UserAppContainerStatusEnum.Starting ||
+    readinessContainerStatus === UserAppContainerStatusEnum.Restarting ||
+    readinessContainerStatus === UserAppContainerStatusEnum.Stopping;
+  if (
+    containerStatus &&
+    containerStatus !== 'running' &&
+    !showProvisioning &&
+    !readinessContainerRunning &&
+    !readinessLifecycleActive &&
+    !readinessContainerInTransition
+  ) {
     return (
       <AppDevServiceStartStatus
         failed={containerStatus === 'error'}
@@ -561,18 +800,12 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     return emptyProjectHero;
   }
 
-  // 启动 stream 已成功，应用还不能访问：只显示 iframe 加载动画，先不放域名。
-  // 放在就绪提示前面，避免探测先返回 failed 等状态把等待盖住。
-  if (checking) {
-    return (
-      <div className={cx(styles.container)}>
-        <div className={cx(styles.iframeWrap)}>
-          <div className={cx(styles.loadingOverlay)}>
-            <PreviewIframeLoading />
-          </div>
-        </div>
-      </div>
-    );
+  if (stopPendingHero) {
+    return stopPendingHero;
+  }
+
+  if (containerRestartHero) {
+    return containerRestartHero;
   }
 
   if (readinessHero) {
@@ -613,7 +846,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       return previewLoadErrorHero;
     }
 
-    if (!running && allowStoppedHero) {
+    // readiness 已就绪时不看本地 running，直接落到下面的 iframe。
+    // checking 收尾期间不展示已停止：应用还在启动路上，只是探测还没回。
+    if (!running && !readinessAccessible && allowStoppedHero && !checking) {
       return (
         <div className={cx(styles.container, styles.stage)}>
           <PreviewHero
@@ -645,7 +880,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       );
     }
 
-    if (!running && !allowStoppedHero) {
+    if (!running && !readinessAccessible && !allowStoppedHero) {
       return (
         <div className={cx(styles.container, styles.stage)}>
           <PreviewHero
@@ -660,21 +895,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     if (previewUrl) {
       return (
         <div className={cx(styles.container)}>
-          <div className={cx(styles.iframeWrap)}>
-            <AppDevProIframe
-              src={previewUrl}
-              iframeKey={`${previewUrl}-${refreshKey}`}
-              title={dict('PC.Pages.AppDevPro.appPreview')}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              onRetry={handleIframeRetry}
-            />
-            {!iframeLoaded ? (
-              <div className={cx(styles.loadingOverlay)}>
-                <PreviewIframeLoading />
-              </div>
-            ) : null}
-          </div>
+          <PreviewIframeFrame
+            key={`${previewUrl}-${refreshKey}`}
+            src={previewUrl}
+            iframeKey={`${previewUrl}-${refreshKey}`}
+            title={dict('PC.Pages.AppDevPro.appPreview')}
+            onPreviewPresented={onPreviewPresented}
+          />
         </div>
       );
     }
@@ -739,25 +966,24 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }
 
   if ((isStarting || startFailed) && !previewReadyDespiteFailedStream) {
-    const headText = startFailed
-      ? phase === 'cancelled'
+    // 启动失败不再单独显示「启动失败」标题：下方日志会直接展开，失败原因
+    // 就在日志里，标题纯属重复。取消是用户主动操作，保留「启动已取消」。
+    const headText =
+      phase === 'cancelled'
         ? dict('PC.Pages.AppDevPro.startCancelled')
-        : dict('PC.Pages.AppDevPro.startFailed')
-      : dict('PC.Pages.AppDevPro.startingService');
+        : startFailed
+        ? ''
+        : dict('PC.Pages.AppDevPro.startingService');
+    // 失败时主动展开日志详情，不用再手动点「查看详情」
+    const showLogDetail = logDetailOpen || startError;
 
     return (
       <div className={cx(styles.container, styles.stage)}>
         <div className={cx(styles.logBoard)}>
           <div className={cx(styles.logHead)}>
             {!startFailed ? <LoadingOutlined /> : null}
-            <span
-              className={cx(
-                styles.logHeadText,
-                startError && styles.logHeadTextError,
-              )}
-            >
-              {headText}
-            </span>
+            {/* 失败时 headText 为空，保留占位让右侧按钮位置不变 */}
+            <span className={cx(styles.logHeadText)}>{headText}</span>
             {isStarting && onCancelTask ? (
               <Button
                 size="small"
@@ -790,7 +1016,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Tooltip>
             ) : null}
           </div>
-          {logDetailOpen ? (
+          {showLogDetail ? (
             <PreviewStartLogBoard
               logs={logs}
               waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
@@ -818,21 +1044,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   if (canShowIframe || previewReadyDespiteFailedStream) {
     return (
       <div className={cx(styles.container)}>
-        <div className={cx(styles.iframeWrap)}>
-          <AppDevProIframe
-            src={previewUrl}
-            iframeKey={`${previewUrl}-${refreshKey}`}
-            title={dict('PC.Pages.AppDevPro.appPreview')}
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-            onRetry={handleIframeRetry}
-          />
-          {!iframeLoaded ? (
-            <div className={cx(styles.loadingOverlay)}>
-              <PreviewIframeLoading />
-            </div>
-          ) : null}
-        </div>
+        <PreviewIframeFrame
+          key={`${previewUrl}-${refreshKey}`}
+          src={previewUrl}
+          iframeKey={`${previewUrl}-${refreshKey}`}
+          title={dict('PC.Pages.AppDevPro.appPreview')}
+          onPreviewPresented={onPreviewPresented}
+        />
       </div>
     );
   }

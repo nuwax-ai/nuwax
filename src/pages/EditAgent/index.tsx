@@ -156,6 +156,8 @@ const EditAgent: React.FC = () => {
     // 文件树视图模式
     viewMode,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     setFileTreeSelfManaged,
     // 处理文件列表刷新事件
     handleRefreshFileList,
@@ -436,7 +438,7 @@ const EditAgent: React.FC = () => {
       ? {
           cId: devConversationId,
           sandboxId: String(finalSelectedComputerId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,
@@ -746,6 +748,7 @@ const EditAgent: React.FC = () => {
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -793,6 +796,7 @@ const EditAgent: React.FC = () => {
                 {
                   contents: '',
                   name: fileNode.relativePath || fileNode.path || fileNode.id,
+                  localFile: fileNode.localFile,
                   operation: 'delete', // 操作类型
                   isDir: true,
                 },
@@ -813,6 +817,7 @@ const EditAgent: React.FC = () => {
               updatedFilesList = [
                 {
                   name: currentFile.name,
+                  localFile: currentFile.localFile,
                   binary: currentFile.binary,
                   sizeExceeded: currentFile.sizeExceeded,
                   isDir: currentFile.isDir,
@@ -965,7 +970,7 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    apiDownloadAllFiles(devConversationId);
+    await apiDownloadAllFiles(devConversationId, agentConfigInfo?.name);
   };
 
   // 设置统计信息
@@ -1476,6 +1481,10 @@ const EditAgent: React.FC = () => {
                               }
                               taskAgentSelectTrigger={taskAgentSelectTrigger}
                               fileTreeRefreshTrigger={fileTreeRefreshTrigger}
+                              previewFileContentRefreshTrigger={
+                                previewFileContentRefreshTrigger
+                              }
+                              onPreviewFileIdChange={setPreviewFileId}
                               originalFiles={workspaceFiles.files}
                               fileTreeDataLoading={workspaceFiles.loading}
                               onOpenDirectory={workspaceFiles.onOpenDirectory}

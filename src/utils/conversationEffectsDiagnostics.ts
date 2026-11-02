@@ -57,6 +57,7 @@ const summarizeEffect = (effect: ConversationEffect) => {
       type: effect.type,
       conversationId: effect.conversationId,
       mode: effect.mode,
+      scope: effect.scope,
     };
   }
   if (effect.type === 'conflict.confirmStop') {

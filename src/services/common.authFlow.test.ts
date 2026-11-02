@@ -4,6 +4,7 @@ import {
   REDIRECT_LOGIN,
   SANDBOX_TEST_ERROR,
   USER_NO_LOGIN,
+  USERAPP_OPERATION_IN_PROGRESS,
 } from '@/constants/codes.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
@@ -377,6 +378,80 @@ describe('匿名登录步骤的全局认证错误处理', () => {
       expectNoLogout();
     },
   );
+
+  describe('操作进行中（ERR_OPERATION_IN_PROGRESS）不弹全局提示', () => {
+    it.each(entryPoints)(
+      '%s 对四个 start / restart 接口的 ERR_OPERATION_IN_PROGRESS 只抛错不提示',
+      async (entryPoint) => {
+        for (const url of [
+          '/api/userapp/dev/start',
+          '/api/userapp/dev/restart',
+          '/api/userapp/prod/start',
+          '/api/userapp/prod/restart',
+        ]) {
+          await expect(
+            handleBusinessError(
+              entryPoint,
+              USERAPP_OPERATION_IN_PROGRESS,
+              url,
+              '应用存在未完成的操作',
+            ),
+          ).rejects.toMatchObject({
+            name: 'BizError',
+            info: {
+              code: USERAPP_OPERATION_IN_PROGRESS,
+              message: '应用存在未完成的操作',
+            },
+          });
+        }
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it('第几次调用、opts 里有没有请求信息，都不提示', () => {
+      const error = requestConfig.errorConfig!.errorThrower!({
+        code: USERAPP_OPERATION_IN_PROGRESS,
+        message: '应用存在未完成的操作',
+        success: false,
+        data: null,
+      } as any);
+      expectErrorHandlerToThrow(error, {});
+      expect(mocks.warning).not.toHaveBeenCalled();
+      expect(mocks.error).not.toHaveBeenCalled();
+    });
+
+    it.each(entryPoints)(
+      '%s 对其他接口的 ERR_OPERATION_IN_PROGRESS 同样不提示',
+      async (entryPoint) => {
+        await expect(
+          handleBusinessError(
+            entryPoint,
+            USERAPP_OPERATION_IN_PROGRESS,
+            '/api/other/operation',
+            '应用存在未完成的操作',
+          ),
+        ).rejects.toMatchObject({ name: 'BizError' });
+        expect(mocks.warning).not.toHaveBeenCalled();
+        expect(mocks.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(entryPoints)(
+      '%s 对 start / restart 接口的其他业务失败仍提示',
+      async (entryPoint) => {
+        await expect(
+          handleBusinessError(
+            entryPoint,
+            '5000',
+            '/api/userapp/prod/restart',
+            '重启失败',
+          ),
+        ).rejects.toMatchObject({ name: 'BizError' });
+        expect(mocks.warning).toHaveBeenCalledWith('重启失败');
+      },
+    );
+  });
 
   describe('登录链路验证码失效报错的人话化（NW-049）', () => {
     it.each(entryPoints)(

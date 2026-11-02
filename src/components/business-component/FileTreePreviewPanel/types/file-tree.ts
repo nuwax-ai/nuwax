@@ -116,6 +116,10 @@ export interface FileTreeViewProps {
   onOpenDirectory?: (node: FileNode) => void | Promise<void>;
   /** 模型层文件树刷新信号，用于重拉当前打开文件的正文 */
   fileTreeRefreshTrigger?: number;
+  /** 流式编辑当前预览文件时，只重拉正文 */
+  previewFileContentRefreshTrigger?: number;
+  /** 当前预览文件变化时回写，供会话判断要不要刷文件树 */
+  onPreviewFileIdChange?: (fileId: string) => void;
   /**
    * 目标文件所在目录是否已加载。
    * 未加载时自动选中会等待，避免分层树还没返回就把文件判成不存在。

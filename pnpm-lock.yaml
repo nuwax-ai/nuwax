@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  pdfjs-dist@4.7.76>canvas: '-'
+  pdfjs-dist@4.7.76>path2d: '-'
+
 patchedDependencies:
   pptx-preview@1.0.7:
     hash: 2859aae984f02bca297d7bdede01823f0d8fbea70320ed22c9c9112e2ecddf9f
@@ -205,6 +209,9 @@ importers:
       monaco-editor-webpack-plugin:
         specifier: 7.0.1
         version: 7.0.1(monaco-editor@0.53.0)(webpack@5.101.0(clean-css@5.3.3)(esbuild@0.27.0)(lightningcss@1.33.0)(postcss@8.5.26))
+      pdfjs-dist:
+        specifier: 4.7.76
+        version: 4.7.76
       pptx-preview:
         specifier: 1.0.7
         version: 1.0.7(patch_hash=2859aae984f02bca297d7bdede01823f0d8fbea70320ed22c9c9112e2ecddf9f)
@@ -8364,6 +8371,10 @@ packages:
 
   pdfast@0.2.0:
     resolution: {integrity: sha512-cq6TTu6qKSFUHwEahi68k/kqN2mfepjkGrG9Un70cgdRRKLKY6Rf8P8uvP2NvZktaQZNF3YE7agEkLj0vGK9bA==}
+
+  pdfjs-dist@4.7.76:
+    resolution: {integrity: sha512-8y6wUgC/Em35IumlGjaJOCm3wV4aY/6sqnIT3fVW/67mXsOZ9HWBn8GDKmJUK0GSzpbmX3gQqwfoFayp78Mtqw==}
+    engines: {node: ">=18"}
 
   performance-now@2.1.0:
     resolution: {integrity: sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==}
@@ -21309,6 +21320,8 @@ snapshots:
       to-buffer: 1.2.1
 
   pdfast@0.2.0: {}
+
+  pdfjs-dist@4.7.76: {}
 
   performance-now@2.1.0:
     optional: true

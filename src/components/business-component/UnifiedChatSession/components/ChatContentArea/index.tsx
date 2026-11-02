@@ -10,11 +10,11 @@ import * as React from 'react';
 
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
-import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type { UnifiedAgentInfo } from '../../types';
 
 import styles from './index.less';
@@ -180,6 +180,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                 {isMoreMessage && (
                   <div
                     ref={loadMoreRef}
+                    data-history-scroll-sentinel=""
                     className={cx(styles['load-more-container'])}
                   >
                     {loadingMore ? (

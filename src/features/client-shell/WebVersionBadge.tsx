@@ -29,13 +29,14 @@ const WebVersionBadge: React.FC = () => {
   );
   useEffect(() => subscribeClientUpdate(setClientState), []);
 
-  // 客户端下载、安装与已知版本的重试优先；普通检查失败不遮住网页更新。
+  // 客户端下载、重启安装与已知版本的重试优先；普通检查失败不遮住网页更新。
   const hasClientUpdate =
     isClientUpdateAvailable() &&
     clientState?.hostVersion &&
     (clientState.status === 'available' ||
       clientState.status === 'downloading' ||
       clientState.status === 'downloaded' ||
+      clientState.status === 'installing' ||
       (clientState.status === 'error' && !!clientState.version));
 
   if (!available || hasClientUpdate) return null;

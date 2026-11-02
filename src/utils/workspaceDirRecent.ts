@@ -9,10 +9,16 @@ export const WORKSPACE_DIR_RECENT_STORAGE_KEY = 'workspace_dir_recent_list';
 /** 最多保留的最近目录条数 */
 export const WORKSPACE_DIR_RECENT_LIMIT = 5;
 
+// 旧记录没有电脑身份，不能迁移到任意选中电脑；保留旧键供旧页面使用。
+const storageKey = (sandboxId?: string): string =>
+  sandboxId
+    ? `${WORKSPACE_DIR_RECENT_STORAGE_KEY}:${encodeURIComponent(sandboxId)}`
+    : WORKSPACE_DIR_RECENT_STORAGE_KEY;
+
 /** 读取最近目录列表（存储损坏/不可用时返回空数组） */
-export const loadRecentWorkspaceDirs = (): string[] => {
+export const loadRecentWorkspaceDirs = (sandboxId?: string): string[] => {
   try {
-    const raw = localStorage.getItem(WORKSPACE_DIR_RECENT_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(sandboxId));
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list)
       ? list.filter(
@@ -28,18 +34,18 @@ export const loadRecentWorkspaceDirs = (): string[] => {
  * 记录一次确认选择：去重置顶、超出上限裁剪；返回更新后的列表
  * （localStorage 不可用时返回内存语义的最新列表，仅本次会话生效）。
  */
-export const addRecentWorkspaceDir = (dir: string): string[] => {
-  const current = loadRecentWorkspaceDirs();
+export const addRecentWorkspaceDir = (
+  dir: string,
+  sandboxId?: string,
+): string[] => {
+  const current = loadRecentWorkspaceDirs(sandboxId);
   if (!dir) return current;
   const next = [dir, ...current.filter((item) => item !== dir)].slice(
     0,
     WORKSPACE_DIR_RECENT_LIMIT,
   );
   try {
-    localStorage.setItem(
-      WORKSPACE_DIR_RECENT_STORAGE_KEY,
-      JSON.stringify(next),
-    );
+    localStorage.setItem(storageKey(sandboxId), JSON.stringify(next));
   } catch {
     // ignore: localStorage 不可用，降级为仅本次会话生效
   }
@@ -53,8 +59,9 @@ export const addRecentWorkspaceDir = (dir: string): string[] => {
 export const renameRecentWorkspaceDir = (
   oldPath: string,
   newPath: string,
+  sandboxId?: string,
 ): string[] => {
-  const current = loadRecentWorkspaceDirs();
+  const current = loadRecentWorkspaceDirs(sandboxId);
   if (!oldPath || !newPath || oldPath === newPath) return current;
   const mapped = current.map((item) => {
     if (item === oldPath) return newPath;
@@ -65,10 +72,7 @@ export const renameRecentWorkspaceDir = (
   });
   const next = [...new Set(mapped)];
   try {
-    localStorage.setItem(
-      WORKSPACE_DIR_RECENT_STORAGE_KEY,
-      JSON.stringify(next),
-    );
+    localStorage.setItem(storageKey(sandboxId), JSON.stringify(next));
   } catch {
     // ignore: localStorage 不可用，降级为仅本次会话生效
   }

@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getBusinessBase } from './authIdp';
-import { navigateAfterLogin, replaceLoginStep } from './loginNavigation';
+import {
+  isVerifyCodePageReload,
+  navigateAfterLogin,
+  replaceLoginStep,
+} from './loginNavigation';
 
 // 使用浏览器 History，而非只断言导航函数的 mock 入参。
 const history = {
@@ -161,5 +165,26 @@ describe('登录步骤导航', () => {
     navigateAfterLogin(history, '/authors', null, navigateToAuthUrl);
     expect(navigateToAuthUrl).not.toHaveBeenCalled();
     expect(window.location.pathname).toBe('/authors');
+  });
+});
+
+describe('验证码页刷新判定', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('只有刷新落在验证码页时才视为旧凭证已核销', () => {
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'reload', name: 'https://example.com/verify-code' },
+    ] as unknown as PerformanceEntryList);
+    expect(isVerifyCodePageReload()).toBe(true);
+
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'reload', name: 'https://example.com/login' },
+    ] as unknown as PerformanceEntryList);
+    expect(isVerifyCodePageReload()).toBe(false);
+
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'navigate', name: 'https://example.com/verify-code' },
+    ] as unknown as PerformanceEntryList);
+    expect(isVerifyCodePageReload()).toBe(false);
   });
 });

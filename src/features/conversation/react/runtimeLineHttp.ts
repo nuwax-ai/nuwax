@@ -65,6 +65,14 @@ export interface RuntimeLineEffectsResources {
   setCardList?: Dispatch<SetStateAction<unknown[]>>;
   setShowType?: Dispatch<SetStateAction<unknown>>;
   refreshFileListThrottled?: (conversationId: number) => void;
+  /**
+   * 流式内容变更。只有路径就是当前预览文件时才刷正文。
+   * 其它编辑不刷文件树，避免挤掉新增、删除已经排上的树刷新。
+   */
+  refreshSelectedFileContentThrottled?: (
+    conversationId: number,
+    paths: string[],
+  ) => void;
   refreshFileListImmediately?: (conversationId: number) => Promise<unknown>;
   refreshGitListRef?: MutableRefObject<(() => void | Promise<void>) | null>;
   openPreviewView?: (conversationId: number) => Promise<void> | void;
@@ -228,6 +236,14 @@ export function createRuntimeLineEffectsAdapter(deps: {
           resources.openDesktopView?.(effect.conversationId);
           return;
         case 'preview.file.refresh':
+          if (effect.mode === 'throttled' && effect.scope === 'content') {
+            const refreshContent =
+              resources.refreshSelectedFileContentThrottled;
+            if (refreshContent) {
+              refreshContent(effect.conversationId, effect.paths ?? []);
+              return;
+            }
+          }
           if (effect.mode === 'throttled') {
             resources.refreshFileListThrottled?.(effect.conversationId);
             return;

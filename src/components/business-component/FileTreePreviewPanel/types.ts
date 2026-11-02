@@ -5,6 +5,10 @@ import type {
 } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type {
+  FileContentSaveOptions,
+  FileSaveState,
+} from '@/types/interfaces/fileTree';
 import type React from 'react';
 import type { FilePathHeaderProps } from './FilePathHeader/type';
 import type { ChangeFileInfo, IdleDetectionConfig } from './types/file-tree';
@@ -38,6 +42,13 @@ export interface FileTreePreviewViewProps {
    * 调用 refreshSelectedFileContent 同步当前打开文件的内容。
    */
   fileTreeRefreshTrigger?: number;
+  /**
+   * 流式过程中只重拉当前预览文件正文，不刷新文件树。
+   * 用于编辑/修改的文件正好是当前选中文件。
+   */
+  previewFileContentRefreshTrigger?: number;
+  /** 把当前预览文件 id 同步给会话模型，供流式刷新判断要不要刷树 */
+  onPreviewFileIdChange?: (fileId: string) => void;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */
@@ -83,6 +94,7 @@ export interface FileTreePreviewViewProps {
     fileId: string,
     content: string,
     originalFileContent: string,
+    options?: FileContentSaveOptions,
   ) => Promise<boolean>;
   /** 用户选择的智能体电脑ID */
   agentSandboxId?: string;
@@ -188,6 +200,8 @@ export interface FileTreePreviewViewPreview {
   refreshSelectedFileContent: () => Promise<void>;
   /** 是否正在保存文件 */
   isSavingFiles: boolean;
+  fileSaveState?: FileSaveState;
+  saveCurrentFile?: () => Promise<boolean>;
 }
 
 /** useFileTreePreviewView 返回值 */

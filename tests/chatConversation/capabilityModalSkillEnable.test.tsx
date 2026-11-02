@@ -1,12 +1,9 @@
 /**
- * 能力弹窗·技能卡简化 + 启用开关契约（替代原「钉住」）：
- * - 技能卡常驻「选择」按钮与启用开关（无作者/统计/收藏/钉住）；
- * - 启用开关 → POST /api/published/skill/enable/:skillId（targetId 寻址），
- *   成功后就地回写卡片 enabled 并重拉「我启用的」列表 → 页签出现；
- * - 「我启用的」页签仅在有启用技能时显示、位于数据源 tab 最前；聚合视图
- *   隐藏分类 pill；
+ * 能力弹窗·技能启用与「我启用的」页签契约（替代原「钉住」）：
+ * - 启用开关成功后重拉「我启用的」列表 → 页签出现；聚合视图隐藏分类 pill；
  * - 聚合视图取消启用 → unEnable 成功重拉为空 → 页签隐藏并回落系统广场；
  * - 无启用技能时页签不显示。
+ * 卡片外观由页面走查；开关/列表接口契约见 SkillListView 测试。
  * 渲染整组件：services/umi/useSubscription/子弹窗全部 mock（vitest 不可用 umi request）。
  */
 import CapabilityModal from '@/components/ChatInputHome/CapabilityModal';
@@ -163,57 +160,6 @@ const switchOfCard = (key: string) =>
   document
     .querySelector(`[data-skill-key="${key}"]`)
     ?.querySelector<HTMLButtonElement>('[role="switch"]') ?? null;
-
-describe('能力弹窗·技能卡简化样式（开关替代钉住）', () => {
-  it('技能卡：悬停浮现「选择」（方形圆角）+ 常驻启用开关，无作者/统计/收藏', async () => {
-    apiPublishedSkillList.mockResolvedValue({
-      code: '0000',
-      data: {
-        records: [
-          skill({
-            id: 21,
-            targetId: 201,
-            name: '付费技能',
-            enabled: false,
-            paymentRequired: true,
-            subscribed: false,
-          }),
-          skill({ id: 22, targetId: 202, name: '写作技能', enabled: true }),
-        ],
-        current: 1,
-        pages: 1,
-      },
-    });
-    renderSkillModal();
-
-    await screen.findByText('付费技能');
-    const card = document.querySelector('[data-skill-key="skill:system:21"]')!;
-    // 选择按钮：挂 .card-hire 悬停浮现类（默认 opacity 隐藏，hover/聚焦时浮现）
-    const selectBtn = Array.from(card.querySelectorAll('button')).find(
-      (btn) => btn.textContent === 'PC.Components.CapabilityModal.select',
-    );
-    expect(selectBtn).toBeTruthy();
-    expect(selectBtn?.className).toContain('card-hire');
-    expect(selectBtn?.className).not.toContain('ant-btn-round');
-    // 常驻启用开关
-    expect(switchOfCard('skill:system:21')).toBeTruthy();
-    // 简化：无作者/统计行/收藏入口，付费走 Badge.Ribbon 左上角角标
-    // （ribbon 文案在卡片外层 wrapper 上，连同 wrapper 一起断言）
-    expect(card.textContent).not.toContain('作者甲');
-    expect(card.closest('.ant-ribbon-wrapper')?.textContent).toContain(
-      'PC.Pages.Square.SingleAgent.paid',
-    );
-    // 开关初始态：列表 enabled 驱动（付费技能 enabled=false）
-    expect(switchOfCard('skill:system:21')?.getAttribute('aria-checked')).toBe(
-      'false',
-    );
-    // 已启用技能卡开关初始为 on
-    await screen.findByText('写作技能');
-    expect(switchOfCard('skill:system:22')?.getAttribute('aria-checked')).toBe(
-      'true',
-    );
-  });
-});
 
 describe('能力弹窗·技能启用/取消启用 + 「我启用的」页签', () => {
   it('无启用技能：不显示「我启用的」页签', async () => {

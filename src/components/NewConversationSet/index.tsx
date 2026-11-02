@@ -127,7 +127,10 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
   }
 
   return (
-    <div className={cx(styles['variables-box'], 'flex', 'flex-col', className)}>
+    <div
+      data-history-scroll-static=""
+      className={cx(styles['variables-box'], 'flex', 'flex-col', className)}
+    >
       <header
         className={cx(styles.header, 'flex', 'items-center', 'content-between')}
       >

@@ -1,4 +1,5 @@
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
+import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -17,6 +18,7 @@ const originalToken = localStorage.getItem('ACCESS_TOKEN');
 function setPage(origin: string, bridge?: object): void {
   const url = new URL(origin);
   vi.stubGlobal('window', {
+    HTMLIFrameElement: document.defaultView?.HTMLIFrameElement,
     location: {
       origin: url.origin,
       hostname: url.hostname,
@@ -187,9 +189,11 @@ describe('业务鉴权环境', () => {
       setPage('https://biz.example.com');
       process.env.BASE_URL = '';
 
-      expect(useAuthProtectedImageSrc('/api/f/image.png').displaySrc).toBe(
-        '/api/f/image.png',
+      const { result } = renderHook(() =>
+        useAuthProtectedImageSrc('/api/f/image.png'),
       );
+      expect(result.current.displaySrc).toBe('/api/f/image.png');
+      cleanup();
     });
   });
 });

@@ -1,6 +1,11 @@
 import AppStartup from '@/components/business-component/AppStartup';
 import NoPermissionPage from '@/pages/403';
 import {
+  getAppStartupDiagnostic,
+  recordAppStartupFailure,
+  type AppStartupDiagnostic,
+} from '@/services/appStartupDiagnostics';
+import {
   getLoginStatusFromCache,
   setLoginStatusToCache,
   UserService,
@@ -21,6 +26,7 @@ const AuthWithLoading: React.FC = () => {
     () => getLoginStatusFromCache() !== true,
   );
   const [failed, setFailed] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<AppStartupDiagnostic>();
   const location = useLocation();
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
@@ -45,6 +51,7 @@ const AuthWithLoading: React.FC = () => {
   useEffect(() => {
     if (isExcludedPath) return;
     setFailed(false);
+    setDiagnostic(undefined);
     if (getLoginStatusFromCache() === true) {
       setLoading(false);
       return;
@@ -64,7 +71,8 @@ const AuthWithLoading: React.FC = () => {
         }
       } catch (error) {
         if (cancelled) return;
-        console.error('Failed to verify login status:', error);
+        const failure = recordAppStartupFailure(error, 'auth');
+        setDiagnostic(getAppStartupDiagnostic(failure));
         setFailed(true);
       }
     };
@@ -83,7 +91,7 @@ const AuthWithLoading: React.FC = () => {
 
   // 如果还在加载中，显示loading
   if (loading || failed) {
-    return <AppStartup failed={failed} />;
+    return <AppStartup failed={failed} diagnostic={diagnostic} />;
   }
 
   // 校验当前访问路径是否由于租户配置限制而被隐藏

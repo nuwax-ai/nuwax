@@ -20,14 +20,24 @@ export const isFullscreenWorkbenchPath = (pathname: string): boolean =>
 
 /**
  * 是否需要为当前工作台页垫历史栈底（workbenchHistoryBase 的判定核心）：
- * 是全屏工作台页，且标签页历史栈没有可退条目（length 只统计本 tab 的
- * 条目；≤1 即栈首无路可退，back 会表现为「点击无反应」）。
+ * 是全屏工作台页，且标签页历史栈没有可退条目，或路由仍处于 idx=0 的栈首。
+ * 原生栈长可能包含壳启动中转页，不能只靠 length 判断是否有应用内返回入口。
  * 纯函数无副作用，供启动期种子与 layout 层补网共用。
  */
 export const shouldSeedWorkbenchHistoryBase = (
   pathname: string,
   historyLength: number,
-): boolean => isFullscreenWorkbenchPath(pathname) && historyLength <= 1;
+  historyState?: unknown,
+): boolean => {
+  if (!isFullscreenWorkbenchPath(pathname)) return false;
+  if (historyLength <= 1) return true;
+  // 桌面壳启动链（loading / bridge / 深链中转）会把原生中间条目压在本条之前：
+  // window 栈长 ≥2，但当前条目仍是路由栈首（umi/react-router 写入的 state.idx
+  // 为 0，壳条目没有 idx）。此时 back 消耗的是壳条目而非应用内返回，同样需要
+  // 垫栈。idx 缺失（非 router 写入 / 旧环境）退化为仅按栈长判定，web 行为不变。
+  const idx = (historyState as { idx?: unknown } | null)?.idx;
+  return typeof idx === 'number' && idx <= 0;
+};
 
 export interface SidebarShellLayoutPolicy {
   variant: 'page' | 'bare';

@@ -36,7 +36,8 @@ export interface PreviewRuntimeButtonsProps {
   /**
    * 当前环境 readiness 的应用状态。
    * 只传正在看的这一侧；开发 / 线上各自保存在 readiness 槽位里，切换时读另一侧，互不影响。
-   * starting 时重启和停止都不可点；stopping 时禁用重启图标。
+   * starting 时重启和停止都不可点；stopping 时重启和停止都不可点；
+   * stopped 时停止不可点（已无服务可停，多页签下其他页签停掉的也算），重启仍可点以重新拉起。
    */
   previewAppStatus?: UserAppReadinessStatusEnum | null;
   /**
@@ -87,10 +88,10 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
    * 已经有有效文件列表后，这两种状态不再禁用。
    * 没有有效文件时，workspaceManifestBlocked 已经禁用，悬停仍按会话 / 确认优先提示。
    */
-  const appStarting =
-    previewAppStatus === UserAppReadinessStatusEnum.Starting;
-  const appStopping =
-    previewAppStatus === UserAppReadinessStatusEnum.Stopping;
+  const appStarting = previewAppStatus === UserAppReadinessStatusEnum.Starting;
+  const appStopping = previewAppStatus === UserAppReadinessStatusEnum.Stopping;
+  /** 已停止：可能是本页签停的，也可能是其他页签停的（靠 readiness 同步） */
+  const appStopped = previewAppStatus === UserAppReadinessStatusEnum.Stopped;
   const restartDisabled =
     workspaceManifestBlocked ||
     podActionBlocked ||
@@ -105,7 +106,9 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     podActionBlocked ||
     previewRuntimeStopping ||
     previewRuntimeRestarting ||
-    appStarting;
+    appStarting ||
+    appStopping ||
+    appStopped;
 
   /**
    * 禁用时悬停说明当前为什么不能点。
@@ -122,8 +125,11 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     if (appStarting) {
       return dict('PC.Pages.AppDevPro.appStarting');
     }
-    if (action === 'restart' && appStopping) {
+    if (appStopping) {
       return dict('PC.Pages.AppDevPro.appStopping');
+    }
+    if (action === 'stop' && appStopped) {
+      return dict('PC.Pages.AppDevPro.readinessBadgeStopped');
     }
     if (action === 'restart' && previewRuntimeRestarting) {
       return dict('PC.Pages.AppDevPro.previewRestarting');

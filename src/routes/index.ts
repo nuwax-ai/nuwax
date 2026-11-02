@@ -748,6 +748,11 @@ const routes = [
   ...(isDevelopment
     ? [
         {
+          path: '/mock-gallery/file-panel',
+          component: '@/examples/FilePanelNativeDev',
+          layout: false,
+        },
+        {
           path: '/desktop-shell-preview',
           component: '@/pages/DesktopShellPreview',
           layout: false,

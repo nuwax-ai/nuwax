@@ -1,9 +1,9 @@
 import { TaskResultData } from '@/types/interfaces/utils';
 
 /**
- * 提取任务结果数据
- * @param text 文本
- * @returns 任务结果数据
+ * 提取任务结果数据。
+ * 多个 `<task-result>` 时取最后一个；同一段里多个 `<file>` 时取第一个。
+ * Chat 会话结束 settle、AppDevPro 结束自动打开、进页自动预览共用此口径。
  */
 export const extractTaskResult = (text: string): TaskResultData => {
   const result: TaskResultData = {
@@ -12,17 +12,16 @@ export const extractTaskResult = (text: string): TaskResultData => {
 
   if (!text) return result;
 
-  // 1️⃣ 匹配 <task-result>...</task-result>
-  const taskResultMatch = text.match(/<task-result>([\s\S]*?)<\/task-result>/);
-
-  if (!taskResultMatch) {
+  const taskResultMatches = text.match(/<task-result>[\s\S]*?<\/task-result>/g);
+  if (!taskResultMatches?.length) {
     return result;
   }
 
   result.hasTaskResult = true;
-  const taskResultContent = taskResultMatch[1];
+  const taskResultContent = taskResultMatches[
+    taskResultMatches.length - 1
+  ].replace(/^<task-result>|<\/task-result>$/g, '');
 
-  // 2️⃣ 提取 description
   const descriptionMatch = taskResultContent.match(
     /<description>([\s\S]*?)<\/description>/,
   );
@@ -30,7 +29,6 @@ export const extractTaskResult = (text: string): TaskResultData => {
     result.description = descriptionMatch[1].trim();
   }
 
-  // 3️⃣ 提取 file
   const fileMatch = taskResultContent.match(/<file>([\s\S]*?)<\/file>/);
   if (fileMatch) {
     result.file = fileMatch[1].trim();
@@ -40,27 +38,12 @@ export const extractTaskResult = (text: string): TaskResultData => {
 };
 
 /**
- * 提取字符串中最后一个 <task-result> 内的 <file> 内容
- * @param text 原始字符串
- * @returns file 内容或 null
+ * 提取字符串中最后一个 <task-result> 内的第一个 <file>。
+ * 与 extractTaskResult 同一口径，仅返回文件路径。
  */
 export const extractLastTaskResultFile = (text: string): string | null => {
-  if (!text) return null;
-
-  // 匹配所有 <task-result>...</task-result>
-  const taskResultMatches = text.match(/<task-result>[\s\S]*?<\/task-result>/g);
-
-  if (!taskResultMatches || taskResultMatches.length === 0) {
-    return null;
-  }
-
-  // 取最后一个 <task-result>
-  const lastTaskResult = taskResultMatches[taskResultMatches.length - 1];
-
-  // 在其中提取 <file> 内容
-  const fileMatch = lastTaskResult.match(/<file>([\s\S]*?)<\/file>/);
-
-  return fileMatch?.[1]?.trim() ?? null;
+  const file = extractTaskResult(text).file;
+  return file?.trim() ? file : null;
 };
 
 /**

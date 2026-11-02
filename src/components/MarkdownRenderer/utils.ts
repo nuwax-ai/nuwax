@@ -737,7 +737,12 @@ function looksLikeLatex(code: string): boolean {
  * 在标题、编号项前补空行，让每条公式成为独立列表项。
  */
 function ensureBlockFormulaListLayout(text: string): string {
-  if (!text || (!text.includes('**') && !/^\d+\.\s+/m.test(text))) {
+  if (
+    !text ||
+    (!text.includes('**') &&
+      !/^\d+\.\s+/m.test(text) &&
+      !/^\s*<\/?(?:div|p)\b/im.test(text))
+  ) {
     return text;
   }
 
@@ -753,14 +758,19 @@ function ensureBlockFormulaListLayout(text: string): string {
 
   const lines = protectedText.split('\n');
   const out: string[] = [];
+  let htmlBlock = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
+    if (!trimmed) htmlBlock = false;
+    if (/^<\/?(?:div|p)\b/i.test(trimmed)) htmlBlock = true;
+    const listAfterHtml = htmlBlock && /^(?:[-+*]|\d+[.)])\s+\S/.test(trimmed);
     const isNumberedItem = /^\d+\.\s+\S/.test(trimmed);
     const isBoldOnlyHeading = /^\*\*[^*\n]+\*\*$/.test(trimmed);
     const isAtxHeading = /^#{1,6}\s+\S/.test(trimmed);
-    const needsBlockBreak = isNumberedItem || isBoldOnlyHeading || isAtxHeading;
+    const needsBlockBreak =
+      isNumberedItem || isBoldOnlyHeading || isAtxHeading || listAfterHtml;
 
     if (
       needsBlockBreak &&
@@ -770,6 +780,8 @@ function ensureBlockFormulaListLayout(text: string): string {
       out.push('');
     }
     out.push(line);
+    // CommonMark 的 HTML 块只在空行结束；列表前补边界，让流式残留包装内的列表重新参与解析。
+    if (listAfterHtml) htmlBlock = false;
   }
 
   return out
@@ -906,6 +918,46 @@ function unwrapLatexInlineCode(text: string): string {
 }
 
 /**
+ * 把公式内未转义的 % 补成 \%（NW-228）。
+ * LaTeX 里 % 是注释符：如 `\frac{\%\Delta Q}{%\Delta P}` 第二处 % 未转义时，
+ * KaTeX 会把 `%\Delta P}` 整段当注释吞掉，宏参数括号未闭合导致公式渲染失败。
+ * 只应作用于公式段内容（调用方保证代码块 / 正文不会被传入）；
+ * % 前是奇数个连续反斜杠（即 \%）视为已转义，不重复补。
+ */
+function escapeBarePercentInFormula(formula: string): string {
+  if (!formula || formula.indexOf('%') === -1) return formula;
+
+  let out = '';
+  let i = 0;
+  while (i < formula.length) {
+    const ch = formula[i];
+    if (ch === '\\') {
+      let j = i;
+      while (formula[j] === '\\') j++;
+      const slashes = j - i;
+      if (formula[j] === '%') {
+        // 奇数个反斜杠 = 已转义（\%）原样保留；偶数个 = 裸 %，补转义
+        out +=
+          slashes % 2 === 1
+            ? formula.slice(i, j + 1)
+            : `${formula.slice(i, j)}\\%`;
+        i = j + 1;
+      } else {
+        out += formula.slice(i, j);
+        i = j;
+      }
+    } else if (ch === '%') {
+      out += '\\%';
+      i += 1;
+    } else {
+      out += ch;
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/**
  * 保护不会被 \(...\) / \[...\] 转换逻辑扫描的片段：
  * - base64 data URL
  * - Markdown 围栏代码块 / 行内代码（避免代码示例里的括号被改写）
@@ -929,9 +981,10 @@ function protectMathBracketSafeRegions(text: string): {
   next = next.replace(/~~~[\s\S]*?~~~/g, push);
   // 行内代码须在 $ 公式之前保护，否则会吃掉 `$...$` 代码示例
   next = next.replace(/`[^`\n]+`/g, push);
-  // 已有美元定界公式（先块级再行内）
-  next = next.replace(/\$\$[\s\S]+?\$\$/g, push);
-  next = next.replace(/\$[^$\n]+?\$/g, push);
+  // 已有美元定界公式（先块级再行内）；顺手补公式内裸 % 转义（NW-228）
+  const pushMath = (match: string) => push(escapeBarePercentInFormula(match));
+  next = next.replace(/\$\$[\s\S]+?\$\$/g, pushMath);
+  next = next.replace(/\$[^$\n]+?\$/g, pushMath);
 
   return {
     text: next,
@@ -968,9 +1021,10 @@ function replaceMathBracket(text: string): string {
     if (match.success) {
       // 添加匹配前的文本
       result += protectedText.slice(pos, match.start);
-      // 替换为 $$ 分隔符
+      // 替换为 $$ 分隔符；非美元定界公式同样补裸 % 转义（NW-228）
       const delimiter = match.display ? '$$' : '$';
-      result += `${delimiter}${match.formula}${delimiter}`;
+      const formula = escapeBarePercentInFormula(match.formula);
+      result += `${delimiter}${formula}${delimiter}`;
       pos = match.end;
     } else {
       // 没有匹配，添加当前字符
@@ -1389,6 +1443,7 @@ export {
   EMPHASIS_FLANKING_ZWSP,
   collapseTerminalProcesses,
   ensureBlockFormulaListLayout,
+  escapeBarePercentInFormula,
   extractTableToMarkdown,
   fixStrongEmphasisFlanking,
   groupMarkdownProcesses,

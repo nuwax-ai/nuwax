@@ -8,10 +8,12 @@ const h = vi.hoisted(() => ({
   listeners: new Set<(state: ClientUpdateState | null) => void>(),
   download: vi.fn(),
   install: vi.fn(),
+  checkLatest: vi.fn(),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('./clientUpdateService', () => ({
+  checkLatest: () => h.checkLatest(),
   isAvailable: () => true,
   start: vi.fn(),
   subscribe: (listener: (state: ClientUpdateState | null) => void) => {
@@ -46,10 +48,31 @@ beforeEach(() => {
   h.listeners.clear();
   h.download.mockReset().mockResolvedValue(true);
   h.install.mockReset().mockResolvedValue({ success: true });
+  h.checkLatest.mockReset().mockResolvedValue(undefined);
 });
 afterEach(() => vi.restoreAllMocks());
 
 describe('更新就绪日志入口与主进程一键策略', () => {
+  it('每次打开日志都核对新版并原位更新版本、日期和说明', async () => {
+    render(<ClientVersionBadge />);
+    const card = await openLog();
+    expect(h.checkLatest).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      state({
+        version: '3.0.17-beta.5',
+        releaseDate: '2026-10-30T00:00:00Z',
+        releaseNotes: '最新发布说明',
+      });
+      h.listeners.forEach((listener) => listener(h.state));
+    });
+    expect(card).toHaveTextContent('v3.0.17-beta.5');
+    expect(card).toHaveTextContent('2026-10-30');
+    expect(card).toHaveTextContent('最新发布说明');
+    await userEvent.click(screen.getByRole('button', { name: key('ready') }));
+    await openLog();
+    expect(h.checkLatest).toHaveBeenCalledTimes(2);
+    expect(h.download).not.toHaveBeenCalled();
+  });
   it('点击徽标只打开版本、日期和日志，明确点击日志内动作后才开始升级', async () => {
     state({ installAfterDownload: true });
     render(<ClientVersionBadge />);
@@ -134,7 +157,12 @@ describe('更新就绪日志入口与主进程一键策略', () => {
       state({ status: 'installing', installAfterDownload: true });
       h.listeners.forEach((listener) => listener(h.state));
     });
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 1_100)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 1_100);
+        }),
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(
       screen.getByRole('button', { name: key('installing') }),

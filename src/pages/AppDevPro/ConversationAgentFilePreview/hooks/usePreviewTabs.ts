@@ -1,3 +1,4 @@
+import { movedFileId } from '@/components/business-component/FileTreeGitSourcePanel/utils/fileMove';
 import { dict } from '@/services/i18nRuntime';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -491,38 +492,31 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
       return;
     }
 
-    const newLabel = getFileNameFromPath(newFileId);
-    const oldFileTabId = getFileTabId(oldFileId, false);
-    const oldDiffTabId = getFileTabId(oldFileId, true);
-    const newFileTabId = getFileTabId(newFileId, false);
-    const newDiffTabId = getFileTabId(newFileId, true);
-
-    setTabs((prev) => {
-      let hasChange = false;
-      const nextTabs = prev.map((tab) => {
-        if (tab.type !== 'file' || tab.fileId !== oldFileId) {
-          return tab;
-        }
-        hasChange = true;
-        const isDiff = tab.isDiff ?? false;
-        return {
-          ...tab,
-          id: getFileTabId(newFileId, isDiff),
-          fileId: newFileId,
-          label: newLabel,
-        };
-      });
-      return hasChange ? nextTabs : prev;
-    });
-
-    setActiveTabId((currentActiveId) => {
-      if (currentActiveId === oldFileTabId) {
-        return newFileTabId;
-      }
-      if (currentActiveId === oldDiffTabId) {
-        return newDiffTabId;
-      }
-      return currentActiveId;
+    setTabs((prev) =>
+      prev.map((tab) => {
+        if (tab.type !== 'file' || !tab.fileId) return tab;
+        const nextId = movedFileId(tab.fileId, oldFileId, newFileId);
+        return nextId === tab.fileId
+          ? tab
+          : {
+              ...tab,
+              id: getFileTabId(nextId, tab.isDiff ?? false),
+              fileId: nextId,
+              label: getFileNameFromPath(nextId),
+            };
+      }),
+    );
+    setActiveTabId((current) => {
+      if (!current) return current;
+      const prefix = current.startsWith('file:')
+        ? 'file:'
+        : current.startsWith('diff:')
+        ? 'diff:'
+        : '';
+      return prefix
+        ? prefix +
+            movedFileId(current.slice(prefix.length), oldFileId, newFileId)
+        : current;
     });
   }, []);
 

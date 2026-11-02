@@ -830,9 +830,17 @@ const AppDevDesign: React.FC = () => {
       return;
     }
 
-    // 导出整个项目压缩包
-    exportProject(projectId);
-  }, [hasValidProjectId, projectId]);
+    // 导出整个项目压缩包；默认文件名带项目名，避免保存弹窗泛名 export.zip（NW-273）
+    await exportProject(
+      projectId,
+      projectInfo.projectInfoState.projectInfo?.name || workspace.name,
+    );
+  }, [
+    hasValidProjectId,
+    projectId,
+    projectInfo.projectInfoState.projectInfo?.name,
+    workspace.name,
+  ]);
 
   /**
    * 处理重启开发服务器按钮点击（手动触发）

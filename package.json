@@ -1,6 +1,6 @@
 {
   "name": "nuwax-frontend",
-  "version": "3.0.1",
+  "version": "3.0.5",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -29,6 +29,7 @@
     "dev:release0930-mock": "cross-env UMI_ENV=release0930Mock NODE_OPTIONS=--max-old-space-size=8192 max dev",
     "doctor": "node scripts/doctor.mjs",
     "e2e:conversation": "ego-browser nodejs < scripts/e2e/conversation-acceptance.mjs",
+    "e2e:history-scroll": "node scripts/e2e/ego-run.mjs scripts/e2e/history-scroll-acceptance.mjs",
     "e2e:mock-chat": "node scripts/e2e/ego-run.mjs scripts/e2e/mock-chat-acceptance.mjs",
     "e2e:release0930": "node scripts/e2e/ego-run.mjs scripts/e2e/release0930-remaining-acceptance.mjs",
     "format": "prettier --cache --write .",
@@ -49,7 +50,7 @@
     "sync:micro-apps": "node scripts/sync-micro-apps.mjs",
     "sync:openui-runtime": "./scripts/sync-openui-runtime.sh",
     "test": "vitest",
-    "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
+    "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock src/components/business-component/UnifiedChatSession/hooks/useUnifiedChatScroll.test.ts",
     "test:deploy": "node --test tests/deploySyncTest.node.mjs tests/deployTest.node.mjs tests/downloadMobileBuild.node.mjs",
     "test:micro-app-build": "node --test tests/microApps/build-pipeline.node.mjs tests/microApps/upgrade-pipeline.node.mjs",
     "test:scripts": "node --test tests/doctor.node.mjs && npm run test:deploy && npm run test:micro-app-build && npm run test:typecheck",
@@ -136,6 +137,7 @@
     "mermaid": "9.4.3",
     "monaco-editor": "0.53.0",
     "monaco-editor-webpack-plugin": "7.0.1",
+    "pdfjs-dist": "4.7.76",
     "pptx-preview": "1.0.7",
     "prismjs": "^1.30.0",
     "qiankun": "2.10.17-beta.0",
@@ -197,5 +199,11 @@
   "packageManager": "pnpm@10.27.0",
   "engines": {
     "node": "> 18.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "pdfjs-dist@4.7.76>canvas": "-",
+      "pdfjs-dist@4.7.76>path2d": "-"
+    }
   }
 }

@@ -1,4 +1,7 @@
-import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
+import {
+  collectChangedFilePaths,
+  shouldRefreshWorkspaceFiles,
+} from '@/features/conversation/domain/workspaceFileChange';
 
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -80,44 +83,6 @@ const COMMON_TEXT_EXTENSIONS = new Set([
   'conf',
   'rst',
 ]);
-
-const FILE_PATH_KEYS = [
-  'filePath',
-  'file_path',
-  'filepath',
-  'path',
-  'targetPath',
-  'target_path',
-];
-
-/** 从工具记录里取出被操作的文件路径 */
-const collectChangedFilePaths = (processing: unknown): string[] => {
-  const item = record(processing);
-  const result = record(item.result);
-  const input = record(result.input);
-  const rawInput = record(input.rawInput ?? input.raw_input);
-  const paths: string[] = [];
-  const push = (value: unknown) => {
-    if (typeof value === 'string' && value.trim()) {
-      paths.push(value.trim());
-    }
-  };
-  [input, rawInput, result].forEach((source) => {
-    FILE_PATH_KEYS.forEach((key) => push(source[key]));
-  });
-  [result.data, result.content, input.content].forEach((list) => {
-    if (!Array.isArray(list)) {
-      return;
-    }
-    list.forEach((entry) => {
-      const diff = record(entry);
-      if (diff.type === 'diff') {
-        push(diff.path);
-      }
-    });
-  });
-  return paths;
-};
 
 /** 路径后缀是否属于常见文本。没有后缀的文件不算文本 */
 const isCommonTextFile = (filePath: string): boolean => {

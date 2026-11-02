@@ -95,7 +95,9 @@ function normalizeCaptchaVerifyParam(captchaVerifyParam: any): string {
 const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
   ({ config, elementId, onVerify, onBizResult, onReady }, ref) => {
     const captchaInstanceRef = useRef<any>(null);
-    const [captchaInited, setCaptchaInited] = useState(false);
+    const captchaReadyRef = useRef(false);
+    const readyFallbackTimerRef = useRef<number | null>(null);
+    const [captchaReady, setCaptchaReady] = useState(false);
 
     useImperativeHandle(
       ref,
@@ -121,9 +123,43 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
     const onReadyRef = useRef(onReady);
     onReadyRef.current = onReady;
 
-    const getInstance = useCallback((instance: any) => {
-      captchaInstanceRef.current = instance;
-      if (instance) setCaptchaInited(true);
+    /**
+     * 资源就绪后才通知业务方可点击验证。
+     * getInstance 只说明拿到了实例，滑块脚本和 captcha-open 资源可能还在加载。
+     */
+    const markCaptchaReady = useCallback(() => {
+      if (captchaReadyRef.current) return;
+      captchaReadyRef.current = true;
+      if (readyFallbackTimerRef.current !== null) {
+        window.clearTimeout(readyFallbackTimerRef.current);
+        readyFallbackTimerRef.current = null;
+      }
+      setCaptchaReady(true);
+    }, []);
+
+    const getInstance = useCallback(
+      (instance: any) => {
+        captchaInstanceRef.current = instance;
+        if (!instance || captchaReadyRef.current) return;
+        // 部分 SDK 版本不回调 success。实例拿到后再等 2s，与官方「init 到验证 ≥2s」对齐
+        if (readyFallbackTimerRef.current !== null) {
+          window.clearTimeout(readyFallbackTimerRef.current);
+        }
+        readyFallbackTimerRef.current = window.setTimeout(() => {
+          readyFallbackTimerRef.current = null;
+          markCaptchaReady();
+        }, 2000);
+      },
+      [markCaptchaReady],
+    );
+
+    const onCaptchaSuccess = useCallback(() => {
+      console.log('[AliyunCaptcha] success: captcha resources ready');
+      markCaptchaReady();
+    }, [markCaptchaReady]);
+
+    const onCaptchaFail = useCallback((error: unknown) => {
+      console.warn('[AliyunCaptcha] init failed', error);
     }, []);
 
     /**
@@ -203,6 +239,11 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
       // 或成功回调收尾仍会访问这些节点，登录跳转时会出现 innerHTML 空引用。
       const instance = captchaInstanceRef.current;
       captchaInstanceRef.current = null;
+      captchaReadyRef.current = false;
+      if (readyFallbackTimerRef.current !== null) {
+        window.clearTimeout(readyFallbackTimerRef.current);
+        readyFallbackTimerRef.current = null;
+      }
       instance?.destroyCaptcha?.();
     }, []);
 
@@ -226,6 +267,8 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
         captchaVerifyCallback,
         onBizResultCallback,
         getInstance,
+        success: onCaptchaSuccess,
+        fail: onCaptchaFail,
         slideStyle: { width: 360, height: 40 },
         language: 'cn',
       });
@@ -256,12 +299,14 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
       captchaVerifyCallback,
       onBizResultCallback,
       getInstance,
+      onCaptchaSuccess,
+      onCaptchaFail,
       cleanupCaptchaElements,
     ]);
 
     useEffect(() => {
-      if (captchaInited) onReadyRef.current?.();
-    }, [captchaInited]);
+      if (captchaReady) onReadyRef.current?.();
+    }, [captchaReady]);
 
     return (
       <div className="captcha-a">

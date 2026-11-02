@@ -315,6 +315,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     ensureDesktopConnection,
     handleRefreshFileList,
     refreshFileListImmediately,
+    refreshSelectedFileContentThrottled,
+    setPreviewFileId,
+    previewFileContentRefreshTrigger,
     fileTreeRefreshTrigger,
     setFileTreeSelfManaged,
     openPreviewView,
@@ -337,6 +340,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
 
   /** 与 Chat / AppDevPro 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
   const workspaceFiles = useWorkspaceFileTreeSession({
+    active,
     conversationId: queryConversationId,
     enabled: active && !!queryConversationId,
     fileTreeRefreshTrigger,
@@ -487,7 +491,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       ? {
           cId: queryConversationId,
           sandboxId: String(finalSelectedComputerId),
-          workspacePath: conversationInfo.workspacePath,
+          workspacePath: conversationInfo.fileWorkspacePath || undefined,
           projectId: conversationInfo.devTargetId,
           serviceType: conversationInfo.devTargetType,
           userId: conversationInfo.userId,
@@ -587,6 +591,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       openDesktopView: (conversationId: number) => {
         openDesktopViewFromEventRef.current(conversationId);
       },
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
     },
   });
 
@@ -910,6 +916,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -955,6 +962,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
               {
                 contents: '',
                 name: fileNode.id,
+                localFile: fileNode.localFile,
                 operation: 'delete',
                 isDir: true,
               },
@@ -971,6 +979,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             updatedFilesList = [
               {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,
@@ -1323,6 +1332,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       originalFiles: workspaceFiles.files,
       fileTreeDataLoading: workspaceFiles.loading,
       fileTreeRefreshTrigger,
+      previewFileContentRefreshTrigger,
+      onPreviewFileIdChange: setPreviewFileId,
       targetId: queryConversationId?.toString() || '', // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -1330,7 +1341,10 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       },
       onExportProject: async () => {
         if (queryConversationId) {
-          await apiDownloadAllFiles(queryConversationId);
+          await apiDownloadAllFiles(
+            queryConversationId,
+            conversationInfo?.topic,
+          );
         }
       },
       /** 导入项目 */
@@ -1465,7 +1479,10 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     workspaceFiles.loadedDirectoryPaths,
     workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
+    previewFileContentRefreshTrigger,
+    setPreviewFileId,
     queryConversationId,
+    conversationInfo?.topic,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,

@@ -9,12 +9,30 @@ import { describe, expect, it } from 'vitest';
 import {
   collapseTerminalProcesses,
   EMPHASIS_FLANKING_ZWSP,
+  ensureBlockFormulaListLayout,
+  escapeBarePercentInFormula,
   fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
   looksLikeLatex,
   replaceMathBracket,
   unwrapLatexInlineCode,
 } from '../utils';
+
+describe('HTML 包装后的列表边界', () => {
+  it.each([
+    '- 项目一\n- 项目二',
+    '1. 项目一\n2. 项目二',
+    '3. 项目一\n4. 项目二',
+  ])('包装内的列表不被当作纯 HTML 文本：%s', (items) => {
+    expect(
+      ensureBlockFormulaListLayout(`<div>补充说明：\n${items}\n</div>`),
+    ).toContain(`补充说明：\n\n${items.split('\n')[0]}`);
+  });
+  it('围栏中的 HTML 与列表示例保持原样', () => {
+    const code = '```html\n<div>说明\n- 字面示例\n</div>\n```';
+    expect(ensureBlockFormulaListLayout(code)).toBe(code);
+  });
+});
 
 /** 构造一个合法的 base64 data URL（仅长度可配置，内容不要求是真实图片） */
 const makeDataUrl = (bodyLen = 100) =>
@@ -614,5 +632,58 @@ describe('collapseTerminalProcesses', () => {
     expect(result).toContain('terminal="true"');
     const groupEnd = result.indexOf('</markdown-custom-process-group>');
     expect(result.indexOf('最终回答')).toBeGreaterThan(groupEnd);
+  });
+});
+
+describe('escapeBarePercentInFormula（NW-228）', () => {
+  it('NW-228 目标 case：第二处 % 补转义，已转义的 \\% 不动', () => {
+    expect(escapeBarePercentInFormula('\\frac{\\%\\Delta Q}{%\\Delta P}')).toBe(
+      '\\frac{\\%\\Delta Q}{\\%\\Delta P}',
+    );
+  });
+
+  it('裸 % 直接补转义', () => {
+    expect(escapeBarePercentInFormula('a % b')).toBe('a \\% b');
+    expect(escapeBarePercentInFormula('50%')).toBe('50\\%');
+  });
+
+  it('已转义的 \\% 不重复补', () => {
+    expect(escapeBarePercentInFormula('50\\%')).toBe('50\\%');
+  });
+
+  it('偶数个连续反斜杠后的 % 视为裸 %（\\\\ 是换行）', () => {
+    expect(escapeBarePercentInFormula('a\\\\%b')).toBe('a\\\\\\%b');
+  });
+
+  it('不含 % 或空串原样返回', () => {
+    expect(escapeBarePercentInFormula('\\frac{a}{b}')).toBe('\\frac{a}{b}');
+    expect(escapeBarePercentInFormula('')).toBe('');
+  });
+});
+
+describe('replaceMathBracket 裸 % 转义（NW-228 集成）', () => {
+  it('$...$ 公式内的裸 % 被补转义', () => {
+    expect(
+      replaceMathBracket('弹性 $\\frac{\\%\\Delta Q}{%\\Delta P}$ 更大'),
+    ).toBe('弹性 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 更大');
+  });
+
+  it('$$...$$ 块级公式内的裸 % 被补转义', () => {
+    expect(replaceMathBracket('$$E = \\frac{\\%\\Delta Q}{%\\Delta P}$$')).toBe(
+      '$$E = \\frac{\\%\\Delta Q}{\\%\\Delta P}$$',
+    );
+  });
+
+  it('\\(...\\) 定界公式内的裸 % 被补转义', () => {
+    expect(
+      replaceMathBracket('公式 \\(\\frac{\\%\\Delta Q}{%\\Delta P}\\) 尾'),
+    ).toBe('公式 $\\frac{\\%\\Delta Q}{\\%\\Delta P}$ 尾');
+  });
+
+  it('正文与行内代码里的 % 不受影响', () => {
+    expect(replaceMathBracket('提价 10% 即可')).toBe('提价 10% 即可');
+    expect(replaceMathBracket('宽度 `width: 50%` 设置')).toBe(
+      '宽度 `width: 50%` 设置',
+    );
   });
 });

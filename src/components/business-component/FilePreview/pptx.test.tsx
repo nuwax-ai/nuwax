@@ -494,6 +494,8 @@ describe('FilePreview PPTX 请求和生命周期', () => {
   });
 
   it('旧 PDF 的成功和错误回调均不能覆盖新 PPTX', async () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
     const pendingPdf = deferred<void>();
     type PdfCallbacks = {
       onRendered: () => void;

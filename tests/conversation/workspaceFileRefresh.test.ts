@@ -1,4 +1,9 @@
-import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
+import {
+  classifyWorkspaceFileRefresh,
+  isSameWorkspaceFile,
+  shouldRefreshWorkspaceFiles,
+  streamingContentRefreshAction,
+} from '@/features/conversation/domain/workspaceFileChange';
 import { describe, expect, it } from 'vitest';
 
 describe('workspace file refresh semantics', () => {
@@ -89,6 +94,37 @@ describe('workspace file refresh semantics', () => {
   ])('uses explicit legacy mutation tool names: %s', (name) =>
     expect(shouldRefreshWorkspaceFiles(tool({}, { name }))).toBe(true),
   );
+  it('只有编辑当前预览文件才刷正文，其它编辑和认不出的路径都不刷树', () => {
+    expect(
+      classifyWorkspaceFileRefresh(
+        tool({
+          kind: 'edit',
+          input: { file_path: 'src/app.tsx' },
+        }),
+      ),
+    ).toEqual({ scope: 'content', paths: ['src/app.tsx'] });
+    expect(
+      classifyWorkspaceFileRefresh(
+        tool({ kind: 'delete', input: { file_path: 'src/app.tsx' } }),
+      ),
+    ).toEqual({ scope: 'tree', paths: ['src/app.tsx'] });
+    expect(classifyWorkspaceFileRefresh(tool({ kind: 'edit' }))).toEqual({
+      scope: 'content',
+      paths: [],
+    });
+    expect(isSameWorkspaceFile('workspace:src/app.tsx', '/src/app.tsx')).toBe(
+      true,
+    );
+    expect(
+      streamingContentRefreshAction(['src/app.tsx'], 'workspace:src/app.tsx'),
+    ).toBe('content');
+    expect(
+      streamingContentRefreshAction(['src/other.tsx'], 'workspace:src/app.tsx'),
+    ).toBe('skip');
+    expect(streamingContentRefreshAction([], 'workspace:src/app.tsx')).toBe(
+      'skip',
+    );
+  });
   it('skips unrelated plan/search/browser and malformed data', () => {
     for (const value of [
       null,

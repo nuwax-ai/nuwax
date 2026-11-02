@@ -36,8 +36,9 @@ describe('正文读取保留已确认的本机来源', () => {
     async (change) => {
       const api = {
         getCapabilities: vi.fn().mockResolvedValue({
-          apiVersion: 1,
+          apiVersion: 2,
           available: true,
+          writable: true,
           sandboxId: 'local',
         }),
         resolveContext: vi.fn().mockImplementation(async (input) => ({
@@ -59,6 +60,7 @@ describe('正文读取保留已确认的本机来源', () => {
         exportWorkspace: vi.fn(),
         openPath: vi.fn(),
         revealInFolder: vi.fn(),
+        updateFiles: vi.fn(),
       };
       mocks.getApi.mockReturnValue(api);
       registerLocalFilesContext({

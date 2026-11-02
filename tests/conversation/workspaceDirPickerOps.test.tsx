@@ -166,8 +166,16 @@ describe('工作目录弹窗 新建/重命名', () => {
 
   it('重命名确认调 ops.rename 并同步最近目录前缀', async () => {
     localStorage.setItem(
-      'workspace_dir_recent_list',
+      'workspace_dir_recent_list:11',
       JSON.stringify(['/dirA/sub', '/other']),
+    );
+    localStorage.setItem(
+      'workspace_dir_recent_list:22',
+      JSON.stringify(['/dirA/sub']),
+    );
+    localStorage.setItem(
+      'workspace_dir_recent_list',
+      JSON.stringify(['/legacy']),
     );
     await enterChildrenView();
     fireEvent.click(screen.getByTitle('PC.Components.WorkspaceDir.rename'));
@@ -182,7 +190,13 @@ describe('工作目录弹窗 新建/重命名', () => {
     );
     await waitFor(() => expect(browse).toHaveBeenLastCalledWith('/'));
     expect(
-      JSON.parse(localStorage.getItem('workspace_dir_recent_list') || '[]'),
+      JSON.parse(localStorage.getItem('workspace_dir_recent_list:11') || '[]'),
     ).toEqual(['/dirB/sub', '/other']);
+    expect(
+      JSON.parse(localStorage.getItem('workspace_dir_recent_list:22') || '[]'),
+    ).toEqual(['/dirA/sub']);
+    expect(
+      JSON.parse(localStorage.getItem('workspace_dir_recent_list') || '[]'),
+    ).toEqual(['/legacy']);
   });
 });

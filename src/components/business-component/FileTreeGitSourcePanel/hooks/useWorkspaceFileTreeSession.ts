@@ -6,7 +6,13 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiSearchFiles } from '@/services/vncDesktop';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { throttle } from 'lodash';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   parentDirectory,
   WORKSPACE_SOURCE_ID,
@@ -27,16 +33,19 @@ type SelectWorkspaceFile = (
  */
 export function useWorkspaceFileTreeSession(options: {
   conversationId?: number;
+  /** 常驻会话隐藏后停止文件任务；与文件树面板是否展开分开。 */
+  active?: boolean;
   /** 为 false 时不主动拉根目录，等刷新信号再拉 */
   enabled?: boolean;
   fileTreeRefreshTrigger?: number;
-  /** 面板不可见时忽略刷新信号 */
+  /** 面板不可见时暂停刷新，保留信号等待恢复 */
   refreshEnabled?: boolean;
   taskAgentSelectedFileId?: string;
   taskAgentSelectTrigger?: number | string;
 }) {
   const {
     conversationId,
+    active = true,
     enabled = true,
     fileTreeRefreshTrigger,
     refreshEnabled = true,
@@ -44,7 +53,13 @@ export function useWorkspaceFileTreeSession(options: {
     taskAgentSelectTrigger,
   } = options;
 
-  const directory = useWorkspaceDirectoryFiles(conversationId, { enabled });
+  const directory = useWorkspaceDirectoryFiles(conversationId, {
+    enabled: active && enabled,
+  });
+  const ownerRef = useRef({ conversationId, active, refreshEnabled });
+  ownerRef.current = { conversationId, active, refreshEnabled };
+  const selectionEpochRef = useRef(0);
+  const handledTaskResultRef = useRef<string>();
   /** 预览面板选中文件。本 hook 比预览 hook 更早执行，先放一个空实现，渲染后再赋值 */
   const selectFileRef = useRef<SelectWorkspaceFile>(async () => undefined);
 
@@ -64,6 +79,7 @@ export function useWorkspaceFileTreeSession(options: {
 
   // 必须在预览 hook 的自动选中之前写上，否则会把还没加载的目标判成不存在
   if (
+    active &&
     taskAgentSelectTrigger &&
     taskAgentSelectedFileId &&
     taskResultOpenMarkRef.current !== taskAgentSelectTrigger
@@ -80,40 +96,78 @@ export function useWorkspaceFileTreeSession(options: {
     }
   }
 
+  useLayoutEffect(
+    () => () => {
+      selectionEpochRef.current += 1;
+      openingTaskResultRef.current = null;
+    },
+    [conversationId, active],
+  );
+
   /** 刷新函数身份会变，节流回调只调 ref 里的最新一次 */
   const refreshAllLoadedRef = useRef(directory.refreshAllLoaded);
   refreshAllLoadedRef.current = directory.refreshAllLoaded;
-  /** 同一个刷新时间戳只处理一次 */
-  const handledRefreshTriggerRef = useRef<number>(0);
+  const refreshSignalRef = useRef({
+    conversationId,
+    handled: 0,
+    pending: false,
+  });
   // 文件变更可能连续到达，5 秒内合并成一次，并补上节流窗口结束时的最后一次
   const throttledRefresh = useMemo(
     () =>
-      throttle(() => refreshAllLoadedRef.current(), 5000, {
-        leading: true,
-        trailing: true,
-      }),
+      throttle(
+        () => {
+          const owner = ownerRef.current;
+          const signal = refreshSignalRef.current;
+          if (
+            !owner.active ||
+            !owner.refreshEnabled ||
+            signal.conversationId !== owner.conversationId ||
+            !signal.pending
+          )
+            return;
+          signal.pending = false;
+          refreshAllLoadedRef.current();
+        },
+        5000,
+        {
+          leading: true,
+          trailing: true,
+        },
+      ),
     [],
   );
   useEffect(() => () => throttledRefresh.cancel(), [throttledRefresh]);
   useEffect(() => {
-    // 面板不可见时不记下时间戳，等再次可见再用同一次信号补拉
-    if (
-      !fileTreeRefreshTrigger ||
-      handledRefreshTriggerRef.current === fileTreeRefreshTrigger ||
-      !refreshEnabled
-    ) {
+    if (refreshSignalRef.current.conversationId !== conversationId) {
+      throttledRefresh.cancel();
+      refreshSignalRef.current = { conversationId, handled: 0, pending: false };
+    }
+    const signal = refreshSignalRef.current;
+    if (fileTreeRefreshTrigger && signal.handled !== fileTreeRefreshTrigger) {
+      signal.handled = fileTreeRefreshTrigger;
+      signal.pending = true;
+    }
+    if (!active || !refreshEnabled) {
+      // 取消定时器但保留刷新意图；恢复可见时只补一次最新目录。
+      throttledRefresh.cancel();
       return;
     }
-    handledRefreshTriggerRef.current = fileTreeRefreshTrigger;
-    throttledRefresh();
-  }, [fileTreeRefreshTrigger, refreshEnabled, throttledRefresh]);
+    if (signal.pending) throttledRefresh();
+  }, [
+    conversationId,
+    active,
+    fileTreeRefreshTrigger,
+    refreshEnabled,
+    throttledRefresh,
+  ]);
 
   const loadDirectoryRef = useRef(directory.loadDirectory);
   loadDirectoryRef.current = directory.loadDirectory;
 
   // 点击会话里生成的文件：按文件名搜索，再用完整相对路径在结果里命中，然后打开内容
   useEffect(() => {
-    if (!conversationId || taskAgentSelectTrigger === undefined) {
+    if (!active || !conversationId || taskAgentSelectTrigger === undefined) {
       return;
     }
     const relativePath = workspaceRelativePath(
@@ -122,6 +176,13 @@ export function useWorkspaceFileTreeSession(options: {
     if (!relativePath) {
       return;
     }
+    const selectionKey = JSON.stringify([
+      conversationId,
+      taskAgentSelectTrigger,
+      relativePath,
+    ]);
+    if (handledTaskResultRef.current === selectionKey) return;
+    const selectionEpoch = selectionEpochRef.current;
     const parentPath = parentDirectory(relativePath);
     const trigger = taskAgentSelectTrigger;
     // 搜索还没返回前就标上父目录，自动选中会等到这一层加载完
@@ -132,13 +193,18 @@ export function useWorkspaceFileTreeSession(options: {
       };
     }
     let cancelled = false;
+    const isCurrent = () =>
+      !cancelled &&
+      selectionEpochRef.current === selectionEpoch &&
+      ownerRef.current.active &&
+      ownerRef.current.conversationId === conversationId;
     void (async () => {
       try {
         const result = await apiSearchFiles({
           cId: Number(conversationId),
           kw: workspaceSearchKeyword(relativePath),
         });
-        if (cancelled || result.code !== SUCCESS_CODE) {
+        if (!isCurrent() || result.code !== SUCCESS_CODE) {
           return;
         }
         const hit = findSearchFileByRelativePath(
@@ -159,7 +225,7 @@ export function useWorkspaceFileTreeSession(options: {
         if (directoryPath) {
           await loadDirectoryRef.current(directoryPath);
         }
-        if (cancelled) {
+        if (!isCurrent()) {
           return;
         }
         // fallbackNode 用搜索结果直接打开，不必等该节点出现在树里
@@ -168,18 +234,23 @@ export function useWorkspaceFileTreeSession(options: {
           selectFolder: node.type === 'folder',
         });
       } catch (error) {
-        console.error('搜索任务结果文件失败', error);
+        if (isCurrent()) console.error('搜索任务结果文件失败', error);
       } finally {
         // 只清掉这一次点击的标记，避免后一次点击被前一次的结束清掉
-        if (openingTaskResultRef.current?.trigger === Number(trigger)) {
-          openingTaskResultRef.current = null;
+        if (isCurrent()) {
+          handledTaskResultRef.current = selectionKey;
+          if (openingTaskResultRef.current?.trigger === Number(trigger)) {
+            openingTaskResultRef.current = null;
+          }
         }
       }
     })();
     return () => {
       cancelled = true;
+      if (openingTaskResultRef.current?.trigger === Number(trigger))
+        openingTaskResultRef.current = null;
     };
-  }, [conversationId, taskAgentSelectTrigger]);
+  }, [conversationId, taskAgentSelectTrigger, active]);
 
   /** 已加载目录的相对路径换成树节点 id，供展开箭头判断这一层是否还要请求 */
   const loadedFolderIds = useMemo(

@@ -17,6 +17,10 @@ import {
   markLangUserSet,
   setCurrentLang,
 } from '@/services/i18nRuntime';
+import type {
+  HostCommand,
+  OpenConversationCommand,
+} from '@/types/interfaces/hostBridge';
 import { hostBridge } from '@/utils/hostBridge';
 import { handleComputerServiceStatePayload } from './computerServiceState';
 import { handleHostActivityPayload } from './hostVisibility';
@@ -32,6 +36,8 @@ export interface HostBridgeEventHandlers {
   /** 打开全局搜索（layout model 的 setOpenSearchModal(true)；壳应用菜单「文件 → 搜索」
    * 下发。可选：仅挂了 SidebarSearchModal 的单栏布局注入，经典布局无实体不注入。 */
   openSearch?: () => void;
+  /** 打开指定会话（进入伙伴页对应群组/私信/会话；系统通知点击下发）。 */
+  openConversation?: (target: OpenConversationCommand) => void;
 }
 
 /** 最近一次注入的 handlers（handleHostCommand 闭包读取，保证读到最新）。 */
@@ -84,6 +90,11 @@ function handleHostCommand(payload: HostCommand): void {
       // 壳设置切语言（bug 2428）：应用语种+标记显式选择+尽力持久化到账号；
       // 壳随后重载本 webview 全量渲染新语种，持久化失败不阻断本地切换
       handleSetLangPayload(payload.lang);
+      break;
+    case 'open-conversation':
+      if (typeof payload.convId === 'string' && payload.convId.trim()) {
+        currentHandlers?.openConversation?.(payload);
+      }
       break;
     default:
       console.warn(

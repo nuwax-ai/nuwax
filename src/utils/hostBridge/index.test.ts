@@ -42,6 +42,17 @@ describe('hostBridge（统一对外接入层）', () => {
     host: { getProduct: () => 'nuwax' },
   });
 
+  it('updater 状态订阅透传注销函数，旧宿主缺失订阅能力时安全降级', () => {
+    const dispose = vi.fn();
+    const onStateChange = vi.fn(() => dispose);
+    const listener = vi.fn();
+    (window as any).NuwaClawBridge = { updater: { onStateChange } };
+    expect(hostBridge.updater.onStateChange(listener)).toBe(dispose);
+    expect(onStateChange).toHaveBeenCalledWith(listener);
+    (window as any).NuwaClawBridge = { updater: {} };
+    expect(() => hostBridge.updater.onStateChange(listener)()).not.toThrow();
+  });
+
   describe('localFiles.getApi', () => {
     it('只透传真实商业宿主的文件能力，旧宿主和社区宿主降级', () => {
       const fileApi = { getCapabilities: vi.fn() };
@@ -208,6 +219,22 @@ describe('hostBridge（统一对外接入层）', () => {
   });
 
   describe('native.openWindow（新开独立窗口）', () => {
+    it('marks ordinary external pages while preserving an explicit payment purpose', async () => {
+      const openWindow = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openWindow } };
+      await native.openWindow('https://outside.example/docs');
+      expect(openWindow).toHaveBeenLastCalledWith(
+        'https://outside.example/docs',
+        { purpose: 'page' },
+      );
+      await native.openWindow('https://cashier.example/pay', {
+        purpose: 'payment',
+      });
+      expect(openWindow).toHaveBeenLastCalledWith(
+        'https://cashier.example/pay',
+        { purpose: 'payment' },
+      );
+    });
     it('桥返回 success → 透传', async () => {
       const openWindow = vi.fn().mockResolvedValue({ success: true });
       (window as any).NuwaClawBridge = { native: { openWindow } };

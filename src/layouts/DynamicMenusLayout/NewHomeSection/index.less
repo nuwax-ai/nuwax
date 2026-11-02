@@ -72,15 +72,11 @@
     // (layout-bg-secondary=#F2F2F2)浅一档，列表顶部会显出一条浅色带
     background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
 
-    // 任务头：原 margin 6px + padding 2px 并入
-    &.task-section-tabs {
-      top: 0;
+    // 任务独占分组时沿用首个标题的高度和顶距；项目标题可见时才下移吸顶。
+    &.task-section-tabs-with-project {
+      top: @projectSectionHeaderHeight;
       height: 28px;
       padding-top: 8px;
-
-      &.task-section-tabs-with-project {
-        top: @projectSectionHeaderHeight;
-      }
     }
   }
 

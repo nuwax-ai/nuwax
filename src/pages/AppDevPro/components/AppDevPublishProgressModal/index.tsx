@@ -5,6 +5,7 @@ import {
   CheckCircleFilled,
   CloseCircleFilled,
   CopyOutlined,
+  InfoCircleFilled,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Button, Collapse, Modal, Steps, Tag } from 'antd';
@@ -58,6 +59,10 @@ export interface AppDevPublishProgressModalProps {
   stopDeployTitle?: string;
   /** 停止部署确认内容 */
   stopDeployContent?: string;
+  /** 本次部署跳过了 prod/start（由他处发起），不提供「停止部署」入口 */
+  disableStopDeploy?: boolean;
+  /** 进行中允许关闭：部署由他处发起时，用户可以收起弹窗，页面预览自行恢复 */
+  allowCloseWhileRunning?: boolean;
   /** 关闭弹窗 */
   onClose: () => void;
   /** 弹窗标题 */
@@ -134,7 +139,8 @@ const getStepsStatus = (
     return 'finish';
   }
   if (phase === 'cancelled') {
-    return 'error';
+    // 并发部署挤掉本窗口：中性提示，不再标红失败（NW-287）
+    return 'wait';
   }
   return 'process';
 };
@@ -191,23 +197,31 @@ const getServiceStatusLabel = (
 };
 
 /**
- * 步骤下方的检测状态：进行中 / 成功 / 失败。
+ * 步骤下方的检测状态：进行中 / 成功 / 失败 / 已取消（中性，非失败）。
  *
  * @param props.kind 状态
  * @param props.text 文案
  * @returns 状态行
  */
 const StepStatusLine: React.FC<{
-  kind: 'process' | 'finish' | 'error';
+  kind: 'process' | 'finish' | 'error' | 'cancel';
   text: string;
 }> = ({ kind, text }) => (
-  <div className={cx(styles.phaseText)}>
+  <div
+    className={cx(
+      styles.phaseText,
+      kind === 'cancel' && styles.cancelPhaseText,
+    )}
+  >
     {kind === 'process' ? <LoadingOutlined /> : null}
     {kind === 'finish' ? (
       <CheckCircleFilled className={cx(styles.successIcon)} />
     ) : null}
     {kind === 'error' ? (
       <CloseCircleFilled className={cx(styles.errorIcon)} />
+    ) : null}
+    {kind === 'cancel' ? (
+      <InfoCircleFilled className={cx(styles.cancelIcon)} />
     ) : null}
     {text}
   </div>
@@ -322,6 +336,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   onStopDeploy,
   stopDeployTitle,
   stopDeployContent,
+  disableStopDeploy = false,
+  allowCloseWhileRunning = false,
   onClose,
   title,
   showSteps = true,
@@ -345,8 +361,10 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'starting' ||
     phase === 'building' ||
     phase === 'checkingDeployable';
-  /** 部署服务阶段可停止生产部署 */
-  const canStopDeploy = phase === 'deploying' || phase === 'checkingReadiness';
+  /** 部署服务阶段可停止生产部署；本页签跳过 start 时部署由他处发起，不给停止入口 */
+  const canStopDeploy =
+    (phase === 'deploying' || phase === 'checkingReadiness') &&
+    !disableStopDeploy;
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -444,11 +462,16 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       : failedStage === 'check'
       ? dict('PC.Pages.AppDevPro.checkDeployableFailed')
       : dict('PC.Pages.AppDevPro.buildStatusFailed'));
+  /** 并发部署挤掉本窗口属正常业务流，中性文案而非失败文案（NW-287） */
   const cancelText =
-    cancelledText || dict('PC.Pages.AppDevPro.publishCancelled');
+    cancelledText ||
+    dict('PC.Pages.AppDevPro.publishCancelledByConcurrentDeploy');
 
   /** 各步骤自己的状态行，挂在对应步骤标题下，不放步骤条下方总览 */
-  const buildStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const buildStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'starting'
       ? {
           kind: 'process',
@@ -461,7 +484,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
         }
       : isTerminalPhase && failedStage === 'build'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.buildStatusOk') };
@@ -470,12 +493,15 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
    * 检测可部署：轮询中 / 本步失败 / 本步取消。
    * 已进入部署则视为检测通过。
    */
-  const checkStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const checkStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'checkingDeployable'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.checkingDeployable') }
       : isTerminalPhase && failedStage === 'check'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.checkDeployableOk') };
@@ -484,14 +510,17 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
    * 部署服务：prod/start 进行中 / 本步失败 / 本步取消。
    * 部署成功后视为本步完成。
    */
-  const startStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
+  const startStatus: {
+    kind: 'process' | 'finish' | 'error' | 'cancel';
+    text: string;
+  } =
     phase === 'deploying'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.deploying') }
       : phase === 'checkingReadiness'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.previewChecking') }
       : isTerminalPhase && failedStage === 'deploy'
       ? {
-          kind: 'error',
+          kind: phase === 'cancelled' ? 'cancel' : 'error',
           text: phase === 'cancelled' ? cancelText : failText,
         }
       : {
@@ -559,7 +588,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     );
   };
 
-  /** 进行中点关闭：构建阶段取消任务；部署阶段停止部署；否则直接关弹窗 */
+  /** 进行中点关闭：构建阶段取消任务；部署阶段停止部署；他处部署进行中则直接收起弹窗 */
   const handleCancelModal = () => {
     if (canCancelTask) {
       handleRequestCancel();
@@ -569,7 +598,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       handleRequestStopDeploy();
       return;
     }
-    if (running) {
+    if (running && !allowCloseWhileRunning) {
       return;
     }
     onClose();
@@ -580,7 +609,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       title={title || dict('PC.Pages.AppDevPro.deployTitle')}
       open={open}
       onCancel={handleCancelModal}
-      maskClosable={!running}
+      maskClosable={!running || allowCloseWhileRunning}
       destroyOnHidden
       width={720}
       footer={
@@ -611,7 +640,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
                 key="close"
                 type="primary"
                 onClick={onClose}
-                disabled={running}
+                disabled={running && !allowCloseWhileRunning}
               >
                 {dict('PC.Pages.AppDevPro.close')}
               </Button>,

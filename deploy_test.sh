@@ -9,7 +9,8 @@
 #   1. 预检：主仓/子仓无文件改动、无未解决冲突；子模块版本偏差自动对齐；fetch 双远端
 #   2. 本地 dev 汇合 origin/dev 与 gitlab/dev（只在本地，不推远端 dev）
 #   3. 本地 test 汇合 gitlab/test 与 origin/test，再合入 dev
-#      机器产物（dist/、version.ts、adapter.patch）冲突自动消化；源码冲突打印清单后回滚退出
+#      机器产物（dist/、version.ts、adapter.patch）冲突自动消化
+#      微应用 pin/gitlink 不一致时对齐子模块远端最新；其它源码冲突打印清单后回滚退出
 #      子模块升级到远端 main 最新，预检适配后同步并提交 gitlink/adapter.pin
 #   4. test:conversation 质量门：源码与已部署的 gitlab/test 相同则跳过；同一提交成功过不重跑
 #   5. 生产构建（M 端产物取本地 nuwax-mobile 检出的 origin 远端）→ 提交 dist
@@ -17,6 +18,7 @@
 #
 # 决策（2026-10-14；子模块规则于 2026-10-15 按用户要求调整）：
 #   - 质量门默认开启（实测约 20 秒，相对 3-4 分钟构建可忽略），GATE=0 紧急绕过
+#     失败若全是用例超时，按负载抖动重试一次（GATE_JITTER_RETRIES / GATE_JITTER_BACKOFF）
 #   - 自动升级子模块到远端最新；仅检出版本偏差不拦提测，源码改动与适配冲突仍停止
 #   - 不推远端 dev；两个远端 dev 互不包含时打印提醒
 #

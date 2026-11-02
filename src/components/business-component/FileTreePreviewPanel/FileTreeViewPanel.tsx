@@ -1,5 +1,9 @@
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
-import debounce from 'lodash/debounce';
+import {
+  getLocalFilesContextKey,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
+import { createFileContentSaver } from '@/utils/fileContentSaver';
 import {
   forwardRef,
   useCallback,
@@ -71,6 +75,16 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 保存文件的回调函数
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
+    useLocalFilesRevision();
+    const fileSourceKey = getLocalFilesContextKey(props.targetId);
+    const saveScope = JSON.stringify([
+      props.targetId,
+      agentSandboxId,
+      props.staticFileBasePath,
+      fileSourceKey,
+    ]);
+    const saveScopeRef = useRef(saveScope);
+    saveScopeRef.current = saveScope;
     /** 刷新 Git 列表 */
     const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -142,26 +156,42 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /** 编辑器内容变更：防抖实时保存单个文件（与 Chat 页 useChatFiles 一致） */
     const debouncedSaveFileContent = useMemo(
       () =>
-        debounce(
+        createFileContentSaver(
           async (
             fileId: string,
             content: string,
             originalFileContent: string,
           ): Promise<boolean> => {
-            if (!onSaveFilesRef.current) {
+            if (
+              saveScopeRef.current !== saveScope ||
+              getLocalFilesContextKey(props.targetId) !== fileSourceKey ||
+              !onSaveFilesRef.current
+            ) {
               return false;
             }
             const result = await onSaveFilesRef.current([
               { fileId, fileContent: content, originalFileContent },
             ]);
-            if (result) {
-              await refreshGitListRef.current?.();
+            if (
+              result &&
+              saveScopeRef.current === saveScope &&
+              getLocalFilesContextKey(props.targetId) === fileSourceKey
+            ) {
+              // 写入已经成功，附属的 Git 刷新不能使编辑器误报保存失败。
+              try {
+                await refreshGitListRef.current?.();
+              } catch (error) {
+                console.error('刷新文件变更状态失败', error);
+              }
             }
-            return result ?? false;
+            return (
+              (result ?? false) &&
+              getLocalFilesContextKey(props.targetId) === fileSourceKey
+            );
           },
           500,
         ),
-      [],
+      [saveScope, fileSourceKey, props.targetId],
     );
 
     useEffect(
@@ -204,11 +234,12 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: readOnly
         ? undefined
-        : async (fileId, content, originalFileContent) => {
+        : async (fileId, content, originalFileContent, options) => {
             const result = await debouncedSaveFileContent(
               fileId,
               content,
               originalFileContent,
+              options,
             );
             return result ?? false;
           },
@@ -242,7 +273,6 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           await fileView.tree.handleRefreshFileList();
         },
         onCommitSuccess: async () => {
-          await fileView.preview.saveFiles();
           await fileView.refreshGitList();
           await gitSourceControl?.callbacks?.onCommitSuccess?.();
         },

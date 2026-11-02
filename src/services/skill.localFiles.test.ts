@@ -60,6 +60,20 @@ describe('local text preview fetch', () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
     expect(mocks.auth).not.toHaveBeenCalled();
   });
+  it.each([
+    ['not-found', 'missing'],
+    ['permission-denied', 'error'],
+    ['expired', 'error'],
+  ])('maps native %s to %s without a backend request', async (code, status) => {
+    mocks.preview.mockRejectedValueOnce(
+      Object.assign(new Error(code), { name: 'LocalFileAccessError', code }),
+    );
+    expect(await fetchContentOutcome('/api/computer/static/7/a.md')).toEqual({
+      status,
+    });
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(mocks.auth).not.toHaveBeenCalled();
+  });
   it('preserves text size budgets and closes an oversized body', async () => {
     mocks.fetch.mockResolvedValue(
       new Response('huge', {

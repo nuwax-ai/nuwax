@@ -22,7 +22,12 @@ import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
 import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
-import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
+import {
+  isVerifyCodePageReload,
+  navigateAfterLogin,
+  replaceLoginStep,
+} from '@/utils/loginNavigation';
+import { useRequest } from 'ahooks';
 import { Button, Input, InputRef, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -32,16 +37,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  history,
-  useLocation,
-  useModel,
-  useRequest,
-  useSearchParams,
-} from 'umi';
+import { history, useLocation, useModel, useSearchParams } from 'umi';
 import styles from './index.less';
+import {
+  clearVerifyCodeSent,
+  getVerifyCodeCooldownRemaining,
+  markVerifyCodeSent,
+} from './sendCooldown';
 
 const cx = classNames.bind(styles);
+
+const loginWithCode = async (params: CodeLogin) =>
+  (await apiLoginCode(params)).data;
 
 const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
@@ -51,10 +58,10 @@ const VerifyCode: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
-  // 覆盖校验接口和登录后的同步过程，不跟 useRequest 的 loading 一起提前结束
-  const [loginLoading, setLoginLoading] = useState(false);
   const inputRef = useRef<InputRef | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  /** 本轮点击隐藏按钮的 performance.now()，用来等这轮验证码资源结束再 send */
+  const captchaRoundAtRef = useRef(0);
   const {
     phoneOrEmail,
     areaCode,
@@ -89,6 +96,8 @@ const VerifyCode: React.FC = () => {
   const [resendBusy, setResendBusy] = useState<boolean>(false);
   const resendBusyRef = useRef<boolean>(false);
   const resendBusyTimerRef = useRef<number | null>(null);
+  // 刷新后自动拉起验证码时，保证 init 与点击间隔 ≥2s，等 SDK 资源预加载完
+  const captchaDelayTimerRef = useRef<number | null>(null);
 
   const releaseResendBusy = useCallback(() => {
     if (resendBusyTimerRef.current !== null) {
@@ -120,22 +129,20 @@ const VerifyCode: React.FC = () => {
     });
   };
 
-  // 校验失败后清空已输入的验证码，回到第一格可继续输入
+  // 失败后清空旧码并回到输入框，保留当前发布线的可重试行为。
   const resetCodeInput = () => {
     setCodeString('');
     setErrorString('');
     window.setTimeout(() => {
-      inputRef.current?.focus({
-        preventScroll: true,
-        cursor: 'end',
-      });
+      inputRef.current?.focus({ preventScroll: true, cursor: 'end' });
     }, 0);
   };
 
   // 验证码登录
-  const { run: runLoginCode } = useRequest(apiLoginCode, {
+  // 使用会消费 run 拒绝的版本；旧 Umi hook 的防抖分支会额外泄漏一个内部拒绝。
+  const { run: runLoginCode } = useRequest(loginWithCode, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
       const {
         resetPass,
@@ -152,11 +159,10 @@ const VerifyCode: React.FC = () => {
               : '客户端登录会话同步失败，请升级客户端后重试',
           );
           resetCodeInput();
-          setLoginLoading(false);
           return;
         }
         localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phone);
+        localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {
           const latestUserInfo = await UserService.refreshUserInfo();
           await syncLangFromUserInfo(latestUserInfo);
@@ -169,8 +175,6 @@ const VerifyCode: React.FC = () => {
         // 登录成功后强制刷新菜单数据（可能切换了账号）
         await loadMenus(true);
         // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
-        setLoginLoading(false);
-        // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
         if (!resetPass) {
           history.push('/set-password');
         } else {
@@ -181,20 +185,23 @@ const VerifyCode: React.FC = () => {
             navigateToAuthUrl,
           );
         }
+      } catch (error) {
+        // useRequest 不等待异步 onSuccess；收尾失败也必须消费拒绝并允许重试。
+        console.error('[VerifyCode] Login finalization failed:', error);
+        resetCodeInput();
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
       } finally {
         // 成功路径导航离开本页；提前 return 的失败路径在此恢复提交能力
         settleLoginPending();
       }
     },
     onError: (error: any) => {
-      resetCodeInput();
-      setLoginLoading(false);
       settleLoginPending();
+      resetCodeInput();
       // 验证码失效（后端原始报错如「校验参数异常」）已由请求层转成可懂 toast；
       // 页面清空已输入的码并放开重发冷却，引导重新获取后重试
       const rawMessage = error?.info?.message ?? error?.message;
       if (isLoginCodeInvalidError(rawMessage)) {
-        setCodeString('');
         setErrorString(dict('PC.Pages.VerifyCode.codeInvalidTip'));
         onClearTimer();
         setCountDown(0);
@@ -250,7 +257,6 @@ const VerifyCode: React.FC = () => {
       ) {
         // 使用setTimeout确保状态更新完成后再执行登录
         setTimeout(() => {
-          setLoginLoading(true);
           submitLoginCode(_codeString);
         }, 100);
       }
@@ -260,6 +266,15 @@ const VerifyCode: React.FC = () => {
 
   // 发送验证码
   const handleSendCode = (captchaVerifyParam: string) => {
+    const account = phoneOrEmail || '';
+    // 刷新、从登录页反复进入、倒计时被清掉后连点，都走这里
+    const remainSec = Math.ceil(getVerifyCodeCooldownRemaining(account) / 1000);
+    if (remainSec > 0) {
+      handleCount(remainSec);
+      releaseResendBusy();
+      return Promise.resolve();
+    }
+    markVerifyCodeSent(account);
     const imageCaptcha = initialCaptchaUsedRef.current
       ? pendingCaptchaRef.current
       : { captchaId, captchaCode };
@@ -280,6 +295,7 @@ const VerifyCode: React.FC = () => {
     return runSendCode(_params)
       .catch((error: unknown) => {
         // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
+        clearVerifyCodeSent(account);
         onClearTimer();
         setCountDown(0);
         resendCaptcha.refresh();
@@ -309,6 +325,27 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    // SDK 初始化时会自动回调一次（无痕令牌）。那时资源还没好，直接拿去 send 会报校验参数异常。
+    // 只有页面自己点了隐藏按钮之后的那一次，才是可以发短信的验证结果。
+    const armedAt = captchaRoundAtRef.current;
+    if (!armedAt) {
+      return { captchaResult: true, bizResult: true };
+    }
+    captchaRoundAtRef.current = 0;
+    // 本轮 click 后参数可能立刻交出来，再等一小段让 captcha-open 落稳
+    const settleRemain = 500 - (performance.now() - armedAt);
+    if (settleRemain > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, settleRemain);
+      });
+    }
+    if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) {
+      const remainSec = Math.ceil(
+        getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+      );
+      handleCount(remainSec);
+      return { captchaResult: true, bizResult: true };
+    }
     try {
       await handleSendCode(captchaVerifyParam);
     } catch {
@@ -319,10 +356,22 @@ const VerifyCode: React.FC = () => {
 
   useEffect(() => {
     handleClick();
-    // 发送验证码
+    // 刷新验证码页时，登录页带来的阿里云参数和图形验证码都已在首次发码时核销
+    const reloaded = isVerifyCodePageReload();
+    if (reloaded) {
+      initialCaptchaUsedRef.current = true;
+    }
 
-    if (!isNeedAliyunCaptcha()) {
-      //不需要阿里云验证码，直接执行登录/验证码逻辑
+    const remainSec = Math.ceil(
+      getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+    );
+    if (remainSec > 0) {
+      // 冷却未结束：接着上次的倒计时，不再发码
+      handleCount(remainSec);
+    } else if (!reloaded) {
+      // 登录页刚完成的阿里云验证码，本页不必再等 SDK 资源，直接发短信
+      handlerSuccess(captchaVerifyParam || '');
+    } else if (!isNeedAliyunCaptcha() && !needImageCaptcha) {
       handlerSuccess();
     }
 
@@ -332,16 +381,42 @@ const VerifyCode: React.FC = () => {
     hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
-  const handleReady = () => {
-    if (isNeedAliyunCaptcha()) {
-      // document.getElementById(elementId)?.click();
-      handlerSuccess(captchaVerifyParam);
+  /**
+   * 点隐藏按钮启动一轮阿里云验证。
+   * onReady 已经等到 SDK success（资源加载完）。这里再保证距离 init 至少 2 秒：
+   * 阿里云会把过短间隔的验证参数判为脚本请求，后端表现为校验参数异常。
+   */
+  const triggerCaptchaPopup = () => {
+    const now = Date.now();
+    const initAt = window.__captchaInitAt || 0;
+    const gap = now - initAt;
+    if (initAt > 0 && gap < 2000) {
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+      }
+      captchaDelayTimerRef.current = window.setTimeout(() => {
+        captchaDelayTimerRef.current = null;
+        captchaRoundAtRef.current = performance.now();
+        const captchaBtn = document.getElementById(elementId);
+        if (captchaBtn) {
+          captchaBtn.click();
+        } else {
+          captchaRef.current?.show?.();
+        }
+      }, 2000 - gap);
+      return;
+    }
+    captchaRoundAtRef.current = performance.now();
+    const captchaBtn = document.getElementById(elementId);
+    if (captchaBtn) {
+      captchaBtn.click();
+    } else {
+      captchaRef.current?.show?.();
     }
   };
 
   const handleVerify = () => {
     if (codeString?.length !== VERIFICATION_CODE_LEN) return;
-    setLoginLoading(true);
     submitLoginCode(codeString);
   };
 
@@ -358,21 +433,34 @@ const VerifyCode: React.FC = () => {
     // 如果需要阿里云验证码，则触发隐藏按钮 click（官方姿势）唤起验证码，
     // 按钮不在 DOM 时以 show() 兜底，与登录页 triggerCaptchaPopup 行为对齐
     if (needAliyunCaptcha) {
-      const captchaBtn = document.getElementById(elementId);
-      if (captchaBtn) {
-        captchaBtn.click();
-      } else {
-        captchaRef.current?.show?.();
+      const remainSec = Math.ceil(
+        getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
+      );
+      if (remainSec > 0) {
+        handleCount(remainSec);
+        releaseResendBusy();
+        return;
       }
+      triggerCaptchaPopup();
     } else {
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       handlerSuccess();
     }
   };
 
+  const handleReady = () => {
+    // 只处理刷新：等 SDK success（资源加载完）之后再开新的一轮验证。
+    // 从登录页进入的发码在 mount 时已经用上一页的参数完成。
+    if (!isNeedAliyunCaptcha() || !isVerifyCodePageReload()) return;
+    if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) return;
+    if (!needImageCaptcha) {
+      handleSendCodeInit();
+    }
+  };
+
   const handleClickReSendCode = useCallback(() => {
     // 冷却期内与重发流程进行中（阿里云滑窗/发码请求）都禁止再次触发，防连点重复发码
-    if (countDown > 0 || resendBusyRef.current) {
+    if (countDown > 0 || resendBusyRef.current || sendLoading) {
       return;
     }
     const imageCaptcha = resendCaptcha.take();
@@ -380,7 +468,7 @@ const VerifyCode: React.FC = () => {
     pendingCaptchaRef.current = imageCaptcha;
     acquireResendBusy();
     handleSendCodeInit();
-  }, [tenantConfigInfo, countDown, acquireResendBusy]);
+  }, [tenantConfigInfo, countDown, sendLoading, acquireResendBusy]);
 
   const handleEnter = useCallback(
     (e: KeyboardEvent): void => {
@@ -408,6 +496,10 @@ const VerifyCode: React.FC = () => {
       if (resendBusyTimerRef.current !== null) {
         window.clearTimeout(resendBusyTimerRef.current);
         resendBusyTimerRef.current = null;
+      }
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
       }
     };
   }, []);
@@ -485,7 +577,9 @@ const VerifyCode: React.FC = () => {
             <span
               className={cx(
                 styles['resend-btn'],
-                countDown > 0 || resendBusy ? null : styles.active,
+                countDown > 0 || resendBusy || sendLoading
+                  ? null
+                  : styles.active,
                 'cursor-pointer',
               )}
               onClick={handleClickReSendCode}
@@ -499,12 +593,6 @@ const VerifyCode: React.FC = () => {
               <ImageCaptcha {...resendCaptcha.inputProps} />
             </div>
           )}
-          {loginLoading ? (
-            <div className={styles['login-status']} role="status">
-              <Spin size="small" />
-              <span>{dict('PC.Pages.VerifyCode.loggingIn')}</span>
-            </div>
-          ) : null}
         </div>
         <Input
           ref={inputRef}

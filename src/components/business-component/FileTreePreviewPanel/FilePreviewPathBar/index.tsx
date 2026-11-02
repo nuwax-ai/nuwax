@@ -1,8 +1,18 @@
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type { FileSaveState } from '@/types/interfaces/fileTree';
 import { isPreviewableFile } from '@/utils/appDevUtils';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { isMarkdownFile } from '@/utils/common';
+import { isBareOpenUiFileName, isOpenUiFileName } from '@/utils/openUiArtifact';
+import {
+  CheckCircleOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+} from '@ant-design/icons';
+import { Button, ConfigProvider, Segmented, Tooltip, message } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { getFilePreviewPathSegments } from './getFilePreviewPathSegments';
@@ -15,7 +25,29 @@ export interface FilePreviewPathBarProps {
   fileNode?: FileNode | null;
   /** 重新拉取当前文件内容；不支持预览的文件不展示刷新按钮 */
   onRefresh?: () => void | Promise<void>;
+  /** 当前是预览还是代码；html / md / .openui 才展示切换 */
+  viewFileType?: 'preview' | 'code';
+  /** 切换预览与代码 */
+  onViewFileTypeChange?: (type: 'preview' | 'code') => void;
+  saveState?: FileSaveState;
+  onSave?: () => Promise<boolean>;
   className?: string;
+}
+
+/**
+ * 是否支持「预览 / 代码」双模式切换。
+ * html、markdown、`.openui.json` 以及内容可嗅探的裸 `.openui` 走同一套切换。
+ */
+function supportsPreviewCodeToggle(fileName?: string): boolean {
+  if (!fileName) {
+    return false;
+  }
+  return (
+    fileName.includes('.htm') ||
+    isMarkdownFile(fileName) ||
+    isOpenUiFileName(fileName) ||
+    isBareOpenUiFileName(fileName)
+  );
 }
 
 /** 软链接、压缩包等无法预览的文件不提供刷新 */
@@ -36,6 +68,10 @@ function canRefreshFile(fileNode?: FileNode | null): boolean {
 const FilePreviewPathBar: React.FC<FilePreviewPathBarProps> = ({
   fileNode,
   onRefresh,
+  viewFileType = 'preview',
+  onViewFileTypeChange,
+  saveState,
+  onSave,
   className,
 }) => {
   const [refreshing, setRefreshing] = useState(false);
@@ -44,6 +80,26 @@ const FilePreviewPathBar: React.FC<FilePreviewPathBarProps> = ({
     [fileNode],
   );
   const showRefresh = Boolean(onRefresh) && canRefreshFile(fileNode);
+  const saveLabel = saveState
+    ? dict(`PC.Components.FilePreview.saveState.${saveState}`)
+    : '';
+  const saveShortcut = /mac/i.test(navigator.platform) ? '⌘S' : 'Ctrl+S';
+  const SaveStatusIcon =
+    saveState === 'saving'
+      ? LoadingOutlined
+      : saveState === 'error'
+      ? ExclamationCircleOutlined
+      : saveState === 'dirty'
+      ? EditOutlined
+      : CheckCircleOutlined;
+  // 打开可切换文件后，切换入口放在刷新按钮左侧，不再单独占 Header 一行
+  const showViewToggle =
+    Boolean(onViewFileTypeChange) &&
+    Boolean(
+      fileNode?.fileProxyUrl ||
+        (fileNode?.content !== undefined && fileNode?.content !== null),
+    ) &&
+    supportsPreviewCodeToggle(fileNode?.name);
 
   if (segments.length === 0) {
     return null;
@@ -69,14 +125,95 @@ const FilePreviewPathBar: React.FC<FilePreviewPathBarProps> = ({
       <span className={cx(styles.pathLabel)} title={label}>
         {label}
       </span>
+      {saveState && (
+        <Tooltip title={saveLabel} trigger={['hover', 'focus']}>
+          <span
+            className={cx(styles.saveStatus)}
+            data-state={saveState}
+            role="status"
+            aria-label={saveLabel}
+            tabIndex={0}
+          >
+            <SaveStatusIcon spin={saveState === 'saving'} />
+            <span className={styles.saveStatusText}>{saveLabel}</span>
+          </span>
+        </Tooltip>
+      )}
+      {saveState && onSave && (
+        <Tooltip
+          title={`${dict(
+            'PC.Components.FilePreview.saveFile',
+          )} (${saveShortcut})`}
+          trigger={['hover', 'focus']}
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={<SaveOutlined />}
+            aria-label={dict('PC.Components.FilePreview.saveFile')}
+            disabled={saveState === 'saved'}
+            loading={saveState === 'saving'}
+            onClick={() => {
+              void onSave().catch(() =>
+                message.error(
+                  dict('PC.Components.FilePreview.saveState.error'),
+                ),
+              );
+            }}
+          />
+        </Tooltip>
+      )}
+      {showViewToggle && (
+        <ConfigProvider
+          theme={{
+            components: {
+              Segmented: {
+                itemSelectedBg: '#fff',
+                itemSelectedColor: '#5147FF',
+                itemColor: 'rgba(0, 0, 0, 0.45)',
+                itemHoverColor: 'rgba(0, 0, 0, 0.65)',
+                trackBg: 'rgba(12, 20, 102, 0.04)',
+                trackPadding: 2,
+              },
+            },
+          }}
+        >
+          <Segmented
+            className={cx(styles.viewToggle)}
+            value={viewFileType}
+            onChange={(value) => {
+              if (value === 'preview' || value === 'code') {
+                onViewFileTypeChange?.(value);
+              }
+            }}
+            options={[
+              {
+                label: dict('PC.Components.FilePathHeader.preview'),
+                value: 'preview',
+              },
+              {
+                label: dict('PC.Components.FilePathHeader.code'),
+                value: 'code',
+              },
+            ]}
+          />
+        </ConfigProvider>
+      )}
       {showRefresh && (
-        <Tooltip title={dict('PC.Components.FilePreview.tooltipRefresh')}>
+        <Tooltip
+          title={
+            saveState && saveState !== 'saved'
+              ? dict('PC.Components.FilePreview.saveBeforeRefresh')
+              : dict('PC.Components.FilePreview.tooltipRefresh')
+          }
+          trigger={['hover', 'focus']}
+        >
           <Button
             type="text"
             size="small"
             className={cx(styles.refreshButton)}
             icon={<ReloadOutlined spin={refreshing} />}
-            disabled={refreshing}
+            disabled={refreshing || !!(saveState && saveState !== 'saved')}
             aria-label={dict('PC.Components.FilePreview.tooltipRefresh')}
             onClick={() => {
               void handleRefresh();

@@ -13,7 +13,7 @@
 | test:conversation 质量门 | **默认跑**；源码与已部署的 gitlab/test 相同则跳过；同一提交成功过不重跑；`GATE=0` 紧急绕过 | 默认跑（个人分支 + 组合 dev / test 各一道，同样有跳过与缓存） |
 | 子模块（repo-web / im） | **自动升级到远端 main 最新**，适配预检通过后提交 gitlink/pin，再过门和构建；子模块缺失或升级失败即停止（内部链 `MICRO_APP_REQUIRED=1`） | 步骤 2.5 自动升级到远端 main（`UPGRADE_MICRO_APPS=0` 关闭） |
 | M 端产物（dist/m） | 本地 nuwax-mobile 检出的 origin 远端（`MOBILE_BUILD_REPO` 可覆写） | 同左 |
-| 源码冲突 | 打印冲突清单 → 回滚 → 退出，不构建不推送 | 同左 |
+| 源码冲突 | 微应用 pin/gitlink 不一致时对齐子模块远端最新并继续；其它源码冲突打印清单 → 回滚 → 退出，不构建不推送 | 同左 |
 | 工作区不干净 | 仅子模块检出版本与登记不同自动对齐并继续；主仓/子仓文件改动或已暂存输入仍拒绝（需要隔离请走全链） | 自动转入独立 worktree |
 | 演练 | `DRY_RUN=1` | `DRY_RUN=1` |
 
@@ -58,6 +58,8 @@ bash scripts/deploy_sync_test.sh
 | dist 构建产物冲突 / version.ts 烤哈希冲突 | 机器产物自动消化（dist 清空重建 / version.ts 取本地侧） |
 | test 远端分叉 pull 撞冲突 | 自动按机器产物自愈提交合并 |
 | 微应用 gitlink/pin 配对撕裂（合并无感撕裂） | 自动以 gitlink 为准修齐 pin |
+| 合并时两侧微应用 pin / gitlink 不一致 | 不取 ours/theirs，fetch 子模块 `origin/<branch>` 最新提交并同时改 gitlink 与 adapter.pin；adapter 还有 pin 以外的字段冲突则仍回滚 |
+| test:conversation 失败全是「Test timed out」 | 等 15 秒重试一次（`GATE_JITTER_RETRIES`、`GATE_JITTER_BACKOFF` 可调）。断言失败不重试 |
 | 上次异常退出残留（index 幽灵 unmerged / worktree 占用分支） | 前置自动清理 |
 | 断点续跑 | 中途修完问题**直接重跑同一命令**，已过步骤自动跳过（质量门不重付） |
 | test 组合源码与已测 dev 不同 | 步骤 7.1 自动补过质量门（只改机器产物时不重复跑） |
@@ -73,7 +75,7 @@ npx vitest run tests/xxx.test.ts   # 用脚本打印的命令
 ```
 
 - **隔离复跑也挂** = 真回归。九成是「最近合入的接口契约变了没同步测试断言」（改端点/参数/鉴权方式）：对照失败输出里的期望值 vs 实际值，`git log -S '关键字'` 找到改契约的提交，把断言跟上新契约。
-- **隔离复跑通过** = 机器负载抖动，直接重跑脚本。
+- **隔离复跑通过** = 机器负载抖动。失败原因若全是用例超时，脚本会自动再跑一轮；仍失败再重跑本脚本。
 
 ### 2. 源码 merge 冲突
 

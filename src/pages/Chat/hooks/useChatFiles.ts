@@ -1,4 +1,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  getLocalFilesContextKey,
+  useLocalFilesRevision,
+} from '@/features/client-shell/localFileService';
 import { t } from '@/services/i18nRuntime';
 import {
   apiDownloadAllFiles,
@@ -12,14 +16,16 @@ import {
   StaticFileInfo,
 } from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
+import { createFileContentSaver } from '@/utils/fileContentSaver';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
 import { message } from 'antd';
-import debounce from 'lodash/debounce';
-import { useMemo, useRef, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 
 interface UseChatFilesProps {
   id?: number;
+  /** 导出默认文件名使用会话名；缺省由服务层生成带会话ID的名称。 */
+  conversationName?: string;
   fileTreeData: StaticFileInfo[] | null;
   handleRefreshFileList: (id: number, path?: string) => Promise<void>;
   /** 单文件实时保存成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
@@ -30,19 +36,31 @@ interface UseChatFilesProps {
 
 export const useChatFiles = ({
   id,
+  conversationName,
   fileTreeData,
   handleRefreshFileList,
   onSaveFileContentSuccessRef,
   onFileMutationSuccessRef,
 }: UseChatFilesProps) => {
+  useLocalFilesRevision();
+  const fileSourceKey = getLocalFilesContextKey(id);
   const fileTreeDataRef = useRef(fileTreeData);
   fileTreeDataRef.current = fileTreeData;
+  const conversationRef = useRef(id);
+  conversationRef.current = id;
 
   /** 文件树发生写操作后统一刷新 Git status */
   const notifyFileMutationSuccess = () => {
     const callback =
       onFileMutationSuccessRef?.current ?? onSaveFileContentSuccessRef?.current;
-    void callback?.();
+    // Git 刷新失败不改变已经落盘的保存回执。
+    try {
+      void Promise.resolve(callback?.()).catch((error) =>
+        console.error('刷新文件变更状态失败', error),
+      );
+    } catch (error) {
+      console.error('刷新文件变更状态失败', error);
+    }
   };
 
   const handleCreateFileNode = async (
@@ -64,6 +82,7 @@ export const useChatFiles = ({
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
     const newFile: UpdateFileInfo = {
+      localFile: fileNode.localFile,
       name: newPath,
       binary: false,
       // 文件大小是否超过限制
@@ -110,6 +129,7 @@ export const useChatFiles = ({
                 {
                   contents: '',
                   name: fileNode.id,
+                  localFile: fileNode.localFile,
                   operation: 'delete', // 操作类型
                   isDir: true,
                 },
@@ -128,6 +148,7 @@ export const useChatFiles = ({
               // 构造更新文件操作
               const updateFile: UpdateFileInfo = {
                 name: currentFile.name,
+                localFile: currentFile.localFile,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
                 isDir: currentFile.isDir,
@@ -233,13 +254,17 @@ export const useChatFiles = ({
   /** 编辑器内容变更：防抖实时保存单个文件到服务端 */
   const handleSaveFileContent = useMemo(
     () =>
-      debounce(
+      createFileContentSaver(
         async (
           fileId: string,
           content: string,
           originalFileContent: string,
         ): Promise<boolean> => {
-          if (!id) {
+          if (
+            !id ||
+            conversationRef.current !== id ||
+            getLocalFilesContextKey(id) !== fileSourceKey
+          ) {
             return false;
           }
           const updatedFilesList = updateFilesListContent(
@@ -254,14 +279,26 @@ export const useChatFiles = ({
             cId: id,
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code === SUCCESS_CODE) {
+          if (
+            code === SUCCESS_CODE &&
+            conversationRef.current === id &&
+            getLocalFilesContextKey(id) === fileSourceKey
+          ) {
             notifyFileMutationSuccess();
           }
-          return code === SUCCESS_CODE;
+          return (
+            code === SUCCESS_CODE &&
+            getLocalFilesContextKey(id) === fileSourceKey
+          );
         },
         500,
       ),
-    [id, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
+    [id, fileSourceKey, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
+  );
+
+  useEffect(
+    () => () => handleSaveFileContent.cancel(),
+    [handleSaveFileContent],
   );
 
   /**
@@ -316,7 +353,7 @@ export const useChatFiles = ({
       return;
     }
 
-    apiDownloadAllFiles(id);
+    await apiDownloadAllFiles(id, conversationName);
   };
 
   return {
