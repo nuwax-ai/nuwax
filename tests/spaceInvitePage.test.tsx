@@ -13,26 +13,22 @@ const mocks = vi.hoisted(() => ({
   code: 'abc',
   info: vi.fn(),
   join: vi.fn(),
-  spaces: vi.fn(),
+  open: vi.fn(),
   replace: vi.fn(),
-  setSpaceList: vi.fn(),
-  setCurrentSpaceInfo: vi.fn(),
 }));
 vi.mock('umi', () => ({
   useParams: () => ({ code: mocks.code }),
   history: { replace: mocks.replace },
-  useModel: () => ({
-    setSpaceList: mocks.setSpaceList,
-    setCurrentSpaceInfo: mocks.setCurrentSpaceInfo,
-  }),
 }));
-vi.mock('@/constants/home.constants', () => ({ SPACE_ID: 'SPACE_ID' }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@/services/spaceInvite', () => ({
   apiGetSpaceInviteInfo: mocks.info,
   apiJoinSpaceInvite: mocks.join,
 }));
-vi.mock('@/services/workspace', () => ({ apiSpaceList: mocks.spaces }));
+vi.mock('@/utils/spaceInvite', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/spaceInvite')>()),
+  openSpaceInviteConversation: mocks.open,
+}));
 vi.mock('@/pages/SpaceInvite/index.less', () => ({ default: {} }));
 
 const active = {
@@ -52,9 +48,6 @@ beforeEach(() => {
   mocks.code = 'abc';
   mocks.info.mockReset().mockResolvedValue(ok(active));
   mocks.join.mockReset().mockResolvedValue(ok(null));
-  mocks.spaces
-    .mockReset()
-    .mockResolvedValue(ok([{ id: 1140, name: '测试团队' }]));
 });
 afterEach(cleanup);
 
@@ -73,7 +66,7 @@ describe('邀请入团流程', () => {
     expect(mocks.join).not.toHaveBeenCalled();
   });
 
-  it('确认前不入团；快速重复点击只发一次请求，成功刷新空间列表', async () => {
+  it('登录后自动加入；重复点击不重复提交，成功直达邀请对应 IM 团队群', async () => {
     let resolveJoin!: (value: unknown) => void;
     mocks.join.mockReturnValue(
       new Promise((resolve) => {
@@ -82,31 +75,26 @@ describe('邀请入团流程', () => {
     );
     render(<SpaceInvite />);
     const button = await screen.findByRole('button', { name: key('join') });
-    expect(mocks.join).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.join).toHaveBeenCalledTimes(1));
     fireEvent.click(button);
     fireEvent.click(button);
     expect(mocks.join).toHaveBeenCalledTimes(1);
     await act(async () => resolveJoin(ok(null)));
     expect(await screen.findByText(key('joinedSuccess'))).toBeInTheDocument();
-    await waitFor(() =>
-      expect(mocks.setSpaceList).toHaveBeenCalledWith([
-        { id: 1140, name: '测试团队' },
-      ]),
-    );
-    expect(localStorage.getItem('SPACE_ID')).toBe('1140');
+    await waitFor(() => expect(mocks.open).toHaveBeenCalledWith(1140));
   });
 
-  it('失败可重试；空间列表刷新失败不撤销已成功的入团结果', async () => {
+  it('自动入团失败不跳错误群，重试成功后才打开 IM', async () => {
     mocks.join
       .mockRejectedValueOnce(new Error('network'))
       .mockResolvedValueOnce(ok(null));
-    mocks.spaces.mockRejectedValue(new Error('network'));
     render(<SpaceInvite />);
-    fireEvent.click(await screen.findByRole('button', { name: key('join') }));
     expect(await screen.findByText(key('joinFailed'))).toBeInTheDocument();
+    expect(mocks.open).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: key('join') }));
     expect(await screen.findByText(key('joinedSuccess'))).toBeInTheDocument();
     expect(mocks.join).toHaveBeenCalledTimes(2);
+    expect(mocks.open).toHaveBeenCalledWith(1140);
   });
 
   it.each(['Expired', 'Disabled'])('%s 邀请不显示加入操作', async (status) => {
@@ -127,6 +115,7 @@ describe('邀请入团流程', () => {
     render(<SpaceInvite />);
     expect(await screen.findByText(key('alreadyJoined'))).toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
+    expect(mocks.open).toHaveBeenCalledWith(1140);
   });
 
   it('入团时被作废则展示最新状态，不继续保留旧的加入按钮', async () => {
@@ -135,7 +124,6 @@ describe('邀请入团流程', () => {
       .mockResolvedValueOnce(ok({ status: 'Disabled', spaceId: null }));
     mocks.join.mockResolvedValue({ code: '5000', message: 'disabled' });
     render(<SpaceInvite />);
-    fireEvent.click(await screen.findByRole('button', { name: key('join') }));
     expect(await screen.findByText(key('disabledTitle'))).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: key('join') }),
@@ -152,12 +140,15 @@ describe('邀请入团流程', () => {
     );
     const view = render(<SpaceInvite />);
     mocks.code = 'new-code';
-    mocks.info.mockResolvedValue(ok({ ...active, spaceName: '新团队' }));
+    mocks.info.mockResolvedValue(
+      ok({ ...active, spaceId: 2222, spaceName: '新团队' }),
+    );
     view.rerender(<SpaceInvite />);
-    expect(await screen.findByText('新团队')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.open).toHaveBeenCalledWith(2222));
     await act(async () => resolveOld(ok(active)));
     expect(screen.queryByText('测试团队')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: key('join') }));
     await waitFor(() => expect(mocks.join).toHaveBeenCalledWith('new-code'));
+    expect(mocks.open).toHaveBeenCalledWith(2222);
+    expect(mocks.open).not.toHaveBeenCalledWith(1140);
   });
 });

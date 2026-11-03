@@ -409,7 +409,13 @@ export default function InviteMember({
                           <Tag
                             color={status === 'Active' ? 'green' : 'default'}
                           >
-                            {t(status)}
+                            {t(
+                              {
+                                Active: 'statusActive',
+                                Expired: 'statusExpired',
+                                Disabled: 'statusDisabled',
+                              }[status],
+                            )}
                           </Tag>
                         );
                       },
