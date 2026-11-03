@@ -37,6 +37,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceInvite.askForNew": "Ask the inviter for a new invitation link",
   "PC.Pages.SpaceInvite.joinedSuccess": "You joined the team",
   "PC.Pages.SpaceInvite.alreadyJoined": "You are already a member",
+  "PC.Pages.SpaceInvite.openChat": "Open team chat",
   "PC.Pages.SpaceInvite.openApp": "Open Nuwax",
   "PC.Pages.SpaceInvite.joinHint": "You are invited to join this team",
   "PC.Pages.SpaceInvite.inviter": "Invited by",
