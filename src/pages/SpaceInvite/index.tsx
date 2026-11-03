@@ -50,7 +50,6 @@ export default function SpaceInvitePage() {
   const [revision, setRevision] = useState(0);
   const generation = useRef(0);
   const joinLock = useRef(false);
-  const chatOpened = useRef(false);
 
   const redirectIfUnauthenticated = useCallback(
     (result: { code?: string; response?: { status?: number } }) => {
@@ -70,7 +69,6 @@ export default function SpaceInvitePage() {
   useEffect(() => {
     const currentGeneration = ++generation.current;
     joinLock.current = false;
-    chatOpened.current = false;
     setLoading(true);
     setInfo(undefined);
     setError('');
@@ -133,7 +131,6 @@ export default function SpaceInvitePage() {
       setInfo({ ...info, joined: true });
       setJoinedNow(true);
       if (currentGeneration === generation.current) {
-        chatOpened.current = true;
         openTeamChat(info.spaceId!);
       }
     } catch (reason) {
@@ -153,20 +150,6 @@ export default function SpaceInvitePage() {
   const openApp = () => {
     if (info?.spaceId) openTeamChat(info.spaceId);
   };
-
-  useEffect(() => {
-    if (
-      loading ||
-      !info ||
-      !info.joined ||
-      !info.spaceId ||
-      getSpaceInviteStatus(info) !== 'Active' ||
-      chatOpened.current
-    )
-      return;
-    chatOpened.current = true;
-    openTeamChat(info.spaceId);
-  }, [loading, info]);
 
   const status = info && getSpaceInviteStatus(info);
   return (
@@ -199,7 +182,7 @@ export default function SpaceInvitePage() {
             subTitle={info.spaceName}
             extra={
               <Button type="primary" onClick={openApp}>
-                {t('openApp')}
+                {t('openChat')}
               </Button>
             }
           />
