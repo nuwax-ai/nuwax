@@ -61,7 +61,7 @@ describe('邀请入团流程', () => {
     expect(mocks.join).not.toHaveBeenCalled();
   });
 
-  it('登录后自动加入；重复点击不重复提交，成功通过站内路由直达邀请对应 IM 团队群', async () => {
+  it('登录后等待用户确认；重复点击不重复提交，成功后直达对应 IM 群', async () => {
     let resolveJoin!: (value: unknown) => void;
     mocks.join.mockReturnValue(
       new Promise((resolve) => {
@@ -70,7 +70,8 @@ describe('邀请入团流程', () => {
     );
     render(<SpaceInvite />);
     const button = await screen.findByRole('button', { name: key('join') });
-    await waitFor(() => expect(mocks.join).toHaveBeenCalledTimes(1));
+    expect(mocks.join).not.toHaveBeenCalled();
+    expect(mocks.replace).not.toHaveBeenCalled();
     fireEvent.click(button);
     fireEvent.click(button);
     expect(mocks.join).toHaveBeenCalledTimes(1);
@@ -83,11 +84,12 @@ describe('邀请入团流程', () => {
     );
   });
 
-  it('自动入团失败不跳错误群，重试成功后才打开 IM', async () => {
+  it('手动入团失败不跳错误群，用户重试成功后才打开 IM', async () => {
     mocks.join
       .mockRejectedValueOnce(new Error('network'))
       .mockResolvedValueOnce(ok(null));
     render(<SpaceInvite />);
+    fireEvent.click(await screen.findByRole('button', { name: key('join') }));
     expect(await screen.findByText(key('joinFailed'))).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: key('join') }));
@@ -123,6 +125,7 @@ describe('邀请入团流程', () => {
       .mockResolvedValueOnce(ok({ status: 'Disabled', spaceId: null }));
     mocks.join.mockResolvedValue({ code: '5000', message: 'disabled' });
     render(<SpaceInvite />);
+    fireEvent.click(await screen.findByRole('button', { name: key('join') }));
     expect(await screen.findByText(key('disabledTitle'))).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: key('join') }),
@@ -143,6 +146,9 @@ describe('邀请入团流程', () => {
       ok({ ...active, spaceId: 2222, spaceName: '新团队' }),
     );
     view.rerender(<SpaceInvite />);
+    expect(await screen.findByText('新团队')).toBeInTheDocument();
+    expect(mocks.join).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: key('join') }));
     await waitFor(() =>
       expect(mocks.replace).toHaveBeenCalledWith(
         '/instant-message?spaceId=2222',
