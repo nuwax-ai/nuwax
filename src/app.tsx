@@ -88,6 +88,7 @@ export async function getInitialState(): Promise<InitialStateType> {
       '/login',
       '/verify-code',
       '/set-password',
+      '/invite/space/',
       '/chat-temp',
       '/examples/agent-intervention-demo',
       ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),

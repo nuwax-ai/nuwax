@@ -12,6 +12,11 @@ const isDevelopment =
 
 const routes = [
   {
+    path: '/invite/space/:code',
+    component: '@/pages/SpaceInvite',
+    layout: false,
+  },
+  {
     path: '/login',
     component: '@/pages/Login',
     layout: false,
