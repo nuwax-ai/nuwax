@@ -48,6 +48,7 @@ import {
   UserService,
 } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { isAuthTerminalPage } from './utils/authNavigationPolicy';
 import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
@@ -84,8 +85,8 @@ export async function getInitialState(): Promise<InitialStateType> {
       typeof window === 'undefined'
         ? history.location.pathname
         : window.location.pathname;
-    // 授权过期是鉴权终点；再查询会话会收到指向本页的 4011，形成重载循环。
-    if (/^\/license-expired\/?$/i.test(initialPathname)) {
+    // 认证终态页不再恢复会话，避免失败响应再次指向本页形成循环。
+    if (isAuthTerminalPage(initialPathname)) {
       return { menuData: [] };
     }
 
@@ -178,7 +179,6 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
     pathname,
   );
-  const isLicenseExpiredPage = /^\/license-expired\/?$/i.test(pathname);
 
   useEffect(() => installDirectorySyncLegacyBridge(), []);
 
@@ -433,7 +433,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       {/* 只有用户已登录时才启动事件轮询 */}
       {loggedIn &&
         !isLoginPage &&
-        !isLicenseExpiredPage &&
+        !isAuthTerminalPage(pathname) &&
         !isDesktopShellPreviewPage() && <GlobalEventPolling />}
       {children}
     </>
