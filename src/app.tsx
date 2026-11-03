@@ -5,6 +5,7 @@ import { theme as antdTheme, message, Modal } from 'antd';
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { history, useAntdConfigSetter, useModel } from 'umi';
 import AppStartup from './components/business-component/AppStartup';
+import ProfileSetupGuideGate from './components/ProfileSetupGuide/Gate';
 import {
   REDIRECT_LOGIN,
   SUCCESS_CODE,
@@ -435,6 +436,8 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         !isLoginPage &&
         !isAuthTerminalPage(pathname) &&
         !isDesktopShellPreviewPage() && <GlobalEventPolling />}
+      {/* L2：刚完成登录且仍是默认账号形态时，弹「取昵称+设头像」引导 */}
+      {loggedIn && !isLoginPage && <ProfileSetupGuideGate active />}
       {children}
     </>
   );
