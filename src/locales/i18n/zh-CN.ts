@@ -37,6 +37,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceInvite.askForNew": "请联系邀请人获取新的邀请链接",
   "PC.Pages.SpaceInvite.joinedSuccess": "已成功加入团队",
   "PC.Pages.SpaceInvite.alreadyJoined": "你已是该团队成员",
+  "PC.Pages.SpaceInvite.openChat": "进入群聊",
   "PC.Pages.SpaceInvite.openApp": "打开女娲",
   "PC.Pages.SpaceInvite.joinHint": "你受邀加入此团队",
   "PC.Pages.SpaceInvite.inviter": "邀请人",

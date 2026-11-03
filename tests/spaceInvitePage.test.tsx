@@ -61,6 +61,35 @@ describe('邀请入团流程', () => {
     expect(mocks.join).not.toHaveBeenCalled();
   });
 
+  it.each([false, true])(
+    '登录返回先显示邀请状态，joined=%s 不自动加入或进入群聊',
+    async (joined) => {
+      mocks.info.mockResolvedValue({ code: '4010' });
+      const view = render(<SpaceInvite />);
+      await waitFor(() =>
+        expect(mocks.replace).toHaveBeenCalledWith(
+          '/login?redirect=%2Finvite%2Fspace%2Fabc',
+        ),
+      );
+      view.unmount();
+      mocks.replace.mockClear();
+      mocks.info.mockResolvedValue(ok({ ...active, joined }));
+      render(<SpaceInvite />);
+      const button = await screen.findByRole('button', {
+        name: key(joined ? 'openChat' : 'join'),
+      });
+      expect(mocks.join).not.toHaveBeenCalled();
+      expect(mocks.replace).not.toHaveBeenCalled();
+      fireEvent.click(button);
+      await waitFor(() =>
+        expect(mocks.replace).toHaveBeenCalledWith(
+          '/instant-message?spaceId=1140',
+        ),
+      );
+      expect(mocks.join).toHaveBeenCalledTimes(joined ? 0 : 1);
+    },
+  );
+
   it('登录后等待用户确认；重复点击不重复提交，成功后直达对应 IM 群', async () => {
     let resolveJoin!: (value: unknown) => void;
     mocks.join.mockReturnValue(
@@ -111,11 +140,13 @@ describe('邀请入团流程', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('已有成员不再次提交加入', async () => {
+  it('已有成员先展示状态，点击后才进入对应群聊', async () => {
     mocks.info.mockResolvedValue(ok({ ...active, joined: true }));
     render(<SpaceInvite />);
     expect(await screen.findByText(key('alreadyJoined'))).toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
+    expect(mocks.replace).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: key('openChat') }));
     expect(mocks.replace).toHaveBeenCalledWith('/instant-message?spaceId=1140');
   });
 
