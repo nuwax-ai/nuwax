@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getSpaceInviteConversationPath,
   getSpaceInviteEntryRedirect,
   getSpaceInviteQrPath,
   getSpaceInviteStatus,
 } from './spaceInvite';
 
 describe('团队邀请链接', () => {
+  it('PC IM 目标使用邀请对应的 spaceId，并保留 int64 字符串精度', () => {
+    expect(getSpaceInviteConversationPath(1140)).toBe(
+      '/instant-message?spaceId=1140',
+    );
+    expect(getSpaceInviteConversationPath('9007199254740993')).toBe(
+      '/instant-message?spaceId=9007199254740993',
+    );
+  });
   it('二维码编码保留完整 UTF-8 链接，并转义 Base64 路径中的保留字符', () => {
     const url =
       'https://testagent.xspaceagi.com/invite/space/abc?name=中文&x=?';
