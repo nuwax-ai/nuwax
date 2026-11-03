@@ -1,4 +1,5 @@
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
+import { history } from 'umi';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { navigateToAuthUrl, resolveAuthRedirectUrl } from './authNavigation';
 
@@ -14,6 +15,7 @@ describe('认证导航同源映射', () => {
   let getContext: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     getContext = vi.fn().mockResolvedValue(context);
     vi.stubGlobal('window', {
       location: {
@@ -83,6 +85,78 @@ describe('认证导航同源映射', () => {
     expect(window.location.href).toBe(
       `${context.gatewayOrigin}/repo/doc?x=1#heading`,
     );
+  });
+
+  it.each([
+    '/license-expired',
+    '/license-expired/?from=login#expired',
+    '/login?redirect=%2F',
+  ])('站内认证页面 %s 使用 SPA 导航，不重载文档', async (path) => {
+    delete window.NuwaClawBridge;
+    window.location.href = `${context.gatewayOrigin}/home`;
+    await navigateToAuthUrl(path);
+    expect(history.replace).toHaveBeenCalledWith(path);
+    expect(window.location.href).toBe(`${context.gatewayOrigin}/home`);
+  });
+
+  it('桌面网关映射后的授权过期页也使用 SPA 导航', async () => {
+    await navigateToAuthUrl(`${context.businessOrigin}/license-expired`);
+    expect(history.replace).toHaveBeenCalledWith('/license-expired');
+    expect(window.location.href).toBe(`${context.gatewayOrigin}/login`);
+  });
+
+  it.each([
+    '/license-expired',
+    '/login?redirect=%2Fhome',
+    '/auth/bind?state=fixture#account',
+    '/home',
+  ])('已在目标地址 %s 时重复认证响应不触发任何导航', async (path) => {
+    delete window.NuwaClawBridge;
+    let href = `${context.gatewayOrigin}${path}`;
+    const assignHref = vi.fn((value: string) => {
+      href = value;
+    });
+    Object.defineProperty(window.location, 'href', {
+      get: () => href,
+      set: assignHref,
+    });
+    await navigateToAuthUrl(path);
+    await navigateToAuthUrl(href);
+    expect(history.replace).not.toHaveBeenCalled();
+    expect(assignHref).not.toHaveBeenCalled();
+  });
+
+  it.each(['/auth/bind?state=new#account', '/auth/bind?state=fixture#new'])(
+    '目标地址的参数或 hash 变化时仍正常导航：%s',
+    async (path) => {
+      delete window.NuwaClawBridge;
+      window.location.href = `${context.gatewayOrigin}/auth/bind?state=fixture#account`;
+      await navigateToAuthUrl(path);
+      expect(window.location.href).toBe(path);
+    },
+  );
+
+  it('相对地址按当前完整 URL 解析，相同目标也不导航', async () => {
+    delete window.NuwaClawBridge;
+    window.location.href = `${context.gatewayOrigin}/auth/bind?state=fixture`;
+    await navigateToAuthUrl('bind?state=fixture');
+    expect(history.replace).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(
+      `${context.gatewayOrigin}/auth/bind?state=fixture`,
+    );
+  });
+
+  it('相对地址解析到其他路径时仍导航，不按根路径误判为当前页', async () => {
+    delete window.NuwaClawBridge;
+    window.location.href = `${context.gatewayOrigin}/auth/bind`;
+    await navigateToAuthUrl('auth/bind');
+    expect(window.location.href).toBe('auth/bind');
+  });
+
+  it('外部授权过期地址仍通过文档导航访问', async () => {
+    await navigateToAuthUrl('https://idp.example/license-expired');
+    expect(history.replace).not.toHaveBeenCalled();
+    expect(window.location.href).toBe('https://idp.example/license-expired');
   });
 
   it.each(['/auth/bind?state=fixture', '/api/auth/idp/authorize?provider=3'])(
