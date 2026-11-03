@@ -13,7 +13,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceInvite.generate": "生成邀请链接和二维码",
   "PC.Pages.SpaceInvite.futureRequired": "请选择将来的过期时间",
   "PC.Pages.SpaceInvite.link": "邀请链接",
-  "PC.Pages.SpaceInvite.scanHint": "扫码或打开链接，登录后自动加入团队并进入群聊",
+  "PC.Pages.SpaceInvite.scanHint": "扫码或打开链接，登录后点击确认加入团队，成功后进入群聊",
   "PC.Pages.SpaceInvite.copyLink": "复制链接",
   "PC.Pages.SpaceInvite.copyFailed": "复制失败，请重试",
   "PC.Pages.SpaceInvite.saveQr": "保存二维码",
