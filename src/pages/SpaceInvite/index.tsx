@@ -4,17 +4,18 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
-import { SPACE_ID } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiGetSpaceInviteInfo,
   apiJoinSpaceInvite,
 } from '@/services/spaceInvite';
-import { apiSpaceList } from '@/services/workspace';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { SpaceInviteInfo } from '@/types/interfaces/spaceInvite';
-import { getSpaceInviteStatus } from '@/utils/spaceInvite';
+import {
+  getSpaceInviteStatus,
+  openSpaceInviteConversation,
+} from '@/utils/spaceInvite';
 import {
   Alert,
   Avatar,
@@ -28,7 +29,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams } from 'umi';
+import { history, useParams } from 'umi';
 import styles from './index.less';
 
 const t = (key: string) => dict(`PC.Pages.SpaceInvite.${key}`);
@@ -44,7 +45,7 @@ export default function SpaceInvitePage() {
   const [revision, setRevision] = useState(0);
   const generation = useRef(0);
   const joinLock = useRef(false);
-  const { setSpaceList, setCurrentSpaceInfo } = useModel('spaceModel');
+  const autoStarted = useRef(false);
 
   const redirectIfUnauthenticated = useCallback(
     (result: { code?: string; response?: { status?: number } }) => {
@@ -64,6 +65,7 @@ export default function SpaceInvitePage() {
   useEffect(() => {
     const currentGeneration = ++generation.current;
     joinLock.current = false;
+    autoStarted.current = false;
     setLoading(true);
     setInfo(undefined);
     setError('');
@@ -94,7 +96,7 @@ export default function SpaceInvitePage() {
     };
   }, [code, revision, redirectIfUnauthenticated]);
 
-  const join = async () => {
+  const join = useCallback(async () => {
     if (joinLock.current || !info || info.joined) return;
     if (getSpaceInviteStatus(info) !== 'Active') {
       setInfo({ ...info, status: getSpaceInviteStatus(info) });
@@ -125,20 +127,8 @@ export default function SpaceInvitePage() {
       }
       setInfo({ ...info, joined: true });
       setJoinedNow(true);
-      try {
-        const spaces = await apiSpaceList();
-        if (currentGeneration !== generation.current) return;
-        if (spaces.code === SUCCESS_CODE) {
-          setSpaceList(spaces.data || []);
-          const team = spaces.data?.find((space) => space.id === info.spaceId);
-          if (team) {
-            setCurrentSpaceInfo(team);
-            localStorage.setItem(SPACE_ID, String(team.id));
-          }
-        }
-      } catch {
-        // 入团已成功；首页重新加载会重新获取空间列表。
-      }
+      if (currentGeneration === generation.current)
+        openSpaceInviteConversation(info.spaceId!);
     } catch (reason) {
       if (
         currentGeneration === generation.current &&
@@ -151,14 +141,25 @@ export default function SpaceInvitePage() {
         setJoining(false);
       }
     }
-  };
+  }, [code, info, redirectIfUnauthenticated]);
 
   const openApp = () => {
-    const mobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(
-      navigator.userAgent,
-    );
-    window.location.assign(mobile ? '/m/' : `/space/${info?.spaceId}/team`);
+    if (info?.spaceId) openSpaceInviteConversation(info.spaceId);
   };
+
+  useEffect(() => {
+    if (
+      loading ||
+      !info ||
+      !info.spaceId ||
+      getSpaceInviteStatus(info) !== 'Active' ||
+      autoStarted.current
+    )
+      return;
+    autoStarted.current = true;
+    if (info.joined) openSpaceInviteConversation(info.spaceId);
+    else void join();
+  }, [loading, info, join]);
 
   const status = info && getSpaceInviteStatus(info);
   return (
