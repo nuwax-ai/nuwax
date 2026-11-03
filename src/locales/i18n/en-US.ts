@@ -13,7 +13,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceInvite.generate": "Generate invitation link and QR code",
   "PC.Pages.SpaceInvite.futureRequired": "Choose an expiration time in the future",
   "PC.Pages.SpaceInvite.link": "Invitation link",
-  "PC.Pages.SpaceInvite.scanHint": "Scan or open the link, then sign in to join the team",
+  "PC.Pages.SpaceInvite.scanHint": "Scan or open the link, then sign in to join the team and open its chat",
   "PC.Pages.SpaceInvite.copyLink": "Copy link",
   "PC.Pages.SpaceInvite.copyFailed": "Could not copy the link. Try again.",
   "PC.Pages.SpaceInvite.saveQr": "Save QR code",
