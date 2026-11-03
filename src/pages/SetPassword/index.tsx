@@ -3,11 +3,13 @@ import BasicLayout from '@/pages/Login/BasicLayout';
 import { apiSetPassword } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { validatePassword } from '@/utils/common';
+import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-import { history, useModel, useNavigate, useRequest } from 'umi';
+import { history, useModel, useRequest, useSearchParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,18 +18,12 @@ const cx = classNames.bind(styles);
  * 设置密码
  */
 const SetPassword: React.FC = () => {
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setTitle } = useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
 
-  const { run, loading } = useRequest(apiSetPassword, {
+  const { runAsync, loading } = useRequest(apiSetPassword, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: async () => {
-      // 登录成功后强制刷新菜单数据（可能切换了账号）
-      await loadMenus(true);
-      navigate('/', { replace: true });
-    },
   });
 
   useEffect(() => {
@@ -35,9 +31,21 @@ const SetPassword: React.FC = () => {
     setTitle();
   }, []);
 
-  const onFinish: FormProps<SetPasswordFieldType>['onFinish'] = (values) => {
-    const { password } = values;
-    run({ password });
+  const onFinish: FormProps<SetPasswordFieldType>['onFinish'] = async ({
+    password,
+  }) => {
+    try {
+      await runAsync({ password });
+      await loadMenus(true);
+      navigateAfterLogin(
+        history,
+        searchParams.get('redirect'),
+        null,
+        navigateToAuthUrl,
+      );
+    } catch {
+      // 请求层已经提示，保留表单供重试，不泄漏事件处理器的拒绝。
+    }
   };
 
   return (
@@ -49,7 +57,9 @@ const SetPassword: React.FC = () => {
             variant="filled"
             shape="circle"
             icon={<SvgIcon name="icons-nav-backward" />}
-            onClick={() => history.push('/login')}
+            onClick={() =>
+              replaceLoginStep(history, 'login', searchParams.get('redirect'))
+            }
           />
         </div>
         <Form

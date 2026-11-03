@@ -1021,15 +1021,7 @@ const Login: React.FC = () => {
                 )}
               </Modal>
 
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  padding: '0 64px',
-                  width: '100%',
-                }}
-              >
+              <div className={styles['login-form-footer']}>
                 <SiteFooter
                   text={tenantConfigInfo?.pageFooterText}
                 ></SiteFooter>
