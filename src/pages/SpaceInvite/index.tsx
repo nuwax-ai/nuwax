@@ -50,7 +50,7 @@ export default function SpaceInvitePage() {
   const [revision, setRevision] = useState(0);
   const generation = useRef(0);
   const joinLock = useRef(false);
-  const autoStarted = useRef(false);
+  const chatOpened = useRef(false);
 
   const redirectIfUnauthenticated = useCallback(
     (result: { code?: string; response?: { status?: number } }) => {
@@ -70,7 +70,7 @@ export default function SpaceInvitePage() {
   useEffect(() => {
     const currentGeneration = ++generation.current;
     joinLock.current = false;
-    autoStarted.current = false;
+    chatOpened.current = false;
     setLoading(true);
     setInfo(undefined);
     setError('');
@@ -132,7 +132,10 @@ export default function SpaceInvitePage() {
       }
       setInfo({ ...info, joined: true });
       setJoinedNow(true);
-      if (currentGeneration === generation.current) openTeamChat(info.spaceId!);
+      if (currentGeneration === generation.current) {
+        chatOpened.current = true;
+        openTeamChat(info.spaceId!);
+      }
     } catch (reason) {
       if (
         currentGeneration === generation.current &&
@@ -155,15 +158,15 @@ export default function SpaceInvitePage() {
     if (
       loading ||
       !info ||
+      !info.joined ||
       !info.spaceId ||
       getSpaceInviteStatus(info) !== 'Active' ||
-      autoStarted.current
+      chatOpened.current
     )
       return;
-    autoStarted.current = true;
-    if (info.joined) openTeamChat(info.spaceId);
-    else void join();
-  }, [loading, info, join]);
+    chatOpened.current = true;
+    openTeamChat(info.spaceId);
+  }, [loading, info]);
 
   const status = info && getSpaceInviteStatus(info);
   return (
