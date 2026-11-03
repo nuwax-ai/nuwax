@@ -212,6 +212,22 @@ describe('首屏初始数据失败可恢复', () => {
     expect(mocks.queryMenus).not.toHaveBeenCalled();
   });
 
+  it.each(['/license-expired', '/license-expired/?from=login#expired'])(
+    '授权过期页 %s 不恢复会话或查询用户菜单，避免 4011 自跳循环',
+    async (path) => {
+      window.history.replaceState(null, '', path);
+      mocks.hostProduct = 'nuwax';
+      mocks.syncSession.mockRejectedValue(new Error('session unavailable'));
+      await expect(getInitialState()).resolves.toEqual({ menuData: [] });
+      expect(mocks.initI18n).toHaveBeenCalledOnce();
+      expect(mocks.syncSession).not.toHaveBeenCalled();
+      expect(mocks.getUserInfo).not.toHaveBeenCalled();
+      expect(mocks.syncLangFromUserInfo).not.toHaveBeenCalled();
+      expect(mocks.queryMenus).not.toHaveBeenCalled();
+      expect(mocks.setLoginStatusToCache).not.toHaveBeenCalled();
+    },
+  );
+
   it('pending 请求由原请求自然恢复，不启动重复请求', async () => {
     let resolve: ((value: { id: number }) => void) | undefined;
     mocks.getUserInfo.mockImplementation(
