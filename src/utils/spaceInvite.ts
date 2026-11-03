@@ -85,8 +85,8 @@ export function getSpaceInviteEntryRedirect(
   }
 }
 
-export function openSpaceInviteConversation(spaceId: number | string): void {
-  window.location.replace(
-    `/instant-message?spaceId=${encodeURIComponent(String(spaceId))}`,
-  );
+export function getSpaceInviteConversationPath(
+  spaceId: number | string,
+): string {
+  return `/instant-message?spaceId=${encodeURIComponent(String(spaceId))}`;
 }

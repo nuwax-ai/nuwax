@@ -13,8 +13,8 @@ import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { SpaceInviteInfo } from '@/types/interfaces/spaceInvite';
 import {
+  getSpaceInviteConversationPath,
   getSpaceInviteStatus,
-  openSpaceInviteConversation,
 } from '@/utils/spaceInvite';
 import {
   Alert,
@@ -33,6 +33,11 @@ import { history, useParams } from 'umi';
 import styles from './index.less';
 
 const t = (key: string) => dict(`PC.Pages.SpaceInvite.${key}`);
+
+// 旧环境的 IM 整页入口会补尾斜杠并丢失 query；站内导航把完整目标交给 IM 宿主。
+const openTeamChat = (spaceId: number | string) => {
+  history.replace(getSpaceInviteConversationPath(spaceId));
+};
 
 export default function SpaceInvitePage() {
   const { code = '' } = useParams();
@@ -127,8 +132,7 @@ export default function SpaceInvitePage() {
       }
       setInfo({ ...info, joined: true });
       setJoinedNow(true);
-      if (currentGeneration === generation.current)
-        openSpaceInviteConversation(info.spaceId!);
+      if (currentGeneration === generation.current) openTeamChat(info.spaceId!);
     } catch (reason) {
       if (
         currentGeneration === generation.current &&
@@ -144,7 +148,7 @@ export default function SpaceInvitePage() {
   }, [code, info, redirectIfUnauthenticated]);
 
   const openApp = () => {
-    if (info?.spaceId) openSpaceInviteConversation(info.spaceId);
+    if (info?.spaceId) openTeamChat(info.spaceId);
   };
 
   useEffect(() => {
@@ -157,7 +161,7 @@ export default function SpaceInvitePage() {
     )
       return;
     autoStarted.current = true;
-    if (info.joined) openSpaceInviteConversation(info.spaceId);
+    if (info.joined) openTeamChat(info.spaceId);
     else void join();
   }, [loading, info, join]);
 
