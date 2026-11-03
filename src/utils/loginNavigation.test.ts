@@ -120,6 +120,19 @@ describe('登录步骤导航', () => {
     expect(navigateToAuthUrl).toHaveBeenCalledWith(target);
   });
 
+  it('新用户验证码注册后经过设置密码仍回到原邀请链接', () => {
+    const redirect = '/invite/space/abc';
+    enterLogin(redirect);
+    replaceLoginStep(history, 'verify-code', redirect);
+    replaceLoginStep(history, 'set-password', redirect);
+    expect(window.location.pathname).toBe('/set-password');
+    expect(new URLSearchParams(window.location.search).get('redirect')).toBe(
+      redirect,
+    );
+    navigateAfterLogin(history, redirect, null, navigateToAuthUrl);
+    expect(window.location.pathname).toBe(redirect);
+  });
+
   it('没有 redirect 时替换到首页', () => {
     enterLogin();
     replaceLoginStep(history, 'verify-code', null);

@@ -205,6 +205,13 @@ describe('首屏初始数据失败可恢复', () => {
     expect(mocks.queryMenus).not.toHaveBeenCalled();
   });
 
+  it('邀请页首次打开不被用户和菜单请求抢先重定向，由邀请页保留邀请码登录', async () => {
+    window.history.replaceState(null, '', '/invite/space/abc');
+    await expect(getInitialState()).resolves.toEqual({ menuData: [] });
+    expect(mocks.getUserInfo).not.toHaveBeenCalled();
+    expect(mocks.queryMenus).not.toHaveBeenCalled();
+  });
+
   it('pending 请求由原请求自然恢复，不启动重复请求', async () => {
     let resolve: ((value: { id: number }) => void) | undefined;
     mocks.getUserInfo.mockImplementation(

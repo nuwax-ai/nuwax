@@ -12,6 +12,7 @@ import { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message } from 'antd'; // Added Tag
 import React, { useRef, useState } from 'react';
 import AddMember from './AddMember';
+import InviteMember from './InviteMember';
 
 interface MemberManageTabProps {
   spaceId: number;
@@ -21,6 +22,9 @@ interface MemberManageTabProps {
 const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
   const actionRef = useRef<ActionType>();
   const [openAddMemberModal, setOpenAddMemberModal] = useState<boolean>(false);
+  const [openInviteModal, setOpenInviteModal] = useState(false);
+  const canInvite =
+    role === TeamStatusEnum.Owner || role === TeamStatusEnum.Admin;
 
   const handlerConfirmAddMember = () => {
     setOpenAddMemberModal(false);
@@ -157,6 +161,11 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
         request={request}
         params={{ spaceId }}
         toolBarRender={() => [
+          canInvite && (
+            <Button key="invite" onClick={() => setOpenInviteModal(true)}>
+              {dict('PC.Pages.SpaceInvite.manageTitle')}
+            </Button>
+          ),
           role !== TeamStatusEnum.User && (
             <Button
               key="add"
@@ -175,6 +184,13 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
         onCancel={() => setOpenAddMemberModal(false)}
         onConfirmAdd={handlerConfirmAddMember}
       />
+      {canInvite && (
+        <InviteMember
+          spaceId={spaceId}
+          open={openInviteModal}
+          onCancel={() => setOpenInviteModal(false)}
+        />
+      )}
     </>
   );
 };

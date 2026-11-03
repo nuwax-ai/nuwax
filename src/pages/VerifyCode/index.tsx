@@ -176,7 +176,11 @@ const VerifyCode: React.FC = () => {
         await loadMenus(true);
         // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
         if (!resetPass) {
-          history.push('/set-password');
+          replaceLoginStep(
+            history,
+            'set-password',
+            searchParams.get('redirect'),
+          );
         } else {
           navigateAfterLogin(
             history,

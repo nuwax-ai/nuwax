@@ -26,10 +26,10 @@ export function isVerifyCodePageReload(): boolean {
   }
 }
 
-/** 登录和验证码共享一个历史条目，保留进入登录时的业务返回偏移。 */
+/** 登录、验证码及首次设置密码共享返回目标，避免注册过程中丢失业务深链。 */
 export function replaceLoginStep(
   history: LoginHistory,
-  step: 'login' | 'verify-code',
+  step: 'login' | 'verify-code' | 'set-password',
   redirect: string | null,
   state?: Record<string, unknown>,
 ): void {
