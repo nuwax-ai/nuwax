@@ -9,14 +9,30 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
+  lang: 'zh' as 'zh' | 'en',
   create: vi.fn(),
   list: vi.fn(),
   disable: vi.fn(),
   qr: vi.fn(),
 }));
-vi.mock('@/services/i18nRuntime', () => ({
-  dict: (key: string, ...values: string[]) => [key, ...values].join(' '),
-}));
+vi.mock('@/services/i18nRuntime', async () => {
+  const { I18N_KEY_REGEX, MIN_ZH_I18N_MAP, MIN_EN_I18N_MAP } = await import(
+    '@/constants/i18n.constants'
+  );
+  return {
+    dict: (key: string, ...values: string[]) => {
+      if (
+        /\.status(?:Active|Expired|Disabled)$/.test(key) &&
+        I18N_KEY_REGEX.test(key)
+      ) {
+        return (
+          (mocks.lang === 'zh' ? MIN_ZH_I18N_MAP : MIN_EN_I18N_MAP)[key] || key
+        );
+      }
+      return [key, ...values].join(' ');
+    },
+  };
+});
 vi.mock('@/services/spaceInvite', () => ({
   apiCreateSpaceInvite: mocks.create,
   apiListSpaceInvites: mocks.list,
@@ -39,6 +55,7 @@ const invite = {
 const key = (suffix: string) => `PC.Pages.SpaceInvite.${suffix}`;
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.lang = 'zh';
   mocks.create.mockReset().mockResolvedValue({ code: '0000', data: invite });
   mocks.list.mockReset().mockResolvedValue({ code: '0000', data: [] });
   mocks.qr
@@ -48,6 +65,27 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('团队邀请管理', () => {
+  it.each([
+    ['zh', 'Active', '有效'],
+    ['zh', 'Expired', '已过期'],
+    ['zh', 'Disabled', '已作废'],
+    ['en', 'Active', 'Active'],
+    ['en', 'Expired', 'Expired'],
+    ['en', 'Disabled', 'Disabled'],
+  ] as const)(
+    '%s 语言的 %s 状态使用合法词条显示为 %s',
+    async (lang, status, label) => {
+      mocks.lang = lang;
+      mocks.list.mockResolvedValue({
+        code: '0000',
+        data: [{ ...invite, status }],
+      });
+      render(<InviteMember spaceId={1140} open onCancel={vi.fn()} />);
+      fireEvent.click(screen.getByRole('tab', { name: key('historyTab') }));
+      expect(await screen.findByText(label)).toBeInTheDocument();
+      expect(screen.queryByText(key(status))).not.toBeInTheDocument();
+    },
+  );
   it('打开弹窗不创建记录，手动生成默认邀请为普通成员且 7 天过期', async () => {
     render(<InviteMember spaceId={1140} open onCancel={vi.fn()} />);
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith(1140));
@@ -95,7 +133,7 @@ describe('团队邀请管理', () => {
     );
     fireEvent.click(await screen.findByRole('button', { name: 'OK' }));
     await waitFor(() => expect(mocks.disable).toHaveBeenCalledWith(1));
-    expect(await screen.findByText(key('Disabled'))).toBeInTheDocument();
+    expect(await screen.findByText('已作废')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: key('viewQr') }),
     ).not.toBeInTheDocument();
