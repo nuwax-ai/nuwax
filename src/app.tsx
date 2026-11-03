@@ -80,6 +80,15 @@ export async function getInitialState(): Promise<InitialStateType> {
     stage = 'language';
     await initI18n();
 
+    const initialPathname =
+      typeof window === 'undefined'
+        ? history.location.pathname
+        : window.location.pathname;
+    // 授权过期是鉴权终点；再查询会话会收到指向本页的 4011，形成重载循环。
+    if (/^\/license-expired\/?$/i.test(initialPathname)) {
+      return { menuData: [] };
+    }
+
     stage = 'session';
     const hostSessionReady = await restoreBusinessAuthSession();
 
@@ -93,10 +102,6 @@ export async function getInitialState(): Promise<InitialStateType> {
       '/examples/agent-intervention-demo',
       ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),
     ];
-    const initialPathname =
-      typeof window === 'undefined'
-        ? history.location.pathname
-        : window.location.pathname;
     // Mock 验收页（dev-only 路由）跳过用户信息请求，避免未登录时被重定向
     const isPublicPath = publicPaths.some((path) =>
       initialPathname.toLowerCase().startsWith(path),
@@ -173,6 +178,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
     pathname,
   );
+  const isLicenseExpiredPage = /^\/license-expired\/?$/i.test(pathname);
 
   useEffect(() => installDirectorySyncLegacyBridge(), []);
 
@@ -425,9 +431,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     <>
       <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
-      {loggedIn && !isLoginPage && !isDesktopShellPreviewPage() && (
-        <GlobalEventPolling />
-      )}
+      {loggedIn &&
+        !isLoginPage &&
+        !isLicenseExpiredPage &&
+        !isDesktopShellPreviewPage() && <GlobalEventPolling />}
       {children}
     </>
   );

@@ -68,14 +68,16 @@ export async function navigateToAuthUrl(url: string): Promise<void> {
     return;
   }
   try {
-    const destination = new URL(target, window.location.origin);
-    // 本站登录页由 SPA 承载，整页跳转会重复启动、鉴权和加载登录资源。
+    const destination = new URL(target, sourceHref);
+    // 认证失败可能再次指向当前页面；所有目标统一去重，避免自跳重载循环。
+    if (destination.href === sourceHref) return;
+    // 本站登录页和授权过期页由 SPA 承载，避免重复启动、鉴权和加载资源。
     // 外部 SSO 与后端 /auth/ 中间页仍须走文档导航。
     if (
       destination.origin === window.location.origin &&
       !destination.username &&
       !destination.password &&
-      /^\/login\/?$/i.test(destination.pathname)
+      /^\/(?:login|license-expired)\/?$/i.test(destination.pathname)
     ) {
       history.replace(
         destination.pathname + destination.search + destination.hash,
