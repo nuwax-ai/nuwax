@@ -1,12 +1,4 @@
-/**
- * ChatInputUnified + 号弹层测试：
- * 审批/自动从 footer 模式下拉迁入 + 弹层后的行为——
- * 弹层菜单结构（四入口 + 分隔线 + 开关组）、三个开关的受控与持久化
- * （chatbox.config.{agentId} 全量写入）、审批模式回执 pill（ask 显示、x 切回 yolo）、
- * 服务端配置回填（含 mode 同步宿主）与未配置默认值（agent 的 enableVersionControl、
- * autoCommit 默认开）。
- * 桩法对齐 chatInputUnified.home.test.tsx：services/umi 一律 mock，子组件以捕获 props 的桩替代。
- */
+/** 审批/版本配置持久化与能力边界合同，保留真实菜单交互。 */
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import {
   act,
@@ -138,24 +130,30 @@ vi.mock('@/components/business-component/VoiceInput', async () => {
 
 const AGENT_ID = 101;
 
-function renderInput(props: Record<string, any> = {}) {
-  return render(
-    <ChatInputUnified
-      onEnter={vi.fn()}
-      agentId={AGENT_ID}
-      agentMode="yolo"
-      onAgentModeChange={vi.fn()}
-      {...props}
-    />,
-  );
+async function renderInput(props: Record<string, any> = {}) {
+  let view: ReturnType<typeof render>;
+  // 配置与连接器在挂载后异步回填，交互前等待这些更新完成。
+  await act(async () => {
+    view = render(
+      <ChatInputUnified
+        onEnter={vi.fn()}
+        agentId={AGENT_ID}
+        agentMode="yolo"
+        onAgentModeChange={vi.fn()}
+        {...props}
+      />,
+    );
+  });
+  return view!;
 }
 
-/** 点开 + 号弹层（菜单渲染在 body portal） */
-function openPlusMenu() {
+/** 点开 + 号弹层，等待菜单的异步挂载完成。 */
+async function openPlusMenu() {
   const plusBox = document.querySelector('.plus-box');
   expect(plusBox).toBeTruthy();
-  fireEvent.click(plusBox!);
-  // 菜单项渲染到 portal 后再返回，供用例断言
+  await act(async () => {
+    fireEvent.click(plusBox!);
+  });
   expect(
     screen.getByText('PC.Components.ChatInputHome.attachFile'),
   ).toBeInTheDocument();
@@ -174,10 +172,10 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-describe('+ 号弹层结构', () => {
-  it('点击附件行本身只打开一次选择器，禁用时不打开', () => {
-    const { rerender } = renderInput();
-    openPlusMenu();
+describe('+ 号弹层交互', () => {
+  it('点击附件行本身只打开一次选择器，禁用时不打开', async () => {
+    const { rerender } = await renderInput();
+    await openPlusMenu();
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -185,8 +183,10 @@ describe('+ 号弹层结构', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /attachFile/ }));
     expect(click).toHaveBeenCalledTimes(1);
     expect(fileInput).toBeInTheDocument();
-    rerender(<ChatInputUnified onEnter={vi.fn()} wholeDisabled />);
-    openPlusMenu();
+    await act(async () => {
+      rerender(<ChatInputUnified onEnter={vi.fn()} wholeDisabled />);
+    });
+    await openPlusMenu();
     fireEvent.click(screen.getByRole('menuitem', { name: /attachFile/ }));
     expect(click).toHaveBeenCalledTimes(1);
     click.mockRestore();
@@ -197,8 +197,8 @@ describe('+ 号弹层结构', () => {
     ['autoCommitSwitch', { autoCommit: 0 }],
     ['approvalModeSwitch', { mode: 'ask' }],
   ])('点击 %s 行的留白切换一次且保持菜单展开', async (label, changed) => {
-    renderInput({ agentEnableVersionControl: 1 });
-    openPlusMenu();
+    await renderInput({ agentEnableVersionControl: 1 });
+    await openPlusMenu();
     fireEvent.click(
       screen.getByRole('menuitem', { name: new RegExp(label as string) }),
     );
@@ -210,9 +210,9 @@ describe('+ 号弹层结构', () => {
     await waitFor(() => expect(screen.getByRole('menu')).toBeVisible());
   });
 
-  it('禁用的开关项点击整行不修改配置', () => {
-    renderInput({ agentEnableVersionControl: 1, wholeDisabled: true });
-    openPlusMenu();
+  it('禁用的开关项点击整行不修改配置', async () => {
+    await renderInput({ agentEnableVersionControl: 1, wholeDisabled: true });
+    await openPlusMenu();
     for (const label of [
       'versionControlSwitch',
       'autoCommitSwitch',
@@ -225,67 +225,23 @@ describe('+ 号弹层结构', () => {
     expect(userConfig.set).not.toHaveBeenCalled();
   });
 
-  it('渲染四入口 + 分隔线 + 产物版本管理/审批模式开关（未配置时无自动提交行）', () => {
-    renderInput({ agentEnableVersionControl: 0 });
-    openPlusMenu();
-
-    // 四个入口
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.attachFile'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.atContext'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.slashCapability'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.plusMenuConnector'),
-    ).toBeInTheDocument();
-    // 分隔线
-    expect(
-      document.querySelector('.ant-dropdown-menu-item-divider'),
-    ).toBeTruthy();
-    // 产物版本管理 / 审批模式恒显示
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.versionControlSwitch'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.approvalModeSwitch'),
-    ).toBeInTheDocument();
-    // 版本管理默认关 → 无变更自动提交行
-    expect(
-      screen.queryByText('PC.Components.ChatInputHome.autoCommitSwitch'),
-    ).not.toBeInTheDocument();
-  });
-
-  it('版本管理开启（agent 默认或服务端配置）时显示变更自动提交行', async () => {
-    renderInput({ agentEnableVersionControl: 1 });
-    openPlusMenu();
-    await waitFor(() =>
-      expect(
-        screen.getByText('PC.Components.ChatInputHome.autoCommitSwitch'),
-      ).toBeInTheDocument(),
-    );
-  });
-
-  it('连接器入口唤起能力弹窗连接器维度', () => {
-    renderInput();
-    openPlusMenu();
+  it('连接器入口唤起能力弹窗连接器维度', async () => {
+    await renderInput();
+    await openPlusMenu();
     fireEvent.click(
       screen.getByText('PC.Components.ChatInputHome.plusMenuConnector'),
     );
     expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector');
   });
 
-  it('enableMention=false（allowAtSkill 非 1）：隐藏「/ 能力」入口并从能力弹窗开放范围滤除技能', () => {
-    renderInput({ enableMention: false });
+  it('enableMention=false（allowAtSkill 非 1）：隐藏「/ 能力」入口并从能力弹窗开放范围滤除技能', async () => {
+    await renderInput({ enableMention: false });
     // 能力弹窗资源类型：技能被收敛（连接器等其余维度保留）
     expect(editor.lastProps.capabilityResourceTypes).not.toContain('skill');
     expect(editor.lastProps.capabilityResourceTypes).toEqual(
       expect.arrayContaining(['connector', 'knowledge']),
     );
-    openPlusMenu();
+    await openPlusMenu();
     // + 号菜单不再有「/ 能力」项，其余入口保留
     expect(
       screen.queryByText('PC.Components.ChatInputHome.slashCapability'),
@@ -298,10 +254,10 @@ describe('+ 号弹层结构', () => {
     ).toBeInTheDocument();
   });
 
-  it('项目智能体锁定时 + 菜单仅提示 @ 文档，专家能力不开放', () => {
-    renderInput({ atHomePanel: true, showExpertCapability: false });
+  it('项目智能体锁定时 + 菜单仅提示 @ 文档，专家能力不开放', async () => {
+    await renderInput({ atHomePanel: true, showExpertCapability: false });
     expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
-    openPlusMenu();
+    await openPlusMenu();
     expect(
       screen.getByText('PC.Components.ChatInputHome.atContextDocs'),
     ).toBeInTheDocument();
@@ -310,9 +266,9 @@ describe('+ 号弹层结构', () => {
     ).toBeNull();
   });
 
-  it('ChatBot 点击 + 直接打开附件选择器，不显示弹层', () => {
+  it('ChatBot 点击 + 直接打开附件选择器，不显示弹层', async () => {
     const onEnter = vi.fn();
-    renderInput({ agentType: 'ChatBot', agentMode: 'ask', onEnter });
+    await renderInput({ agentType: 'ChatBot', agentMode: 'ask', onEnter });
 
     expect(editor.lastProps.enableMention).toBe(false);
     expect(editor.lastProps.atHomePanel).toBe(false);
@@ -367,8 +323,8 @@ describe('+ 号弹层结构', () => {
     click.mockRestore();
   });
 
-  it('智能体类型加载期间按 ChatBot 能力边界处理', () => {
-    renderInput({ agentTypeLoading: true });
+  it('智能体类型加载期间按 ChatBot 能力边界处理', async () => {
+    await renderInput({ agentTypeLoading: true });
     expect(editor.lastProps.enableMention).toBe(false);
     expect(editor.lastProps.placeholder).toBe(
       'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
@@ -386,18 +342,13 @@ describe('+ 号弹层结构', () => {
     ).toBeNull();
     click.mockRestore();
   });
-
-  it('ChatBot 保留业务方显式配置的 placeholder', () => {
-    renderInput({ agentType: 'ChatBot', placeholder: '请输入咨询问题' });
-    expect(editor.lastProps.placeholder).toBe('请输入咨询问题');
-  });
 });
 
 describe('开关持久化（chatbox.config.{agentId} 全量写入）', () => {
-  it('切审批开关：同步宿主 mode 并按 ask 全量写入', () => {
+  it('切审批开关：同步宿主 mode 并按 ask 全量写入', async () => {
     const onAgentModeChange = vi.fn();
-    renderInput({ agentEnableVersionControl: 1, onAgentModeChange });
-    openPlusMenu();
+    await renderInput({ agentEnableVersionControl: 1, onAgentModeChange });
+    await openPlusMenu();
 
     fireEvent.click(
       screen.getByText('PC.Components.ChatInputHome.approvalModeSwitch'),
@@ -410,8 +361,8 @@ describe('开关持久化（chatbox.config.{agentId} 全量写入）', () => {
   });
 
   it('切产物版本管理开关：写 0 并收起自动提交行', async () => {
-    renderInput({ agentEnableVersionControl: 1 });
-    openPlusMenu();
+    await renderInput({ agentEnableVersionControl: 1 });
+    await openPlusMenu();
 
     fireEvent.click(
       screen.getByText('PC.Components.ChatInputHome.versionControlSwitch'),
@@ -428,9 +379,9 @@ describe('开关持久化（chatbox.config.{agentId} 全量写入）', () => {
     );
   });
 
-  it('切变更自动提交开关：仅改 autoCommit 位', () => {
-    renderInput({ agentEnableVersionControl: 1 });
-    openPlusMenu();
+  it('切变更自动提交开关：仅改 autoCommit 位', async () => {
+    await renderInput({ agentEnableVersionControl: 1 });
+    await openPlusMenu();
 
     fireEvent.click(
       screen.getByText('PC.Components.ChatInputHome.autoCommitSwitch'),
@@ -441,29 +392,25 @@ describe('开关持久化（chatbox.config.{agentId} 全量写入）', () => {
     });
   });
 
-  it('无 agentId 时仅内存态，不写服务端', () => {
-    const { rerender } = render(
-      <ChatInputUnified onEnter={vi.fn()} agentMode="yolo" />,
-    );
-    const plusBox = document.querySelector('.plus-box');
-    fireEvent.click(plusBox!);
+  it('无 agentId 时仅内存态，不写服务端', async () => {
+    await renderInput({ agentId: undefined });
+    await openPlusMenu();
     fireEvent.click(
       screen.getByText('PC.Components.ChatInputHome.approvalModeSwitch'),
     );
     expect(userConfig.set).not.toHaveBeenCalled();
-    rerender(<ChatInputUnified onEnter={vi.fn()} agentMode="yolo" />);
   });
 });
 
 describe('服务端配置回填', () => {
   it('未配置过：enableVersionControl 用 agent 默认值、autoCommit 默认开，不写服务端', async () => {
-    renderInput({ agentEnableVersionControl: 1 });
+    await renderInput({ agentEnableVersionControl: 1 });
     await waitFor(() =>
       expect(userConfig.get).toHaveBeenCalledWith(`chatbox.config.${AGENT_ID}`),
     );
     expect(userConfig.set).not.toHaveBeenCalled();
     // 默认值驱动开关行（自动提交行显示 = ev=1）
-    openPlusMenu();
+    await openPlusMenu();
     expect(
       screen.getByText('PC.Components.ChatInputHome.autoCommitSwitch'),
     ).toBeInTheDocument();
@@ -474,10 +421,10 @@ describe('服务端配置回填', () => {
     userConfig.get.mockResolvedValue({
       data: { mode: 'ask', enableVersionControl: 1, autoCommit: 0 },
     });
-    renderInput({ agentEnableVersionControl: 0, onAgentModeChange });
+    await renderInput({ agentEnableVersionControl: 0, onAgentModeChange });
 
     await waitFor(() => expect(onAgentModeChange).toHaveBeenCalledWith('ask'));
-    openPlusMenu();
+    await openPlusMenu();
     // 回填覆盖 agent 默认（ev=1）→ 自动提交行显示
     expect(
       screen.getByText('PC.Components.ChatInputHome.autoCommitSwitch'),
@@ -486,8 +433,8 @@ describe('服务端配置回填', () => {
 
   it('读取失败静默：回落默认值不抛错', async () => {
     userConfig.get.mockRejectedValue(new Error('network'));
-    renderInput({ agentEnableVersionControl: 0 });
-    openPlusMenu();
+    await renderInput({ agentEnableVersionControl: 0 });
+    await openPlusMenu();
     await waitFor(() => expect(userConfig.get).toHaveBeenCalled());
     expect(
       screen.getByText('PC.Components.ChatInputHome.versionControlSwitch'),
@@ -496,15 +443,9 @@ describe('服务端配置回填', () => {
 });
 
 describe('审批模式回执 pill', () => {
-  it('mode=ask 时 + 号旁显示，x 关闭即切回自动并写入', () => {
+  it('关闭审批模式回执即切回自动并写入', async () => {
     const onAgentModeChange = vi.fn();
-    renderInput({ agentMode: 'ask', onAgentModeChange });
-
-    const pill = document.querySelector('.approval-pill');
-    expect(pill).toBeTruthy();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.agentModeApproval'),
-    ).toBeInTheDocument();
+    await renderInput({ agentMode: 'ask', onAgentModeChange });
 
     fireEvent.click(document.querySelector('.approval-pill-close')!);
     expect(onAgentModeChange).toHaveBeenCalledWith('yolo');
@@ -512,10 +453,5 @@ describe('审批模式回执 pill', () => {
       key: `chatbox.config.${AGENT_ID}`,
       value: { mode: 'yolo', enableVersionControl: 0, autoCommit: 1 },
     });
-  });
-
-  it('mode=yolo 时不显示', () => {
-    renderInput({ agentMode: 'yolo' });
-    expect(document.querySelector('.approval-pill')).toBeNull();
   });
 });

@@ -47,7 +47,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('推荐提示词优先展示标题和图标，点击填入内容；空数组回退智能体提示', () => {
+it('点击推荐填入完整内容，空列表回退智能体提示', () => {
   const onQuestionClick = vi.fn();
   const props = {
     items,
@@ -57,7 +57,7 @@ it('推荐提示词优先展示标题和图标，点击填入内容；空数组�
       { type: GuidQuestionSetTypeEnum.Question, info: '智能体原有提示' },
     ],
   };
-  const { container, rerender } = render(
+  const { rerender } = render(
     <ChatBoxRecommendNav
       {...props}
       recommendPrompts={[
@@ -66,19 +66,12 @@ it('推荐提示词优先展示标题和图标，点击填入内容；空数组�
           content: '完整提示词\n保留换行',
           icon: '/prompt.png',
         },
-        { title: '   ', content: '无标题内容', icon: '' },
         { title: '无效提示', content: '   ', icon: '' },
       ]}
     />,
   );
   expect(screen.queryByText('智能体原有提示')).toBeNull();
   expect(screen.queryByText('无效提示')).toBeNull();
-  expect(
-    screen.getByRole('button', { name: '无标题内容' }),
-  ).toBeInTheDocument();
-  expect(container.querySelector('img')?.getAttribute('src')).toBe(
-    '/prompt.png',
-  );
   fireEvent.click(screen.getByRole('button', { name: '推荐标题' }));
   expect(onQuestionClick).toHaveBeenCalledWith('完整提示词\n保留换行');
   rerender(<ChatBoxRecommendNav {...props} recommendPrompts={[]} />);

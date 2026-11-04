@@ -1,5 +1,3 @@
-import { dict } from '@/services/i18nRuntime';
-
 export const ACCESS_TOKEN = 'ACCESS_TOKEN';
 export const USER_INFO = 'USER_INFO';
 // expireDate
@@ -17,12 +15,3 @@ export const APP_VERSION = 'APP_VERSION';
 // 全局轮询基准间隔(ms)：useEventPolling(事件收集) 与 useConversationStreamResume(会话流式恢复) 共用，
 // 保持两者轮询频率一致；调整时只改这一处
 export const GLOBAL_POLLING_INTERVAL = 5000;
-
-// 推荐聊天主题
-export const RECOMMEND_TEXT = [
-  dict('PC.Constants.Home.exampleQ1'),
-  dict('PC.Constants.Home.exampleQ2'),
-  dict('PC.Constants.Home.exampleQ3'),
-  dict('PC.Constants.Home.exampleQ4'),
-  dict('PC.Constants.Home.exampleQ5'),
-];
