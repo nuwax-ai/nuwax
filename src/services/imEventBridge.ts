@@ -14,6 +14,15 @@ let unreadRevision = 0;
 let hasWebUnreadConfirmation = false;
 const unreadListeners = new Set<() => void>();
 let disconnectCurrent: (() => void) | undefined;
+// 认证或设备限制已明确拒绝当前会话时，停止后台校准，等待新的登录生命周期。
+const UNREAD_REFRESH_STOP_CODES = new Set([
+  '4010',
+  '4011',
+  'IM_10401',
+  'IM_10402',
+  'IM_10403',
+  'IM_10429',
+]);
 
 function updateUnreadCount(total: number): void {
   if (!Number.isSafeInteger(total) || total < 0) return;
@@ -124,23 +133,18 @@ export function createWebImUnreadRefresh(): {
         if (currentUnreadRevision === unreadRevision)
           confirmWebUnreadCount(total);
       } else {
-        blocked = [
-          '4010',
-          '4011',
-          'IM_10401',
-          'IM_10402',
-          'IM_10403',
-          'IM_10429',
-        ].includes(String(result?.code));
+        blocked = UNREAD_REFRESH_STOP_CODES.has(String(result?.code));
       }
     } catch (error) {
       const failure = error as {
+        info?: { code?: unknown };
         response?: { status?: number };
         status?: number;
       };
-      blocked = [401, 403].includes(
-        failure?.response?.status ?? failure?.status ?? 0,
-      );
+      // silentPolling 的 HTTP 200 业务失败由请求层包装为 BizError.info.code。
+      blocked =
+        UNREAD_REFRESH_STOP_CODES.has(String(failure?.info?.code)) ||
+        [401, 403].includes(failure?.response?.status ?? failure?.status ?? 0);
     } finally {
       if (controller === abort) controller = undefined;
       if (isCurrent() && blocked) authBlocked = true;

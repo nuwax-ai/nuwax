@@ -533,9 +533,22 @@ describe('网页长期驻留的未读恢复', () => {
     expect(imUnreadState.getSnapshot()).toBe(7);
   });
 
-  it.each([401, 403])('认证 HTTP %s 后不自动重试旧会话', async (status) => {
+  it.each<[string, unknown]>([
+    ['HTTP 401', { response: { status: 401 } }],
+    ['HTTP 403', { response: { status: 403 } }],
+    ...['4010', '4011', 'IM_10401', 'IM_10402', 'IM_10403', 'IM_10429'].map(
+      (code): [string, unknown] => [
+        `BizError ${code}`,
+        Object.assign(new Error('current session rejected'), {
+          name: 'BizError',
+          info: { code },
+          config: { silentPolling: true },
+        }),
+      ],
+    ),
+  ])('%s 后停止旧校准，重新登录可恢复', async (_reason, error) => {
     vi.useFakeTimers();
-    mocks.request.mockRejectedValue({ response: { status } });
+    mocks.request.mockRejectedValue(error);
     const view = renderNavigation();
     await settle();
     act(() => window.dispatchEvent(new Event('online')));
@@ -544,6 +557,8 @@ describe('网页长期驻留的未读恢复', () => {
       await vi.advanceTimersByTimeAsync(180_000);
     });
     expect(mocks.request).toHaveBeenCalledOnce();
+    // 仅停止本地校准，不把设备限制等业务码强制解释成全局登出。
+    expect(mocks.loggedIn).toBe(true);
     mocks.request.mockResolvedValue(success(4));
     login(false);
     login(true);
