@@ -9,6 +9,7 @@ on:
       - 'src/models/conversationInfoMessageList*'
       - 'src/features/conversation/**'
       - 'src/components/business-component/UnifiedChatSession/**'
+      - 'src/components/business-component/ChatInputUnified/**'
       - 'src/components/business-component/MessageQueue/**'
       - 'src/components/business-component/AgentIntervention/**'
       - 'src/components/ChatInputHome/**'
@@ -18,8 +19,11 @@ on:
       - 'src/pages/SpacePluginTool/components/PluginChatSession/**'
       - 'src/utils/conversation*'
       - 'src/utils/eventBus*'
+      - 'src/hooks/useConversation*'
+      - 'src/hooks/useInitialConversationAutoSend*'
       - 'tests/**'
       - 'scripts/e2e/**'
+      - 'vitest*.config.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/conversation-tests.yml'
@@ -29,6 +33,7 @@ on:
       - 'src/models/conversationInfoMessageList*'
       - 'src/features/conversation/**'
       - 'src/components/business-component/UnifiedChatSession/**'
+      - 'src/components/business-component/ChatInputUnified/**'
       - 'src/components/business-component/MessageQueue/**'
       - 'src/components/business-component/AgentIntervention/**'
       - 'src/components/ChatInputHome/**'
@@ -38,11 +43,18 @@ on:
       - 'src/pages/SpacePluginTool/components/PluginChatSession/**'
       - 'src/utils/conversation*'
       - 'src/utils/eventBus*'
+      - 'src/hooks/useConversation*'
+      - 'src/hooks/useInitialConversationAutoSend*'
       - 'tests/**'
       - 'scripts/e2e/**'
+      - 'vitest*.config.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/workflows/conversation-tests.yml'
+
+concurrency:
+  group: conversation-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   conversation-contract-tests:

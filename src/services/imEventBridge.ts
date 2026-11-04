@@ -14,6 +14,15 @@ let unreadRevision = 0;
 let hasWebUnreadConfirmation = false;
 const unreadListeners = new Set<() => void>();
 let disconnectCurrent: (() => void) | undefined;
+// 认证或设备限制已明确拒绝当前会话时，停止后台校准，等待新的登录生命周期。
+const UNREAD_REFRESH_STOP_CODES = new Set([
+  '4010',
+  '4011',
+  'IM_10401',
+  'IM_10402',
+  'IM_10403',
+  'IM_10429',
+]);
 
 function updateUnreadCount(total: number): void {
   if (!Number.isSafeInteger(total) || total < 0) return;
@@ -49,32 +58,113 @@ export function createWebImUnreadRefresh(): {
   }
   let disposed = false;
   let requestRevision = 0;
-  const refresh = async () => {
-    if (disposed || !getCurrentLoginStatus() || hostBridge.im.hasNativeUnread())
+  let controller: AbortController | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let failures = 0;
+  let authBlocked = false;
+  const clearTimer = () => {
+    if (timer) clearTimeout(timer);
+    timer = undefined;
+  };
+  const canRefresh = () =>
+    !disposed &&
+    getCurrentLoginStatus() &&
+    !hostBridge.im.hasNativeUnread() &&
+    !authBlocked;
+  const isVisibleOnline = () =>
+    document.visibilityState === 'visible' && navigator.onLine !== false;
+  // 先声明再赋值，schedule 与 refresh 需要互相调用。
+  let refresh: () => Promise<void>;
+  const schedule = (delay = 45_000) => {
+    clearTimer();
+    if (!canRefresh()) return;
+    timer = setTimeout(() => {
+      timer = undefined;
+      // 已挂载 IM 自带未读校准；未打开 IM 时由导航兜底，避免两路周期查询。
+      const im = window.__im;
+      const userId = im?.getSnapshot?.()?.userId;
+      // 已登录的 IM 实例自己校准未读；userId 缺失表示尚未挂上可用会话。
+      const imOwnsUnread =
+        typeof im?.onUnreadChange === 'function' &&
+        userId !== null &&
+        userId !== undefined;
+      if (!isVisibleOnline() || controller || (!failures && imOwnsUnread)) {
+        schedule();
+        return;
+      }
+      void refresh();
+    }, delay);
+  };
+  refresh = async () => {
+    if (!canRefresh()) return;
+    if (!isVisibleOnline()) {
+      schedule();
       return;
+    }
+    clearTimer();
+    controller?.abort();
+    const abort = new AbortController();
+    controller = abort;
     const currentRequest = ++requestRevision;
     const currentUnreadRevision = unreadRevision;
+    const isCurrent = () => canRefresh() && currentRequest === requestRevision;
+    let retry = true;
+    let blocked = false;
     try {
       const result: RequestResponse<{ total: number }> = await request(
         '/api/instant-message/unread-total',
-        { method: 'GET', silentPolling: true },
+        {
+          method: 'GET',
+          silentPolling: true,
+          timeout: 15_000,
+          signal: abort.signal,
+        },
       );
+      if (!isCurrent()) return;
+      const total = result?.data?.total;
       if (
-        !disposed &&
-        getCurrentLoginStatus() &&
-        !hostBridge.im.hasNativeUnread() &&
-        currentRequest === requestRevision &&
-        currentUnreadRevision === unreadRevision &&
-        result?.code === '0000'
+        result?.code === '0000' &&
+        typeof total === 'number' &&
+        Number.isSafeInteger(total) &&
+        total >= 0
       ) {
-        confirmWebUnreadCount(result.data?.total);
+        retry = false;
+        failures = 0;
+        if (currentUnreadRevision === unreadRevision)
+          confirmWebUnreadCount(total);
+      } else {
+        blocked = UNREAD_REFRESH_STOP_CODES.has(String(result?.code));
       }
-    } catch {
-      // 后台校准失败保留最后成功值，下次导航继续尝试。
+    } catch (error) {
+      const failure = error as {
+        info?: { code?: unknown };
+        response?: { status?: number };
+        status?: number;
+      };
+      // silentPolling 的 HTTP 200 业务失败由请求层包装为 BizError.info.code。
+      blocked =
+        UNREAD_REFRESH_STOP_CODES.has(String(failure?.info?.code)) ||
+        [401, 403].includes(failure?.response?.status ?? failure?.status ?? 0);
+    } finally {
+      if (controller === abort) controller = undefined;
+      if (isCurrent() && blocked) authBlocked = true;
+      else if (isCurrent()) {
+        const delay = retry
+          ? Math.min(30_000, 1_000 * 2 ** Math.min(failures++, 5))
+          : 45_000;
+        schedule(
+          retry ? Math.round(delay * (0.75 + Math.random() * 0.25)) : delay,
+        );
+      }
     }
   };
   const clear = () => {
     requestRevision += 1;
+    controller?.abort();
+    controller = undefined;
+    clearTimer();
+    failures = 0;
+    authBlocked = false;
     if (!hostBridge.im.hasNativeUnread()) {
       hasWebUnreadConfirmation = false;
       updateUnreadCount(0);
@@ -84,16 +174,37 @@ export function createWebImUnreadRefresh(): {
     clear();
     if (getCurrentLoginStatus()) void refresh();
   });
-  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, clear);
+  const online = () => {
+    failures = 0;
+    void refresh();
+  };
+  const offline = () => {
+    requestRevision += 1;
+    controller?.abort();
+    controller = undefined;
+    schedule();
+  };
+  window.addEventListener('online', online);
+  window.addEventListener('offline', offline);
+  const sessionCleared = () => {
+    clear();
+    authBlocked = true;
+  };
+  eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, sessionCleared);
+  schedule();
   return {
     refresh,
     dispose() {
       if (disposed) return;
       disposed = true;
       requestRevision += 1;
+      controller?.abort();
+      clearTimer();
       hasWebUnreadConfirmation = false;
       offLogin();
-      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, clear);
+      window.removeEventListener('online', online);
+      window.removeEventListener('offline', offline);
+      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, sessionCleared);
     },
   };
 }

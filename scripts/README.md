@@ -39,9 +39,8 @@
 
 | 脚本 | 入口 | 作用 |
 | --- | --- | --- |
-| `check-types.mjs` | `npm run typecheck[:<domain>]`、`typecheck:prune` | 分域严格类型门（域定义 `typecheck-domains.json`，基线 `typecheck-baseline.json`），见 [docs/typecheck-domains.md](../docs/typecheck-domains.md) |
+| `check-types.mjs` | `npm run typecheck[:<domain>]` | 分域严格类型门，域内要求零诊断（范围见 `typecheck-domains.json`），见 [docs/typecheck-domains.md](../docs/typecheck-domains.md) |
 | `check-types.test.mjs` | `npm run test:typecheck` | 类型门自身测试 |
-| `sdlc-evals.mjs` | CI `sdlc-evals.yml` | AI SDLC 规则层 hooks 的样本回归（托管件，勿手改） |
 | `a11y-audit.js` | `node scripts/a11y-audit.js` | axe-core 无障碍快照 |
 
 ## i18n
