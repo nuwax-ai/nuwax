@@ -111,6 +111,10 @@ describe('portable theme contract', () => {
       expect(vars[`--${prefix}-color-primary`]).toBe('#2563eb');
     expect(vars['--ant-color-text']).toBe(s.tokens['text.primary']);
     expect(vars['--ant-color-text-secondary']).toBe(s.tokens['text.secondary']);
+    expect(vars['--color-background-default']).toBe(s.tokens['elevated.bg']);
+    expect(vars['--color-font-primary']).toBe(s.tokens['text.primary']);
+    expect(vars['--color-font-tertiary']).toBe(s.tokens['text.secondary']);
+    expect(vars['--color-border-02']).toBe(s.tokens['border.default']);
     expect(vars['--v2-color-text-secondary']).toBe(s.tokens['text.secondary']);
     expect(vars['--nuwax-chat-think-bg']).toBe(s.tokens['chat.think.bg']);
     expect(tokenToAntd(s.tokens)).toMatchObject({

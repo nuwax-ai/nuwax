@@ -73,6 +73,88 @@
 // 旧页面的固定配色只在主题运行时生效后覆盖。匹配 CSS Module 的语义前缀，
 // 不绑定构建哈希；不全局改写文字、SVG、状态色或文档内容。
 html[data-theme-surface='web'][data-theme-id] {
+  :is([data-theme-part='resource-catalog'], [data-theme-part='app-catalog']) {
+    background-color: var(--nuwax-app-bg);
+    color: var(--nuwax-text-primary);
+
+    :is(
+        [class*='category-tab___'],
+        [class*='more-btn___'],
+        [class*='recent-toggle___']
+      ) {
+      color: var(--nuwax-text-secondary);
+
+      &:hover {
+        color: var(--nuwax-primary);
+      }
+    }
+
+    [class*='category-tab___']:hover {
+      background-color: var(--nuwax-hover-bg);
+    }
+
+    [class*='category-tab-active___'],
+    [class*='category-tab-active___']:hover {
+      color: var(--nuwax-primary);
+      background-color: var(--nuwax-selected-bg);
+    }
+
+    :is([class*='conv-count___'], [class*='category-text___']) {
+      color: var(--nuwax-text-secondary);
+    }
+
+    [class*='count-box___'] [class*='text___'],
+    [class*='author-rel-info___'] [class*='name___'] {
+      color: var(--nuwax-text-secondary);
+    }
+  }
+
+  [data-theme-part='resource-catalog'] [class*='sidebar___'] {
+    background-color: var(--nuwax-sidebar-bg);
+    border-color: var(--nuwax-border-default);
+
+    [class*='title___'] {
+      color: var(--nuwax-text-primary);
+    }
+
+    [class*='menu-item___'] {
+      color: var(--nuwax-text-secondary);
+
+      &:hover {
+        color: var(--nuwax-text-primary);
+        background-color: var(--nuwax-hover-bg);
+      }
+    }
+
+    [class*='menu-item-active___'],
+    [class*='menu-item-active___']:hover {
+      color: var(--nuwax-primary);
+      background-color: var(--nuwax-selected-bg);
+    }
+  }
+
+  [data-theme-part='app-catalog'] {
+    [class*='section-title___'] {
+      color: var(--nuwax-text-primary);
+    }
+
+    [class*='recent-item___'] {
+      background-color: var(--nuwax-elevated-bg);
+
+      &:hover {
+        background-color: var(--nuwax-hover-bg);
+      }
+
+      [class*='recent-name___'] {
+        color: var(--nuwax-text-primary);
+      }
+
+      [class*='recent-desc___'] {
+        color: var(--nuwax-text-secondary);
+      }
+    }
+  }
+
   [class*='second-column___'] {
     --xagi-nav-second-row-hover-bg: var(--nuwax-hover-bg);
     --xagi-nav-second-row-active-bg: var(--nuwax-selected-bg);

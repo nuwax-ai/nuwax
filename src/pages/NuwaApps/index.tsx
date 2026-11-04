@@ -428,7 +428,10 @@ const NuwaApps: React.FC = () => {
       : recentList.slice(0, recentTwoRowLimit);
 
   return (
-    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+    <div
+      data-theme-part="app-catalog"
+      className={cx(styles.container, 'h-full', 'flex', 'flex-col')}
+    >
       {/* 头部:标题 + 搜索 + 更多 */}
       <PageContainerHeader
         className={cx(styles.header)}

@@ -32,7 +32,10 @@ const ExpertSkillConnector: React.FC = () => {
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
   return (
-    <div className={cx(styles.container, 'flex', 'h-full')}>
+    <div
+      data-theme-part="resource-catalog"
+      className={cx(styles.container, 'flex', 'h-full')}
+    >
       <CategorySidebar activeKey={resourceType} />
       <div className={cx(styles['content-wrapper'])}>
         {/* key 保证资源类型切换或导航重复点击时聚合内容区状态重置并刷新 */}

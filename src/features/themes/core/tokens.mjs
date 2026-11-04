@@ -193,6 +193,13 @@ export function tokenToCssVariables(tokens) {
     border: 'border.default',
     'border-secondary': 'border.default',
     divider: 'border.default',
+    // CardWrapper / AppCard 等旧卡片使用的设计变量名。
+    'background-default': 'elevated.bg',
+    'border-02': 'border.default',
+    'border-primary': 'focus.ring',
+    'font-primary': 'text.primary',
+    'font-secondary': 'text.secondary',
+    'font-tertiary': 'text.secondary',
   }))
     if (Object.hasOwn(tokens, key)) result[`--color-${alias}`] = tokens[key];
   return result;
