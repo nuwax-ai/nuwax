@@ -551,8 +551,9 @@ describe('静态 PPTX 分享页', () => {
     );
     await page.win.startPreview();
     expect(page.fetch).toHaveBeenCalledOnce();
+    // 3113219bd 起普通预览不再把 _ticket 拼进文件 URL，鉴权走同源 cookie。
     expect(page.fetch).toHaveBeenCalledWith(
-      `${fileUrl}&_ticket=preview-ticket`,
+      fileUrl,
       expect.objectContaining({
         credentials: 'same-origin',
         cache: 'no-cache',
