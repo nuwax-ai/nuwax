@@ -46,4 +46,11 @@
   border-color: var(--nuwax-border-default);
 }
 
+/* 画布与缩略图属于文件内容；保存的背景/文字颜色仍由元素自身的 inline 样式决定。 */
+[data-repo-app-scope][data-theme] .slide-editor__slide,
+[data-repo-app-scope][data-theme] .slide-editor__thumb-frame {
+  color: #1f2329;
+  background-color: #fff;
+}
+
 /* stylelint-enable selector-class-pattern */

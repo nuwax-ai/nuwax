@@ -45,6 +45,7 @@ export function rewriteThemeColors(root) {
       '#f8fafc',
       '#f9fafb',
       '#f6f7f8',
+      '#f5f6f7',
       '#f9f9f9',
       '#f5f5f5',
       '#f3f4f6',
@@ -86,7 +87,7 @@ export function rewriteThemeColors(root) {
     if (/url\s*\(|["']/i.test(declaration.value)) return;
     // 编辑器内容、文档纸张和代码语法由各自渲染器管理，不做文字颜色替换。
     if (
-      /ProseMirror|tiptap|univer|doc-paper|page-paper|hljs|\.token\b/.test(
+      /ProseMirror|tiptap|univer|doc-paper|page-paper|hljs|\.token\b|\.slide-editor__(?:el|text|text--edit|slide|thumb-frame|formula-body|table-grid|table-cell|chart-svg)(?![-\w])/.test(
         declaration.parent?.selector ?? '',
       )
     )

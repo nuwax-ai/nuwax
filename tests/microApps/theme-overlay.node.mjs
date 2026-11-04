@@ -81,3 +81,23 @@ test('upstream gray palette and rgb surfaces use theme tokens without changing s
   assert.match(css, /\.hljs-string \{color:#4e5969\}/);
   assert.match(css, /\.mask \{background:rgba\(0,0,0,.5\)\}/);
 });
+
+test('slide content keeps document ink while editor chrome follows the theme', () => {
+  const root = postcss.parse(
+    '.slide-editor {background:#f5f6f7} .slide-editor__el {color:#000} .slide-editor__formula-body {color:#1d2129} .slide-editor__table-grid td {background:#fff} .slide-editor__table-cell {color:#1d2129} .slide-editor__table-actions button {color:#1f2329}',
+  );
+  rewriteThemeColors(root);
+  const css = root.toString();
+  assert.match(
+    css,
+    /\.slide-editor \{background:var\(--nuwax-surface-bg, #f5f6f7\)\}/,
+  );
+  assert.match(css, /\.slide-editor__el \{color:#000\}/);
+  assert.match(css, /\.slide-editor__formula-body \{color:#1d2129\}/);
+  assert.match(css, /\.slide-editor__table-grid td \{background:#fff\}/);
+  assert.match(css, /\.slide-editor__table-cell \{color:#1d2129\}/);
+  assert.match(
+    css,
+    /\.slide-editor__table-actions button \{color:var\(--nuwax-text-primary, #1f2329\)\}/,
+  );
+});
