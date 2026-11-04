@@ -53,4 +53,6 @@ jobs:
       - name: Test type gate
         run: pnpm test:typecheck
       - name: Check type domains
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: pnpm typecheck

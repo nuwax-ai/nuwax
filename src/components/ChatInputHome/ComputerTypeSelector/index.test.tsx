@@ -82,6 +82,62 @@ const click = (element: HTMLElement) =>
   });
 
 describe('电脑列表刷新与选择保护', () => {
+  it.each<Record<string, string>>([{}, { 7: '-1' }])(
+    '只有个人电脑时自动同步默认电脑，无须手选且不保存临时值（记忆=%j）',
+    async (agentSelected) => {
+      const onChange = vi.fn();
+      fetchComputerList.mockResolvedValue(response([local], agentSelected));
+      render(
+        <Controlled
+          initialValue="-1"
+          agentId={7}
+          strictAgentMemory
+          onChange={onChange}
+        />,
+      );
+
+      await screen.findByText('我的电脑');
+      await waitFor(() =>
+        expect(screen.getByTestId('selected-id')).toHaveTextContent('366'),
+      );
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(
+        '366',
+        expect.objectContaining({ id: '366' }),
+      );
+      expect(saveSelection).not.toHaveBeenCalled();
+    },
+  );
+
+  it('启动刷新后仅剩个人电脑时，默认云端值随列表更新，无须手选', async () => {
+    window.NuwaClawBridge = { host: { getProduct: () => 'nuwax' } };
+    const onChange = vi.fn();
+    fetchComputerList
+      .mockResolvedValueOnce(response([cloud]))
+      .mockResolvedValue(response([local]));
+    render(
+      <Controlled
+        initialValue="-1"
+        agentId={7}
+        strictAgentMemory
+        onChange={onChange}
+      />,
+    );
+
+    await screen.findByText('云端电脑');
+    act(() =>
+      handleComputerServiceStatePayload({ phase: 'ready', sandboxId: '366' }),
+    );
+    await screen.findByText('我的电脑');
+    expect(screen.getByTestId('selected-id')).toHaveTextContent('366');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(
+      '366',
+      expect.objectContaining({ id: '366' }),
+    );
+    expect(saveSelection).not.toHaveBeenCalled();
+  });
+
   it('不读取 Agent 记忆时，项目电脑离线回落云端必须同步真实选择，不保存临时值', async () => {
     const onChange = vi.fn();
     fetchComputerList.mockResolvedValue(response([cloud, other], { 7: '999' }));
