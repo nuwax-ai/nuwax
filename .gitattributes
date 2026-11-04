@@ -1,2 +1,8 @@
 # 补丁的空白上下文行必须保留一个空格，供 git apply 解析；其它空白检查仍保留。
 micro-frontends/*/adapter.patch whitespace=-blank-at-eol
+
+# Umi 生产构建产物。/dist 已在 .gitignore 中，但历史文件仍被 Git 跟踪，
+# 发版提交会把整目录带进 PR。linguist-generated 只影响 GitHub 展示：
+# Files changed 里这些文件默认折叠 diff，也不计入仓库语言统计。
+# 不改变是否入库。属性需随本文件提交后，后续 PR 才会生效。
+/dist/** linguist-generated=true
