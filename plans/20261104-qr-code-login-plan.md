@@ -2,7 +2,7 @@
 
 ## 目标与决定
 
-- 本功能属于**下一版本交付内容**，PR 目标仍为 `feat-2026.11`。当前共享登录页实现与全链路设计一起评审；跨端待办完成并联合验收后才算功能交付。
+- 本功能属于**下一版本交付内容**，PC Web 和移动端 PR 目标仍为 `feat-2026.11`，客户端为 `release/v3.1.0`。三端候选分别提交评审；跨端集成和联合验收由版本交付安排。
 - 开发基于 `dev`（`e48b25394d5364ab8d8377fb4b71e7ce5a1c0f14`），分支 `codex/qr-code-login`。需求来源：[11 月规划 L7 / H3](https://agent.nuwax.com/repo/doc/fE9VALiLLvThNueV)。范围覆盖 PC Web、Nuwax 桌面客户端 `nuwax-client`、`nuwax-mobile` 的浏览器 H5 与原生 App。
 
 | 端 | 角色与入口 | 完成后的会话 |
@@ -20,8 +20,8 @@
 - 测试环境实际返回的二维码是 `https://{业务域}/qrlogin/{sceneId}`。`qrContent` 由后端生成，目标端原样编码；`pollToken` 只保存在发起面板内存，绝不进入二维码、跳转参数、日志或移动端。
 - 本 PR 已实现 `src/services/qrLogin.ts`、登录页扫码面板及回归测试；确认后复用既有登录收尾。普通线上浏览器与商业桌面壳走 Cookie，本地普通浏览器开发模式单独取回调试 Token。
 - `nuwax-client` 的实际壳入口为 `nuwa-electron-shell/crates/agent-electron-client/`。[客户端 PR #87](https://github.com/nuwax-ai/nuwax-client/pull/87) 将二维码创建/状态查询纳入匿名登录签发分类，复用 `auth:beginLogin` / `auth:syncSession` 和 Cookie 镜像；网关依赖此分类隔离旧 ticket 并推进登录代次，手机 scan/confirm 仍保留鉴权。客户端候选目标为 `release/v3.1.0`，当前消费 pin 尚未包含扫码界面，下一版本集成时需同时消费两端改动。
-- `nuwax-mobile` 的 `utils/scanRouter.uts` 与 `components/scan-launcher/scan-launcher.uvue` 已分发邀请、名片、群和普通链接，尚无登录码分支；H5 扫相机当前为“不支持”提示。登录前置可复用 `utils/authNavigation.uts`，认证模型以 `utils/authSession.uts` 为准：生产浏览器 H5 用 Cookie，原生 App / App 内嵌 H5 用现有 Bearer。
-- 移动端冷启动 `pages/launch/launch.uvue`、热启动 `App.uvue:onShow` 目前接分享链接；Android/iOS manifest 已声明 `nuwax` scheme，但不等于已支持扫码登录深链，鸿蒙也需单独验证。移动端源码本次仅核对；客户端在独立 worktree 开发，均未更新当前交付的源码或产物 pin。
+- [移动端 PR #20](https://github.com/nuwax-ai/nuwax-mobile/pull/20) 新增确认页、scan/confirm 请求封装、扫一扫登录码分发以及冷/热启动 scheme 续接。登录前置复用 `utils/authNavigation.uts`，认证模型以 `utils/authSession.uts` 为准：生产浏览器 H5 用 Cookie，原生 App / App 内嵌 H5 用现有 Bearer。普通 H5 浏览器仍由外部相机打开链接，本次没有开放网页内相机识码。
+- Android/iOS manifest 已声明 `nuwax` scheme，本次新增其扫码登录消费逻辑；原生平台的实际唤起和鸿蒙能力仍待版本集成验证。源码候选不等于已上线，未更新当前交付的源码或产物 pin。
 
 ## 端到端流程
 
@@ -54,15 +54,15 @@ sequenceDiagram
 
 ### 路由与登录续接
 
-以下确认页和 scheme 为**拟新增契约**，当前尚未注册，不能当作已上线地址。
+以下确认页和 scheme 已在源码候选中注册，尚未合并或上线。
 
-| 场景 | 拟定落点与动作 |
+| 场景 | 落点与动作 |
 | --- | --- |
 | 统一二维码 | 保留后端 `https://{业务域}/qrlogin/{sceneId}`，不另造携带登录 Token 的码 |
-| App 内扫一扫 | 在普通 URL 分发之前识别同服务域 `/qrlogin/:sceneId`，进入 `/subpackages/pages/qr-login/qr-login?sceneId=…` |
+| App 内扫一扫 | 在普通 URL 分发之前识别同服务域 `/qrlogin/:sceneId`，进入 `/subpackages/pages/qr-login/qr-login?sceneId=…&origin=…` |
 | 系统相机/外部浏览器 | `/qrlogin/:sceneId` 转为同源 `/m/#/subpackages/pages/qr-login/qr-login?sceneId=…`；站点须保证该入口可达，避免先落入 PC 404 或普通移动首页 |
 | H5 打开 App | 用户明确点击后尝试 `nuwax://qrlogin?sceneId=…&origin=…`；失败或未安装时保留 H5 确认和下载入口，不自动无限唤起 |
-| App 冷/热启动 | 启动页、`onShow` 统一消费同一份扫码意图，先过隐私协议与登录闸门，再打开确认页；不能只处理扫一扫组件内的入口 |
+| App 冷/热启动 | 启动页、`onShow` 统一消费明确的扫码意图，未登录先走现有带协议勾选的登录页，再返回确认页；普通回前台不重放旧唤起参数 |
 | 未登录或会话失效 | `redirect` / `authReturnUrl` 保留同源确认页和 `sceneId`；完成密码、验证码或服务端配置的联合登录后回确认页，重新校验二维码，不自动提交 confirm |
 
 `sceneId` 为不透明字符串，只校验长度、字符与单路径段边界，并在请求路径中编码；不套用名片 userId 的纯数字规则。二维码服务 origin 必须与 App 当前配置或 H5 当前业务 origin 精确匹配，拒绝伪造域、带凭据地址和跨环境码；不能凭扫码参数静默切企业域、自动登录外站或向二维码给定地址发送手机凭据。
@@ -94,9 +94,10 @@ sequenceDiagram
 
 ## 实施与验证
 
-- 共享前端：已实现协议确认、二维码生成、串行轮询、有效期、失败重试、登录收尾，以及已扫码时主动重新生成。换码点击时立即取消旧请求并使迟到确认失效；手机 `/qrlogin/:sceneId` 的 H5 承接路由仍待实施。
+- 共享前端：已实现协议确认、二维码生成、串行轮询、有效期、失败重试、登录收尾，以及已扫码时主动重新生成。换码点击时立即取消旧请求并使迟到确认失效；`/qrlogin/:sceneId` 首屏分流及匿名路由兜底将手机带到同源 M 站确认页，丢弃额外的 origin、pollToken 和 redirect。
 - 客户端：匿名登录签发分类候选见 PR #87；直连与 loopback 复用现有 Cookie 和主进程 commercialAuth / AuthLifecycle，不在网页注册设备。源码及产物 pin 按下一版本整体更新，安装包通过 GitHub Actions 验收。
-- 移动端：在 `servers/` 封装 scan/confirm；新增确认页与 `pages.json` 注册；扩展 scanRouter、扫一扫、H5 登录返回及原生冷/热启动分发。App 内嵌 H5 使用现有受信导航/原生登录交接；跨容器账号不一致时不自动确认。
+- 移动端：已封装 scan/confirm、注册确认页并扩展扫一扫、H5 登录返回及原生冷/热启动分发。确认前再次读取实际账号，换账号/服务域或页面离开后忽略旧响应；双击仅提交一次，确认超时或后台恢复只提示查看电脑并重新校验。H5 提供用户主动打开 App 和下载入口，App 内嵌 H5 使用现有受信导航/原生登录交接，不自动确认。
+- 开发自检：移动端 136 项相关回归、i18n 审计及 HBuilderX Android 代码编译通过；网页承接及二维码相关 35 项回归、改动路径 ESLint/Prettier 通过。H5 使用 HBuilderX 内置编译器构建。真机、安装包及发布验收由团队执行，本次不发版。
 - 接口待联调：scan 的重复进入/同一扫码者重试、confirm 的重复点击/超时重试是否幂等；跨账号/跨租户/过期的业务码；二维码结果被目标端领取一次还是可重试。需要显示精准设备信息时还须后端提供受信目标端元数据与有效期，当前 create 无此入参，scan 返回也没有上下文详情。上述新增契约由后端负责人确认，本任务不修改 `agent-platform`。
 
 验收按真实消费者覆盖：
@@ -111,6 +112,6 @@ sequenceDiagram
 
 ## 未完成事项
 
-- 客户端 PR #87 与本前端候选尚未合并、集成或更新消费 pin；移动 H5 承接路由、App/H5 确认页及深链续接尚未实现。
+- 三端候选尚未合并、集成或更新客户端消费 pin；下一版本需同时消费共享登录页、客户端 PR #87 和移动端确认页。
 - 后端幂等/领取语义、取消撤销和目标端元数据按上文逐项确认；未确认的新增契约不预先调用。
-- 当前仅共享前端本地回归和测试环境真实接口链路通过：通过登录态调用 App 扫码/确认接口，完成本地浏览器登录，并验证断网重试和切换停止轮询。App 真机、H5 外部扫码全链路与商业桌面安装包仍待联合验收。
+- App 真机、H5 外部扫码全链路、iOS/鸿蒙唤起与商业桌面安装包仍待团队联合验收；开发自检不替代这些证据。
