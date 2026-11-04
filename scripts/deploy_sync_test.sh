@@ -11,7 +11,7 @@
 #      停在链路中段分支且工作区干净时自动切回起跑分支，支持失败后直接重跑续跑）
 #   2. 合并 origin/<版本开发分支> 进个人分支
 #   3. 推送个人分支到 GitHub 与 GitLab
-#   4. 跑 pnpm run test:conversation 质量门（非存量挂失败则止步，不碰后续分支；
+#   4. 跑 pnpm run test:conversation 质量门（失败则止步，不碰后续分支；
 #      断点续跑且版本分支已包含个人分支时跳过——该批代码上一轮已过门并推送）
 #   5. 合入版本开发分支并双推送
 #   6. 合入 dev 并双推送，汇合 origin/dev、gitlab/dev 与版本分支；
@@ -37,9 +37,6 @@
 #   INIT_ONLY=1 bash scripts/deploy_sync_test.sh # 只做配置（交互生成 deploy_sync_test.env），不执行同步
 #   DRY_RUN=1 bash scripts/deploy_sync_test.sh  # 演练：写操作只打印不执行（缺配置时不出交互提示，直接报错）
 #   FEATURE_BRANCH=... VERSION_BRANCH=... bash scripts/deploy_sync_test.sh   # 环境变量临时覆写
-#   KNOWN_BROKEN_TESTS="tests/a.test.tsx|tests/b.test.tsx" bash scripts/deploy_sync_test.sh
-#                                     # 质量门存量挂放行清单（| 分隔），默认清单为空。
-#                                     # 确有存量挂时显式指定，修复后移除。
 #
 # 说明：
 # - 所有个人/版本/dev/test 分支在合并或提交后均双推送，任一远端失败不得算完成。
@@ -421,7 +418,7 @@ CURRENT_STEP="test:conversation 质量门"
 if git merge-base --is-ancestor "$FEATURE_BRANCH" "$VERSION_BRANCH"; then
   log "步骤 4/8：${VERSION_BRANCH} 已包含 ${FEATURE_BRANCH}（断点续跑），跳过质量门"
 else
-  log "步骤 4/8：执行 pnpm run test:conversation（非存量挂失败则止步）"
+  log "步骤 4/8：执行 pnpm run test:conversation（失败则止步）"
   run_test_gate
 fi
 

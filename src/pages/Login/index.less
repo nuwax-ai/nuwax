@@ -160,3 +160,26 @@
     margin-bottom: 16px;
   }
 }
+
+.login-form-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 0 64px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .login-form-box {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    padding: 24px;
+  }
+
+  .login-form-footer {
+    position: static;
+    padding: 16px 0 0;
+  }
+}

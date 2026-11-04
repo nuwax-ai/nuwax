@@ -141,7 +141,8 @@ export function tokenToCssVariables(tokens) {
     'border-radius-sm': 'radius.small',
     'border-radius-lg': 'radius.large',
   });
-  for (const prefix of ['xagi', 'v2', 'nuwax'])
+  // 新资料引导等组件沿用 Ant Design 默认前缀；与主站 xagi 前缀共用同套颜色。
+  for (const prefix of ['xagi', 'v2', 'nuwax', 'ant'])
     for (const [alias, key] of Object.entries(aliases))
       if (Object.hasOwn(tokens, key))
         result[`--${prefix}-${alias}`] = tokens[key];

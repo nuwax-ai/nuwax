@@ -11,6 +11,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // 领域归约、选择器与路径解析不依赖 DOM，避免为纯逻辑逐文件创建 jsdom。
+    environmentMatchGlobs: [
+      ['src/features/conversation/domain/**', 'node'],
+      ['src/features/conversation/presentation-v2/*.test.ts', 'node'],
+      [
+        'tests/conversation{EventReducer,MessageEvent,ProcessingEvent,TerminalEvent,MessageLifecycle,SessionView}.test.ts',
+        'node',
+      ],
+    ],
     setupFiles: './tests/setupTests.ts',
     exclude: [
       ...configDefaults.exclude,

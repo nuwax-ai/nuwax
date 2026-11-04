@@ -172,6 +172,33 @@ afterAll(() => {
 });
 
 describe('消息 main store 的正式适配生命周期', () => {
+  it('重连立即补拉未读总数并通过真实监听桥更新导航', async () => {
+    expect(await chat.useChatStore.getState().probePlatformSession()).toBe(
+      true,
+    );
+    await settle();
+    chat.useChatStore.setState({
+      syncIncremental: vi.fn().mockResolvedValue(undefined),
+      loadConversations: vi.fn().mockResolvedValue(undefined),
+      loadContacts: vi.fn().mockResolvedValue(undefined),
+    });
+    const events = await import(
+      /* @vite-ignore */ path.join(source, 'lib/imBridge.ts')
+    );
+    const updated = vi.fn();
+    const off = events.onImUnreadChange(updated);
+    try {
+      unreadTotal.mockClear().mockResolvedValue({ total: 12 });
+      sockets.at(-1).listeners.onReconnected();
+      await settle();
+      expect(unreadTotal).toHaveBeenCalledOnce();
+      expect(chat.useChatStore.getState().unreadTotal).toBe(12);
+      expect(updated).toHaveBeenLastCalledWith({ total: 12 });
+    } finally {
+      off();
+    }
+  });
+
   it('监听桥跟随重建后的真实 store，卸载后旧 store 不再推未读或覆盖快照', async () => {
     bridge = await import(
       /* @vite-ignore */ path.join(source, 'lib/imBridge.ts')

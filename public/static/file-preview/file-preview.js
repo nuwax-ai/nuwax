@@ -787,11 +787,11 @@ async function startPreview() {
             }
         }
     
-        // 2. If _ticket parameter exists, it's a normal preview operation
+        // 2. it's a normal preview operation
         else if (params.fileUrl) {
             // Normal preview operation: get file URL and type
             const previewUrl = new URL(params.fileUrl, baseUrl);
-            if (params._ticket) previewUrl.searchParams.set('_ticket', params._ticket);
+            // if (params._ticket) previewUrl.searchParams.set('_ticket', params._ticket);
             fileUrl = previewUrl.href;
             // 从路径中提取文件名，排除查询参数
             const purePath = params.fileUrl.split('?')[0];
@@ -799,7 +799,7 @@ async function startPreview() {
             fileType = resolvePreviewFileType(purePath);
             // 设置下载地址
             const originalUrl = new URL(params.fileUrl, baseUrl);
-            if (params._sk) originalUrl.searchParams.set('sk', params._sk);
+            if (params.sk) originalUrl.searchParams.set('sk', params.sk);
             downloadUrl = originalUrl.href;
         }
 

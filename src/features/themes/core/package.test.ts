@@ -107,8 +107,10 @@ describe('portable theme contract', () => {
     ).toBe('dark');
     expect(snap(deepSeekThemePackage.files).themeId).toBe('deepseek-inspired');
     const vars = tokenToCssVariables(s.tokens);
-    for (const prefix of ['nuwax', 'xagi', 'v2'])
+    for (const prefix of ['nuwax', 'xagi', 'v2', 'ant'])
       expect(vars[`--${prefix}-color-primary`]).toBe('#2563eb');
+    expect(vars['--ant-color-text']).toBe(s.tokens['text.primary']);
+    expect(vars['--ant-color-text-secondary']).toBe(s.tokens['text.secondary']);
     expect(vars['--v2-color-text-secondary']).toBe(s.tokens['text.secondary']);
     expect(vars['--nuwax-chat-think-bg']).toBe(s.tokens['chat.think.bg']);
     expect(tokenToAntd(s.tokens)).toMatchObject({

@@ -10,7 +10,6 @@
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
-import { apiSearchConversationMessages } from '@/services/conversationSearch';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import {
   apiUserProjectConversations,
@@ -18,10 +17,6 @@ import {
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import type {
-  ConversationMessageLocation,
-  ConversationSearchRouteInfo,
-} from '@/types/interfaces/conversationSearch';
 import type {
   RepoPageSearchItem,
   RepoPortalPageInfo,
@@ -59,8 +54,7 @@ export interface SearchResultItem {
   /** 右侧 meta 文本（任务/项目=更新时间，资料库=编辑时间） */
   meta?: string;
   /** 任务：会话详情（点击走 devTargetType 分发） */
-  conversation?: ConversationSearchRouteInfo;
-  messageLocation?: ConversationMessageLocation;
+  conversation?: ConversationInfo;
   /** 项目：项目下最新一条会话（无则置灰不可点） */
   projectConversation?: ConversationInfo;
   /** 资料库：文档短链标识（深链 /repo/doc/{slugId} 用） */
@@ -71,9 +65,6 @@ export interface SearchResultItem {
 export interface SearchPageCursor {
   /** 任务：最后一条会话 ID（conversation/list 的 lastId 游标） */
   lastId?: number;
-  messageBeforeIndex?: number | string;
-  taskTitlesDone?: boolean;
-  taskMessagesDone?: boolean;
   /** 项目：下一页页码（从 1 开始） */
   page?: number;
   /** 资料库：下一页偏移量 */
@@ -87,8 +78,6 @@ export interface SearchPageResult {
   hasMore: boolean;
   /** 下一页游标（触底加载时透传回取数器） */
   cursor: SearchPageCursor;
-  messageSearchFailed?: boolean;
-  titleSearchFailed?: boolean;
 }
 
 /** 分页取数入参（keyword 空串 = 无关键词首屏：任务/资料库即「最近」数据） */
@@ -111,7 +100,7 @@ export const stripHtml = (input?: string): string | undefined =>
 /* ---------------- 各分类行映射（导出供单测） ---------------- */
 
 export const mapConversationItem = (
-  item: ConversationSearchRouteInfo,
+  item: ConversationInfo,
 ): SearchResultItem => ({
   kind: 'task',
   id: `task-${item.id}`,
@@ -165,67 +154,6 @@ export async function fetchTaskPage({
   size,
   cursor,
 }: SearchPageParams): Promise<SearchPageResult> {
-  if (keyword.trim()) {
-    const [titleResult, messageResult] = await Promise.allSettled([
-      cursor.taskTitlesDone
-        ? null
-        : apiAgentConversationList({
-            agentId: null,
-            lastId: cursor.lastId ?? null,
-            limit: size,
-            topic: keyword,
-            projectFilter: 'exclude',
-          }),
-      cursor.taskMessagesDone
-        ? null
-        : apiSearchConversationMessages({
-            keyword,
-            size,
-            beforeIndex: cursor.messageBeforeIndex,
-          }),
-    ]);
-    const titleResponse =
-      titleResult.status === 'fulfilled' ? titleResult.value : null;
-    const messageResponse =
-      messageResult.status === 'fulfilled' ? messageResult.value : null;
-    const titleSearchFailed =
-      !cursor.taskTitlesDone &&
-      (titleResult.status === 'rejected' ||
-        titleResponse?.code !== SUCCESS_CODE);
-    const messageSearchFailed =
-      !cursor.taskMessagesDone &&
-      (messageResult.status === 'rejected' ||
-        messageResponse?.code !== SUCCESS_CODE);
-    const titles = unwrap(titleResponse) ?? [];
-    const page = unwrap(messageResponse);
-    const titleItems = titles.map(mapConversationItem);
-    const messageItems: SearchResultItem[] = (page?.items ?? []).map((hit) => ({
-      ...mapConversationItem(hit.conversation),
-      id: `task-message-${hit.conversation.id}-${hit.messageId}`,
-      description: hit.snippet,
-      messageLocation: {
-        conversationId: hit.conversation.id,
-        messageId: hit.messageId,
-        messageIndex: hit.messageIndex,
-      },
-    }));
-    const taskTitlesDone =
-      !!cursor.taskTitlesDone || (!titleSearchFailed && titles.length < size);
-    const taskMessagesDone =
-      !!cursor.taskMessagesDone || (!messageSearchFailed && !page?.hasMore);
-    return {
-      items: [...titleItems, ...messageItems],
-      hasMore: !taskTitlesDone || !taskMessagesDone,
-      cursor: {
-        lastId: titles.at(-1)?.id ?? cursor.lastId,
-        messageBeforeIndex: page?.nextCursor ?? cursor.messageBeforeIndex,
-        taskTitlesDone,
-        taskMessagesDone,
-      },
-      messageSearchFailed,
-      titleSearchFailed,
-    };
-  }
   const data = unwrap(
     await apiAgentConversationList({
       agentId: null,
@@ -241,7 +169,7 @@ export async function fetchTaskPage({
   return {
     items,
     hasMore: items.length >= size,
-    cursor: { lastId: data?.at(-1)?.id },
+    cursor: { lastId: items[items.length - 1]?.conversation?.id },
   };
 }
 

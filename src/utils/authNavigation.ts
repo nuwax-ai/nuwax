@@ -1,6 +1,7 @@
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 import { history } from 'umi';
 import { getBusinessBase } from './authIdp';
+import { resolveAuthNavigationAction } from './authNavigationPolicy';
 
 /** 后端认证跳转在商业客户端网关形态下保持同源，保留路径、查询和 hash。 */
 export async function resolveAuthRedirectUrl(url: string): Promise<string> {
@@ -67,23 +68,19 @@ export async function navigateToAuthUrl(url: string): Promise<void> {
   ) {
     return;
   }
-  try {
-    const destination = new URL(target, window.location.origin);
-    // 本站登录页由 SPA 承载，整页跳转会重复启动、鉴权和加载登录资源。
-    // 外部 SSO 与后端 /auth/ 中间页仍须走文档导航。
-    if (
-      destination.origin === window.location.origin &&
-      !destination.username &&
-      !destination.password &&
-      /^\/login\/?$/i.test(destination.pathname)
-    ) {
-      history.replace(
-        destination.pathname + destination.search + destination.hash,
-      );
+  const action = resolveAuthNavigationAction(sourceHref, target);
+  switch (action.kind) {
+    case 'none':
       return;
-    }
-  } catch {
-    // 非标准 URL 沿用原导航行为。
+    case 'spa':
+      try {
+        history.replace(action.url);
+      } catch {
+        // history 替换失败时保留原有文档导航兜底。
+        window.location.href = target;
+      }
+      return;
+    case 'document':
+      window.location.href = action.url;
   }
-  window.location.href = target;
 }

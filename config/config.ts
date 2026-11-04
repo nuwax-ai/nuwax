@@ -5,6 +5,8 @@ import path from 'path';
 import { defineConfig } from 'umi';
 import { readPdfCharacterMaps } from '../scripts/pdf-character-maps';
 import routes from '../src/routes';
+import { getImEntryRedirect } from '../src/utils/imEntryRedirect';
+import { getSpaceInviteEntryRedirect } from '../src/utils/spaceInvite';
 
 export default defineConfig({
   // 优先从环境变量读取（需要创建 .env 文件）
@@ -112,6 +114,12 @@ export default defineConfig({
 				const { protocol, host, href, hash } = window.location;
 				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
 				const baseUrl = protocol + '//' + host;
+        // 手机邀请和旧 Web 登录回跳统一转换到 M 站，并携带原始邀请码。
+        const inviteRedirect = (${getSpaceInviteEntryRedirect.toString()})(href, isMobile);
+        if (inviteRedirect) { window.location.replace(inviteRedirect); return; }
+        // IM 直达只搬原始 query。spaceId 换成群会话由 M 站承接页在登录后完成。
+        const imEntryRedirect = (${getImEntryRedirect.toString()})(href, isMobile);
+        if (imEntryRedirect) { window.location.replace(imEntryRedirect); return; }
 				const agentDetailPathMobile = '/pages/agent-detail/agent-detail'; //分包前的页面路径
 				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
 				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径

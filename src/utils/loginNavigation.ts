@@ -1,4 +1,5 @@
-import { getBusinessBase } from './authIdp';
+import { getBusinessBase, resolveIdpRedirect } from './authIdp';
+import { markLoginJustCompleted } from './profileSetupGate';
 
 type LoginHistory = {
   replace: (url: string, state?: Record<string, unknown>) => void;
@@ -26,10 +27,10 @@ export function isVerifyCodePageReload(): boolean {
   }
 }
 
-/** 登录和验证码共享一个历史条目，保留进入登录时的业务返回偏移。 */
+/** 登录、验证码及首次设置密码共享返回目标，避免注册过程中丢失业务深链。 */
 export function replaceLoginStep(
   history: LoginHistory,
-  step: 'login' | 'verify-code',
+  step: 'login' | 'verify-code' | 'set-password',
   redirect: string | null,
   state?: Record<string, unknown>,
 ): void {
@@ -54,14 +55,19 @@ export function navigateAfterLogin(
   responseRedirectUrl: string | null | undefined,
   navigateToAuthUrl: (url: string) => void,
 ): void {
-  const redirect = decodeURIComponent(redirectParam || '');
+  markLoginJustCompleted();
+  // URLSearchParams 已解码外层参数，再解码会破坏绑定 token 和嵌套查询。
+  const redirect = redirectParam || '';
   if (redirect && !Number.isNaN(Number(redirect))) {
     history.go(Number(redirect));
   } else if (responseRedirectUrl?.includes('://')) {
     navigateToAuthUrl(responseRedirectUrl);
-  } else if (isServerRenderedPath(redirect)) {
-    navigateToAuthUrl(`${getBusinessBase()}${redirect}`);
   } else {
-    history.replace(redirect || '/');
+    const path = resolveIdpRedirect(redirect);
+    if (isServerRenderedPath(path)) {
+      navigateToAuthUrl(`${getBusinessBase()}${path}`);
+    } else {
+      history.replace(path);
+    }
   }
 }

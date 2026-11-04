@@ -5,6 +5,7 @@ import { theme as antdTheme, message, Modal } from 'antd';
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { history, useAntdConfigSetter, useModel } from 'umi';
 import AppStartup from './components/business-component/AppStartup';
+import ProfileSetupGuideGate from './components/ProfileSetupGuide/Gate';
 import {
   REDIRECT_LOGIN,
   SUCCESS_CODE,
@@ -52,6 +53,7 @@ import {
   UserService,
 } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { isAuthTerminalPage } from './utils/authNavigationPolicy';
 import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
@@ -84,6 +86,15 @@ export async function getInitialState(): Promise<InitialStateType> {
     stage = 'language';
     await initI18n();
 
+    const initialPathname =
+      typeof window === 'undefined'
+        ? history.location.pathname
+        : window.location.pathname;
+    // 认证终态页不再恢复会话，避免失败响应再次指向本页形成循环。
+    if (isAuthTerminalPage(initialPathname)) {
+      return { menuData: [] };
+    }
+
     stage = 'session';
     const hostSessionReady = await restoreBusinessAuthSession();
 
@@ -92,14 +103,11 @@ export async function getInitialState(): Promise<InitialStateType> {
       '/login',
       '/verify-code',
       '/set-password',
+      '/invite/space/',
       '/chat-temp',
       '/examples/agent-intervention-demo',
       ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),
     ];
-    const initialPathname =
-      typeof window === 'undefined'
-        ? history.location.pathname
-        : window.location.pathname;
     // Mock 验收页（dev-only 路由）跳过用户信息请求，避免未登录时被重定向
     const isPublicPath = publicPaths.some((path) =>
       initialPathname.toLowerCase().startsWith(path),
@@ -157,6 +165,8 @@ const GlobalEventPolling: React.FC = () => {
 
 const subscribePollingPath = (listener: () => void) => history.listen(listener);
 const getPollingPath = () => history.location.pathname;
+const isLoginStepPath = (pathname: string) =>
+  /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(pathname);
 
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
@@ -173,9 +183,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     getPollingPath,
     () => '/login',
   );
-  const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
-    pathname,
-  );
+  const isLoginPage = isLoginStepPath(pathname);
 
   useEffect(() => installDirectorySyncLegacyBridge(), []);
 
@@ -435,9 +443,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     <>
       <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
-      {loggedIn && !isLoginPage && !isDesktopShellPreviewPage() && (
-        <GlobalEventPolling />
-      )}
+      {loggedIn &&
+        !isLoginPage &&
+        !isAuthTerminalPage(pathname) &&
+        !isDesktopShellPreviewPage() && <GlobalEventPolling />}
       {children}
     </>
   );
@@ -455,13 +464,32 @@ const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const { error } = useModel('@@initialState');
+  const loggedIn = useSyncExternalStore(
+    subscribeLoginStatus,
+    getCurrentLoginStatus,
+    () => false,
+  );
+  const pathname = useSyncExternalStore(
+    subscribePollingPath,
+    getPollingPath,
+    () => '/login',
+  );
+  const showProfileGuide =
+    loggedIn &&
+    !isLoginStepPath(pathname) &&
+    !isAuthTerminalPage(pathname) &&
+    !isDesktopShellPreviewPage();
   return (
     <>
       <DesktopShellPreviewChrome />
       {error ? (
         <AppStartup failed diagnostic={getAppStartupDiagnostic(error)} />
       ) : (
-        children
+        <>
+          {/* 此处位于 model provider 内，登录页和启动失败页不挂载引导。 */}
+          {showProfileGuide && <ProfileSetupGuideGate active />}
+          {children}
+        </>
       )}
     </>
   );

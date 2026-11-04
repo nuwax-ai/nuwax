@@ -134,6 +134,11 @@ if [ -n "\${FIXTURE_GATE_TIMEOUTS:-}" ]; then
     exit 1
   fi
 fi
+echo "stdout | fixture: passed-test debug noise"
+echo "[Conv:Resume] verbose fixture"
+echo " Test Files  1 passed (1)"
+echo "      Tests  2 passed (2)"
+echo "   Duration  0.10s"
 exit 0
 `,
     { mode: 0o755 },
@@ -405,7 +410,10 @@ test('source pushed directly to gitlab dev reaches the delivered test', async (t
     'gitlab dev direct push\n',
   );
   await deploy(state);
-  assert.equal(await remoteHead(state, 'origin', 'dev'), await remoteHead(state, 'gitlab', 'dev'));
+  assert.equal(
+    await remoteHead(state, 'origin', 'dev'),
+    await remoteHead(state, 'gitlab', 'dev'),
+  );
   for (const remote of ['origin', 'gitlab']) {
     await git(
       state.root,
@@ -482,7 +490,16 @@ test('quality gate runs for new source, fails closed, and is skipped when only a
   assert.equal((await logLines(state.env.FIXTURE_GATE_LOG)).length, 1);
 
   // 失败后重跑：本地 test 已含合并，仍必须重新过门，不能借本地 HEAD 绕过。
-  await deploy(state);
+  const result = await deploy(state);
+  assert.match(result.stdout, /Test Files\s+1 passed/);
+  assert.match(result.stdout, /Tests\s+2 passed/);
+  assert.match(result.stdout, /会话质量门通过，耗时/);
+  assert.doesNotMatch(result.stdout, /passed-test debug noise|verbose fixture/);
+  const gateLog = await fs.readFile(
+    path.join(state.root, '.git/nuwax-deploy/gate-last.log'),
+    'utf8',
+  );
+  assert.match(gateLog, /passed-test debug noise/);
   assert.equal((await logLines(state.env.FIXTURE_GATE_LOG)).length, 2);
 
   // 源码与已部署的 gitlab/test 一致时不再付门的成本。
@@ -492,7 +509,13 @@ test('quality gate runs for new source, fails closed, and is skipped when only a
 
 test('quality gate retries when every failure is a timeout and stops on assertion failures', async (t) => {
   const state = await fixture(t);
-  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'jitter then pass\n');
+  await remoteCommit(
+    state,
+    'origin',
+    'dev',
+    'source.txt',
+    'jitter then pass\n',
+  );
   const timeoutCount = path.join(state.temporary, 'timeouts.txt');
   const result = await deploy(state, {
     FIXTURE_GATE_TIMEOUTS: '1',
@@ -505,17 +528,34 @@ test('quality gate retries when every failure is a timeout and stops on assertio
   assert.match(result.stdout, /快速通道提测完成/);
 
   const assertState = await fixture(t);
-  await remoteCommit(assertState, 'origin', 'dev', 'source.txt', 'real regression\n');
+  await remoteCommit(
+    assertState,
+    'origin',
+    'dev',
+    'source.txt',
+    'real regression\n',
+  );
   const before = await remoteHead(assertState, 'gitlab', 'test');
   const failure = await deploy(assertState, {
     FIXTURE_GATE_ASSERT: '1',
+    // 历史环境变量不能再豁免同一套件里的真实回归。
+    KNOWN_BROKEN_TESTS: 'tests/fixture/contract.test.ts',
     GATE_JITTER_RETRIES: '2',
     GATE_JITTER_BACKOFF: '0',
   }).then(
     () => assert.fail('断言失败不能靠重试放行'),
     (error) => error,
   );
-  assert.match(failure.stderr, /未放行失败/);
+  assert.match(failure.stderr, /质量门未通过，停止提测/);
+  assert.match(failure.stderr, /FAIL\s+tests\/fixture\/contract.test.ts/);
+  assert.match(failure.stderr, /expected 1 to equal 2/);
+  assert.match(
+    await fs.readFile(
+      path.join(assertState.root, '.git/nuwax-deploy/gate-failure.log'),
+      'utf8',
+    ),
+    /expected 1 to equal 2/,
+  );
   assert.doesNotMatch(failure.stdout, /疑似负载抖动/);
   assert.equal((await logLines(assertState.env.FIXTURE_GATE_LOG)).length, 1);
   assert.equal(await remoteHead(assertState, 'gitlab', 'test'), before);

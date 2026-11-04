@@ -11,6 +11,7 @@ import type { ThemeConfig } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { StrictMode, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { redirectStandaloneImEntry } from '../imEntryRedirect.js';
 import App from './App';
 import './host.css';
 import {
@@ -148,4 +149,9 @@ exportQiankunLifeCycles({
   },
 });
 
-if (!qiankunWindow.__POWERED_BY_QIANKUN__) render();
+if (
+  !qiankunWindow.__POWERED_BY_QIANKUN__ &&
+  !redirectStandaloneImEntry(window)
+) {
+  render();
+}
