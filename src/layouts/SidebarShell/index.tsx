@@ -17,7 +17,6 @@ import {
   MOBILE_BREAKPOINT,
   MOBILE_MENU_TOP_PADDING,
 } from '@/constants/layout.constants';
-import { ConversationMessageSearchRoute } from '@/features/conversation/react/ConversationMessageSearchRoute';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
@@ -407,7 +406,6 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
 
       {/* 主内容区 */}
       {contentNode}
-      <ConversationMessageSearchRoute />
     </div>
   );
 };
