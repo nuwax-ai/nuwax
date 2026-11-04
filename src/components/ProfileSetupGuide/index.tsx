@@ -4,11 +4,12 @@ import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import type { UserUpdateParams } from '@/types/interfaces/login';
+import { useRequest } from 'ahooks';
 import { Button, Form, Input, Modal, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect } from 'react';
-import { useModel, useRequest } from 'umi';
+import React, { useEffect, useRef } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -27,46 +28,62 @@ const ProfileSetupGuide: React.FC<{
   const [form] = Form.useForm();
   const { userInfo, setUserInfo } = useModel('userInfo');
 
-  // 保存昵称：与设置页同一接口；成功后同步 userInfo model 与本地缓存
-  const { run: runUpdate, loading: saving } = useRequest(apiUserUpdate, {
+  const identity = `${userInfo?.tenantId ?? ''}:${
+    userInfo?.id ?? userInfo?.userName ?? ''
+  }`;
+  const latestIdentity = useRef(identity);
+  latestIdentity.current = identity;
+  const latestUser = useRef(userInfo);
+  latestUser.current = userInfo;
+  const epoch = useRef(0);
+  const pending = useRef(false);
+  const { runAsync, loading: saving } = useRequest(apiUserUpdate, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: UserUpdateParams[]) => {
-      message.success(dict('PC.Toast.Global.savedSuccessfully'));
-      const _userInfo = cloneDeep(userInfo);
-      if (params[0]?.avatar) {
-        _userInfo.avatar = params[0].avatar;
-      }
-      if (params[0]?.nickName !== undefined) {
-        _userInfo.nickName = params[0].nickName;
-      }
-      setUserInfo(_userInfo);
-      localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
-      onClose();
-    },
   });
 
   useEffect(() => {
-    if (open) {
-      form.resetFields();
-    }
-  }, [open]);
+    if (open) form.resetFields();
+    return () => {
+      epoch.current += 1;
+    };
+  }, [open, identity]);
 
-  // 上传头像成功后立即保存（同设置页行为），昵称留在表单里由「保存」提交
-  const handleUploadSuccess = (url: string) => {
-    if (url) {
-      runUpdate({ avatar: url });
+  const save = async (params: UserUpdateParams, closeAfterSave: boolean) => {
+    if (
+      pending.current ||
+      !open ||
+      !latestUser.current ||
+      identity !== latestIdentity.current
+    )
+      return;
+    pending.current = true;
+    const requestEpoch = epoch.current;
+    try {
+      await runAsync(params);
+      // 关闭重开或换账号后，旧请求不能覆盖当前资料或关闭新弹框。
+      if (requestEpoch !== epoch.current || identity !== latestIdentity.current)
+        return;
+      const updated = { ...cloneDeep(latestUser.current), ...params };
+      setUserInfo(updated);
+      localStorage.setItem(USER_INFO, JSON.stringify(updated));
+      message.success(dict('PC.Toast.Global.savedSuccessfully'));
+      if (closeAfterSave) onClose();
+    } catch {
+      // 请求层已提示，保留表单供重试。
+    } finally {
+      pending.current = false;
     }
   };
 
-  const handleSave = async () => {
+  // 头像即时保存，继续保留昵称草稿，用户点「保存」后才结束引导。
+  const handleUploadSuccess = (url: string) => {
+    if (url) void save({ avatar: url }, false);
+  };
+
+  const handleSave = () => {
     const nickName = (form.getFieldValue('nickName') || '').trim();
-    if (nickName) {
-      runUpdate({ nickName });
-    } else {
-      // 两项均可选：不填昵称直接关闭，不强制
-      onClose();
-    }
+    if (nickName) void save({ nickName }, true);
+    else if (!pending.current) onClose();
   };
 
   return (
@@ -77,13 +94,14 @@ const ProfileSetupGuide: React.FC<{
       closable
       maskClosable
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
     >
       <p className={cx(styles.desc)}>
         {dict('PC.Components.ProfileSetupGuide.desc')}
       </p>
       <div className={cx(styles.avatarRow)}>
         <UploadAvatar
+          key={identity}
           imageUrl={userInfo?.avatar}
           onUploadSuccess={handleUploadSuccess}
           defaultImage={avatarImage as string}

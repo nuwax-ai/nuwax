@@ -1,7 +1,10 @@
-import { needsProfileSetup } from '@/utils/profileSetupPrompt';
 import { consumeLoginJustCompleted } from '@/utils/profileSetupGate';
+import {
+  needsProfileSetup,
+  type ProfileSetupUserLike,
+} from '@/utils/profileSetupPrompt';
 import React, { useEffect, useRef, useState } from 'react';
-import { UserService } from '@/services/userService';
+import { useModel } from 'umi';
 import ProfileSetupGuide from './index';
 
 /**
@@ -14,27 +17,35 @@ import ProfileSetupGuide from './index';
  */
 const ProfileSetupGuideGate: React.FC<{ active: boolean }> = ({ active }) => {
   const [open, setOpen] = useState(false);
-  const wasActiveRef = useRef(false);
+  const { getUserInfo } = useModel('userInfo');
+  // 重用判定请求，避免 StrictMode 的 effect 重放消费标记后丢掉引导。
+  const pendingUser = useRef<Promise<ProfileSetupUserLike | null> | null>(null);
 
   useEffect(() => {
     if (!active) {
-      // 登出/回登录页时复位，下一次登录（false→true）再判定一次
-      wasActiveRef.current = false;
+      pendingUser.current = null;
+      setOpen(false);
       return;
     }
-    if (wasActiveRef.current) return;
-    wasActiveRef.current = true;
-    if (!consumeLoginJustCompleted()) return;
-    UserService.getUserInfo()
+    if (!pendingUser.current) {
+      if (!consumeLoginJustCompleted()) return;
+      // 由模型入口初始化 userInfo，确保弹窗可保存，而非只读到存储缓存。
+      pendingUser.current = getUserInfo();
+    }
+    const request = pendingUser.current;
+    if (!request) return;
+    let current = true;
+    request
       .then((userInfo) => {
-        if (needsProfileSetup(userInfo || {})) {
-          setOpen(true);
-        }
+        if (current && needsProfileSetup(userInfo || {})) setOpen(true);
       })
       .catch(() => {
-        // 拿不到用户信息时不弹引导，不影响登录主流程
+        // 拿不到用户信息时不弹引导，不影响登录主流程。
       });
-  }, [active]);
+    return () => {
+      current = false;
+    };
+  }, [active, getUserInfo]);
 
   return <ProfileSetupGuide open={open} onClose={() => setOpen(false)} />;
 };

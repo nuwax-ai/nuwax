@@ -1,5 +1,10 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -9,19 +14,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // vitest 禁止直接 import umi 模块，mock 最小面（沿用 PublishComponentModal 测试惯例）
 const setUserInfo = vi.fn();
-let mockUserInfo = { userName: 'user1792564071', nickName: '' };
+let mockUserInfo: Record<string, unknown> = {
+  id: 1,
+  tenantId: 1,
+  userName: 'user1792564071',
+  nickName: '',
+};
+let mockUploadSuccess: ((url: string) => void) | undefined;
 
 vi.mock('umi', () => ({
   useModel: () => ({ userInfo: mockUserInfo, setUserInfo }),
-  useRequest: (service: (...args: any[]) => any, options: any = {}) => ({
-    run: (...args: any[]) => {
-      Promise.resolve()
-        .then(() => service(...args))
-        .then((data: any) => options.onSuccess?.(data, args))
-        .catch(() => options.onError?.());
-    },
-    loading: false,
-  }),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -34,14 +36,21 @@ vi.mock('@/services/account', () => ({
 
 vi.mock('@/components/UploadAvatar', () => ({
   // 测试只关心回调链路：上传成功触发 onUploadSuccess(url)
-  default: ({ onUploadSuccess }: { onUploadSuccess?: (url: string) => void }) => (
-    <button
-      type="button"
-      onClick={() => onUploadSuccess?.('https://example.com/a.png')}
-    >
-      upload
-    </button>
-  ),
+  default: ({
+    onUploadSuccess,
+  }: {
+    onUploadSuccess?: (url: string) => void;
+  }) => {
+    mockUploadSuccess = onUploadSuccess;
+    return (
+      <button
+        type="button"
+        onClick={() => onUploadSuccess?.('https://example.com/a.png')}
+      >
+        upload
+      </button>
+    );
+  },
 }));
 
 vi.mock('@/assets/images/avatar.png', () => ({ default: 'avatar.png' }));
@@ -60,13 +69,26 @@ const renderModal = (open = true) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUserInfo = { userName: 'user1792564071', nickName: '' };
+  mockUserInfo = {
+    id: 1,
+    tenantId: 1,
+    userName: 'user1792564071',
+    nickName: '',
+  };
+  vi.mocked(apiUserUpdate)
+    .mockReset()
+    .mockResolvedValue(null as never);
+  setUserInfo.mockImplementation((user) => {
+    mockUserInfo = user;
+  });
 });
 
 describe('ProfileSetupGuide（L2 引导弹框）', () => {
   it('open=true 渲染标题/昵称输入/跳过/保存', () => {
     renderModal(true);
-    expect(screen.getByText('PC.Components.ProfileSetupGuide.title')).toBeTruthy();
+    expect(
+      screen.getByText('PC.Components.ProfileSetupGuide.title'),
+    ).toBeTruthy();
     expect(
       screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
     ).toBeTruthy();
@@ -99,9 +121,12 @@ describe('ProfileSetupGuide（L2 引导弹框）', () => {
 
   it('填昵称点保存：apiUserUpdate({nickName}) 并更新 userInfo', async () => {
     renderModal(true);
-    fireEvent.change(screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'), {
-      target: { value: '东' },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
+      {
+        target: { value: '东' },
+      },
+    );
     await act(async () => {
       fireEvent.click(screen.getByText('PC.Common.Global.save'));
     });
@@ -120,5 +145,106 @@ describe('ProfileSetupGuide（L2 引导弹框）', () => {
     expect(apiUserUpdate).toHaveBeenCalledWith({
       avatar: 'https://example.com/a.png',
     });
+  });
+  it('头像保存后保留昵称草稿，保存昵称时保留最新头像', async () => {
+    renderModal();
+    const input = screen.getByPlaceholderText('PC.Pages.Setting.inputNickName');
+    fireEvent.change(input, { target: { value: '昵称草稿' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('upload'));
+    });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(input).toHaveValue('昵称草稿');
+    await act(async () => {
+      fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    });
+    expect(setUserInfo).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        nickName: '昵称草稿',
+        avatar: 'https://example.com/a.png',
+      }),
+    );
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('保存失败保留草稿并允许重试，不泄漏拒绝', async () => {
+    vi.mocked(apiUserUpdate).mockRejectedValueOnce(
+      new Error('fixture rejected'),
+    );
+    renderModal();
+    const input = screen.getByPlaceholderText('PC.Pages.Setting.inputNickName');
+    fireEvent.change(input, { target: { value: '待重试' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(input).toHaveValue('待重试');
+    await act(async () => {
+      fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    });
+    expect(apiUserUpdate).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('同 ID 切换租户后丢弃旧保存结果并清除旧昵称', async () => {
+    let resolve!: (value: never) => void;
+    vi.mocked(apiUserUpdate).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const view = renderModal();
+    fireEvent.change(
+      screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
+      { target: { value: '旧租户昵称' } },
+    );
+    fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    await waitFor(() => expect(apiUserUpdate).toHaveBeenCalledTimes(1));
+    mockUserInfo = { ...mockUserInfo, tenantId: 2 };
+    view.rerender(<ProfileSetupGuide open onClose={onClose} />);
+    await act(async () => {
+      resolve(null as never);
+    });
+    expect(setUserInfo).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(
+      screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
+    ).toHaveValue('');
+  });
+
+  it('关闭重开后旧保存结果不能关闭新弹框或写回缓存', async () => {
+    let resolve!: (value: never) => void;
+    vi.mocked(apiUserUpdate).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const view = renderModal();
+    fireEvent.change(
+      screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
+      { target: { value: '旧草稿' } },
+    );
+    fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    await waitFor(() => expect(apiUserUpdate).toHaveBeenCalledTimes(1));
+    view.rerender(<ProfileSetupGuide open={false} onClose={onClose} />);
+    view.rerender(<ProfileSetupGuide open onClose={onClose} />);
+    await act(async () => {
+      resolve(null as never);
+    });
+    expect(setUserInfo).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('换账号后旧上传回调不能保存到新账号', async () => {
+    const view = renderModal();
+    const oldUploadSuccess = mockUploadSuccess;
+    mockUserInfo = { ...mockUserInfo, id: 2 };
+    view.rerender(<ProfileSetupGuide open onClose={onClose} />);
+    await act(async () => {
+      oldUploadSuccess?.('https://example.com/old.png');
+    });
+    expect(apiUserUpdate).not.toHaveBeenCalled();
   });
 });
