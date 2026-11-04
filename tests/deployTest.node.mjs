@@ -405,7 +405,10 @@ test('source pushed directly to gitlab dev reaches the delivered test', async (t
     'gitlab dev direct push\n',
   );
   await deploy(state);
-  assert.equal(await remoteHead(state, 'origin', 'dev'), await remoteHead(state, 'gitlab', 'dev'));
+  assert.equal(
+    await remoteHead(state, 'origin', 'dev'),
+    await remoteHead(state, 'gitlab', 'dev'),
+  );
   for (const remote of ['origin', 'gitlab']) {
     await git(
       state.root,
@@ -492,7 +495,13 @@ test('quality gate runs for new source, fails closed, and is skipped when only a
 
 test('quality gate retries when every failure is a timeout and stops on assertion failures', async (t) => {
   const state = await fixture(t);
-  await remoteCommit(state, 'origin', 'dev', 'source.txt', 'jitter then pass\n');
+  await remoteCommit(
+    state,
+    'origin',
+    'dev',
+    'source.txt',
+    'jitter then pass\n',
+  );
   const timeoutCount = path.join(state.temporary, 'timeouts.txt');
   const result = await deploy(state, {
     FIXTURE_GATE_TIMEOUTS: '1',
@@ -505,17 +514,25 @@ test('quality gate retries when every failure is a timeout and stops on assertio
   assert.match(result.stdout, /快速通道提测完成/);
 
   const assertState = await fixture(t);
-  await remoteCommit(assertState, 'origin', 'dev', 'source.txt', 'real regression\n');
+  await remoteCommit(
+    assertState,
+    'origin',
+    'dev',
+    'source.txt',
+    'real regression\n',
+  );
   const before = await remoteHead(assertState, 'gitlab', 'test');
   const failure = await deploy(assertState, {
     FIXTURE_GATE_ASSERT: '1',
+    // 历史环境变量不能再豁免同一套件里的真实回归。
+    KNOWN_BROKEN_TESTS: 'tests/fixture/contract.test.ts',
     GATE_JITTER_RETRIES: '2',
     GATE_JITTER_BACKOFF: '0',
   }).then(
     () => assert.fail('断言失败不能靠重试放行'),
     (error) => error,
   );
-  assert.match(failure.stderr, /未放行失败/);
+  assert.match(failure.stderr, /质量门未通过，停止提测/);
   assert.doesNotMatch(failure.stdout, /疑似负载抖动/);
   assert.equal((await logLines(assertState.env.FIXTURE_GATE_LOG)).length, 1);
   assert.equal(await remoteHead(assertState, 'gitlab', 'test'), before);

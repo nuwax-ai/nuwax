@@ -19,6 +19,8 @@ const {
   mockTenantConfig,
   mockFinishBusinessLogin,
   mockNavigateAfterLogin,
+  mockReplaceLoginStep,
+  mockSearch,
   mockSetTitle,
   mockLoadMenus,
   realRequests,
@@ -36,6 +38,8 @@ const {
   mockTenantConfig: { current: {} as any },
   mockFinishBusinessLogin: vi.fn(),
   mockNavigateAfterLogin: vi.fn(),
+  mockReplaceLoginStep: vi.fn(),
+  mockSearch: { current: '' },
   mockSetTitle: vi.fn(),
   mockLoadMenus: vi.fn(),
   realRequests: { current: false },
@@ -50,7 +54,7 @@ vi.mock('umi', () => ({
     state: mockLocationState.current,
     pathname: '/verify-code',
   }),
-  useSearchParams: () => [new URLSearchParams(''), vi.fn()],
+  useSearchParams: () => [new URLSearchParams(mockSearch.current), vi.fn()],
   useModel: (name: string) => {
     if (name === 'tenantConfigInfo')
       return {
@@ -109,7 +113,7 @@ vi.mock('@/utils/authNavigation', () => ({
 
 vi.mock('@/utils/loginNavigation', () => ({
   navigateAfterLogin: mockNavigateAfterLogin,
-  replaceLoginStep: vi.fn(),
+  replaceLoginStep: mockReplaceLoginStep,
   isVerifyCodePageReload: mockIsVerifyCodePageReload,
 }));
 
@@ -177,6 +181,7 @@ describe('验证码登录页提交与重发加固', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     realRequests.current = false;
+    mockSearch.current = '';
     mockApiSendCode.mockReset().mockResolvedValue({ data: null });
     mockApiLoginCode.mockReset();
     mockLocationState.current = {
@@ -197,6 +202,30 @@ describe('验证码登录页提交与重发加固', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.useRealTimers();
+  });
+
+  it('首次登录设置密码时续接绑定目标和后端回跳，不增加历史条目', async () => {
+    mockSearch.current = new URLSearchParams({
+      redirect: '/auth/bind-or-register?token=fixture%2Bvalue',
+    }).toString();
+    render(<VerifyCode />);
+    await act(async () => {
+      await mockUseRequestOptions.current.onSuccess(
+        {
+          ...loginSuccessResult,
+          resetPass: false,
+          redirect: 'https://tenant.example/after-login',
+        },
+        [{ phoneOrEmail: '13800138000' }],
+      );
+    });
+    expect(mockReplaceLoginStep).toHaveBeenCalledWith(
+      expect.anything(),
+      'set-password',
+      '/auth/bind-or-register?token=fixture%2Bvalue',
+      { responseRedirectUrl: 'https://tenant.example/after-login' },
+    );
+    expect(mockNavigateAfterLogin).not.toHaveBeenCalled();
   });
 
   it('真实防抖请求发码失败后可立即重发，不泄漏内部拒绝或误报成功', async () => {

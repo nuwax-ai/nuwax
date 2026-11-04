@@ -22,10 +22,23 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('umi', () => ({
-  history: { location: { pathname: '/' } },
+  history: {
+    get location() {
+      return { pathname: mocks.pathname };
+    },
+    listen: () => () => {},
+  },
   useModel: mocks.initialState,
   useLocation: () => ({ pathname: mocks.pathname }),
   Outlet: () => React.createElement('div', null, 'business page'),
+}));
+vi.mock('@/components/ProfileSetupGuide/Gate', () => ({
+  default: () =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'profile-guide' },
+      'profile guide',
+    ),
 }));
 vi.mock('@openuidev/devtools', () => ({ OpenUIDevtools: () => null }));
 vi.mock('@/components/business-component/AppStartup/index.less', () => ({
@@ -65,6 +78,8 @@ vi.mock('@/services/userService', () => ({
     fetchUserInfoFromServer: mocks.fetchUserInfoFromServer,
   },
   getLoginStatusFromCache: () => mocks.loginStatus,
+  getCurrentLoginStatus: () => mocks.loginStatus === true,
+  subscribeLoginStatus: () => () => {},
   setLoginStatusToCache: mocks.setLoginStatusToCache,
   clearLoginStatusCache: mocks.clearLoginStatusCache,
 }));
@@ -185,12 +200,31 @@ describe('首屏初始数据失败可恢复', () => {
   );
 
   it('Umi 初始状态错误遮挡业务页面但不展示服务 payload', () => {
+    mocks.loginStatus = true;
     mocks.initialState.mockReturnValue({ error: new Error('private payload') });
     render(innerProvider(React.createElement('div', null, 'business page')));
     expect(screen.getByRole('alert')).toHaveTextContent('应用暂时未能启动');
     expect(screen.queryByText('private payload')).not.toBeInTheDocument();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-guide')).toBeNull();
   });
+
+  it('登录后引导由 model provider 内的 innerProvider 挂载并保留业务页面', () => {
+    mocks.loginStatus = true;
+    render(innerProvider(React.createElement('div', null, 'business page')));
+    expect(screen.getByTestId('profile-guide')).toBeInTheDocument();
+    expect(screen.getByText('business page')).toBeInTheDocument();
+  });
+
+  it.each(['/login', '/verify-code', '/set-password', '/license-expired'])(
+    '登录或认证终态页面 %s 不挂载资料引导',
+    (pathname) => {
+      mocks.loginStatus = true;
+      mocks.pathname = pathname;
+      render(innerProvider(React.createElement('div', null, 'business page')));
+      expect(screen.queryByTestId('profile-guide')).toBeNull();
+    },
+  );
 
   it('正常初始状态仍渲染原业务页面', () => {
     render(innerProvider(React.createElement('div', null, 'business page')));
@@ -280,6 +314,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     render(React.createElement(AuthWithLoading));
     expect(screen.getByRole('status')).toHaveTextContent('正在启动');
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-guide')).toBeNull();
 
     await act(async () => resolve({ id: 1 }));
     expect(screen.getByText('business page')).toBeInTheDocument();
@@ -296,6 +331,7 @@ describe('首屏启动与鉴权加载衔接', () => {
     expect(mocks.fetchUserInfoFromServer).toHaveBeenCalledWith();
     expect(mocks.redirectToLogin).not.toHaveBeenCalled();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-guide')).toBeNull();
   });
 
   it('网络校验失败显示重试入口，保留会话且不露出业务页面', async () => {
@@ -312,6 +348,7 @@ describe('首屏启动与鉴权加载衔接', () => {
       screen.getByRole('button', { name: '重新加载' }),
     ).toBeInTheDocument();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-guide')).toBeNull();
   });
 
   it('鉴权期间卸载后，迟到响应不写缓存或触发跳转', async () => {
@@ -342,5 +379,6 @@ describe('首屏启动与鉴权加载衔接', () => {
     render(React.createElement(AuthWithLoading));
     expect(screen.getByText('no permission')).toBeInTheDocument();
     expect(screen.queryByText('business page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-guide')).toBeNull();
   });
 });

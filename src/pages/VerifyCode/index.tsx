@@ -180,6 +180,7 @@ const VerifyCode: React.FC = () => {
             history,
             'set-password',
             searchParams.get('redirect'),
+            { responseRedirectUrl },
           );
         } else {
           navigateAfterLogin(

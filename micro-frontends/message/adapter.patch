@@ -2445,7 +2445,7 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index b53be9f..1505c5f 100644
+index b53be9f022..975e64cc36 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
 @@ -1,3 +1,4 @@
@@ -2747,7 +2747,16 @@ index b53be9f..1505c5f 100644
  
      const st = get();
      let id = pickDefaultConvId(st.convs, st.activeConvId);
-@@ -4737,6 +4794,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4705,6 +4762,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+     },
+ 
+     onReconnected: () => {
++      // 消息补拉与导航气泡使用同一轮恢复后的服务端未读总数。
++      void get().refreshUnreadTotal().catch(() => undefined);
+       // ★重连成功 → HTTP 增量同步补齐断线期间的消息（afterSeqs = 本地水位线）
+       // ★★DEV-347（拍板 B）：续拉完成之后，再补拉"当前正开着的那条会话"的 tail。
+       //   ★★为什么光有续拉（A）不够：A 补的是 {@code /sync} 看得见的增量，
+@@ -4737,6 +4796,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     * 详见 {@code lib/syncResume.tailKeysToInvalidate}。
     */
    function applySyncResult(r: SyncResult): void {
@@ -2755,7 +2764,7 @@ index b53be9f..1505c5f 100644
      if (r.messages) {
        for (const m of r.messages) {
          // ★自发消息不重复：sync 服务端已排除来源端补发语义，前端再按幂等合并兜底
-@@ -4791,6 +4849,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4791,6 +4851,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      let prev: SyncCursor | null = null;
      let rounds = 0;
      for (;;) {
@@ -2763,7 +2772,7 @@ index b53be9f..1505c5f 100644
        const r = await syncApi.sync({
          // ★每轮都重算水位线：上一轮刚合并进来的消息会把水位线推高，
          //   服务端据此跳过已补的段（cursor 只决定"这一轮处理哪个会话"）。
-@@ -4801,6 +4860,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4801,6 +4862,7 @@ export const useChatStore = create<ChatState>((set, get) => {
          //   之后每轮都必须带上，否则服务端会把已经补过的会话再算一遍。
          ...(prev == null ? {} : { cursor: prev }),
        });
@@ -2771,7 +2780,7 @@ index b53be9f..1505c5f 100644
        applySyncResult(r);
        rounds += 1;
        const step = nextSyncStep(prev, r, rounds);
-@@ -4873,6 +4933,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4873,6 +4935,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -2779,7 +2788,7 @@ index b53be9f..1505c5f 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -4929,6 +4990,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4929,6 +4992,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const unreportedClearConvs = new Set<string>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -2787,7 +2796,7 @@ index b53be9f..1505c5f 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -4981,6 +5043,19 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4981,6 +5045,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -2807,7 +2816,7 @@ index b53be9f..1505c5f 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -5114,12 +5189,14 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5114,12 +5191,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -2822,7 +2831,7 @@ index b53be9f..1505c5f 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -5127,8 +5204,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5127,8 +5206,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -2833,7 +2842,7 @@ index b53be9f..1505c5f 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -6343,6 +6421,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -6343,6 +6423,8 @@ export const useChatStore = create<ChatState>((set, get) => {
        return conv.convId;
      },
  
@@ -2842,7 +2851,7 @@ index b53be9f..1505c5f 100644
      createP2pWithAgent: async (agentId) => {
        // ★★DEV-354：与上面 createP2p 逐行同款，只差一个入参 —— 服务端负责把
        //   **平台原生 agentId** 换算成 subject id（前端做不了，见 lib/directOpen 文件头）。
-@@ -7431,6 +7511,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7431,6 +7513,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       * （这正是服务端 javadoc 说的"停在中间"—— 本批把它从<b>永久</b>变成<b>下一次</b>）。
       */
      syncIncremental: async () => {
@@ -2850,7 +2859,7 @@ index b53be9f..1505c5f 100644
        // ★★DEV-347：并发合并 —— 同一次重连里 {@code onReconnected} 与 WS 的
        //   {@code SYNC_RESP} 帧可能同时触发；没有它，两者会各自把整条续拉链
        //   完整跑一遍（风暴），而它们读的是同一份水位线、写的是同一个 store。
-@@ -7466,6 +7547,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7466,6 +7549,7 @@ export const useChatStore = create<ChatState>((set, get) => {
              await new Promise<void>((resolve) => {
                setTimeout(resolve, waitMs);
              });
@@ -2858,7 +2867,7 @@ index b53be9f..1505c5f 100644
            }
          }
        });
-@@ -7565,7 +7647,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7565,7 +7649,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -2871,7 +2880,7 @@ index b53be9f..1505c5f 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -7587,7 +7673,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -7587,7 +7675,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -2881,7 +2890,7 @@ index b53be9f..1505c5f 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -7598,7 +7685,28 @@ useChatStore.subscribe((st, prev) => {
+@@ -7598,7 +7687,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -2911,7 +2920,7 @@ index b53be9f..1505c5f 100644
  
  // ======================================================================
  // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
-@@ -7629,7 +7737,8 @@ useChatStore.subscribe((st, prev) => {
+@@ -7629,7 +7739,8 @@ useChatStore.subscribe((st, prev) => {
  // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
  //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
  //   且宿主若用引用比较做变更检测会一直误判成"变了"。
@@ -2921,7 +2930,7 @@ index b53be9f..1505c5f 100644
    if (s.unreadTotal !== prev.unreadTotal) {
      emitImUnread(s.unreadTotal);
      setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
-@@ -7648,7 +7757,6 @@ useChatStore.subscribe((s, prev) => {
+@@ -7648,7 +7759,6 @@ useChatStore.subscribe((s, prev) => {
  //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
  //   于是它们永远停在模块默认值（未读 0、未登录）上，
  //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
@@ -2929,7 +2938,7 @@ index b53be9f..1505c5f 100644
    const s0 = useChatStore.getState();
    setImBridgeSnapshot({
      connState: s0.connState,
-@@ -7656,7 +7764,9 @@ useChatStore.subscribe((s, prev) => {
+@@ -7656,7 +7766,9 @@ useChatStore.subscribe((s, prev) => {
      unreadTotal: s0.unreadTotal,
      userId: s0.userId == null ? null : String(s0.userId),
    });
@@ -3002,3 +3011,267 @@ diff --git a/nuwax-im-web/vite.config.ts b/nuwax-im-web/vite.upstream.config.ts
 similarity index 100%
 rename from nuwax-im-web/vite.config.ts
 rename to nuwax-im-web/vite.upstream.config.ts
+diff --git a/nuwax-im-web/src/ws/ImSocket.ts b/nuwax-im-web/src/ws/ImSocket.ts
+index 60259010a6..b8ebcc3594 100644
+--- a/nuwax-im-web/src/ws/ImSocket.ts
++++ b/nuwax-im-web/src/ws/ImSocket.ts
+@@ -6,7 +6,7 @@
+  *     ★{@code token} 在<b>平台模式</b>下整个键都不出现（凭据是同域 Cookie，浏览器自动带；
+  *       网关 onConnect 会回落到 HTTP 升级请求的凭据）。mock 模式下才带 mock-token。
+  *   - CONNECT_ACK：★heartbeatInterval/revalidateInterval 由服务端下发（秒），客户端不得硬编码
+- *   - 心跳：每 heartbeatInterval 秒发 PING(2000)；服务端 90s 读空闲会断线 → onclose 触发重连
++ *   - 心跳：每 heartbeatInterval 秒发 PING(2000)，3 个周期无 PONG 主动重连；握手最多等待 10 秒
+  *   - 重连：指数退避 1s→2s→4s→…→30s 封顶，连接成功后归零；重连成功后由调用方做增量同步（HTTP /api/instant-message/sync）
+  *   - KICK：server_restart → 自动重连；auth_expired / too_many_devices → ★停止自动重连并回调提示
+  *   - 上行：MSG_RECV_ACK{convId,ackSeq}、READ_REPORT{convId,readSeq}、SYNC_REQ{afterSeqs}
+@@ -112,12 +112,19 @@ export interface SocketListeners {
+ }
+ 
+ const MAX_BACKOFF_MS = 30_000;
++const HANDSHAKE_TIMEOUT_MS = 10_000;
++const OFFLINE_PROBE_MS = 15_000;
++const RETRYABLE_CODES = new Set(['IM_10503', 'IM_90002']);
+ 
+ export class ImSocket {
+   private ws: WebSocket | null = null;
+   private token: string | null = null;
+   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
++  private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
++  private heartbeatMs = 30_000;
++  private lastPongAt = 0;
++  private recoveryListening = false;
+   private backoffMs = 1000;
+   private manualClose = false;
+   private stopReconnect = false;
+@@ -144,6 +151,8 @@ export class ImSocket {
+     this.token = token;
+     this.manualClose = false;
+     this.stopReconnect = false;
++    this.clearTimers();
++    this.listenForRecovery();
+     // ★★必须先关掉在世的旧连接（DEV-157）。本类不变量是「一个实例任何时刻最多一条连接」，
+     //   而 connect() 原本是无条件 openSocket()：调用两次就有两条同 deviceId 的连接同时在世。
+     //   服务端的处置是【静默关闭旧 Channel】（§5.6.1 同 deviceId 重连），于是：
+@@ -162,6 +171,7 @@ export class ImSocket {
+     this.manualClose = true;
+     this.stopReconnect = true;
+     this.clearTimers();
++    this.stopListeningForRecovery();
+     this.closeCurrentSocket('logout');
+     this.setState('closed');
+   }
+@@ -226,7 +236,8 @@ export class ImSocket {
+   private sendUp(op: number, body: unknown): string | null {
+     if (!this.connected || !this.ws) return null;
+     const pkt = upPacket(op, body, `w${++this.reqSeq}`);
+-    this.ws.send(JSON.stringify(pkt));
++    try { this.ws.send(JSON.stringify(pkt)); }
++    catch { this.recoverConnection(); return null; }
+     return pkt.reqId ?? null;
+   }
+ 
+@@ -242,12 +253,22 @@ export class ImSocket {
+     // ★门禁只看 stopReconnect，<b>不再</b>要求 this.token 非空。
+     //   平台模式下 token 恒为 null（凭据在同域 Cookie 里），若继续用 `!this.token` 拦，
+     //   症状是"点开 IM 什么都不发生、控制台一行日志都没有"——因为压根没发起连接。
+-    if (this.stopReconnect) return;
++    if (this.stopReconnect || this.manualClose) return;
++    this.clearTimers();
+     // ★不变量：本实例任何时刻最多一条在世连接（见 {@link closeCurrentSocket}）。
+     //   正常重连路径上这里已经是 null（上一条已 close 且回调已摘），
+     //   这一行兜的是重入路径：例如"HTTP 401 的 disconnect()"与"重连定时器"同时到达。
+     this.closeCurrentSocket('replaced');
+     this.setState(isReconnect ? 'reconnecting' : 'connecting');
++    // offline 是本机信号；等待期间只做本地探测，online 事件可提前唤醒。
++    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
++      this.setState('reconnecting');
++      this.reconnectTimer = setTimeout(() => {
++        this.reconnectTimer = null;
++        this.openSocket(true);
++      }, OFFLINE_PROBE_MS);
++      return;
++    }
+     const scheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+     const url = `${scheme}${window.location.host}${WS_PATH}`;
+     let ws: WebSocket;
+@@ -258,6 +279,9 @@ export class ImSocket {
+       return;
+     }
+     this.ws = ws;
++    this.handshakeTimer = setTimeout(() => {
++      if (this.ws === ws) this.recoverConnection();
++    }, HANDSHAKE_TIMEOUT_MS);
+ 
+     // ★★四个 handler 一开始都先判 {@code this.ws !== ws}：本 socket 已被顶替/已被主动关闭时，
+     //   它的事件一律【不得】影响状态机（DEV-157）。少了这道护栏，
+@@ -273,7 +297,8 @@ export class ImSocket {
+       // ★平台模式（token 为 null）：整个 token 键都不写进帧体 —— 见 connect() 的说明。
+       if (this.token) body.token = this.token;
+       const pkt = upPacket(Op.CONNECT, body);
+-      ws.send(JSON.stringify(pkt));
++      try { ws.send(JSON.stringify(pkt)); }
++      catch { this.recoverConnection(); }
+     };
+ 
+     ws.onmessage = (ev) => {
+@@ -293,17 +318,11 @@ export class ImSocket {
+       // ★陈旧连接的 close 不是"当前连接断了"：既不排重连，也不许停当前连接的心跳
+       //   （原实现在这里无条件 stopHeartbeat()，会把顶替者的心跳一起清掉）。
+       if (this.ws !== ws) return;
+-      this.ws = null;
+-      this.stopHeartbeat();
+-      if (this.manualClose || this.stopReconnect) {
+-        this.setState('closed');
+-        return;
+-      }
+-      this.scheduleReconnect();
++      this.recoverConnection();
+     };
+ 
+     ws.onerror = () => {
+-      // onerror 之后必跟 onclose，重连统一在 onclose 处理
++      if (this.ws === ws) this.recoverConnection();
+     };
+   }
+ 
+@@ -311,6 +330,7 @@ export class ImSocket {
+     const body = (pkt.body ?? {}) as Record<string, unknown>;
+     switch (pkt.op) {
+       case Op.CONNECT_ACK: {
++        this.clearHandshake();
+         this.ackBody = pkt.body as ConnectAckBody;
+         this.backoffMs = 1000;
+         const wasReconnect = this.everConnected;
+@@ -322,15 +342,20 @@ export class ImSocket {
+         break;
+       }
+       case Op.CONNECT_REJECT: {
++        const code = pkt.code ?? String(body['code'] ?? '');
++        if (RETRYABLE_CODES.has(code)) { this.recoverConnection(); break; }
+         // ★鉴权失败不重连：token 已失效，重连只会打爆 DEVCAP/审计日志
+         this.stopReconnect = true;
++        this.clearTimers();
++        this.closeCurrentSocket('rejected');
++        this.stopListeningForRecovery();
+         this.setState('rejected');
+-        this.listeners.onRejected?.(pkt.code ?? String(body['code'] ?? ''), String(body['message'] ?? '连接被拒绝'));
+-        this.ws?.close();
++        this.listeners.onRejected?.(code, String(body['message'] ?? '连接被拒绝'));
+         break;
+       }
+       case Op.PONG:
+-        break; // 心跳应答：无需处理（断线由 onclose 兜底）
++        if (this.state === 'connected') this.lastPongAt = Date.now();
++        break;
+       case Op.MSG_RECV:
+         this.listeners.onMsgRecv?.(body);
+         break;
+@@ -372,11 +397,14 @@ export class ImSocket {
+         break;
+       case Op.KICK: {
+         const kick = body as Partial<KickBody>;
+-        const shouldReconnect = kick.reason === 'server_restart';
++        const shouldReconnect = kick.reason === 'server_restart' && body['stopReconnect'] !== true;
+         if (!shouldReconnect) this.stopReconnect = true;
++        this.clearTimers();
++        this.closeCurrentSocket('kicked');
++        if (!shouldReconnect) this.stopListeningForRecovery();
+         this.listeners.onKicked?.(kick.reason ?? 'unknown', kick.message);
+         if (!shouldReconnect) this.setState('closed');
+-        // server_restart：服务端随后会关连接 → onclose → scheduleReconnect
++        else this.scheduleReconnect();
+         break;
+       }
+       case Op.ERROR: {
+@@ -392,12 +420,68 @@ export class ImSocket {
+   private startHeartbeat(intervalSec: number | undefined): void {
+     this.stopHeartbeat();
+     // ★服务端下发的是秒（ImProtocol.HEARTBEAT_INTERVAL_SEC=30 默认）；防呆 clamp [5,300]
+-    const sec = Math.min(300, Math.max(5, intervalSec ?? 30));
++    const seconds = Number(intervalSec);
++    const sec = Number.isFinite(seconds) ? Math.min(300, Math.max(5, seconds)) : 30;
++    this.heartbeatMs = sec * 1000;
++    this.lastPongAt = Date.now();
+     this.heartbeatTimer = setInterval(() => {
+-      if (this.ws?.readyState === WebSocket.OPEN) {
+-        this.ws.send(JSON.stringify(upPacket(Op.PING)));
+-      }
+-    }, sec * 1000);
++      this.checkHeartbeat();
++    }, this.heartbeatMs);
++  }
++
++  private checkHeartbeat(): void {
++    if (this.state !== 'connected') return;
++    if (Date.now() - this.lastPongAt >= this.heartbeatMs * 3 || this.ws?.readyState !== WebSocket.OPEN) {
++      this.recoverConnection();
++      return;
++    }
++    try { this.ws.send(JSON.stringify(upPacket(Op.PING))); }
++    catch { this.recoverConnection(); }
++  }
++
++  private recoverConnection(immediate = false): void {
++    this.clearTimers();
++    this.closeCurrentSocket('reconnect');
++    if (this.manualClose || this.stopReconnect) return;
++    if (!immediate) { this.scheduleReconnect(); return; }
++    this.setState('reconnecting');
++    this.reconnectTimer = setTimeout(() => {
++      this.reconnectTimer = null;
++      this.openSocket(true);
++    }, 0);
++  }
++
++  private readonly onOnline = () => {
++    if (!this.manualClose && !this.stopReconnect) this.recoverConnection(true);
++  };
++  private readonly onOffline = () => {
++    if (!this.manualClose && !this.stopReconnect) this.recoverConnection(true);
++  };
++  private readonly onVisible = () => {
++    if (document.visibilityState !== 'visible' || this.manualClose || this.stopReconnect) return;
++    if (this.connected) this.checkHeartbeat();
++    else if (this.reconnectTimer) this.recoverConnection(true);
++  };
++
++  private listenForRecovery(): void {
++    if (this.recoveryListening) return;
++    this.recoveryListening = true;
++    window.addEventListener('online', this.onOnline);
++    window.addEventListener('offline', this.onOffline);
++    document.addEventListener('visibilitychange', this.onVisible);
++  }
++
++  private stopListeningForRecovery(): void {
++    if (!this.recoveryListening) return;
++    this.recoveryListening = false;
++    window.removeEventListener('online', this.onOnline);
++    window.removeEventListener('offline', this.onOffline);
++    document.removeEventListener('visibilitychange', this.onVisible);
++  }
++
++  private clearHandshake(): void {
++    if (this.handshakeTimer) clearTimeout(this.handshakeTimer);
++    this.handshakeTimer = null;
+   }
+ 
+   private stopHeartbeat(): void {
+@@ -410,7 +494,7 @@ export class ImSocket {
+   private scheduleReconnect(): void {
+     if (this.stopReconnect || this.manualClose || this.reconnectTimer) return;
+     this.setState('reconnecting');
+-    const delay = this.backoffMs;
++    const delay = Math.round(this.backoffMs * (0.75 + Math.random() * 0.25));
+     this.backoffMs = Math.min(MAX_BACKOFF_MS, this.backoffMs * 2);
+     this.reconnectTimer = setTimeout(() => {
+       this.reconnectTimer = null;
+@@ -420,6 +504,7 @@ export class ImSocket {
+ 
+   private clearTimers(): void {
+     this.stopHeartbeat();
++    this.clearHandshake();
+     if (this.reconnectTimer) {
+       clearTimeout(this.reconnectTimer);
+       this.reconnectTimer = null;

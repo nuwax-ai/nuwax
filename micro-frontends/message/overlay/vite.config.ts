@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, mergeConfig } from 'vite';
+import { getImEntryRedirectScript } from './imEntryRedirect.js';
 import { messageScopedStyles } from './scope-styles.mjs';
 import upstream from './vite.upstream.config.ts';
 
@@ -55,6 +56,20 @@ export default defineConfig((environment) => {
         changeScriptOrigin: environment.command === 'serve',
       }),
       messageStandaloneRoutes(),
+      {
+        name: 'nuwax-message-mobile-entry',
+        transformIndexHtml: {
+          order: 'pre',
+          handler: () => [
+            {
+              tag: 'script',
+              attrs: { 'data-nuwax-im-entry': '' },
+              children: getImEntryRedirectScript(),
+              injectTo: 'head-prepend',
+            },
+          ],
+        },
+      },
     ],
     css: { postcss: { plugins: [messageScopedStyles()] } },
     server: {

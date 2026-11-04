@@ -68,10 +68,10 @@ bash scripts/deploy_sync_test.sh
 
 ### 1. 质量门挂（test:conversation 有失败套件）
 
-脚本会直接打印**每个失败套件的隔离复跑命令**。自助判定：
+质量门失败会阻断提测并保留完整日志；不再支持按失败套件名豁免。按日志中的 `FAIL` 文件路径隔离复跑：
 
 ```bash
-npx vitest run tests/xxx.test.ts   # 用脚本打印的命令
+pnpm exec vitest run <测试文件路径>
 ```
 
 - **隔离复跑也挂** = 真回归。九成是「最近合入的接口契约变了没同步测试断言」（改端点/参数/鉴权方式）：对照失败输出里的期望值 vs 实际值，`git log -S '关键字'` 找到改契约的提交，把断言跟上新契约。
