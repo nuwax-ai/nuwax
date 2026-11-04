@@ -20,14 +20,43 @@ describe('IM 首屏参数和路径边界', () => {
     },
   );
 
-  it('保留全部 query、重复键、原始编码和尾部 hash，组合参数由 H5 决定', () => {
-    const suffix = '?invite=00-1+2&convId=7&x=%252B%2B%E7%BE%A4&x=2#pane';
-    expect(getImEntryRedirect(origin + '/instant-message' + suffix, true)).toBe(
-      mobileEntry + suffix,
-    );
+  it('保留全部 query、重复键和原始编码，PC hash 独立编码为 metadata', () => {
+    const query = '?invite=00-1+2&convId=7&x=%252B%2B%E7%BE%A4&x=2';
+    expect(
+      getImEntryRedirect(origin + '/instant-message' + query + '#pane', true),
+    ).toBe(mobileEntry + query + '&__imEntryHash=%23pane');
     expect(
       getImEntryRedirect(origin + '/instant-message/?invite=&spaceId=x', true),
     ).toBe(mobileEntry + '?invite=&spaceId=x');
+  });
+
+  it('raw fragment 不进入长会话 ID；锚点只编码一次且可完整还原', () => {
+    const hash = '#pane%23detail&x=2';
+    const redirected = getImEntryRedirect(
+      origin + '/instant-message/?convId=9007199254740993' + hash,
+      true,
+    )!;
+    expect(redirected).toBe(
+      mobileEntry +
+        '?convId=9007199254740993&__imEntryHash=%23pane%2523detail%26x%3D2',
+    );
+    const routeQuery = new URLSearchParams(
+      redirected.slice(redirected.indexOf('?') + 1),
+    );
+    expect(routeQuery.get('convId')).toBe('9007199254740993');
+    expect(routeQuery.get('__imEntryHash')).toBe(hash);
+  });
+
+  it('业务值原本编码的 %23 不被截断或当成锚点', () => {
+    expect(
+      getImEntryRedirect(origin + '/instant-message/?convId=7%23pane', true),
+    ).toBe(mobileEntry + '?convId=7%23pane');
+    expect(
+      getImEntryRedirect(
+        origin + '/instant-message/?convId=7%23pane#anchor',
+        true,
+      ),
+    ).toBe(mobileEntry + '?convId=7%23pane&__imEntryHash=%23anchor');
   });
 
   it.each([
@@ -113,7 +142,7 @@ describe('独立 IM 首屏脚本与模块 guard', () => {
       URLSearchParams,
     });
     expect(browser.location.replace).toHaveBeenCalledWith(
-      mobileEntry + '?invite=00-1#pane',
+      mobileEntry + '?invite=00-1&__imEntryHash=%23pane',
     );
     expect(redirectStandaloneImEntry(browser)).toBe(true);
     expect(browser.location.replace).toHaveBeenCalledTimes(1);

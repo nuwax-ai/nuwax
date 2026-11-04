@@ -19,12 +19,15 @@ export function getImEntryRedirect(href, mobile) {
       ) {
         return null;
       }
-      // 原始 query 全量透传；登录、参数校验、组合目标和确认加入由 H5 承接。
+      // 原始 query 全量透传；第二个 raw # 会被 uni-router 并入最后一个业务参数，
+      // 所以 PC 锚点只放进独立 metadata，不能截断 query 中本来就非法的 %23。
       return (
         current.origin +
         '/m/#/subpackages/pages/im-invite/im-invite' +
         current.search +
-        current.hash
+        (current.hash
+          ? '&__imEntryHash=' + encodeURIComponent(current.hash)
+          : '')
       );
     }
     // 仅供经过主站首屏脚本的旧 M 链接兼容；独立 H5 入口不执行此脚本。

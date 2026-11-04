@@ -33,7 +33,7 @@ describe('主站实际首屏分流配置', () => {
       firstScreen('/instant-message/?invite=%252B&convId=7#pane', true),
     ).toHaveBeenCalledWith(
       origin +
-        '/m/#/subpackages/pages/im-invite/im-invite?invite=%252B&convId=7#pane',
+        '/m/#/subpackages/pages/im-invite/im-invite?invite=%252B&convId=7&__imEntryHash=%23pane',
     );
   });
 
