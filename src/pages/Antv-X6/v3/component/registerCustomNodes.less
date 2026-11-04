@@ -3,7 +3,7 @@
 
 .general-node {
   position: relative;
-  background: #fff;
+  background: var(--nuwax-elevated-bg, #fff);
   // box-shadow: 0 1px 3px rgba(0, 0, 0, 10%),
   //   /* 下方阴影 */ 0 -1px 3px rgba(0, 0, 0, 10%),
   //   /* 上方阴影 */ -1px 0 3px rgba(0, 0, 0, 10%),
@@ -13,7 +13,7 @@
 
   /* 右侧阴影 */
   overflow: hidden;
-  border: 1px solid rgba(6, 7, 9, 15%);
+  border: 1px solid var(--nuwax-border-default, rgba(6, 7, 9, 15%));
 
   /* 确保子元素不会溢出父元素的边界 */
   padding-bottom: 10px;
@@ -51,16 +51,16 @@
     font-weight: normal;
     line-height: 22px;
     padding: 0 16px;
-    color: @GRAY07;
+    color: var(--nuwax-text-secondary, @GRAY07);
 
     .general-node-content-item {
       display: flex;
       font-size: 12px;
-      color: #4e5969;
+      color: var(--nuwax-text-secondary, #4e5969);
 
       .general-node-content-label {
         font-size: 14px;
-        color: #3d3d3d;
+        color: var(--nuwax-text-primary, #3d3d3d);
         margin-right: 10px;
       }
     }
@@ -69,7 +69,7 @@
 
 .loop-node-style {
   height: 100%;
-  background: #fff;
+  background: var(--nuwax-elevated-bg, #fff);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 10%),
     /* 下方阴影 */ 0 -4px 8px rgba(0, 0, 0, 10%),
     /* 上方阴影 */ -4px 0 8px rgba(0, 0, 0, 10%),
@@ -95,7 +95,7 @@
 }
 
 .selected-general-node {
-  border: 1px solid rgb(81, 71, 255) !important;
+  border: 1px solid var(--nuwax-focus-ring, rgb(81, 71, 255)) !important;
 }
 
 .general-node-header-title {
@@ -107,8 +107,8 @@
 .node-title-input {
   padding: 0 4px;
   border-radius: 2px;
-  border: 1px solid #d9d9d9;
-  background-color: rgba(255, 255, 255, 90%);
+  border: 1px solid var(--nuwax-border-default, #d9d9d9);
+  background-color: var(--nuwax-input-bg, rgba(255, 255, 255, 90%));
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 10%);
   transition: all 0.2s;
   display: block;
@@ -117,14 +117,14 @@
 }
 
 .node-title-input:focus {
-  box-shadow: 0 0 0 2px #1890ff;
+  box-shadow: 0 0 0 2px var(--nuwax-focus-ring, #1890ff);
 }
 
 .exception-handle {
   &-style {
     padding: 2px 6px;
     border-radius: 3px;
-    background-color: #f5f5f5;
+    background-color: var(--nuwax-surface-bg, #f5f5f5);
     margin-top: 10px;
     height: 24px;
     line-height: 24px;
@@ -137,12 +137,12 @@
 
   &-title {
     font-size: 12px;
-    color: #606060;
+    color: var(--nuwax-text-secondary, #606060);
   }
 
   &-content {
     font-size: 12px;
-    color: #3d3d3d;
+    color: var(--nuwax-text-primary, #3d3d3d);
   }
 }
 
@@ -156,14 +156,14 @@
 
 .condition-node-left-input,
 .condition-node-right-input {
-  border: 1px solid #ccc;
+  border: 1px solid var(--nuwax-border-default, #ccc);
   border-radius: 4px;
   height: 28px;
   line-height: 28px;
   font-size: 12px;
   text-indent: 4px;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: var(--nuwax-surface-bg, #f5f5f5);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -263,7 +263,7 @@
 .general-node-header-desc {
   flex-basis: 100%;
   font-size: 11px;
-  color: #8c8c8c;
+  color: var(--nuwax-text-secondary, #8c8c8c);
   padding: 2px 0 0;
   line-height: 1.4;
   white-space: nowrap;
@@ -305,7 +305,7 @@
 
 .route-decision-name {
   font-size: 12px;
-  color: #595959;
+  color: var(--nuwax-text-primary, #595959);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

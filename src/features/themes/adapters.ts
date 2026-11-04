@@ -1,8 +1,22 @@
 import type { HostThemeSnapshot } from '@/types/interfaces/hostBridge';
+import type { Graph } from '@antv/x6';
 import type * as Monaco from 'monaco-editor';
 import { getActiveThemeSnapshot } from './activeTheme';
 
 const monacoSignatures = new WeakMap<object, string>();
+/** 只更新 X6 绘制层；不写 cell/model，避免主题切换进入撤销历史或触发自动保存。 */
+export function applyWorkflowAppearance(
+  graph: Pick<Graph, 'drawBackground' | 'drawGrid'>,
+  snapshot = getActiveThemeSnapshot(),
+) {
+  if (!snapshot) return;
+  graph.drawBackground({ color: snapshot.tokens['app.bg'] });
+  graph.drawGrid({
+    type: 'dot',
+    args: { color: snapshot.tokens['border.strong'], thickness: 1 },
+  });
+}
+
 /** 更新调色板，不创建或重置 editor/model/selection。 */
 export function applyMonacoTheme(
   monaco: typeof Monaco,

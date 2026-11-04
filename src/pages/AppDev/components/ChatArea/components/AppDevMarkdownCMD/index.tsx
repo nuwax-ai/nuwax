@@ -4,6 +4,7 @@ import {
   getSafeCurrentLang,
 } from '@/components/MarkdownRenderer/getMarkdownLocale';
 import styles from '@/components/MarkdownRenderer/index.less';
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import classNames from 'classnames';
 import { ConfigProvider, MarkdownCMD } from 'ds-markdown';
@@ -32,13 +33,14 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
     {
       id,
       className = '',
-      theme = 'light',
+      theme,
       disableTyping = false,
       interval = 30,
       requestId,
     },
     ref,
   ) => {
+    const appearance = useAppTheme();
     const plugins = useMemo(() => {
       const appDevPlugin = genAppDevPlugin();
       return [appDevPlugin];
@@ -54,6 +56,7 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
         key={renderKey}
         id={id}
         data-key={id}
+        data-theme-part="markdown"
         className={cx(
           styles['markdown-container'],
           'appDevMarkdownCMD',
@@ -67,7 +70,7 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
             interval={interval}
             plugins={plugins}
             codeBlock={{ headerActions: false }}
-            theme={theme}
+            theme={theme ?? appearance.mode}
             disableTyping={disableTyping}
           />
         </ConfigProvider>

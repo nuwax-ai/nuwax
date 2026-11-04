@@ -2,12 +2,32 @@ import { getConsoleTerminalTheme } from '@/components/business-component/Convers
 import { describe, expect, it, vi } from 'vitest';
 import {
   applyMonacoTheme,
+  applyWorkflowAppearance,
   mermaidAppearance,
   monacoFontOptions,
 } from './adapters';
 import { officialThemePackage, resolveThemePackage } from './core';
 
 describe('independent renderer appearance', () => {
+  it('updates workflow drawing without writing graph cells or history', () => {
+    const graph = { drawBackground: vi.fn(), drawGrid: vi.fn() };
+    for (const mode of ['light', 'dark'] as const) {
+      const snapshot = resolveThemePackage(
+        officialThemePackage,
+        mode,
+        false,
+        1,
+      );
+      applyWorkflowAppearance(graph as any, snapshot);
+      expect(graph.drawBackground).toHaveBeenLastCalledWith({
+        color: snapshot.tokens['app.bg'],
+      });
+      expect(graph.drawGrid).toHaveBeenLastCalledWith({
+        type: 'dot',
+        args: { color: snapshot.tokens['border.strong'], thickness: 1 },
+      });
+    }
+  });
   it('redefines an existing Monaco theme after palette edits without replacing an editor or model', () => {
     const monaco = {
       editor: { defineTheme: vi.fn(), setTheme: vi.fn() },

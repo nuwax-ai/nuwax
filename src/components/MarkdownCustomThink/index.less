@@ -27,7 +27,7 @@
     }
 
     .think-header {
-      background-color: #f7f8fa;
+      background-color: var(--nuwax-hover-bg, #f7f8fa);
 
       .header-right {
         .expand-icon {
@@ -64,7 +64,7 @@
       scrollbar-width: none; // 滚动由尾部跟随驱动，滚动条隐藏保持「播放」观感
       // 不设 scroll-behavior:smooth——会把程序赋值异步动画化，部分浏览器不生效
       // 左缘淡出，强化内容从右侧持续流出的方向感
-      -webkit-mask-image: linear-gradient(to right, transparent, #000 @padding);
+      mask-image: linear-gradient(to right, transparent, #000 @padding);
       mask-image: linear-gradient(to right, transparent, #000 @padding);
 
       &::-webkit-scrollbar {
@@ -87,7 +87,7 @@
           @colorTextDescription 100%
         );
         background-size: 200% 100%;
-        -webkit-background-clip: text;
+        background-clip: text;
         background-clip: text;
         animation: think-ticker-sheen 2.4s linear infinite;
       }
@@ -180,6 +180,7 @@
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.35;
   }
@@ -189,6 +190,7 @@
   0% {
     background-position: 100% 0;
   }
+
   100% {
     background-position: -100% 0;
   }

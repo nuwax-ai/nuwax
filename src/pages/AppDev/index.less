@@ -96,7 +96,7 @@
 .leftPanel {
   width: 380px;
   height: 100%;
-  border-right: 1px solid rgba(0, 0, 0, 10%);
+  border-right: 1px solid var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   padding: 0;
   flex-shrink: 0; // 防止收缩
   display: flex;
@@ -137,7 +137,7 @@
   justify-content: space-between;
   padding: 16px 24px;
   background: rgba(255, 255, 255, 80%);
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
+  border-bottom: 1px solid var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 5%);
 }
@@ -152,7 +152,7 @@
 
 .versionButton {
   background: rgba(255, 255, 255, 90%);
-  border: 1px solid rgba(0, 0, 0, 10%);
+  border: 1px solid var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   color: @colorTextBase;
 
   &:hover {
@@ -177,7 +177,7 @@
 // 工具栏按钮样式
 .toolbarButton {
   background: rgba(255, 255, 255, 90%);
-  border: 1px solid rgba(0, 0, 0, 10%);
+  border: 1px solid var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   color: @colorTextBase;
 
   &:hover {
@@ -188,7 +188,7 @@
 
   &:disabled {
     background: rgba(0, 0, 0, 5%);
-    border-color: rgba(0, 0, 0, 10%);
+    border-color: var(--nuwax-border-default, rgba(0, 0, 0, 10%));
     color: @colorTextDisabled;
   }
 }
@@ -239,10 +239,10 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--nuwax-elevated-bg, #fff);
   // border-radius: 8px;
   overflow: hidden;
-  // box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+  // box-shadow: 0 1px 3px var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   position: relative;
 }
 
@@ -251,8 +251,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 95%);
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
+  background: var(--nuwax-elevated-bg, rgba(255, 255, 255, 95%));
+  border-bottom: 1px solid var(--nuwax-border-default, rgba(0, 0, 0, 10%));
   padding: 8px 12px;
   position: relative;
   z-index: 10;
@@ -341,7 +341,7 @@
 }
 
 .deployOverlayContent {
-  background: rgba(255, 255, 255, 95%);
+  background: var(--nuwax-elevated-bg, rgba(255, 255, 255, 95%));
   border-radius: 12px;
   padding: 32px 40px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 20%);

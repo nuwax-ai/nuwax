@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { DownOutlined } from '@ant-design/icons';
@@ -25,20 +26,23 @@ interface MarkdownCustomProcessGroupProps {
  */
 const ProcessGroupTextFragment: React.FC<{ children: string }> = ({
   children,
-}) => (
-  <div className={cx(styles['group-text-fragment'])}>
-    <DsMarkdown
-      disableTyping
-      interval={30}
-      timerType="requestAnimationFrame"
-      plugins={[katexPlugin]}
-      codeBlock={{ headerActions: true }}
-      theme="light"
-    >
-      {children}
-    </DsMarkdown>
-  </div>
-);
+}) => {
+  const appearance = useAppTheme();
+  return (
+    <div className={cx(styles['group-text-fragment'])}>
+      <DsMarkdown
+        disableTyping
+        interval={30}
+        timerType="requestAnimationFrame"
+        plugins={[katexPlugin]}
+        codeBlock={{ headerActions: true }}
+        theme={appearance.mode}
+      >
+        {children}
+      </DsMarkdown>
+    </div>
+  );
+};
 
 const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
   children,

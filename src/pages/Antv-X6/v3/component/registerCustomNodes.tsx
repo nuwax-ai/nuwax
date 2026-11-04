@@ -361,9 +361,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     return null;
   }
 
-  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+  const gradientBackground = `linear-gradient(to bottom, color-mix(in srgb, ${returnBackgroundColor(
     data.type,
-  )} 0%, white 100%)`;
+  )} var(--workflow-node-tint, 100%), var(--nuwax-elevated-bg, #fff)) 0%, var(--nuwax-elevated-bg, #fff) 100%)`;
   const isSpecialNode = [
     NodeTypeEnum.QA,
     NodeTypeEnum.Condition,
@@ -479,9 +479,9 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
   const [editValue, setEditValue] = useState(data?.name || '');
   const selected = useNodeSelection({ graph, nodeId: data?.id });
-  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+  const gradientBackground = `linear-gradient(to bottom, color-mix(in srgb, ${returnBackgroundColor(
     data.type,
-  )} 0%, white 42px)`;
+  )} var(--workflow-node-tint, 100%), var(--nuwax-elevated-bg, #fff)) 0%, var(--nuwax-elevated-bg, #fff) 42px)`;
   useEffect(() => {
     setEditValue(data?.name || '');
   }, [data?.name]);

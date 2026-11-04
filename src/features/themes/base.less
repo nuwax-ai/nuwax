@@ -73,6 +73,48 @@
 // 旧页面的固定配色只在主题运行时生效后覆盖。匹配 CSS Module 的语义前缀，
 // 不绑定构建哈希；不全局改写文字、SVG、状态色或文档内容。
 html[data-theme-surface='web'][data-theme-id] {
+  // Markdown 的 RGB 变量会在正文、列表、思考过程与工具输出中重复使用。
+  .ds-markdown {
+    --ds-rgb-label-1: from var(--nuwax-text-primary) r g b;
+    --ds-rgb-label-2: from var(--nuwax-text-secondary) r g b;
+    --ds-rgb-label-3: from var(--nuwax-text-secondary) r g b;
+    --ds-rgb-primary: from var(--nuwax-primary) r g b;
+    --ds-rgb-link: from var(--nuwax-primary) r g b;
+    --dsr-bg: transparent;
+    --dsr-border-1: var(--nuwax-border-strong);
+    --dsr-border-2: var(--nuwax-border-default);
+    --ds-thinking-border-color: var(--nuwax-border-default);
+    --ds-button-hover-color: var(--nuwax-hover-bg);
+    --ds-md-inline-code-color: var(--nuwax-code-bg);
+
+    li::marker {
+      color: var(--nuwax-text-primary);
+    }
+
+    :is(.md-code-block-light, .md-code-block-dark) {
+      --ds-md-code-block-banner-wrap-background-color: var(--nuwax-code-bg);
+      --ds-md-code-banner-background-color: var(--nuwax-surface-bg);
+    }
+  }
+
+  [data-theme-part='workflow-canvas'] {
+    color: var(--nuwax-text-primary);
+
+    .x6-edge path[stroke='#5147FF' i],
+    .x6-port-body[stroke='#5147FF' i] {
+      stroke: var(--nuwax-primary);
+    }
+
+    .x6-edge path[fill='#5147FF' i],
+    .x6-port-body[fill='#5147FF' i] {
+      fill: var(--nuwax-primary);
+    }
+  }
+
+  &[data-theme='dark'] [data-theme-part='workflow-canvas'] {
+    --workflow-node-tint: 12%;
+  }
+
   :is([data-theme-part='resource-catalog'], [data-theme-part='app-catalog']) {
     background-color: var(--nuwax-app-bg);
     color: var(--nuwax-text-primary);

@@ -19,14 +19,14 @@
   font-size: 14px;
   font-weight: @fontWeightStrong;
   line-height: 22px;
-  color: @BLANK04;
+  color: var(--nuwax-text-primary, @BLANK04);
 }
 
 .node-title-bold-style {
   font-size: 14px;
   font-weight: @fontWeightStrong;
   line-height: 22px;
-  color: @BLANK04;
+  color: var(--nuwax-text-primary, @BLANK04);
 }
 
 .has-child-node {
@@ -35,7 +35,7 @@
     font-size: 14px;
     font-weight: normal;
     line-height: 22px;
-    color: @BLANK04;
+    color: var(--nuwax-text-primary, @BLANK04);
   }
 
   .ant-form-item-label > label {
@@ -81,11 +81,11 @@
   }
 
   .divider-text {
-    color: @GRAY04;
+    color: var(--nuwax-text-secondary, @GRAY04);
   }
 
   .model-list-item-desc {
-    color: @GRAY05;
+    color: var(--nuwax-text-secondary, @GRAY05);
     width: 100%;
     white-space: pre-wrap;
     word-break: break-word;
@@ -108,13 +108,13 @@
 }
 
 .custom-dropdown .ant-select-item-option-active {
-  background-color: #e6f7ff;
+  background-color: var(--nuwax-hover-bg, #e6f7ff);
 
   /* 当前激活项背景色 */
 }
 
 .custom-dropdown .ant-select-item-option-selected {
-  background-color: #b3d8ff;
+  background-color: var(--nuwax-selected-bg, #b3d8ff);
 
   /* 已选项背景色 */
 }

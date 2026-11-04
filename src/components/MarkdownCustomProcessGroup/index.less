@@ -27,7 +27,10 @@
     }
 
     .group-header {
-      background-color: #f7f8fa; // 鼠标移入后的背景色需要同系统适配
+      background-color: var(
+        --nuwax-hover-bg,
+        #f7f8fa
+      ); // 鼠标移入后的背景色需要同系统适配
 
       .header-right {
         .expand-icon {

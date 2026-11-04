@@ -1,4 +1,6 @@
 import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
+import { applyWorkflowAppearance } from '@/features/themes/adapters';
+import { themeRuntime } from '@/features/themes/runtime';
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
 import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
@@ -696,7 +698,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         message,
       });
 
+      const updateAppearance = () =>
+        applyWorkflowAppearance(
+          graphRef.current,
+          themeRuntime.getState().snapshot,
+        );
+      updateAppearance();
+      const unsubscribeTheme = themeRuntime.subscribe(updateAppearance);
+
       return () => {
+        unsubscribeTheme();
         setTimeout(() => {
           cleanup();
           if (graphRef.current) {
@@ -741,6 +752,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       <div
         ref={containerRef}
         id={GRAPH_CONTAINER_ID}
+        data-theme-part="workflow-canvas"
         style={{ width: '100%', height: '100%' }}
       />
     );

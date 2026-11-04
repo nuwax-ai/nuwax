@@ -22,7 +22,7 @@
 
   .action-section {
     padding: 0 6px;
-    background: #fff;
+    background: var(--nuwax-elevated-bg, #fff);
     border: 1px solid @colorBorder;
     border-radius: @borderRadius;
     display: flex;
@@ -65,7 +65,7 @@
       height: 100%;
       z-index: 11;
       max-height: 100%;
-      background-color: #f2f2f2;
+      background-color: var(--nuwax-app-bg, #f2f2f2);
     }
   }
 
@@ -82,7 +82,7 @@
   overflow-y: auto;
 
   .stencil-title {
-    color: @GRAY07;
+    color: var(--nuwax-text-secondary, @GRAY07);
   }
 
   .stencil-list-style {
@@ -97,7 +97,7 @@
         font-weight: normal;
         line-height: 22px;
         letter-spacing: 0;
-        color: @GRAY07;
+        color: var(--nuwax-text-secondary, @GRAY07);
       }
 
       .stencil-list-content {
@@ -215,7 +215,7 @@
   .ant-input {
     height: 28px;
     font-size: 12px;
-    background-color: rgb(252, 252, 252);
+    background-color: var(--nuwax-input-bg, rgb(252, 252, 252));
   }
 
   .ant-select {
@@ -233,7 +233,7 @@
   }
 
   .ant-select-selector {
-    background-color: rgb(252, 252, 252);
+    background-color: var(--nuwax-input-bg, rgb(252, 252, 252));
   }
 }
 
@@ -254,14 +254,14 @@
     font-size: 14px;
     font-weight: @fontWeightStrong;
     line-height: 22px;
-    color: @BLANK04;
+    color: var(--nuwax-text-primary, @BLANK04);
   }
 
   .node-title-grey-style {
     font-size: 14px;
     font-weight: @fontWeightStrong;
     line-height: 22px;
-    color: @GRAY04;
+    color: var(--nuwax-text-secondary, @GRAY04);
     margin-right: 16px;
   }
 
@@ -373,11 +373,11 @@
 
   .header-content-style {
     font-size: 12px;
-    color: @GRAY05;
+    color: var(--nuwax-text-secondary, @GRAY05);
 
     .header-name-style {
       font-size: 14px;
-      color: @BLANK04;
+      color: var(--nuwax-text-primary, @BLANK04);
       font-weight: @fontWeightStrong;
       margin-right: 6px;
       line-height: 20px;
@@ -426,7 +426,7 @@
   bottom: 10px;
   border-radius: 16px;
   // padding: 10px 0 0;
-  background-color: @WHITE;
+  background-color: var(--nuwax-elevated-bg, @WHITE);
   z-index: 99;
   overflow: hidden;
   overflow-y: auto;
@@ -540,7 +540,7 @@
 }
 
 .general-node-header-title {
-  color: @BLANK04;
+  color: var(--nuwax-text-primary, @BLANK04);
   max-width: 124px;
   font-size: 14px;
   font-weight: @fontWeightStrong;
@@ -557,7 +557,7 @@
 }
 
 .ico {
-  color: @BLANK09;
+  color: var(--nuwax-text-secondary, @BLANK09);
   font-size: 16px;
 }
 
