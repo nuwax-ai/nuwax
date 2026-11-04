@@ -1,4 +1,4 @@
-import { getBusinessBase } from './authIdp';
+import { getBusinessBase, resolveIdpRedirect } from './authIdp';
 
 type LoginHistory = {
   replace: (url: string, state?: Record<string, unknown>) => void;
@@ -54,14 +54,18 @@ export function navigateAfterLogin(
   responseRedirectUrl: string | null | undefined,
   navigateToAuthUrl: (url: string) => void,
 ): void {
-  const redirect = decodeURIComponent(redirectParam || '');
+  // URLSearchParams 已解码外层参数，再解码会破坏绑定 token 和嵌套查询。
+  const redirect = redirectParam || '';
   if (redirect && !Number.isNaN(Number(redirect))) {
     history.go(Number(redirect));
   } else if (responseRedirectUrl?.includes('://')) {
     navigateToAuthUrl(responseRedirectUrl);
-  } else if (isServerRenderedPath(redirect)) {
-    navigateToAuthUrl(`${getBusinessBase()}${redirect}`);
   } else {
-    history.replace(redirect || '/');
+    const path = resolveIdpRedirect(redirect);
+    if (isServerRenderedPath(path)) {
+      navigateToAuthUrl(`${getBusinessBase()}${path}`);
+    } else {
+      history.replace(path);
+    }
   }
 }

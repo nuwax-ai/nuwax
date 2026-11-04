@@ -38,11 +38,11 @@ describe('登录步骤导航', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => window.history.replaceState(null, '', '/'));
 
-  it.each(['password', 'code'] as const)(
+  it.each(['password', 'code', 'code-with-password'] as const)(
     '%s 登录成功的 -1 返回原业务页面，不返回登录步骤',
     async (method) => {
       enterLogin();
-      if (method === 'code') {
+      if (method !== 'password') {
         replaceLoginStep(history, 'verify-code', '-1', {
           phoneOrEmail: 'test@example.com',
         });
@@ -50,6 +50,9 @@ describe('登录步骤导航', () => {
         expect(window.history.state).toEqual({
           phoneOrEmail: 'test@example.com',
         });
+        if (method === 'code-with-password') {
+          replaceLoginStep(history, 'set-password', '-1');
+        }
       }
 
       const navigation = waitForBackNavigation();
@@ -118,6 +121,40 @@ describe('登录步骤导航', () => {
     const target = 'https://tenant.example/workspace?tab=agents';
     navigateAfterLogin(history, '/workspace', target, navigateToAuthUrl);
     expect(navigateToAuthUrl).toHaveBeenCalledWith(target);
+  });
+
+  it.each([
+    '/workspace?name=100%',
+    '/workspace?next=%2Fspace%2F93%3Ftab%3Dfiles%26sort%3Dname#details',
+    '/auth/bind-or-register?token=fixture%2Bvalue%2525',
+  ])('回跳参数已经由 URLSearchParams 解码，保留原始路径 %s', (redirect) => {
+    enterLogin(redirect);
+    const value = new URLSearchParams(window.location.search).get('redirect');
+    expect(() =>
+      navigateAfterLogin(history, value, null, navigateToAuthUrl),
+    ).not.toThrow();
+    if (redirect.startsWith('/auth/')) {
+      expect(navigateToAuthUrl).toHaveBeenCalledWith(
+        `${getBusinessBase()}${redirect}`,
+      );
+    } else {
+      expect(
+        window.location.pathname +
+          window.location.search +
+          window.location.hash,
+      ).toBe(redirect);
+    }
+  });
+
+  it.each([
+    '//external.example/path',
+    '/\\external.example/path',
+    'https://external.example/path',
+  ])('非法查询回跳地址回退首页 %s', (redirect) => {
+    enterLogin(redirect);
+    navigateAfterLogin(history, redirect, null, navigateToAuthUrl);
+    expect(window.location.pathname).toBe('/');
+    expect(navigateToAuthUrl).not.toHaveBeenCalled();
   });
 
   it('新用户验证码注册后经过设置密码仍回到原邀请链接', () => {

@@ -6,10 +6,11 @@ import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { validatePassword } from '@/utils/common';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
+import { useRequest } from 'ahooks';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-import { history, useModel, useRequest, useSearchParams } from 'umi';
+import { history, useLocation, useModel, useSearchParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,6 +20,11 @@ const cx = classNames.bind(styles);
  */
 const SetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
+  // 后端回跳只从登录步骤传入的 state 续接，不接受查询参数中的外部地址。
+  const { state } = useLocation();
+  const responseRedirectUrl = (
+    state as { responseRedirectUrl?: string | null } | null
+  )?.responseRedirectUrl;
   const { setTitle } = useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
 
@@ -40,7 +46,7 @@ const SetPassword: React.FC = () => {
       navigateAfterLogin(
         history,
         searchParams.get('redirect'),
-        null,
+        responseRedirectUrl,
         navigateToAuthUrl,
       );
     } catch {
