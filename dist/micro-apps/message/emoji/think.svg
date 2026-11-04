@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="思考">
-  <title>思考</title>
-  <circle cx="32" cy="32" r="30" fill="#ffd6e7"/>
-  <circle cx="32" cy="32" r="30" fill="none" stroke="#1f2329" stroke-opacity=".12" stroke-width="2"/>
-  <circle cx="22" cy="27" r="4" fill="#1f2329"/><path d="M38 24h8" fill="none" stroke="#1f2329" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M22 42q5-4 10 0t10 0" fill="none" stroke="#1f2329" stroke-width="3.6" stroke-linecap="round"/>
-</svg>
