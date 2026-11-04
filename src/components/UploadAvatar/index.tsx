@@ -4,7 +4,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
 import { getBusinessRequestAuth } from '@/utils/businessAuth';
-import { FormOutlined } from '@ant-design/icons';
+import { EditOutlined, FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
 const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   const {
     className,
+    editIconPlacement = 'overlay',
     onUploadSuccess,
     defaultImage,
     imageUrl,
@@ -73,15 +74,27 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
         className={cx(
           styles['file-box'],
           'relative',
-          'overflow-hide',
+          editIconPlacement === 'overlay' && 'overflow-hide',
           'cursor-pointer',
           className,
         )}
       >
         <div
-          className={cx(styles.mask, 'flex', 'content-center', 'items-center')}
+          className={cx(
+            editIconPlacement === 'bottomRight'
+              ? styles.editBadge
+              : styles.mask,
+            'flex',
+            'content-center',
+            'items-center',
+          )}
+          aria-hidden="true"
         >
-          <FormOutlined />
+          {editIconPlacement === 'bottomRight' ? (
+            <EditOutlined />
+          ) : (
+            <FormOutlined />
+          )}
         </div>
         {svgIconName && !imageUrl ? (
           <SvgIconGoodTheme name={svgIconName} />
