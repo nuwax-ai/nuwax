@@ -245,6 +245,14 @@ export default defineConfig({
 						return;
 					}
 
+					// NW-355: Web 端 IM 群邀请/直达链接（/instant-message?invite=... 等）在移动端打开时，
+					// 透传完整 query 到 M 端承接页（与 nuwax-im 独立页的分流同一约定值）；
+					// 不带参数的裸入口维持兜底跳 M 站首页的现状不变
+					if (href.includes('/instant-message') && window.location.search) {
+						window.location.replace(baseUrl + '/m/#/subpackages/pages/im-invite' + window.location.search);
+						return;
+					}
+
 					window.location.replace(baseUrl + '/m/');
 					return;
 				}
