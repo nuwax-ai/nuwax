@@ -161,6 +161,8 @@ const GlobalEventPolling: React.FC = () => {
 
 const subscribePollingPath = (listener: () => void) => history.listen(listener);
 const getPollingPath = () => history.location.pathname;
+const isLoginStepPath = (pathname: string) =>
+  /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(pathname);
 
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
@@ -177,9 +179,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     getPollingPath,
     () => '/login',
   );
-  const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
-    pathname,
-  );
+  const isLoginPage = isLoginStepPath(pathname);
 
   useEffect(() => installDirectorySyncLegacyBridge(), []);
 
@@ -436,8 +436,6 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         !isLoginPage &&
         !isAuthTerminalPage(pathname) &&
         !isDesktopShellPreviewPage() && <GlobalEventPolling />}
-      {/* L2：刚完成登录且仍是默认账号形态时，弹「取昵称+设头像」引导 */}
-      {loggedIn && !isLoginPage && <ProfileSetupGuideGate active />}
       {children}
     </>
   );
@@ -455,13 +453,32 @@ const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const { error } = useModel('@@initialState');
+  const loggedIn = useSyncExternalStore(
+    subscribeLoginStatus,
+    getCurrentLoginStatus,
+    () => false,
+  );
+  const pathname = useSyncExternalStore(
+    subscribePollingPath,
+    getPollingPath,
+    () => '/login',
+  );
+  const showProfileGuide =
+    loggedIn &&
+    !isLoginStepPath(pathname) &&
+    !isAuthTerminalPage(pathname) &&
+    !isDesktopShellPreviewPage();
   return (
     <>
       <DesktopShellPreviewChrome />
       {error ? (
         <AppStartup failed diagnostic={getAppStartupDiagnostic(error)} />
       ) : (
-        children
+        <>
+          {/* 此处位于 model provider 内，登录页和启动失败页不挂载引导。 */}
+          {showProfileGuide && <ProfileSetupGuideGate active />}
+          {children}
+        </>
       )}
     </>
   );

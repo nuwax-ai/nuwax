@@ -31,19 +31,27 @@ const ProfileSetupGuide: React.FC<{
   const identity = `${userInfo?.tenantId ?? ''}:${
     userInfo?.id ?? userInfo?.userName ?? ''
   }`;
+  const view = useRef({ open, identity, revision: 0 });
+  if (view.current.open !== open || view.current.identity !== identity) {
+    view.current = { open, identity, revision: view.current.revision + 1 };
+  }
+  const viewRevision = view.current.revision;
   const latestIdentity = useRef(identity);
   latestIdentity.current = identity;
   const latestUser = useRef(userInfo);
   latestUser.current = userInfo;
   const epoch = useRef(0);
+  const mounted = useRef(false);
   const pending = useRef(false);
   const { runAsync, loading: saving } = useRequest(apiUserUpdate, {
     manual: true,
   });
 
   useEffect(() => {
+    mounted.current = true;
     if (open) form.resetFields();
     return () => {
+      mounted.current = false;
       epoch.current += 1;
     };
   }, [open, identity]);
@@ -51,6 +59,7 @@ const ProfileSetupGuide: React.FC<{
   const save = async (params: UserUpdateParams, closeAfterSave: boolean) => {
     if (
       pending.current ||
+      !mounted.current ||
       !open ||
       !latestUser.current ||
       identity !== latestIdentity.current
@@ -77,7 +86,15 @@ const ProfileSetupGuide: React.FC<{
 
   // 头像即时保存，继续保留昵称草稿，用户点「保存」后才结束引导。
   const handleUploadSuccess = (url: string) => {
-    if (url) void save({ avatar: url }, false);
+    // 上传组件的迟到回调须属于仍打开的同一轮引导。
+    if (
+      url &&
+      mounted.current &&
+      view.current.open &&
+      viewRevision === view.current.revision
+    ) {
+      void save({ avatar: url }, false);
+    }
   };
 
   const handleSave = () => {
@@ -101,7 +118,7 @@ const ProfileSetupGuide: React.FC<{
       </p>
       <div className={cx(styles.avatarRow)}>
         <UploadAvatar
-          key={identity}
+          key={`${identity}:${viewRevision}`}
           imageUrl={userInfo?.avatar}
           onUploadSuccess={handleUploadSuccess}
           defaultImage={avatarImage as string}

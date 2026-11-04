@@ -247,4 +247,45 @@ describe('ProfileSetupGuide（L2 引导弹框）', () => {
     });
     expect(apiUserUpdate).not.toHaveBeenCalled();
   });
+  it('同账号关闭重开后旧上传回调不能写入新弹框', async () => {
+    const view = renderModal();
+    const oldUploadSuccess = mockUploadSuccess;
+    view.rerender(<ProfileSetupGuide open={false} onClose={onClose} />);
+    view.rerender(<ProfileSetupGuide open onClose={onClose} />);
+    await act(async () => {
+      oldUploadSuccess?.('https://example.com/old.png');
+    });
+    expect(apiUserUpdate).not.toHaveBeenCalled();
+  });
+  it('引导卸载后旧上传回调不能继续保存资料', async () => {
+    const view = renderModal();
+    const oldUploadSuccess = mockUploadSuccess;
+    view.unmount();
+    await act(async () => {
+      oldUploadSuccess?.('https://example.com/old.png');
+    });
+    expect(apiUserUpdate).not.toHaveBeenCalled();
+  });
+  it('引导卸载后在途保存结果不再写回用户缓存', async () => {
+    let resolve!: (value: never) => void;
+    vi.mocked(apiUserUpdate).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const view = renderModal();
+    fireEvent.change(
+      screen.getByPlaceholderText('PC.Pages.Setting.inputNickName'),
+      { target: { value: '旧昵称' } },
+    );
+    fireEvent.click(screen.getByText('PC.Common.Global.save'));
+    await waitFor(() => expect(apiUserUpdate).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => {
+      resolve(null as never);
+    });
+    expect(setUserInfo).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });
