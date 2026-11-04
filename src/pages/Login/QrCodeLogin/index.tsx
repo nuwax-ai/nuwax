@@ -27,6 +27,7 @@ const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
   const [code, setCode] = useState<QrLoginCode>();
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorText, setErrorText] = useState('');
+  const cancelCurrent = useRef<() => void>(() => {});
   const callbacks = useRef({ onSuccess, onConfirmingChange });
   callbacks.current = { onSuccess, onConfirmingChange };
 
@@ -43,6 +44,11 @@ const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
       clearTimeout(expiryTimer);
       controller.abort();
     };
+    const cancel = () => {
+      cancelled = true;
+      stop();
+    };
+    cancelCurrent.current = cancel;
     const expire = () => {
       stop();
       setPhase('expired');
@@ -139,13 +145,16 @@ const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
     void start().catch((error) => {
       if (!cancelled && !stopped) fail(error);
     });
-    return () => {
-      cancelled = true;
-      stop();
-    };
+    return cancel;
   }, [generation]);
 
-  const retry = () => setGeneration((value) => value + 1);
+  const retry = () => {
+    // 主动换码时立即失效旧请求，不能等下一次 effect 清理才阻止迟到确认。
+    cancelCurrent.current();
+    setCode(undefined);
+    setPhase('loading');
+    setGeneration((value) => value + 1);
+  };
   const statusText =
     phase === 'scanned'
       ? dict('PC.Pages.Login.qrScanned')
@@ -188,6 +197,15 @@ const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
       >
         {statusText}
       </Typography.Paragraph>
+      {phase === 'scanned' && (
+        <Button
+          type="link"
+          icon={<ReloadOutlined aria-hidden />}
+          onClick={retry}
+        >
+          {dict('PC.Pages.Login.qrRefresh')}
+        </Button>
+      )}
     </div>
   );
 };

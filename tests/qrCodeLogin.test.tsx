@@ -126,6 +126,52 @@ describe('扫码登录生命周期', () => {
     );
   });
 
+  it('已扫码时可主动换码，点击即取消旧轮询，迟到确认不能完成登录', async () => {
+    let resolveOld!: (value: unknown) => void;
+    h.status
+      .mockResolvedValueOnce(ok({ status: 'SCANNED' }))
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOld = resolve;
+        }),
+      );
+    const onSuccess = vi.fn();
+    const onConfirmingChange = vi.fn();
+    render(<QrCodeLogin {...{ onSuccess, onConfirmingChange }} />);
+    await flush();
+    await tick(2000);
+    const oldSignal = h.status.mock.calls[1][1] as AbortSignal;
+    const nextCode = {
+      ...code,
+      sceneId: 'scene-2',
+      pollToken: 'next-poll-token',
+      qrContent: 'https://example.com/qrlogin/scene-2',
+    };
+    h.create.mockResolvedValueOnce(ok(nextCode));
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'PC.Pages.Login.qrRefresh' }),
+      );
+      // 外层 act 尚未提交 effect 清理，旧请求也必须已经取消。
+      expect(oldSignal.aborted).toBe(true);
+      resolveOld(ok({ status: 'CONFIRMED', token: 'old-session' }));
+    });
+    await flush();
+    expect(h.create).toHaveBeenCalledTimes(2);
+    expect(h.status).toHaveBeenLastCalledWith(
+      { sceneId: nextCode.sceneId, pollToken: nextCode.pollToken },
+      expect.any(AbortSignal),
+    );
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onConfirmingChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'PC.Pages.Login.qrHint',
+    );
+    expect(
+      screen.getByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' }),
+    ).toBeInTheDocument();
+  });
+
   it.each(['EXPIRED', 'UNKNOWN'])(
     '后端状态 %s 停止轮询并可手动刷新',
     async (status) => {
