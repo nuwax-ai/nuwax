@@ -1,4 +1,5 @@
 import { getBusinessBase, resolveIdpRedirect } from './authIdp';
+import { markLoginJustCompleted } from './profileSetupGate';
 
 type LoginHistory = {
   replace: (url: string, state?: Record<string, unknown>) => void;
@@ -54,6 +55,7 @@ export function navigateAfterLogin(
   responseRedirectUrl: string | null | undefined,
   navigateToAuthUrl: (url: string) => void,
 ): void {
+  markLoginJustCompleted();
   // URLSearchParams 已解码外层参数，再解码会破坏绑定 token 和嵌套查询。
   const redirect = redirectParam || '';
   if (redirect && !Number.isNaN(Number(redirect))) {
