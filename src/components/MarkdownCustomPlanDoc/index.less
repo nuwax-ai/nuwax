@@ -2,7 +2,7 @@
   margin: 8px 0;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--nuwax-elevated-bg, #fafafa);
   overflow: hidden;
 }
 
@@ -16,7 +16,7 @@
 }
 
 .plan-doc-icon {
-  color: #6b7280;
+  color: var(--nuwax-text-secondary, #6b7280);
   font-size: 14px;
   flex-shrink: 0;
 }
@@ -24,12 +24,12 @@
 .plan-doc-title {
   font-weight: 600;
   font-size: 13px;
-  color: #1f2937;
+  color: var(--nuwax-text-primary, #1f2937);
   flex-shrink: 0;
 }
 
 .plan-doc-subtitle {
-  color: #9ca3af;
+  color: var(--nuwax-text-disabled, #9ca3af);
   font-size: 12px;
   flex: 1;
   min-width: 0;
@@ -39,13 +39,13 @@
 }
 
 .plan-doc-status-icon {
-  color: #6b7280;
+  color: var(--nuwax-text-secondary, #6b7280);
   font-size: 12px;
   flex-shrink: 0;
 }
 
 .plan-doc-arrow {
-  color: #9ca3af;
+  color: var(--nuwax-text-disabled, #9ca3af);
   font-size: 12px;
   flex-shrink: 0;
   transition: transform 0.2s ease;
@@ -63,7 +63,7 @@
 .plan-doc-file {
   padding: 6px 12px 10px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--nuwax-text-secondary, #6b7280);
   font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   overflow: hidden;
   text-overflow: ellipsis;

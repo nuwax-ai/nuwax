@@ -75,6 +75,7 @@
 html[data-theme-surface='web'][data-theme-id] {
   // Markdown 的 RGB 变量会在正文、列表、思考过程与工具输出中重复使用。
   .ds-markdown {
+    --ds-font-family-code: var(--nuwax-font-code);
     --ds-rgb-label-1: from var(--nuwax-text-primary) r g b;
     --ds-rgb-label-2: from var(--nuwax-text-secondary) r g b;
     --ds-rgb-label-3: from var(--nuwax-text-secondary) r g b;
@@ -94,6 +95,13 @@ html[data-theme-surface='web'][data-theme-id] {
     :is(.md-code-block-light, .md-code-block-dark) {
       --ds-md-code-block-banner-wrap-background-color: var(--nuwax-code-bg);
       --ds-md-code-banner-background-color: var(--nuwax-surface-bg);
+
+      color: var(--nuwax-code-text);
+      background-color: var(--nuwax-code-bg);
+    }
+
+    :is(th, td) {
+      border-color: var(--nuwax-border-default);
     }
   }
 

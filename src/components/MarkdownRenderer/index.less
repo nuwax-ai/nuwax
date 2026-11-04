@@ -5,7 +5,7 @@
 .markdown-container {
   h1 {
     // font-size: 2em;
-    border-bottom: 1px solid #eaecef;
+    border-bottom: 1px solid var(--nuwax-border-default, #eaecef);
     // line-height: 32px;
     padding-bottom: 0.3em;
   }
@@ -46,7 +46,7 @@
 
   hr {
     height: 0.5px;
-    background-color: #d9d9d9;
+    background-color: var(--nuwax-border-default, #d9d9d9);
   }
   // 表格样式
   .table-wrapper {
@@ -63,7 +63,7 @@
         .md-code-block-content {
           max-height: 500px;
           padding: 0;
-          background-color: #fff;
+          background-color: var(--nuwax-code-bg, #fff);
           max-width: 100%;
           overflow: auto;
         }
@@ -133,8 +133,8 @@
       max-width: 100px;
       min-width: 18px;
       border-radius: 24px;
-      color: rgba(0, 0, 0, 60%) !important;
-      background-color: rgba(0, 0, 0, 5%);
+      color: var(--nuwax-text-secondary, rgba(0, 0, 0, 60%)) !important;
+      background-color: var(--nuwax-surface-bg, rgba(0, 0, 0, 5%));
       line-height: 14px;
       white-space: nowrap;
       overflow: hidden;
@@ -144,7 +144,7 @@
       font-style: normal;
 
       &:hover {
-        background-color: rgba(235, 235, 235);
+        background-color: var(--nuwax-hover-bg, rgba(235, 235, 235));
       }
     }
   }
