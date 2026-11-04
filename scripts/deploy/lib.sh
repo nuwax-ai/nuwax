@@ -371,22 +371,30 @@ report_gate_failure() { # $1=质量门日志
   keep_log="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/gate-failure.log"
   mkdir -p "$(dirname "$keep_log")"
   cp "$log_file" "$keep_log"
+  tail -n 80 "$log_file" >&2
   echo "完整输出已保存：${keep_log}" >&2
   echo "按 FAIL 行中的文件路径隔离复跑：pnpm exec vitest run <测试文件路径>" >&2
 }
 
 # 跑一轮质量门，以退出码判断结果；失败日志留给重试分类与自助定位。
 run_test_gate_once() { # 写出 GATE_LOG_FILE
-  local log_file
+  local log_file log_dir started=$SECONDS
+  GATE_LOG_FILE=""
+  log_dir="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy"
+  mkdir -p "$log_dir" || return 1
+  log_file="$(mktemp "${log_dir}/gate.XXXXXX")" || return 1
+  GATE_LOG_FILE="$log_file"
+  log "会话质量门运行中；详细日志：${log_file}"
   # src/.umi 是 gitignored 的生成物，tsconfig.json extends 它；缺失会让 14 个会话测试文件整体加载失败
   if [ ! -f src/.umi/tsconfig.json ]; then
     echo "    src/.umi 缺失，先执行 pnpm run setup 生成"
-    pnpm run setup || return 1
+    pnpm run setup >>"$log_file" 2>&1 || return 1
   fi
-  log_file="$(mktemp -t deploy_sync_gate)"
-  GATE_LOG_FILE="$log_file"
-  if pnpm run test:conversation 2>&1 | tee "$log_file"; then
-    rm -f "$log_file"
+  # 保留完整警告与调试输出供定位，终端只展示汇总，避免通过用例刷屏。
+  if FORCE_COLOR=0 pnpm run test:conversation >>"$log_file" 2>&1; then
+    grep -E '^[[:space:]]*(Test Files|Tests|Duration)[[:space:]]' "$log_file" || true
+    mv "$log_file" "${log_dir}/gate-last.log" || return 1
+    log "会话质量门通过，耗时 $((SECONDS - started))s；完整输出：${log_dir}/gate-last.log"
     GATE_LOG_FILE=""
     return 0
   fi
