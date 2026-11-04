@@ -18,8 +18,8 @@
   line-height: 22px;
   color: @colorTextTertiary;
   // 与会话文件树容器 LeftContent .file-tree-container 一致
-  background: #f5f5f5;
-  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+  background: var(--nuwax-elevated-bg, #f5f5f5);
+  border-bottom: @lineWidth solid var(--nuwax-border-default, rgba(5, 5, 5, 6%));
   container-type: inline-size;
 }
 
@@ -30,14 +30,17 @@
   flex-shrink: 0;
   white-space: nowrap;
   font-size: 12px;
+
   &[data-state='error'] {
     color: @colorErrorText;
   }
+
   &[data-state='dirty'] {
     color: @colorWarningText;
   }
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown -- Chromium 原生容器查询，旧规则表未收录 */
 @container (max-width: 360px) {
   .saveStatusText {
     display: none;
