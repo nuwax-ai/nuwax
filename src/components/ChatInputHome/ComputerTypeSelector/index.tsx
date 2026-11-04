@@ -123,6 +123,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     selectionContext.current = context;
     const isInList = (id?: string) =>
       !!id && computerList.some((option) => String(option.id) === String(id));
+    // 云端缺席时，初始化哨兵 -1 不能当成已有选择，否则展示回落电脑却仍发送 -1。
+    // 个人电脑暂缺仍保留原 ID，避免上线传播期间被临时列表切走。
+    const keepCurrentSelection = !!value && (value !== '-1' || isInList(value));
     const rememberedId = agentId
       ? agentSelectedMap[String(agentId)]
       : undefined;
@@ -152,10 +155,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       if (rememberedId && !isInList(rememberedId)) {
         context.pendingMemory = rememberedId;
         // 列表传播期间保留已有值与记忆，绝不据临时云端列表覆盖选择。
-        if (value) return;
+        if (keepCurrentSelection) return;
       }
-      if (!firstForAgent && value) return;
-      if (!switchedAgent && value && !rememberedId) return;
+      if (!firstForAgent && keepCurrentSelection) return;
+      if (!switchedAgent && keepCurrentSelection && !rememberedId) return;
       finalId = resolveAutoSelection({
         strictAgentMemory,
         agentId,
