@@ -4,22 +4,13 @@
 
 ## 0. 红线：不影响线上业务
 
-项目已在线上运行，所有优化必须满足：
+验证原则以 [AGENTS.md](../../AGENTS.md#测试与文档减负) 为准，执行入口见 [测试策略](../testing-strategy.md)。本表只记录待办、风险和每项独有的验证关注点，不再叠加一套质量门。
 
-1. **行为等价可证明**。测试资产、纯注释与文档改动除外，涉及业务行为时给出适合风险的等价证据：
-   - 优先复用已有行为测试；核心逻辑缺少保护时才补回归，不为简单拆分机械新增单测；
-   - 或给出产物逐文件 diff（例如微应用缓存产物与强制重建产物完全一致）；
-   - 或在 E2E / 真实页面走查同一场景。
-2. **小步、可单独回滚**。一项一个（或几个）独立提交，禁止把重构和功能改动混在一个提交里。单个重构 PR 建议 ≤ 15 个文件。
-3. **运行时路径变更要有开关或双轨期**。对齐会话 V1/V2 的做法：新旧并存 → 默认切新 → 观察期 → 再删旧，删旧要有使用数据支撑。
-4. **按风险分级走门**：
+- 涉及业务行为时，用已有行为测试、产物对比或真实页面走查证明等价；核心路径有保护缺口时补回归。
+- 改动应能独立审查与回滚，重构和功能变化分开交付；按行为风险控制范围，不按文件数量升级流程。
+- 下线旧线、改变数据流或跨模块契约时，先确认实际消费者与兼容要求，并准备适合影响范围的上线观察和回退方案。普通内部拆分不统一要求新增开关或双轨。会话行为或保护网变化仍需对应 E2E。
 
-| 级别 | 定义 | 必过的门 |
-| --- | --- | --- |
-| L0 | 文档、环境诊断、注释；不改变构建输入、产物或发布决策 | `test:scripts`（改了脚本时） |
-| L1 | 进入产物但运行时零行为变化，或影响产物选择/生成的构建脚本、缓存与 CI | 构建通过 + 相关测试（脚本用 `test:scripts`）+ `lint:arch`；缓存还须验证命中与强制重建的产物一致 |
-| L2 | 运行时内部重构（拆文件、合并重复实现） | L1 的门 + 复用或补充行为证据 + 域质量门（会话路径跑 `test:conversation` + E2E）+ 提测走查 |
-| L3 | 下线旧线、改数据流或跨模块契约 | L2 的门 + 产品确认 + 灰度或观察期 + 回切预案 |
+下文 L0–L3 仅标记风险：L0 为文档与诊断，L1 为构建或静态组织调整，L2 为运行时内部重构，L3 为旧线下线、数据流或跨模块契约变化；验证按实际影响选择，不逐级累加。
 
 ## 1. 目标（季度度量）
 
@@ -71,17 +62,17 @@
 
 | ID | 问题（证据） | 方案 | 风险 | 前置 / 验证 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| C1 | 死代码：`components/Skill/index copy.tsx`、`pages/SpaceKnowledge/KnowledgeAccuracyTest/index.tsx.bak`；无人使用的 model：`devCollectAgent`、`monaco`、`global`；`SystemManagement/LogQuery/OperationLog` 的路由已注释 | 逐个确认零引用（包括 `useModel('<name>')` 字符串）后删除 | L1 | 构建通过 + 全量 vitest | 待办 |
+| C1 | 死代码：`components/Skill/index copy.tsx`、`pages/SpaceKnowledge/KnowledgeAccuracyTest/index.tsx.bak`；无人使用的 model：`devCollectAgent`、`monaco`、`global`；`SystemManagement/LogQuery/OperationLog` 的路由已注释 | 逐个确认零引用（包括 `useModel('<name>')` 字符串）后删除 | L1 | 零引用核查 + 构建；动态引用按实际入口验证 | 待办 |
 | C2 | depcruise 基线里约 8 条已修复但未剔除 | 运行 `npm run lint:arch:baseline` 刷新到 97 条 | L0 | `lint:arch` | 待办 |
 | C3 | utils→services 有 32 条违规，其中 18 条指向 `services/i18nRuntime.ts`，`utils/applyGeneratedIcon.ts` 一个文件占 6 条 | 把 i18nRuntime 中不发请求的纯函数部分下沉到 `utils/i18n/`，请求部分留在 services | L2 | i18n 相关测试 + 多语言页面走查 | 待办 |
 | C4 | 页面互引 51 条（主要源页面：SpaceResource 8、AppDevDesign 6、EditAgent 5；被引用最多的目标：AppDev、Antv-X6、SystemManagement 各 8 条） | 被跨页复用的组件或 hook 下沉到 `components/business-component` 或 `features/<域>`；纯移动 + 改 import，不改实现 | L1 | 每个 PR 只处理一个目标页面；构建 + 相关测试 | 待办 |
 | C5 | 11 条循环依赖 | 逐条拆环（抽出类型、反转依赖） | L1–L2 | `lint:arch` | 待办 |
 | C6 | 注释与实现不一致：`useConversationRuntimeSession.ts` 约第 68 行写「flag 关闭（默认）」，实际默认开启 | 已修正为默认 runtime 开启 | L0 | — | ✅ 2026-10-16 |
-| C7 | 类型门只覆盖 4 个域 | 扩到 `features/client-shell`、`layouts/MicroAppHost`、`utils/hostBridge`：先登记域并运行类型门，修复诊断；确需保留的存量债务逐条评审后录入基线。`--prune-baseline` 只删除已消除的债务，不能生成或接纳新增债务 | L0 | `typecheck` | 待办 |
-| C8 | 3 套 SSE 实现：`utils/fetchEventSource.ts`、`utils/fetchEventSourceConversationInfo.ts`、`pages/AppDevPro/utils/userAppTaskStream.ts`。签名大部分重复，但定时器和返回值语义不同 | ① 先给三处写合同测试，锁定超时、重连、中止、错误回调语义；② 抽出单一内核（连接 + 计时 + 中止），保留三个薄适配，对外 API 不变；③ 调用方逐个迁移 | L2（会话路径按会话门走） | `test:conversation` + E2E + AppDev / 工作流试运行走查 | 待办 |
+| C7 | 类型门只覆盖 4 个域 | 扩到 `features/client-shell`、`layouts/MicroAppHost`、`utils/hostBridge`：先明确范围并检查现有诊断，修到零后纳入分域门；不再维护历史诊断基线 | L0 | `typecheck` | 待办 |
+| C8 | 3 套 SSE 实现：`utils/fetchEventSource.ts`、`utils/fetchEventSourceConversationInfo.ts`、`pages/AppDevPro/utils/userAppTaskStream.ts`。签名大部分重复，但定时器和返回值语义不同 | ① 复用已有合同测试核对超时、重连、中止和错误回调语义，只补关键缺口；② 抽出共有连接与清理逻辑，保留三个薄适配及各自完成、尾部窗口和续流语义，对外 API 不变；③ 调用方逐个迁移 | L2（会话路径按会话门走） | `test:conversation` + E2E + AppDev / 工作流试运行走查 | 待办 |
 | C9 | 16 处原生 `fetch` 绕过请求层（如 `services/skill.ts`、`services/filePreview.ts`、Login、ChatInputHome），鉴权和错误提示可能与其他接口不一致 | 逐个评估：确属流式或二进制的保留，并集中到 `services/` 的专用封装；其余改走 `request` | L2 | 对应功能走查，失败重试路径用真实页面验证 | 待办 |
 | C10 | 两份 ChatInputHome：`components/ChatInputHome`（1381 行）与 `pages/AppDev/components/ChatArea/components/ChatInputHome`（1372 行） | 先 diff 两份差异，再抽出共用内核，差异部分用 props 注入 | L2 | 首页输入与 AppDev 输入两条路径走查 | 待办 |
-| C11 | 巨型文件（>1000 行 48 个）。优先级按「行数 × 近 90 天改动次数」排：`AppDevPro/index.tsx` 4322、`useFileTreePreviewView.tsx` 2836、`Chat/index.tsx` 2610、`models/conversationInfo.ts` 2305、`MentionEditor` 2274、`ChatInputUnified` 2255、`ConversationAgent/index.tsx` 2178 | 只做等价重构：抽纯函数（先补单测）→ 抽子组件 / hook（props 不变）。每次只拆一个文件中的一块，不顺手改逻辑 | L2 | 拆分前后快照测试或交互测试一致 | 待办 |
+| C11 | 巨型文件（>1000 行 48 个）。优先级按「行数 × 近 90 天改动次数」排：`AppDevPro/index.tsx` 4322、`useFileTreePreviewView.tsx` 2836、`Chat/index.tsx` 2610、`models/conversationInfo.ts` 2305、`MentionEditor` 2274、`ChatInputUnified` 2255、`ConversationAgent/index.tsx` 2178 | 按状态归属和依赖边界拆出内聚逻辑，保持对外行为；复用已有行为测试或页面证据，关键缺口才补回归。每次处理一个明确边界，不顺手改功能 | L2 | 已有行为测试或相关页面交互证明等价 | 待办 |
 | C12 | 生产路由注册了 12 个 `/examples/*` 演示页（12k 行代码） | 改成与 `/mock-chat` 一样只在开发环境注册；先确认线上无人访问（查访问日志） | L2 | 访问日志 + 构建体积对比 | 待办（需确认） |
 | C13 | 会话 V1 旧线仍在：`models/conversationInfo` 2.3k、`conversationAgent` 1.3k、`conversationInfoMessageList` 0.7k，以及 `fetchEventSourceConversationInfo` 等，可以通过 `?conversationRuntime=0` / `?conversationRenderer=v1` 回切 | ① 给回切参数加使用埋点；② V2 全量稳定且回切使用为零持续 N 周后，产品确认下线；③ 先移除回切入口（保留代码一个版本）；④ 再删除 V1 代码与相关测试 | L3 | 埋点数据 + 产品确认 + 回切预案 | 规划 |
 | C14 | 工作流编辑器 Antv-X6 v1（约 10k）与 v3（29k）并存；`workflow` 与 `workflowV3` 两套 model | 先确认 v1 的入口和流量（哪些路由、哪些存量数据还走 v1），再按 C13 的路径下线 | L3 | 同上 | 规划 |

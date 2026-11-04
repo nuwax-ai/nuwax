@@ -132,6 +132,14 @@ beforeEach(() => {
   mocks.location = { pathname: '/home', search: '', hash: '', key: 'initial' };
   mocks.style = ThemeNavigationStyleType.STYLE3;
   window.NuwaClawBridge = undefined;
+  Object.defineProperty(document, 'visibilityState', {
+    value: 'visible',
+    configurable: true,
+  });
+  Object.defineProperty(navigator, 'onLine', {
+    value: true,
+    configurable: true,
+  });
 });
 
 afterEach(() => {
@@ -141,6 +149,8 @@ afterEach(() => {
   mocks.loginListeners.clear();
   delete window.__im;
   window.NuwaClawBridge = originalBridge;
+  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('导航主动校准伙伴未读数', () => {
@@ -155,7 +165,12 @@ describe('导航主动校准伙伴未读数', () => {
       expect(view.getByTitle('5')).toHaveAttribute('data-show', 'true');
       expect(mocks.request).toHaveBeenCalledWith(
         '/api/instant-message/unread-total',
-        { method: 'GET', silentPolling: true },
+        expect.objectContaining({
+          method: 'GET',
+          silentPolling: true,
+          timeout: 15_000,
+          signal: expect.any(AbortSignal),
+        }),
       );
       mocks.request.mockResolvedValue(success(8));
       view.navigate('/space');
@@ -402,6 +417,7 @@ describe('导航主动校准伙伴未读数', () => {
     vi.useFakeTimers();
     try {
       renderNavigation();
+      await settle();
       expect(mocks.request).toHaveBeenCalledTimes(1);
 
       Object.defineProperty(document, 'visibilityState', {
@@ -417,6 +433,123 @@ describe('导航主动校准伙伴未读数', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('网页长期驻留的未读恢复', () => {
+  it('未打开 IM 时仍每 45 秒校准，同页停留不需要切菜单', async () => {
+    vi.useFakeTimers();
+    mocks.request
+      .mockResolvedValueOnce(success(5))
+      .mockResolvedValue(success(9));
+    renderNavigation();
+    await settle();
+    expect(imUnreadState.getSnapshot()).toBe(5);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(44_999);
+    });
+    expect(mocks.request).toHaveBeenCalledOnce();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(mocks.request).toHaveBeenCalledTimes(2);
+    expect(imUnreadState.getSnapshot()).toBe(9);
+  });
+
+  it('临时失败后保留气泡，持续退避重试直到恢复，事件不能产生并发重试', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(1);
+    mocks.request
+      .mockResolvedValueOnce(success(5))
+      .mockRejectedValue(new Error('temporary network failure'));
+    const view = renderNavigation();
+    await settle();
+    view.navigate('/space');
+    await settle();
+    for (const delay of [1_000, 2_000, 4_000, 8_000, 16_000, 30_000]) {
+      const count = mocks.request.mock.calls.length;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(delay - 1);
+      });
+      expect(mocks.request).toHaveBeenCalledTimes(count);
+      expect(imUnreadState.getSnapshot()).toBe(5);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(mocks.request).toHaveBeenCalledTimes(count + 1);
+    }
+    mocks.request.mockResolvedValue(success(12));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(imUnreadState.getSnapshot()).toBe(12);
+    const count = mocks.request.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(mocks.request).toHaveBeenCalledTimes(count);
+  });
+
+  it('离线期间不请求，恢复 online 时立即校准，卸载后不再恢复', async () => {
+    vi.useFakeTimers();
+    mocks.request.mockResolvedValue(success(3));
+    const view = renderNavigation();
+    await settle();
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    });
+    act(() => window.dispatchEvent(new Event('offline')));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3 * 60 * 60_000);
+    });
+    expect(mocks.request).toHaveBeenCalledOnce();
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+    });
+    mocks.request.mockResolvedValue(success(8));
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(imUnreadState.getSnapshot()).toBe(8);
+    view.unmount();
+    const count = mocks.request.mock.calls.length;
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(mocks.request).toHaveBeenCalledTimes(count);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('IM 已挂载时复用它的周期校准，导航不再另起周期 HTTP', async () => {
+    vi.useFakeTimers();
+    renderNavigation();
+    await settle();
+    act(() => connect(3));
+    const count = mocks.request.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000);
+    });
+    expect(mocks.request).toHaveBeenCalledTimes(count);
+    act(() => pushUnread(7));
+    expect(imUnreadState.getSnapshot()).toBe(7);
+  });
+
+  it.each([401, 403])('认证 HTTP %s 后不自动重试旧会话', async (status) => {
+    vi.useFakeTimers();
+    mocks.request.mockRejectedValue({ response: { status } });
+    const view = renderNavigation();
+    await settle();
+    act(() => window.dispatchEvent(new Event('online')));
+    view.navigate('/space');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000);
+    });
+    expect(mocks.request).toHaveBeenCalledOnce();
+    mocks.request.mockResolvedValue(success(4));
+    login(false);
+    login(true);
+    await settle();
+    expect(mocks.request).toHaveBeenCalledTimes(2);
+    expect(imUnreadState.getSnapshot()).toBe(4);
   });
 });
 

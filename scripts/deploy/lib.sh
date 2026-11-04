@@ -6,7 +6,6 @@
 #   DRY_RUN          1 时 run() 只打印不执行
 #   CURRENT_STEP     失败提示里的当前步骤名
 #   return_to_start  失败归位函数（die 时调用；未定义则跳过）
-#   KNOWN_BROKEN_TESTS 质量门存量挂放行清单（| 分隔）
 
 log() { echo ">>> $*"; }
 die() {
@@ -349,10 +348,6 @@ pull_with_heal() { # pull_with_heal <remote> <branch>
   return 1
 }
 
-# 已知存量挂清单：失败套件若全部在清单内则显式放行（大字提示），否则一律拦截
-# workspaceDirComputerSwitch 已恢复全绿，不再默认豁免；只接受显式传入的清单。
-KNOWN_BROKEN_TESTS="${KNOWN_BROKEN_TESTS:-}"
-
 # 全量会话门被机器打满时会成片超时（2026-10-23 实证：7 个失败全是 Test timed out in 5000ms，
 # 隔离复跑全绿）。失败箭头行全部是超时时退避重试；夹杂断言失败则立即停下，避免把真回归重跑掉。
 # GATE_JITTER_RETRIES 是首次失败后的额外次数，GATE_JITTER_BACKOFF 是每次重试前的等待秒数。
@@ -370,39 +365,18 @@ gate_failure_is_jitter() { # $1=质量门日志
   return 0
 }
 
-report_gate_failure() { # $1=日志 $2=失败套件清单（可空）
-  local log_file="$1" failed="$2" f unexpected=0 keep_log
-  echo "---- 质量门未全绿，核对失败套件是否全部在存量挂清单内 ----" >&2
+report_gate_failure() { # $1=质量门日志
+  local log_file="$1" keep_log
+  echo "---- 质量门未通过，停止提测 ----" >&2
   keep_log="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)/nuwax-deploy/gate-failure.log"
   mkdir -p "$(dirname "$keep_log")"
   cp "$log_file" "$keep_log"
   echo "完整输出已保存：${keep_log}" >&2
-  [ -n "$failed" ] || return 1
-  while IFS= read -r f; do
-    case "|$KNOWN_BROKEN_TESTS|" in
-    *"|$f|"*) echo "    [存量挂放行] $f" >&2 ;;
-    *) echo "    [未放行失败] $f" >&2; unexpected=1 ;;
-    esac
-  done <<<"$failed"
-  [ "$unexpected" = "0" ] || {
-    echo "" >&2
-    echo "---- 人工自助定位（无需 AI/agent）----" >&2
-    echo "① 逐套件隔离复跑（隔离挂=真回归需修代码/测试；隔离过=负载抖动，直接重跑本脚本）：" >&2
-    while IFS= read -r f; do
-      echo "    npx vitest run ${f}" >&2
-    done <<<"$failed"
-    echo "② 常见形态：断言与最近合入的接口契约不符（改端点/参数/鉴权方式没同步测试）——" >&2
-    echo "   对照失败断言里的期望值与实际值，找最近改该接口的提交（git log -S '<关键字>'）。" >&2
-    echo "③ 大面积一起挂（十几个文件）先查环境再查代码：node -v 看版本是否与团队一致、" >&2
-    echo "   node_modules 是否过期（pnpm install 重装；本仓锁定 pnpm，勿用 npm install 混装）。" >&2
-    return 1
-  }
-  echo "⚠️  质量门以「仅存量挂」放行（清单：${KNOWN_BROKEN_TESTS}）。请尽快修复存量套件并从清单移除。" >&2
-  return 0
+  echo "按 FAIL 行中的文件路径隔离复跑：pnpm exec vitest run <测试文件路径>" >&2
 }
 
-# 跑一轮质量门。成功或「仅存量挂」返回 0；真失败返回 1，并把日志路径、失败套件写到调用方变量。
-run_test_gate_once() { # 写出 GATE_LOG_FILE、GATE_FAILED_FILES
+# 跑一轮质量门，以退出码判断结果；失败日志留给重试分类与自助定位。
+run_test_gate_once() { # 写出 GATE_LOG_FILE
   local log_file
   # src/.umi 是 gitignored 的生成物，tsconfig.json extends 它；缺失会让 14 个会话测试文件整体加载失败
   if [ ! -f src/.umi/tsconfig.json ]; then
@@ -411,19 +385,15 @@ run_test_gate_once() { # 写出 GATE_LOG_FILE、GATE_FAILED_FILES
   fi
   log_file="$(mktemp -t deploy_sync_gate)"
   GATE_LOG_FILE="$log_file"
-  GATE_FAILED_FILES=""
   if pnpm run test:conversation 2>&1 | tee "$log_file"; then
     rm -f "$log_file"
     GATE_LOG_FILE=""
     return 0
   fi
-  # 只认 vitest 规范的行首 FAIL 行；用例名含 FAILED 字样的 stdout/stderr 行不得误报
-  GATE_FAILED_FILES="$(grep -E '^[[:space:]]*FAIL[[:space:]]+tests/' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
   return 1
 }
 
-# 质量门：跑 test:conversation；失败时解析失败套件，仅当全部命中存量挂清单才放行。
-# 超时抖动按 GATE_JITTER_RETRIES 重试，重试仍失败才打印人工定位并返回 1。
+# 超时抖动按 GATE_JITTER_RETRIES 重试；其余失败立即阻断，重试仍失败也阻断。
 run_test_gate() {
   if [ "${DRY_RUN:-0}" = "1" ]; then
     echo "    \$ pnpm run test:conversation"
@@ -436,13 +406,7 @@ run_test_gate() {
     if run_test_gate_once; then
       return 0
     fi
-    # 全部命中存量挂清单时直接放行，不占用抖动重试。
-    if [ -n "$GATE_FAILED_FILES" ] && gate_failures_are_known "$GATE_FAILED_FILES"; then
-      report_gate_failure "$GATE_LOG_FILE" "$GATE_FAILED_FILES"
-      rm -f "$GATE_LOG_FILE"
-      return 0
-    fi
-    # 没有失败套件清单（进程崩溃、脚本直接退出）或夹杂断言失败时不重试。
+    # 没有明确超时原因（进程崩溃、脚本直接退出）或夹杂断言失败时不重试。
     if [ "$attempt" -lt "$max_attempts" ] && [ -n "${GATE_LOG_FILE:-}" ] && gate_failure_is_jitter "$GATE_LOG_FILE"; then
       log "质量门失败均为超时，疑似负载抖动，${GATE_JITTER_BACKOFF}s 后重试（第 ${attempt}/${GATE_JITTER_RETRIES} 次额外尝试）"
       sleep "$GATE_JITTER_BACKOFF"
@@ -450,27 +414,12 @@ run_test_gate() {
       continue
     fi
     if [ -n "${GATE_LOG_FILE:-}" ]; then
-      report_gate_failure "$GATE_LOG_FILE" "$GATE_FAILED_FILES" || true
+      report_gate_failure "$GATE_LOG_FILE"
     fi
     rm -f "${GATE_LOG_FILE:-}"
     return 1
   done
   return 1
-}
-
-# 失败套件是否全部在存量挂清单内。清单为空或有任一未登记套件则返回 1。
-gate_failures_are_known() { # $1=失败套件清单
-  local f
-  [ -n "${1:-}" ] || return 1
-  [ -n "${KNOWN_BROKEN_TESTS:-}" ] || return 1
-  while IFS= read -r f; do
-    [ -n "$f" ] || continue
-    case "|$KNOWN_BROKEN_TESTS|" in
-    *"|$f|"*) ;;
-    *) return 1 ;;
-    esac
-  done <<<"$1"
-  return 0
 }
 
 # 分叉输入的组合门：忽略机器产物，成功仅登记精确 HEAD。失败不落成功记录。
