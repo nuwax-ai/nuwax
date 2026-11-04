@@ -11,7 +11,7 @@
     }
 
     .ant-form-item-label > label {
-      color: #666;
+      color: var(--nuwax-text-secondary, #666);
       font-weight: 500;
       font-size: 14px;
     }
@@ -22,7 +22,7 @@
   }
 
   .config-section {
-    background: #fff;
+    background: var(--nuwax-elevated-bg, #fff);
     padding: 24px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
@@ -38,14 +38,14 @@
       .section-title {
         font-size: 14px;
         font-weight: 600;
-        color: #333;
+        color: var(--nuwax-text-primary, #333);
         margin-bottom: 0;
       }
     }
   }
 
   .table-card {
-    background: #fff;
+    background: var(--nuwax-elevated-bg, #fff);
     padding: 0;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
@@ -64,13 +64,13 @@
 
       .name {
         font-weight: 400;
-        color: #333;
+        color: var(--nuwax-text-primary, #333);
         font-size: 14px;
       }
 
       .address {
         font-size: 12px;
-        color: #999;
+        color: var(--nuwax-text-secondary, #999);
         margin-top: 2px;
       }
     }
@@ -90,27 +90,31 @@
       .current {
         font-size: 18px;
         font-weight: 600;
-        color: #333;
+        color: var(--nuwax-text-primary, #333);
       }
 
       .total {
-        color: #999;
+        color: var(--nuwax-text-secondary, #999);
       }
     }
 
     .progress-bar {
       height: 8px;
-      background: #f0f2f5;
+      background: var(--nuwax-surface-bg, #f0f2f5);
       border-radius: 4px;
       overflow: hidden;
 
       .progress-inner {
         height: 100%;
-        background: #f0f2f5;
+        background: var(--nuwax-surface-bg, #f0f2f5);
         border-radius: 4px;
 
         &.active {
-          background: linear-gradient(90deg, #f0f2f5 0%, #e0e0e0 100%);
+          background: linear-gradient(
+            90deg,
+            var(--nuwax-surface-bg, #f0f2f5) 0%,
+            var(--nuwax-border-strong, #e0e0e0) 100%
+          );
         }
       }
     }
@@ -118,7 +122,7 @@
     .usage-label {
       text-align: center;
       font-size: 12px;
-      color: #999;
+      color: var(--nuwax-text-secondary, #999);
       margin-top: 4px;
     }
   }
@@ -142,10 +146,10 @@
     }
 
     &.offline {
-      color: #999;
+      color: var(--nuwax-text-secondary, #999);
 
       .dot {
-        background: #ccc;
+        background: var(--nuwax-text-disabled, #ccc);
       }
     }
 
@@ -163,8 +167,8 @@
     justify-content: center;
 
     .action-btn {
-      color: #999;
-      border: 1px solid #f0f0f0;
+      color: var(--nuwax-text-secondary, #999);
+      border: 1px solid var(--nuwax-border-default, #f0f0f0);
       border-radius: 6px;
       width: 32px;
       height: 32px;
@@ -175,9 +179,9 @@
       transition: all 0.3s;
 
       &:hover {
-        color: #7c4dff;
-        border-color: #7c4dff;
-        background: rgba(124, 77, 255, 5%);
+        color: var(--nuwax-primary, #7c4dff);
+        border-color: var(--nuwax-primary, #7c4dff);
+        background: var(--nuwax-hover-bg, rgba(124, 77, 255, 5%));
       }
 
       &.btn-loading,
@@ -186,8 +190,8 @@
         opacity: 0.5;
 
         &:hover {
-          color: #999;
-          border-color: #f0f0f0;
+          color: var(--nuwax-text-secondary, #999);
+          border-color: var(--nuwax-border-default, #f0f0f0);
           background: transparent;
         }
       }
@@ -198,7 +202,7 @@
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
-    color: #666;
+    color: var(--nuwax-text-secondary, #666);
     font-size: 14px;
   }
 }

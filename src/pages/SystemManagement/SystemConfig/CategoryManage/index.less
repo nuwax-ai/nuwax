@@ -10,14 +10,14 @@
   :global {
     .ant-segmented {
       margin-left: 24px;
-      background: #f0f2f5;
+      background: var(--nuwax-surface-bg, #f0f2f5);
       border-radius: 8px;
       padding: 2px;
     }
   }
 
   .list-card {
-    background: #fff;
+    background: var(--nuwax-elevated-bg, #fff);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
     overflow: hidden;
@@ -25,7 +25,7 @@
     :global {
       .ant-pro-list-header {
         padding: 24px;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--nuwax-border-default, #f0f0f0);
 
         .ant-pro-list-header-title {
           font-size: 18px;
@@ -34,7 +34,7 @@
 
         .ant-pro-list-header-sub-title {
           font-size: 12px;
-          color: #999;
+          color: var(--nuwax-text-secondary, #999);
           font-weight: normal;
           margin-left: 8px;
         }
@@ -45,13 +45,13 @@
         transition: all 0.3s;
 
         &:hover {
-          background-color: #fafafa;
+          background-color: var(--nuwax-hover-bg, #fafafa);
         }
 
         .ant-list-item-meta-title {
           font-size: 16px;
           font-weight: 500;
-          color: #333;
+          color: var(--nuwax-text-primary, #333);
           margin-bottom: 8px;
 
           &,
@@ -60,14 +60,14 @@
           a:hover,
           span,
           span:hover {
-            color: #333 !important;
+            color: var(--nuwax-text-primary, #333) !important;
             cursor: default !important;
           }
         }
 
         .ant-list-item-meta-description {
           font-size: 13px;
-          color: #999;
+          color: var(--nuwax-text-secondary, #999);
         }
       }
     }
@@ -88,15 +88,15 @@
 
   .action-icon {
     font-size: 18px;
-    color: #999;
+    color: var(--nuwax-text-secondary, #999);
     cursor: pointer;
     transition: all 0.3s;
     padding: 8px;
     border-radius: 8px;
 
     &:hover {
-      background-color: #f0f0f0;
-      color: #1890ff;
+      background-color: var(--nuwax-border-default, #f0f0f0);
+      color: var(--nuwax-primary, #1890ff);
     }
 
     &.delete:hover {
@@ -105,12 +105,12 @@
 
     &.disabled {
       cursor: not-allowed;
-      color: #ccc !important;
+      color: var(--nuwax-text-disabled, #ccc) !important;
       opacity: 0.5;
 
       &:hover {
         background-color: transparent;
-        color: #ccc !important;
+        color: var(--nuwax-text-disabled, #ccc) !important;
       }
     }
   }

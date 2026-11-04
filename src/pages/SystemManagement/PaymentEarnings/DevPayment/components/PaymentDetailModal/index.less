@@ -14,14 +14,14 @@
       .ant-modal-title {
         font-size: @fontSizeXl;
         font-weight: 600;
-        color: @text-color;
+        color: var(--nuwax-text-primary, @text-color);
       }
     }
   }
 
   .section-title {
     font-size: @fontSize;
-    color: @text-color-secondary;
+    color: var(--nuwax-text-secondary, @text-color-secondary);
     margin-bottom: 12px;
     font-weight: 500;
   }
@@ -35,13 +35,13 @@
     .info-item {
       .label {
         font-size: @fontSizeSm;
-        color: @text-color-secondary;
+        color: var(--nuwax-text-secondary, @text-color-secondary);
         margin-bottom: 8px;
       }
 
       .value {
         font-size: @fontSize;
-        color: @text-color;
+        color: var(--nuwax-text-primary, @text-color);
         font-weight: 500;
       }
     }
@@ -49,13 +49,13 @@
 
   .divider {
     height: 1px;
-    background-color: @border-color-split;
+    background-color: var(--nuwax-border-default, @border-color-split);
     margin-bottom: 24px;
   }
 
   .account-card {
-    background: #f5f8ff;
-    border: 1px solid #e1e9ff;
+    background: var(--nuwax-surface-bg, #f5f8ff);
+    border: 1px solid var(--nuwax-border-default, #e1e9ff);
     border-radius: 12px;
     padding: 20px;
     position: relative;
@@ -68,13 +68,13 @@
       .icon-wrapper {
         width: 40px;
         height: 40px;
-        background: #e6f0ff;
+        background: var(--nuwax-selected-bg, #e6f0ff);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin-right: 12px;
-        color: @primary-color;
+        color: var(--nuwax-primary, @primary-color);
         font-size: @fontSizeXl;
       }
 
@@ -84,19 +84,19 @@
         .name {
           font-size: @fontSize;
           font-weight: 600;
-          color: @text-color;
+          color: var(--nuwax-text-primary, @text-color);
           margin-bottom: 2px;
         }
 
         .type {
           font-size: @fontSizeSm;
-          color: @text-color-secondary;
+          color: var(--nuwax-text-secondary, @text-color-secondary);
         }
       }
 
       .default-tag {
-        background: #e6f0ff;
-        color: @primary-color;
+        background: var(--nuwax-selected-bg, #e6f0ff);
+        color: var(--nuwax-primary, @primary-color);
         border: none;
         border-radius: 4px;
         font-size: @fontSizeSm;
@@ -114,13 +114,13 @@
       .grid-item {
         .label {
           font-size: @fontSizeSm;
-          color: @text-color-secondary;
+          color: var(--nuwax-text-secondary, @text-color-secondary);
           margin-bottom: 4px;
         }
 
         .value {
           font-size: @fontSize;
-          color: @text-color;
+          color: var(--nuwax-text-primary, @text-color);
           font-weight: 500;
         }
       }

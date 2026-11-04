@@ -4,7 +4,7 @@
 .drawer {
   :global {
     .ant-drawer-header {
-      border-bottom: 1px solid rgba(5, 5, 5, 6%);
+      border-bottom: 1px solid var(--nuwax-border-default, rgba(5, 5, 5, 6%));
     }
 
     // 防止 Drawer 打开时页面出现横向滚动条
@@ -19,7 +19,7 @@
 
   .header {
     padding: 24px 16px 20px;
-    border-bottom: 1px solid @GRAY01;
+    border-bottom: 1px solid var(--nuwax-border-default, @GRAY01);
 
     .time-box {
       gap: 6px;
@@ -27,7 +27,7 @@
 
       .num {
         gap: 12px;
-        color: @BLANK14;
+        color: var(--nuwax-text-primary, @BLANK14);
         font-size: 14px;
         font-weight: @fontWeightStrong;
         margin-right: 8px;
@@ -36,25 +36,25 @@
           display: inline-block;
           width: 1px;
           height: 12px;
-          background-color: @GRAY05;
+          background-color: var(--nuwax-text-secondary, @GRAY05);
         }
       }
     }
 
     .box {
       gap: 6px;
-      color: @GRAY05;
+      color: var(--nuwax-text-secondary, @GRAY05);
       font-size: 12px;
 
       .value {
-        color: @BLANK03;
+        color: var(--nuwax-text-primary, @BLANK03);
       }
     }
   }
 
   .wrap {
     padding: 24px 16px 20px;
-    border-bottom: 1px solid @GRAY01;
+    border-bottom: 1px solid var(--nuwax-border-default, @GRAY01);
 
     .title {
       margin-bottom: 16px;
@@ -75,17 +75,17 @@
       .name {
         display: inline-block;
         padding: 2px;
-        color: @BLANK14;
+        color: var(--nuwax-text-primary, @BLANK14);
         font-size: 12px;
         border-radius: 2px;
         transition: background-color 0.3s;
 
         &.active {
-          background-color: @BLANK25;
+          background-color: var(--nuwax-hover-bg, @BLANK25);
         }
 
         &:hover {
-          background-color: @BLANK25;
+          background-color: var(--nuwax-hover-bg, @BLANK25);
         }
       }
     }
@@ -135,9 +135,9 @@
       min-height: 200px;
       max-height: 400px;
       padding: 10px;
-      color: @BLANK14;
+      color: var(--nuwax-text-primary, @BLANK14);
       font-size: 12px;
-      background-color: @GRAY01;
+      background-color: var(--nuwax-code-bg, @GRAY01);
       border-radius: 6px;
       white-space: pre-wrap;
       word-wrap: break-word;

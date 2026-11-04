@@ -7,7 +7,10 @@
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #fff 0%, #f8faff 100%);
+  background: var(
+    --nuwax-elevated-bg,
+    linear-gradient(135deg, #fff 0%, #f8faff 100%)
+  );
   box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
 
   &:hover {
@@ -22,13 +25,13 @@
 
     .ant-statistic-title {
       margin-bottom: 12px;
-      color: rgba(0, 0, 0, 45%);
+      color: var(--nuwax-text-secondary, rgba(0, 0, 0, 45%));
       font-size: 14px;
       font-weight: 500;
     }
 
     .ant-statistic-content {
-      color: #1a1a1a;
+      color: var(--nuwax-text-primary, #1a1a1a);
       font-weight: 700;
 
       &-value {
@@ -39,7 +42,7 @@
       &-prefix {
         font-size: 18px;
         margin-right: 4px;
-        color: #1677ff;
+        color: var(--nuwax-primary, #1677ff);
       }
     }
   }
