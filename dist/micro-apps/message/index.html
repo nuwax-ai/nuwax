@@ -1,4 +1,66 @@
 <!DOCTYPE html><html lang="zh-CN"><head>
+    <script data-nuwax-im-entry="">(function () {
+    const getImEntryRedirect = (function getImEntryRedirect(href, mobile) {
+  try {
+    const current = new URL(href);
+    if (current.protocol !== "http:" && current.protocol !== "https:")
+      return null;
+    const path = current.pathname;
+    if (mobile) {
+      if (path !== "/instant-message" && path !== "/instant-message/")
+        return null;
+      const incoming = new URLSearchParams(current.search);
+      if (!["invite", "convId", "userId", "agentId", "groupNo", "spaceId"].some(
+        (key) => incoming.has(key)
+      )) {
+        return null;
+      }
+      return current.origin + "/m/#/subpackages/pages/im-invite/im-invite" + current.search + (current.hash ? "&__imEntryHash=" + encodeURIComponent(current.hash) : "");
+    }
+    if (path !== "/m" && path !== "/m/") return null;
+    const body = current.hash.slice(1);
+    const fragmentAt = body.indexOf("#");
+    const fragment = fragmentAt >= 0 ? body.slice(fragmentAt) : "";
+    const route = fragmentAt >= 0 ? body.slice(0, fragmentAt) : body;
+    const queryAt = route.indexOf("?");
+    const hashPath = queryAt >= 0 ? route.slice(0, queryAt) : route;
+    const hashQuery = queryAt >= 0 ? route.slice(queryAt + 1) : "";
+    const query = [hashQuery, current.search.slice(1)].filter(Boolean).join("&");
+    if (hashPath === "/subpackages/pages/im-invite/im-invite") {
+      return current.origin + "/instant-message/" + (query ? "?" + query : "") + fragment;
+    }
+    const params = new URLSearchParams(query);
+    if (hashPath === "/pages/message/chat") {
+      const convId = params.get("convId");
+      if (!convId) return null;
+      return current.origin + "/instant-message/?convId=" + encodeURIComponent(convId);
+    }
+    if (hashPath === "/subpackages/pages/im-join-group/im-join-group") {
+      const groupNo = params.get("groupNo");
+      if (!groupNo) return null;
+      return current.origin + "/instant-message/?invite=" + encodeURIComponent(groupNo);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+});
+    const redirectStandaloneImEntry = (function redirectStandaloneImEntry(browser) {
+  if (browser.__POWERED_BY_QIANKUN__) return false;
+  const target = getImEntryRedirect(
+    browser.location.href,
+    /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(browser.navigator.userAgent)
+  );
+  if (!target) return false;
+  if (browser.__NUWAX_IM_ENTRY_REDIRECT__ !== target) {
+    browser.__NUWAX_IM_ENTRY_REDIRECT__ = target;
+    browser.location.replace(target);
+  }
+  return true;
+});
+    redirectStandaloneImEntry(window);
+  })();</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DEV-405：第三方 CDN 语音/视频 Referer 防盗链——audio/video 不支持元素级
@@ -57,7 +119,7 @@
       }
     </script>
     <script crossorigin="">
-      import('' + '/micro-apps/message/assets/index-D8xz9pO6.js').then(() => {
+      import('' + '/micro-apps/message/assets/index-DPcSD5E5.js').then(() => {
         if (!window.__POWERED_BY_QIANKUN__) return;
         const hooks = window[`qiankunLifeCycles_nuwax-im-web`];
         if (hooks) {
@@ -71,7 +133,7 @@
         console.error(error);
         if (!window.__POWERED_BY_QIANKUN__) return;
         if (error.name === 'TypeError' && error.message && error.message.startsWith('Failed to fetch dynamically imported module:')) {
-          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-D8xz9pO6.js', error } }));
+          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/message/assets/index-DPcSD5E5.js', error } }));
         } else {
           window.dispatchEvent(new CustomEvent('qiankun:runtimeError', { detail: { error } }));
         }

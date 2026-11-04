@@ -16,10 +16,12 @@
     "VITE_IM_AUTH_MODE": "platform"
   },
   "adapter": {
-    "sha256": "47050d95622b7ef20693f439f3cab2322612076ca6f281d765c8951c4bc8e74c",
+    "sha256": "eea6e11595979a6d4f3612253288d2bb0a45d4e914a82d6524cf1df3abf2cc9d",
     "files": [
       "adapter.json",
       "adapter.patch",
+      "overlay/imEntryRedirect.d.ts",
+      "overlay/imEntryRedirect.js",
       "overlay/index.html",
       "overlay/scope-styles.d.mts",
       "overlay/scope-styles.mjs",
@@ -37,10 +39,9 @@
     "qiankun": "2.10.17-beta.0",
     "@tiny-codes/vite-plugin-qiankun": "2.4.0"
   },
-  "builtAt": "2026-11-02T07:42:29.097Z",
+  "builtAt": "2026-11-04T08:37:28.634Z",
   "cache": {
-    "key": "23cedcf1b7f522aa4388e2d53f2aeaec1f86ce4e2935cd80bd83c7c282ceffea",
-    "hit": true,
-    "reusedAt": "2026-11-04T02:45:43.924Z"
+    "key": "be3abb77e92097c2cf9976c1e3faf98a8ce16fedb2600e8559feb3fd39db67eb",
+    "hit": false
   }
 }

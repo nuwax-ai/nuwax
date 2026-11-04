@@ -1,1 +1,0 @@
-import{d as s,aH as a,a as o,b as n,_ as t}from"./index-DH2Q4Ov9.js";import{o as e}from"./uni-app.es.DDr56fue.js";import{r,n as l}from"./offline-h5-page.D22B2A1m.js";const p=s({__name:"offline-h5-bootstrap",setup:s=>(e(((s=null)=>{const o=r(s);a((()=>{l(o)}))})),(s=null,a=null)=>{const e=t;return o(),n(e)})});export{p as default};
