@@ -48,7 +48,7 @@ const PromptView: React.FC<PromptViewProps> = ({
   contentClassName,
   messageInfo,
   codeLanguage = CodeLangEnum.Text,
-  theme = 'light',
+  theme,
 }) => {
   // console.log('codeLanguage', getCodeLanguage(codeLanguage), messageInfo);
 

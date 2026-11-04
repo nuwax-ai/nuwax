@@ -320,7 +320,12 @@ const Header: React.FC<HeaderProp> = ({
         {renderSaveStatus()}
 
         {publishDate === null && (
-          <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
+          <Tag
+            color="var(--nuwax-surface-bg, #EBECF5)"
+            style={{
+              color: 'var(--nuwax-text-secondary, rgba(15,21,40,0.82))',
+            }}
+          >
             {t('PC.Pages.AntvX6Header.unpublished')}
           </Tag>
         )}
@@ -342,7 +347,9 @@ const Header: React.FC<HeaderProp> = ({
           <UndoOutlined
             style={{
               fontSize: '18px',
-              color: canUndo ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.25)',
+              color: canUndo
+                ? 'var(--nuwax-text-primary)'
+                : 'var(--nuwax-text-disabled)',
               cursor: canUndo ? 'pointer' : 'not-allowed',
             }}
             onClick={canUndo ? onUndo : undefined}
@@ -354,7 +361,9 @@ const Header: React.FC<HeaderProp> = ({
           <RedoOutlined
             style={{
               fontSize: '18px',
-              color: canRedo ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.25)',
+              color: canRedo
+                ? 'var(--nuwax-text-primary)'
+                : 'var(--nuwax-text-disabled)',
               cursor: canRedo ? 'pointer' : 'not-allowed',
             }}
             onClick={canRedo ? onRedo : undefined}

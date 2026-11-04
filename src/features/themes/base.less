@@ -106,9 +106,21 @@ html[data-theme-surface='web'][data-theme-id] {
     }
 
     .x6-edge path[fill='#5147FF' i],
+    marker path[fill='#5147FF' i],
     .x6-port-body[fill='#5147FF' i] {
       fill: var(--nuwax-primary);
     }
+
+    // X6 节点使用独立 React root，默认 Ant 标签不能依赖外层 ConfigProvider。
+    .ant-tag:not([class*='ant-tag-']) {
+      color: var(--nuwax-text-primary);
+      background: var(--nuwax-surface-bg);
+      border-color: var(--nuwax-border-default);
+    }
+  }
+
+  &[data-theme='dark'] [class*='show-stand___'] {
+    --workflow-node-tint: 12%;
   }
 
   &[data-theme='dark'] [data-theme-part='workflow-canvas'] {

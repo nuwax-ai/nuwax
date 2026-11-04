@@ -71,7 +71,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     setIsEdit(false); // 关闭编辑状态
     setIsEditDesc(false); // 关闭编辑状态
   };
-  const gradientBackground = `linear-gradient(to bottom, ${backgroundColor} 0, white 42px)`;
+  const gradientBackground = `linear-gradient(to bottom, color-mix(in srgb, ${backgroundColor} var(--workflow-node-tint, 100%), var(--nuwax-elevated-bg, #fff)) 0, var(--nuwax-elevated-bg, #fff) 42px)`;
   return (
     <div
       className={cx(

@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/features/themes/useAppTheme';
 import { dict } from '@/services/i18nRuntime';
 import { ProcessingEnum } from '@/types/enums/common';
 import {
@@ -85,6 +86,7 @@ const MarkdownCustomPlanDoc: React.FC<MarkdownCustomPlanDocProps> = ({
   planFilePath,
   status,
 }) => {
+  const appearance = useAppTheme();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const headerTitle = useMemo(
@@ -125,7 +127,7 @@ const MarkdownCustomPlanDoc: React.FC<MarkdownCustomPlanDocProps> = ({
               timerType="requestAnimationFrame"
               plugins={[katexPlugin]}
               codeBlock={{ headerActions: true }}
-              theme="light"
+              theme={appearance.mode}
             >
               {plan}
             </DsMarkdown>
