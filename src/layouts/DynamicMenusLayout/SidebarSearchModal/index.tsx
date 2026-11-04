@@ -19,6 +19,7 @@ import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import { Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -31,7 +32,6 @@ import React, {
 import { history, useModel } from 'umi';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import { findMenuByCode, handleOpenUrl, resolveMenuPath } from '../utils';
-import { buildSearchConversationRoute } from './conversationRoute';
 import styles from './index.less';
 import type {
   SearchPageCursor,
@@ -111,8 +111,6 @@ const SidebarSearchModal: React.FC = () => {
     cursor: SearchPageCursor;
     loading: boolean;
     loadingMore: boolean;
-    messageSearchFailed?: boolean;
-    titleSearchFailed?: boolean;
   }>({
     items: [],
     hasMore: false,
@@ -192,15 +190,12 @@ const SidebarSearchModal: React.FC = () => {
             cursor: res.cursor,
             loading: false,
             loadingMore: false,
-            messageSearchFailed: res.messageSearchFailed,
-            titleSearchFailed: res.titleSearchFailed,
           };
-          if (!res.messageSearchFailed && !res.titleSearchFailed)
-            cacheRef.current.set(cacheKey, {
-              items: merged.items,
-              hasMore: merged.hasMore,
-              cursor: merged.cursor,
-            });
+          cacheRef.current.set(cacheKey, {
+            items: merged.items,
+            hasMore: merged.hasMore,
+            cursor: merged.cursor,
+          });
           return merged;
         });
       } catch {
@@ -249,13 +244,22 @@ const SidebarSearchModal: React.FC = () => {
 
   /** 任务/项目会话跳转（对齐 NewHomeSection 会话点击的分发逻辑） */
   const goConversation = useCallback(
-    (
-      conv: SearchResultItem['conversation'],
-      target?: SearchResultItem['messageLocation'],
-    ) => {
+    (conv: SearchResultItem['conversation']) => {
       if (!conv) return;
       closeModal();
-      history.push(buildSearchConversationRoute(conv, target));
+      const { id, agentId, devTargetType, devTargetId, devSpaceId } = conv;
+      if (devTargetType === 'Agent' && devSpaceId && id) {
+        history.push(
+          `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
+        );
+      } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
+        history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
+        // 网站应用会话：跳网站应用开发详情页，conversationId 用于恢复该会话
+        history.push(buildAppProRoute(devSpaceId, devTargetId, id));
+      } else {
+        history.push('/home/chat/' + id + '/' + agentId);
+      }
     },
     [closeModal],
   );
@@ -289,7 +293,7 @@ const SidebarSearchModal: React.FC = () => {
     (item: SearchResultItem) => {
       switch (item.kind) {
         case 'task':
-          goConversation(item.conversation, item.messageLocation);
+          goConversation(item.conversation);
           break;
         case 'project':
           // 项目无子会话置灰不可点
@@ -356,14 +360,7 @@ const SidebarSearchModal: React.FC = () => {
   /** 列表触底：加载下一页（组件 tab 内部自滚动，不经过此处） */
   const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (
-      view.loading ||
-      view.loadingMore ||
-      !view.hasMore ||
-      view.messageSearchFailed ||
-      view.titleSearchFailed
-    )
-      return;
+    if (view.loading || view.loadingMore || !view.hasMore) return;
     if (el.scrollHeight - el.scrollTop - el.clientHeight > 48) return;
     loadPage(activeTab as SearchRowKind, keyword, view.cursor, true);
   };
@@ -457,23 +454,7 @@ const SidebarSearchModal: React.FC = () => {
     }
     // 无关键词的任务/资料库空态已由 hideRecentSection 隐藏；其余展示空文案
     return (
-      <div className={cx(styles.empty)}>
-        {dict(`${I18N_PREFIX}.empty`)}
-        {view.hasMore &&
-          !view.loadingMore &&
-          !view.messageSearchFailed &&
-          !view.titleSearchFailed && (
-            <button
-              type="button"
-              onClick={() =>
-                !isCompTab(activeTab) &&
-                loadPage(activeTab as SearchRowKind, keyword, view.cursor, true)
-              }
-            >
-              {dict('PC.Components.AgentConversation.viewMore')}
-            </button>
-          )}
-      </div>
+      <div className={cx(styles.empty)}>{dict(`${I18N_PREFIX}.empty`)}</div>
     );
   };
 
@@ -510,11 +491,7 @@ const SidebarSearchModal: React.FC = () => {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder={dict(
-              `${I18N_PREFIX}.${
-                activeTab === 'task' ? 'taskContentPlaceholder' : 'placeholder'
-              }`,
-            )}
+            placeholder={dict(`${I18N_PREFIX}.placeholder`)}
             autoComplete="off"
           />
           <button
@@ -550,24 +527,6 @@ const SidebarSearchModal: React.FC = () => {
           ))}
         </div>
 
-        {activeTab === 'task' &&
-          (view.messageSearchFailed || view.titleSearchFailed) && (
-            <div role="status" className={cx(styles.empty)}>
-              {view.messageSearchFailed && (
-                <span>{dict(`${I18N_PREFIX}.messageSearchFailed`)}</span>
-              )}
-              {view.titleSearchFailed && (
-                <span>{dict(`${I18N_PREFIX}.titleSearchFailed`)}</span>
-              )}
-              <button
-                type="button"
-                disabled={view.loadingMore}
-                onClick={() => loadPage('task', keyword, view.cursor, true)}
-              >
-                {dict(`${I18N_PREFIX}.messageRetry`)}
-              </button>
-            </div>
-          )}
         {isCompTab(activeTab) ? (
           // 列表组件自带滚动容器：包装层只限高不滚动，空态随内容收缩不出滚动条
           <div className={cx(styles['comp-wrap'])}>
