@@ -10,12 +10,12 @@
 }
 
 .input-or-reference {
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--nuwax-border-default, #d9d9d9);
   border-radius: 6px;
   padding: 0;
   height: 28px;
   width: 100%;
-  background-color: rgb(252, 252, 252);
+  background-color: var(--nuwax-input-bg, rgb(252, 252, 252));
 
   .ant-input {
     height: 26px !important;
@@ -218,7 +218,7 @@
 
 .inputOrReferencePopup {
   .ant-dropdown-menu-item:hover {
-    background-color: #fff !important;
+    background-color: var(--nuwax-hover-bg, #fff) !important;
     border-radius: 12px;
     padding: 0 0 2px 12px;
   }

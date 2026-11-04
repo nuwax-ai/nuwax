@@ -4,7 +4,7 @@
 .show-stand {
   width: 360px;
   border-radius: 15px;
-  background: @WHITE;
+  background: var(--nuwax-elevated-bg, @WHITE);
   //box-shadow: 0 0 5px 0 @BLANK05;
   transition: display ease-in-out 0.3s;
 
@@ -58,7 +58,7 @@
 }
 
 .divider-horizontal {
-  border-bottom: 1px solid @GRAY06;
+  border-bottom: 1px solid var(--nuwax-border-default, @GRAY06);
 
   &.margin {
     margin: 0 12px;
