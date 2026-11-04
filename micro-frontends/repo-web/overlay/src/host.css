@@ -26,6 +26,7 @@
 }
 
 [data-repo-app-scope][data-theme] .library-nav,
+[data-repo-app-scope][data-theme] .doc-page__nav-inner,
 [data-repo-app-scope][data-theme] .doc-page__nav {
   background: var(--nuwax-sidebar-bg);
   color: var(--nuwax-text-primary);

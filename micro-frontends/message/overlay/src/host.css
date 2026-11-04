@@ -64,7 +64,27 @@
   color: var(--nuwax-chat-assistant-text);
 }
 
-[data-message-app-scope][data-theme] .msg-row.me .bubble {
+[data-message-app-scope][data-theme] .msg-row.self .bubble:not(.card-bubble),
+[data-message-app-scope][data-theme] .msg-row.me .bubble:not(.card-bubble) {
   background: var(--nuwax-chat-user-bg);
   color: var(--nuwax-chat-user-text);
+}
+
+[data-message-app-scope][data-theme] .chat-tab.active {
+  background: var(--nuwax-selected-bg);
+  color: var(--nuwax-primary);
+}
+
+[data-message-app-scope][data-theme] .send-btn {
+  background: var(--nuwax-hover-bg);
+  color: var(--nuwax-text-disabled);
+}
+
+[data-message-app-scope][data-theme] .send-btn.ready {
+  background: var(--nuwax-primary);
+  color: var(--nuwax-text-inverse);
+}
+
+[data-message-app-scope][data-theme] .send-btn.ready:hover {
+  background: var(--nuwax-primary-hover);
 }

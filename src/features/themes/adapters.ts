@@ -61,11 +61,21 @@ export function plotAppearance(snapshot: HostThemeSnapshot) {
     view: { viewFill: snapshot.tokens['surface.bg'] },
     axis: {
       labelFill: snapshot.tokens['text.secondary'],
+      // G2 的暗色默认主题会再乘 .45 的 opacity；Token 已是最终可读颜色。
+      labelOpacity: 1,
       titleFill: snapshot.tokens['text.primary'],
+      titleOpacity: 1,
       lineStroke: snapshot.tokens['border.default'],
+      lineStrokeOpacity: 1,
+      tickStroke: snapshot.tokens['border.default'],
+      tickOpacity: 1,
       gridStroke: snapshot.tokens['border.default'],
+      gridStrokeOpacity: 1,
     },
-    legendCategory: { itemLabelFill: snapshot.tokens['text.primary'] },
+    legendCategory: {
+      itemLabelFill: snapshot.tokens['text.primary'],
+      itemLabelFillOpacity: 1,
+    },
   };
 }
 

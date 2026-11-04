@@ -69,3 +69,99 @@
     }
   }
 }
+
+// 旧页面的固定配色只在主题运行时生效后覆盖。匹配 CSS Module 的语义前缀，
+// 不绑定构建哈希；不全局改写文字、SVG、状态色或文档内容。
+html[data-theme-surface='web'][data-theme-id] {
+  [class*='second-column___'] {
+    --xagi-nav-second-row-hover-bg: var(--nuwax-hover-bg);
+    --xagi-nav-second-row-active-bg: var(--nuwax-selected-bg);
+  }
+
+  .ant-table-wrapper .ant-table-thead > tr > th {
+    color: var(--nuwax-text-primary);
+    // global.less 的历史表头规则使用 !important。
+    background-color: var(--nuwax-surface-bg) !important;
+  }
+
+  .ant-pro-table
+    .ant-table-content
+    :is(
+      .ant-table-cell-fix-right,
+      .ant-table-cell-fix-right-first,
+      .ant-table-cell-fix-right-last
+    ) {
+    background-color: var(--nuwax-elevated-bg) !important;
+  }
+
+  .ant-pagination-options .ant-select-selector {
+    background-color: var(--nuwax-input-bg) !important;
+    border-color: var(--nuwax-border-default) !important;
+  }
+
+  :is(
+      [class*='nav-item___'],
+      [class*='action-row___'],
+      [class*='app-tab-item___']
+    ) {
+    color: var(--nuwax-text-secondary);
+  }
+
+  :is([class*='nav-item-active___'], [class*='app-tab-item-active___']) {
+    color: var(--nuwax-text-primary);
+    background: var(--nuwax-selected-bg);
+    box-shadow: none;
+  }
+
+  :is(
+      [class*='stat-card-value___'],
+      [class*='trend-chart-title___'],
+      [class*='chart-title___'],
+      [class*='resource-count___']
+    ) {
+    color: var(--nuwax-text-primary);
+  }
+
+  :is(
+      [class*='stat-card-title___'],
+      [class*='trend-label___'],
+      [class*='resource-name___']
+    ) {
+    color: var(--nuwax-text-secondary);
+  }
+
+  [class*='resource-item___'] {
+    background: var(--nuwax-surface-bg);
+    border-color: var(--nuwax-border-default);
+
+    &:hover {
+      background: var(--nuwax-hover-bg);
+      border-color: var(--nuwax-border-strong);
+    }
+  }
+
+  [class*='period-selector___'] .ant-radio-button-wrapper {
+    color: var(--nuwax-text-secondary);
+    background: transparent;
+
+    &:hover {
+      color: var(--nuwax-primary-hover);
+    }
+
+    &.ant-radio-button-wrapper-checked {
+      color: var(--nuwax-primary);
+      background: var(--nuwax-selected-bg);
+    }
+  }
+
+  // 输入提示参与可读性；不改用户正在输入的内容或编辑器格式。
+  :is(input, textarea)::placeholder {
+    color: var(--nuwax-text-secondary);
+  }
+
+  &[data-theme='dark']
+    [class*='recommend-item___']:not([class*='disabled___'])
+    img[src*='.svg'] {
+    filter: brightness(0) invert(1);
+  }
+}

@@ -131,6 +131,14 @@ describe('portable theme contract', () => {
       expect(tokenToAntd(snapshot.tokens).colorTextLightSolid).toBe(
         snapshot.tokens['text.inverse'],
       );
+      expect(tokenToAntd(snapshot.tokens)).toMatchObject({
+        colorTextHeading: snapshot.tokens['text.primary'],
+        colorLink: snapshot.tokens.primary,
+        colorLinkHover: snapshot.tokens['primary.hover'],
+        colorBgLayout: snapshot.tokens['surface.bg'],
+        colorFillAlter: snapshot.tokens['surface.bg'],
+        colorTextPlaceholder: snapshot.tokens['text.secondary'],
+      });
     },
   );
   it('rewrites relative resource references to explicit encoded placeholders', () => {
