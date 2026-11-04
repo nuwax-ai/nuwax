@@ -119,6 +119,8 @@ const ProfileSetupGuide: React.FC<{
       <div className={cx(styles.avatarRow)}>
         <UploadAvatar
           key={`${identity}:${viewRevision}`}
+          className={styles.avatar}
+          editIconPlacement="bottomRight"
           imageUrl={userInfo?.avatar}
           onUploadSuccess={handleUploadSuccess}
           defaultImage={avatarImage as string}

@@ -440,6 +440,7 @@ export interface CustomPopoverProps {
 // 上传头像
 export interface UploadAvatarProps {
   className?: string;
+  editIconPlacement?: 'overlay' | 'bottomRight';
   onUploadSuccess?: (url: string) => void;
   defaultImage?: string;
   imageUrl?: string;
