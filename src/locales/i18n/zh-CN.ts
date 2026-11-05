@@ -1694,6 +1694,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.more": "更多",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask": "新建任务",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.placeholder": "搜索任务、项目、专家、技能、连接器或资料库",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.taskTitlePlaceholder": "按任务名称搜索",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabTask": "任务",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabProject": "项目",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabExpert": "专家&专家团",

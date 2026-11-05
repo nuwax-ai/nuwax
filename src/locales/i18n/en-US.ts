@@ -1694,6 +1694,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.more": "More",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask": "New Task",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.placeholder": "Search tasks, projects, experts, skills, connectors or docs",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.taskTitlePlaceholder": "Search by task title",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabTask": "Tasks",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabProject": "Projects",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.tabExpert": "Experts & Expert Teams",
