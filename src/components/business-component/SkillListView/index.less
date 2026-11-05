@@ -199,7 +199,7 @@
   white-space: nowrap;
 }
 
-// 操作簇：grid 卡悬停浮现「选择」（不占位）+ 常驻启用开关；
+// 操作簇：grid 卡为「选择」预留宽度，避免悬停时挤压标题并触发换行；
 // list 行不渲染悬停「选择」（整行可点），操作簇仅剩常驻开关
 .card-actions,
 .list-actions {
@@ -209,13 +209,16 @@
   flex-shrink: 0;
 }
 
-// 悬停浮现按钮（仅 grid 卡）：未悬停不渲染入流、不占布局空间
+// 隐藏时保留尺寸，悬停和键盘聚焦仅改变可见性。
 .card-hire {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.card:hover .card-hire {
-  display: inline-block;
+.card:hover .card-hire,
+.card:focus-within .card-hire {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 // 方形圆角 tint 底「选择」按钮（双写提权压过 antd cssinjs）

@@ -21,11 +21,69 @@ export interface ConversationDraftAttachment {
   height?: number;
 }
 
+export type ConversationDraftMention =
+  | { kind: 'skill'; targetId: number; name: string }
+  | { kind: 'doc'; slugId: string; name: string; pageType?: string }
+  | { kind: 'file'; relativePath: string; name: string };
+
+/** 文本与引用按编辑顺序保存，恢复时重新生成 chip，不存储编辑器 HTML。 */
+export type ConversationDraftContent = (string | ConversationDraftMention)[];
+
+export function normalizeDraftContent(
+  value: unknown,
+): ConversationDraftContent {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((part): ConversationDraftContent => {
+    if (typeof part === 'string') return part ? [part] : [];
+    if (
+      !part ||
+      typeof part !== 'object' ||
+      typeof part.name !== 'string' ||
+      !part.name.trim()
+    )
+      return [];
+    if (
+      part.kind === 'skill' &&
+      Number.isSafeInteger(part.targetId) &&
+      part.targetId > 0
+    ) {
+      return [{ kind: 'skill', targetId: part.targetId, name: part.name }];
+    }
+    if (
+      part.kind === 'doc' &&
+      typeof part.slugId === 'string' &&
+      part.slugId.trim()
+    ) {
+      return [
+        {
+          kind: 'doc',
+          slugId: part.slugId,
+          name: part.name,
+          ...(typeof part.pageType === 'string'
+            ? { pageType: part.pageType }
+            : {}),
+        },
+      ];
+    }
+    if (
+      part.kind === 'file' &&
+      typeof part.relativePath === 'string' &&
+      part.relativePath.trim()
+    ) {
+      return [
+        { kind: 'file', relativePath: part.relativePath, name: part.name },
+      ];
+    }
+    return [];
+  });
+}
+
 export interface ConversationDraftData {
   version: 1;
   text: string;
   skillIds?: number[];
   files?: ConversationDraftAttachment[];
+  content?: ConversationDraftContent;
   savedAt: number;
 }
 

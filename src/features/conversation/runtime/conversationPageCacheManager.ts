@@ -7,6 +7,7 @@ import {
   EMPTY_DRAFT_SUMMARY,
   EMPTY_RESOURCE_STATE,
   createConversationPageCacheKey,
+  normalizeDraftContent,
   selectConversationPageCacheEvictionKey,
   type ConversationDraftAttachment,
   type ConversationDraftData,
@@ -511,11 +512,21 @@ class ConversationPageCacheManager {
         return null;
       }
       const files = normalizeDraftFiles(parsed.files);
-      if (!parsed.text.trim() && !parsed.skillIds?.length && !files.length) {
+      const content = normalizeDraftContent(parsed.content);
+      if (
+        !parsed.text.trim() &&
+        !parsed.skillIds?.length &&
+        !files.length &&
+        !content.some((part) => typeof part !== 'string')
+      ) {
         localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${key}`);
         return null;
       }
-      return { ...parsed, files: files.length ? files : undefined };
+      return {
+        ...parsed,
+        files: files.length ? files : undefined,
+        content: content.length ? content : undefined,
+      };
     } catch {
       return null;
     }
@@ -528,8 +539,12 @@ class ConversationPageCacheManager {
     if (key === null || key === undefined) return;
     const cacheKey = String(key);
     const files = normalizeDraftFiles(draft.files);
+    const content = normalizeDraftContent(draft.content);
     const hasContent =
-      !!draft.text.trim() || !!draft.skillIds?.length || !!files.length;
+      !!draft.text.trim() ||
+      !!draft.skillIds?.length ||
+      !!files.length ||
+      content.some((part) => typeof part !== 'string');
     const savedAt = Date.now();
     if (canUseStorage()) {
       try {
@@ -540,6 +555,7 @@ class ConversationPageCacheManager {
             JSON.stringify({
               ...draft,
               files: files.length ? files : undefined,
+              content: content.length ? content : undefined,
               savedAt,
             } satisfies ConversationDraftData),
           );

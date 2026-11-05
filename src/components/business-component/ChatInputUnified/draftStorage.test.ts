@@ -63,6 +63,31 @@ describe('草稿存取（作用域 = 路由面 × 会话 id）', () => {
     expect(loadDraft('chat:101')).toBeNull();
   });
 
+  it('只有技能或资料引用的草稿也保留，非法引用不影响正文恢复', () => {
+    const content = [
+      { kind: 'skill' as const, targetId: 42, name: '写作' },
+      { kind: 'doc' as const, slugId: 'doc-1', name: '资料', pageType: 'md' },
+    ];
+    saveDraft('chat:101', { version: 1, text: '', content });
+    expect(loadDraft('chat:101')?.content).toEqual(content);
+    localStorage.setItem(
+      storageKey('chat:101'),
+      JSON.stringify({
+        version: 1,
+        text: '正文',
+        savedAt: Date.now(),
+        content: [
+          null,
+          { kind: 'skill', targetId: -1, name: '非法' },
+          ...content,
+          { kind: 'doc', slugId: '', name: '无效' },
+        ],
+      }),
+    );
+    expect(loadDraft('chat:101')?.content).toEqual(content);
+    expect(loadDraft('chat:101')?.text).toBe('正文');
+  });
+
   it('只持久化附件元数据，不保存本地 File 和上传响应', () => {
     const uploaded = {
       ...attachment,
