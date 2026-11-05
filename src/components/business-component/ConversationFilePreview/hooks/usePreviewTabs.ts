@@ -1,7 +1,7 @@
 import { movedFileId } from '@/components/business-component/FileTreeGitSourcePanel/utils/fileMove';
 import { dict } from '@/services/i18nRuntime';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /** 工具类标签 ID */
 export type PreviewToolId =
@@ -10,7 +10,10 @@ export type PreviewToolId =
   | 'terminal'
   | 'version-control'
   | 'subscription-setting'
-  | 'subscription-stats';
+  | 'subscription-stats'
+  | 'database'
+  | 'database-config'
+  | 'remote-desktop';
 
 /** 预览标签类型 */
 export type PreviewTabType = 'file' | 'tool';
@@ -41,10 +44,17 @@ export interface UsePreviewTabsOptions {
   /** 激活工具标签时的回调 */
   onToolTabActivate?: (toolId: PreviewToolId) => void;
   /**
-   * 常驻工作区工具页签（不含 terminal）
-   * 不传时使用 WORKSPACE_PREVIEW_TOOL_IDS 全量
+   * 常驻工作区工具页签（不含 terminal，也不含版本控制）
+   * 不传时默认只有「预览」
    */
   workspaceToolIds?: PreviewToolId[];
+  /**
+   * 是否展示版本控制页签。
+   * 版本控制由本 hook 统一插入，默认显示。
+   */
+  showVersionControl?: boolean;
+  /** 覆盖工具页签文案 key，供不同页面替换同一 toolId 的标题 */
+  toolI18nMap?: Partial<Record<PreviewToolId, string>>;
 }
 
 /** 在右侧工作区展示的工具页签（非文件预览区） */
@@ -61,6 +71,9 @@ const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
   'subscription-setting':
     'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
   'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
+  database: 'PC.Pages.AppDevPro.database',
+  'database-config': 'PC.Pages.AppDevPro.databaseConfig',
+  'remote-desktop': 'PC.Pages.AppDevPro.remoteDesktop',
 };
 
 /** 从文件路径提取文件名 */
@@ -82,28 +95,53 @@ export const DEFAULT_WORKSPACE_TOOL_ORDER: PreviewToolId[] = [
   'version-control',
 ];
 
-/** 解析默认激活的工作区工具页签 */
+/** 解析默认激活的工作区工具页签；无常驻页签时返回 null */
 const resolveDefaultWorkspaceToolId = (
   workspaceToolIds: PreviewToolId[],
-): PreviewToolId => {
+): PreviewToolId | null => {
+  if (workspaceToolIds.length === 0) {
+    return null;
+  }
   if (workspaceToolIds.includes('preview')) {
     return 'preview';
   }
-  return workspaceToolIds[0] ?? 'preview';
+  return workspaceToolIds[0] ?? null;
 };
 
-/** 构建单个工具页签 */
-const buildToolTab = (toolId: PreviewToolId): PreviewTab => ({
-  id: getToolTabId(toolId),
-  type: 'tool',
-  toolId,
-  label: dict(TOOL_I18N_MAP[toolId]),
-});
+/** 在常驻页签中按「预览」之后插入版本控制；没有预览时追加到末尾 */
+export const withVersionControlTab = (
+  toolIds: PreviewToolId[],
+  showVersionControl = true,
+): PreviewToolId[] => {
+  const withoutVersion = toolIds.filter(
+    (toolId) => toolId !== 'version-control',
+  );
+  if (!showVersionControl) {
+    return withoutVersion;
+  }
+  const previewIndex = withoutVersion.indexOf('preview');
+  if (previewIndex === -1) {
+    return [...withoutVersion, 'version-control'];
+  }
+  return [
+    ...withoutVersion.slice(0, previewIndex + 1),
+    'version-control',
+    ...withoutVersion.slice(previewIndex + 1),
+  ];
+};
 
 /** 按 toolId 列表构建常驻工作区页签 */
 export const buildWorkspaceToolTabs = (
   toolIds: PreviewToolId[],
-): PreviewTab[] => toolIds.map(buildToolTab);
+  resolveLabel: (toolId: PreviewToolId) => string = (toolId) =>
+    dict(TOOL_I18N_MAP[toolId]),
+): PreviewTab[] =>
+  toolIds.map((toolId) => ({
+    id: getToolTabId(toolId),
+    type: 'tool' as const,
+    toolId,
+    label: resolveLabel(toolId),
+  }));
 
 /** 是否为不可关闭的常驻工作区工具页签 */
 export const isPermanentWorkspaceToolTab = (
@@ -115,33 +153,73 @@ export const isPermanentWorkspaceToolTab = (
 /** 进入 ConversationAgent 时默认展示的全部工作区 Tab */
 const buildDefaultWorkspaceTabs = (
   workspaceToolIds: PreviewToolId[],
-): PreviewTab[] => buildWorkspaceToolTabs(workspaceToolIds);
+  resolveLabel?: (toolId: PreviewToolId) => string,
+): PreviewTab[] => buildWorkspaceToolTabs(workspaceToolIds, resolveLabel);
+
+/** 默认工作区页签与激活 ID */
+const getDefaultWorkspaceState = (
+  workspaceToolIds: PreviewToolId[],
+  resolveLabel?: (toolId: PreviewToolId) => string,
+): {
+  tabs: PreviewTab[];
+  activeTabId: string | null;
+  toolId: PreviewToolId | null;
+} => {
+  const tabs = buildDefaultWorkspaceTabs(workspaceToolIds, resolveLabel);
+  const toolId = resolveDefaultWorkspaceToolId(workspaceToolIds);
+  return {
+    tabs,
+    activeTabId: toolId ? getToolTabId(toolId) : null,
+    toolId,
+  };
+};
 
 /**
  * 预览区标签页状态管理
  * 支持文件标签与工具标签的增删改查
  */
 export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
-  const { onFileTabActivate, onToolTabActivate, workspaceToolIds } = options;
-  const resolvedWorkspaceToolIds =
-    workspaceToolIds ?? WORKSPACE_PREVIEW_TOOL_IDS;
+  const {
+    onFileTabActivate,
+    onToolTabActivate,
+    workspaceToolIds,
+    showVersionControl = true,
+    toolI18nMap,
+  } = options;
+  const toolI18nMapRef = useRef(toolI18nMap);
+  toolI18nMapRef.current = toolI18nMap;
+  const resolveToolLabel = useCallback((toolId: PreviewToolId) => {
+    return dict(toolI18nMapRef.current?.[toolId] ?? TOOL_I18N_MAP[toolId]);
+  }, []);
+  const resolvedWorkspaceToolIds = useMemo(
+    () =>
+      withVersionControlTab(
+        workspaceToolIds ?? ['preview'],
+        showVersionControl,
+      ),
+    [showVersionControl, workspaceToolIds],
+  );
   const workspaceToolIdsRef = useRef(resolvedWorkspaceToolIds);
   workspaceToolIdsRef.current = resolvedWorkspaceToolIds;
 
-  const [tabs, setTabs] = useState<PreviewTab[]>(() =>
-    buildDefaultWorkspaceTabs(resolvedWorkspaceToolIds),
+  const [tabs, setTabs] = useState<PreviewTab[]>(
+    () =>
+      getDefaultWorkspaceState(resolvedWorkspaceToolIds, resolveToolLabel).tabs,
   );
-  const [activeTabId, setActiveTabId] = useState<string | null>(() =>
-    getToolTabId(resolveDefaultWorkspaceToolId(resolvedWorkspaceToolIds)),
+  const [activeTabId, setActiveTabId] = useState<string | null>(
+    () =>
+      getDefaultWorkspaceState(resolvedWorkspaceToolIds, resolveToolLabel)
+        .activeTabId,
   );
   const onToolTabActivateRef = useRef(onToolTabActivate);
   onToolTabActivateRef.current = onToolTabActivate;
 
   /** 首次挂载：同步默认工作区页签对应的面板状态 */
   useEffect(() => {
-    onToolTabActivateRef.current?.(
-      resolveDefaultWorkspaceToolId(workspaceToolIdsRef.current),
-    );
+    const toolId = resolveDefaultWorkspaceToolId(workspaceToolIdsRef.current);
+    if (toolId) {
+      onToolTabActivateRef.current?.(toolId);
+    }
   }, []);
 
   /**
@@ -151,33 +229,37 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   useEffect(() => {
     workspaceToolIdsRef.current = resolvedWorkspaceToolIds;
     setTabs((prev) => {
-      const nonPermanentWorkspaceTabs = prev.filter(
-        (tab) =>
-          tab.type === 'file' ||
-          (tab.type === 'tool' &&
-            tab.toolId &&
-            !WORKSPACE_PREVIEW_TOOL_IDS.includes(tab.toolId)),
+      const extraTabs = prev.filter((tab) => {
+        if (tab.type === 'file') {
+          return true;
+        }
+        if (tab.type === 'tool' && tab.toolId) {
+          return !resolvedWorkspaceToolIds.includes(tab.toolId);
+        }
+        return true;
+      });
+      const workspaceTabs = buildWorkspaceToolTabs(
+        resolvedWorkspaceToolIds,
+        resolveToolLabel,
       );
-      const permanentStillOpen = prev.filter(
-        (tab) =>
-          tab.type === 'tool' &&
-          tab.toolId &&
-          WORKSPACE_PREVIEW_TOOL_IDS.includes(tab.toolId) &&
-          resolvedWorkspaceToolIds.includes(tab.toolId),
-      );
-      const workspaceTabs = buildWorkspaceToolTabs(resolvedWorkspaceToolIds);
       const mergedIds = new Set<string>();
       const merged: PreviewTab[] = [];
-      for (const tab of [
-        ...workspaceTabs,
-        ...permanentStillOpen,
-        ...nonPermanentWorkspaceTabs,
-      ]) {
+      for (const tab of [...workspaceTabs, ...extraTabs]) {
         if (mergedIds.has(tab.id)) {
           continue;
         }
         mergedIds.add(tab.id);
         merged.push(tab);
+      }
+      // 页签集合未变时返回原数组，避免依赖引用抖动时 setState 自激
+      if (
+        prev.length === merged.length &&
+        prev.every(
+          (tab, index) =>
+            tab.id === merged[index]?.id && tab.type === merged[index]?.type,
+        )
+      ) {
+        return prev;
       }
       return merged;
     });
@@ -186,9 +268,8 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         current === getToolTabId('version-control') &&
         !resolvedWorkspaceToolIds.includes('version-control')
       ) {
-        return getToolTabId(
-          resolveDefaultWorkspaceToolId(resolvedWorkspaceToolIds),
-        );
+        const next = resolveDefaultWorkspaceToolId(resolvedWorkspaceToolIds);
+        return next ? getToolTabId(next) : current;
       }
       return current;
     });
@@ -213,16 +294,18 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     return [...pinned, ...unpinned];
   };
 
-  /** 重置为默认工作区页签，并激活预览 */
+  /** 重置为默认工作区页签；无常驻页签时清空 */
   const openDefaultPreviewTab = useCallback(() => {
-    const defaultTabs = buildDefaultWorkspaceTabs(workspaceToolIdsRef.current);
-    const defaultToolId = resolveDefaultWorkspaceToolId(
-      workspaceToolIdsRef.current,
-    );
-    const defaultTab = defaultTabs.find((tab) => tab.toolId === defaultToolId)!;
+    const {
+      tabs: defaultTabs,
+      activeTabId,
+      toolId,
+    } = getDefaultWorkspaceState(workspaceToolIdsRef.current, resolveToolLabel);
     setTabs(defaultTabs);
-    setActiveTabId(defaultTab.id);
-    onToolTabActivate?.(defaultToolId);
+    setActiveTabId(activeTabId);
+    if (toolId) {
+      onToolTabActivate?.(toolId);
+    }
   }, [onToolTabActivate]);
 
   /** 打开或激活文件标签 */
@@ -263,7 +346,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         return;
       }
       const tabId = getToolTabId(toolId);
-      const label = dict(TOOL_I18N_MAP[toolId]);
+      const label = resolveToolLabel(toolId);
 
       setTabs((prev) => {
         const existing = prev.find((tab) => tab.id === tabId);
@@ -290,18 +373,19 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   /** 切换标签 */
   const selectTab = useCallback(
     (tabId: string) => {
+      const tab = tabs.find((item) => item.id === tabId);
+      if (!tab) {
+        return;
+      }
+
       setActiveTabId(tabId);
-      setTabs((prev) => {
-        const tab = prev.find((item) => item.id === tabId);
-        if (tab?.type === 'file' && tab.fileId) {
-          onFileTabActivate?.(tab.fileId, tab.isDiff);
-        } else if (tab?.type === 'tool' && tab.toolId) {
-          onToolTabActivate?.(tab.toolId);
-        }
-        return prev;
-      });
+      if (tab.type === 'file' && tab.fileId) {
+        onFileTabActivate?.(tab.fileId, tab.isDiff);
+      } else if (tab.type === 'tool' && tab.toolId) {
+        onToolTabActivate?.(tab.toolId);
+      }
     },
-    [onFileTabActivate, onToolTabActivate],
+    [onFileTabActivate, onToolTabActivate, tabs],
   );
 
   /** 合并常驻工作区页签与非常驻页签（去重，工作区页签保持默认顺序） */
@@ -309,6 +393,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     (extraTabs: PreviewTab[]): PreviewTab[] => {
       const workspaceTabs = buildDefaultWorkspaceTabs(
         workspaceToolIdsRef.current,
+        resolveToolLabel,
       );
       const workspaceTabIds = new Set(workspaceTabs.map((tab) => tab.id));
       const others = extraTabs.filter((tab) => !workspaceTabIds.has(tab.id));
@@ -320,67 +405,51 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   /** 关闭标签 */
   const closeTab = useCallback(
     (tabId: string) => {
-      setTabs((prev) => {
-        const target = prev.find((tab) => tab.id === tabId);
-        if (
-          !target ||
-          isPermanentWorkspaceToolTab(target, workspaceToolIdsRef.current)
-        ) {
-          return prev;
+      const target = tabs.find((tab) => tab.id === tabId);
+      if (
+        !target ||
+        isPermanentWorkspaceToolTab(target, workspaceToolIdsRef.current)
+      ) {
+        return;
+      }
+
+      const index = tabs.findIndex((tab) => tab.id === tabId);
+      const nextTabs = tabs.filter((tab) => tab.id !== tabId);
+
+      if (nextTabs.length === 0) {
+        const restored = getDefaultWorkspaceState(
+          workspaceToolIdsRef.current,
+          resolveToolLabel,
+        );
+        setTabs(restored.tabs);
+        setActiveTabId(restored.activeTabId);
+        if (restored.toolId) {
+          onToolTabActivate?.(restored.toolId);
         }
+        return;
+      }
 
-        const index = prev.findIndex((tab) => tab.id === tabId);
-        if (index === -1) {
-          return prev;
-        }
-
-        const nextTabs = prev.filter((tab) => tab.id !== tabId);
-
-        if (nextTabs.length === 0) {
-          const defaultTabs = buildDefaultWorkspaceTabs(
-            workspaceToolIdsRef.current,
-          );
-          const defaultToolId = resolveDefaultWorkspaceToolId(
-            workspaceToolIdsRef.current,
-          );
-          const defaultTab = defaultTabs.find(
-            (tab) => tab.toolId === defaultToolId,
-          )!;
-          setActiveTabId(defaultTab.id);
-          onToolTabActivate?.(defaultToolId);
-          return defaultTabs;
-        }
-
-        setActiveTabId((currentActiveId) => {
-          if (currentActiveId !== tabId) {
-            return currentActiveId;
-          }
-          const nextIndex = Math.min(index, nextTabs.length - 1);
-          const nextTab = nextTabs[nextIndex];
-          activateTab(nextTab);
-          return nextTab.id;
-        });
-
-        return nextTabs;
-      });
+      setTabs(nextTabs);
+      if (activeTabId === tabId) {
+        const nextIndex = Math.min(index, nextTabs.length - 1);
+        activateTab(nextTabs[nextIndex]);
+      }
     },
-    [activateTab, onToolTabActivate],
+    [activateTab, activeTabId, onToolTabActivate, tabs],
   );
 
   /** 关闭除指定标签外的所有非常驻页签（常驻工作区页签始终保留） */
   const closeOtherTabs = useCallback(
     (tabId: string) => {
-      setTabs((prev) => {
-        const target = prev.find((tab) => tab.id === tabId);
-        if (!target) {
-          return prev;
-        }
-        const nextTabs = mergeWithWorkspaceTabs([target]);
-        activateTab(target);
-        return nextTabs;
-      });
+      const target = tabs.find((tab) => tab.id === tabId);
+      if (!target) {
+        return;
+      }
+      const nextTabs = mergeWithWorkspaceTabs([target]);
+      setTabs(nextTabs);
+      activateTab(target);
     },
-    [activateTab, mergeWithWorkspaceTabs],
+    [activateTab, mergeWithWorkspaceTabs, tabs],
   );
 
   /** 关闭所有标签后恢复默认工作区页签 */
@@ -433,55 +502,45 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         return fileId === deletedPath;
       };
 
-      setTabs((prev) => {
-        const removedIndices: number[] = [];
-        prev.forEach((tab, index) => {
-          if (
-            tab.type === 'file' &&
-            tab.fileId &&
-            shouldCloseFileTab(tab.fileId)
-          ) {
-            removedIndices.push(index);
-          }
-        });
-
-        if (removedIndices.length === 0) {
-          return prev;
+      const removedIndices: number[] = [];
+      tabs.forEach((tab, index) => {
+        if (
+          tab.type === 'file' &&
+          tab.fileId &&
+          shouldCloseFileTab(tab.fileId)
+        ) {
+          removedIndices.push(index);
         }
-
-        const removedIds = new Set(removedIndices.map((i) => prev[i].id));
-        const nextTabs = prev.filter((tab) => !removedIds.has(tab.id));
-
-        if (nextTabs.length === 0) {
-          const defaultTabs = buildDefaultWorkspaceTabs(
-            workspaceToolIdsRef.current,
-          );
-          const defaultToolId = resolveDefaultWorkspaceToolId(
-            workspaceToolIdsRef.current,
-          );
-          const defaultTab = defaultTabs.find(
-            (tab) => tab.toolId === defaultToolId,
-          )!;
-          setActiveTabId(defaultTab.id);
-          onToolTabActivate?.(defaultToolId);
-          return defaultTabs;
-        }
-
-        setActiveTabId((currentActiveId) => {
-          if (!currentActiveId || !removedIds.has(currentActiveId)) {
-            return currentActiveId;
-          }
-          const firstRemovedIndex = removedIndices[0];
-          const nextIndex = Math.min(firstRemovedIndex, nextTabs.length - 1);
-          const nextTab = nextTabs[nextIndex];
-          activateTab(nextTab);
-          return nextTab.id;
-        });
-
-        return nextTabs;
       });
+
+      if (removedIndices.length === 0) {
+        return;
+      }
+
+      const removedIds = new Set(removedIndices.map((index) => tabs[index].id));
+      const nextTabs = tabs.filter((tab) => !removedIds.has(tab.id));
+
+      if (nextTabs.length === 0) {
+        const restored = getDefaultWorkspaceState(
+          workspaceToolIdsRef.current,
+          resolveToolLabel,
+        );
+        setTabs(restored.tabs);
+        setActiveTabId(restored.activeTabId);
+        if (restored.toolId) {
+          onToolTabActivate?.(restored.toolId);
+        }
+        return;
+      }
+
+      setTabs(nextTabs);
+      if (activeTabId && removedIds.has(activeTabId)) {
+        const firstRemovedIndex = removedIndices[0];
+        const nextIndex = Math.min(firstRemovedIndex, nextTabs.length - 1);
+        activateTab(nextTabs[nextIndex]);
+      }
     },
-    [activateTab, onToolTabActivate],
+    [activateTab, activeTabId, onToolTabActivate, tabs],
   );
 
   /**

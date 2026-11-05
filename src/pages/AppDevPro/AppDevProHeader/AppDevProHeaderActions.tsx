@@ -11,7 +11,7 @@ import React, { useCallback, useMemo } from 'react';
 import DatabaseGlyph from '../components/DatabaseGlyph';
 import PreviewRuntimeButtons, {
   type PreviewRuntimeButtonsProps,
-} from '../ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
+} from '../components/PreviewRuntimeButtons';
 import { UserAppDbEnvEnum } from '../services/appDb';
 import { UserAppReadinessStatusEnum } from '../services/appDevPro';
 import type { UserAppInfo } from '../type';

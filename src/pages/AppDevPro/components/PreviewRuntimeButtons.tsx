@@ -1,12 +1,12 @@
 import { SvgIcon } from '@/components/base';
+import styles from '@/components/business-component/ConversationFilePreview/PreviewTabBar/index.less';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined, PoweroffOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { UserAppReadinessStatusEnum } from '../../services/appDevPro';
-import styles from './index.less';
+import { UserAppReadinessStatusEnum } from '../services/appDevPro';
 
 const cx = classNames.bind(styles);
 

@@ -92,6 +92,14 @@ import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 // import { createLogger } from '@/utils/logger';
+import ConversationAgentFilePreview from '@/components/business-component/ConversationFilePreview';
+import {
+  getFileTabId,
+  usePreviewTabs,
+  WORKSPACE_PREVIEW_TOOL_IDS,
+  type PreviewToolId,
+} from '@/components/business-component/ConversationFilePreview/hooks/usePreviewTabs';
+import PreviewTabBar from '@/components/business-component/ConversationFilePreview/PreviewTabBar';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -112,14 +120,6 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentChatSession from './ConversationAgentChatSession';
-import ConversationAgentFilePreview from './ConversationAgentFilePreview';
-import {
-  getFileTabId,
-  usePreviewTabs,
-  WORKSPACE_PREVIEW_TOOL_IDS,
-  type PreviewToolId,
-} from './ConversationAgentFilePreview/hooks/usePreviewTabs';
-import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import ImportProjectModal from './ImportProjectModal';
@@ -397,13 +397,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   );
 
   /** 常驻工作区工具页签 */
-  const workspaceToolIds = useMemo((): PreviewToolId[] => {
-    const tools: PreviewToolId[] = ['preview'];
-    if (isVersionControlEnabled) {
-      tools.push('version-control');
-    }
-    return tools;
-  }, [isVersionControlEnabled]);
+  /** 常驻页签不含版本控制；版本控制由预览组件按 showVersionControl 插入 */
+  const workspaceToolIds = useMemo((): PreviewToolId[] => ['preview'], []);
 
   // 版本管控是否开启的 ref
   isVersionControlEnabledRef.current = isVersionControlEnabled;
@@ -1529,6 +1524,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
     workspaceToolIds,
+    showVersionControl: isVersionControlEnabled,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
       closeAgentDesktop();
@@ -1860,24 +1856,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
           // 重新排序标签
           onTabReorder={previewTabs.reorderTabs}
           permanentWorkspaceToolIds={workspaceToolIds}
-          /** 重启智能体电脑 */
-          onRestartServer={() => {
-            if (queryConversationId) {
-              restartVncPod(queryConversationId, finalSelectedComputerId);
-            }
-          }}
-          /** 重启智能体 */
-          onRestartAgent={() => {
-            if (queryConversationId) {
-              restartAgent(queryConversationId);
-            }
-          }}
-          /** 导出项目 */
-          onExportProject={() => {
-            void fileView.tree.handleExportProject?.();
-          }}
-          /** 是否为云电脑 */
-          isCloudComputer={finalSelectedComputerId === '-1'}
+          showMoreActions={false}
           originalModelConfigList={originalModelConfigList}
           agentConfigInfo={agentConfigInfo}
           onModelChange={handlePreviewTabModelChange}
@@ -1894,7 +1873,7 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
-              debugPanel={previewDebugChatPanel}
+              toolPanels={{ preview: previewDebugChatPanel }}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1977,6 +1956,20 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
           isShowDesktop={isShowDesktop}
           isAgentDesktopOpen={isDesktopIconActive}
           onOpenDesktopPanel={handleOpenDesktopPanel}
+          onRestartServer={() => {
+            if (queryConversationId) {
+              restartVncPod(queryConversationId, finalSelectedComputerId);
+            }
+          }}
+          onRestartAgent={() => {
+            if (queryConversationId) {
+              restartAgent(queryConversationId);
+            }
+          }}
+          onExportProject={() => {
+            void fileView.tree.handleExportProject?.();
+          }}
+          isCloudComputer={finalSelectedComputerId === '-1'}
         />
 
         {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
@@ -2101,10 +2094,19 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
           />
 
           {/* 调试详情抽屉（按需显示） */}
-          <DebugDetails
-            visible={active && showType === EditAgentShowType.Debug_Details}
-            onClose={() => setShowType(EditAgentShowType.Hide)}
-          />
+          <div
+            className={cx(styles['debug-details-host'], {
+              [styles.hidden]: !(
+                active && showType === EditAgentShowType.Debug_Details
+              ),
+            })}
+          >
+            <DebugDetails
+              className={styles['debug-details-panel']}
+              visible={active && showType === EditAgentShowType.Debug_Details}
+              onClose={() => setShowType(EditAgentShowType.Hide)}
+            />
+          </div>
           <VersionHistory
             targetId={agentId}
             targetName={agentConfigInfo?.name}

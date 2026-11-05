@@ -25,14 +25,13 @@ export interface ConversationAgentFilePreviewProps {
   diffFile?: ChangeFileInfo;
   /** 当前激活的标签（由外层 PreviewTabBar 控制） */
   activeTab: PreviewTab | null;
-  /** 「应用预览」页签内容；未传入时显示空白占位 */
-  previewPanel?: React.ReactNode;
-  /** 「版本控制」页签：Git 提交记录 */
+  /**
+   * 工具页签内容。
+   * 版本控制不从这里传入，使用 versionPanel。
+   */
+  toolPanels?: Partial<Record<PreviewToolId, React.ReactNode>>;
+  /** 「版本控制」页签：Git 提交记录，由组件内部固定承接 */
   versionPanel?: React.ReactNode;
-  /** 「数据库」页签内容 */
-  databasePanel?: React.ReactNode;
-  /** 「数据库配置」页签内容 */
-  databaseConfigPanel?: React.ReactNode;
   /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
@@ -49,10 +48,8 @@ const ConversationAgentFilePreview: React.FC<
   preview,
   diffFile,
   activeTab,
-  previewPanel,
+  toolPanels,
   versionPanel,
-  databasePanel,
-  databaseConfigPanel,
   providerClassName,
   className,
 }) => {
@@ -90,12 +87,10 @@ const ConversationAgentFilePreview: React.FC<
   /** 工作区工具页签 → 面板内容映射 */
   const workspacePanelMap = useMemo(
     (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
-      preview: previewPanel ?? (
-        <div className={cx(styles['app-preview-placeholder'])} />
-      ),
+      ...toolPanels,
       'version-control': versionPanel,
     }),
-    [previewPanel, versionPanel],
+    [toolPanels, versionPanel],
   );
 
   /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */
@@ -132,20 +127,24 @@ const ConversationAgentFilePreview: React.FC<
       }
     }
 
-    /** 显示数据库页签内容 */
-    if (activeTab?.type === 'tool' && activeTab.toolId === 'database') {
-      return (
-        <div className={cx(styles['workspace-panel'])}>
-          {databasePanel ?? <ToolTabContent toolId="database" />}
-        </div>
-      );
+    /** 已注入内容的工具页签（含数据库等非默认工作区页签） */
+    if (activeTab?.type === 'tool' && activeTab.toolId) {
+      const injected = workspacePanelMap[activeTab.toolId];
+      if (injected) {
+        return <div className={cx(styles['workspace-panel'])}>{injected}</div>;
+      }
     }
 
-    /** 显示数据库配置页签内容 */
-    if (activeTab?.type === 'tool' && activeTab.toolId === 'database-config') {
+    /** 数据库类页签未注入内容时，仍包在工作区容器里 */
+    if (
+      showOtherToolContent &&
+      activeTab?.toolId &&
+      (activeTab.toolId === 'database' ||
+        activeTab.toolId === 'database-config')
+    ) {
       return (
         <div className={cx(styles['workspace-panel'])}>
-          {databaseConfigPanel ?? <ToolTabContent toolId="database-config" />}
+          <ToolTabContent toolId={activeTab.toolId} />
         </div>
       );
     }
@@ -169,8 +168,6 @@ const ConversationAgentFilePreview: React.FC<
     showOtherToolContent,
     activeTab?.type,
     activeTab?.toolId,
-    databasePanel,
-    databaseConfigPanel,
   ]);
 
   return (

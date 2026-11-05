@@ -25,6 +25,28 @@
     margin: 0 20px 0 0;
   }
 
+  /** 调试详情外层：相对工作区左侧 10px、底部 22px */
+  .debug-details-host {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    margin-left: 10px;
+    margin-bottom: 22px;
+    border: @lineWidth solid @colorSplit;
+
+    &.hidden {
+      display: none;
+      margin: 0;
+    }
+  }
+
+  .debug-details-panel {
+    flex: 1;
+    min-height: 0;
+    border-left: 0;
+  }
+
   .main-row {
     display: flex;
     flex: 1;
