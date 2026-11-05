@@ -25,6 +25,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
+import { useModel } from 'umi';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import {
@@ -421,10 +422,14 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     ],
   );
   const effectiveOpenUiSidecar = onOpenOpenUiSidecar ?? defaultOpenUiSidecar;
+  // 租户关闭订阅（enableSubscription === 0）时不提示增购；未下发按开启处理，与积分余额入口同口径。
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const subscriptionEnabled = tenantConfigInfo?.enableSubscription !== 0;
+
   // 两条独立触发：本轮 FINAL_RESULT 含当前语言的「积分不足」、NW_CREDIT_INSUFFICIENT，或 errorReason 为 CREDIT_INSUFFICIENT；或历史最后一条含「积分已用完」/「积分不足」且余额仍为 0。
-  // 任一成立就通知页面顶部和输入框上方的提示条。积分轮询发现 totalCredit > 0 后收起。
+  // 任一成立就通知页面顶部和输入框上方的提示条。积分轮询发现 totalCredit > 0 后收起。订阅关闭时不查历史余额。
   const historyCreditExhausted = useHistoryCreditExhausted(
-    messageList,
+    subscriptionEnabled ? messageList : undefined,
     conversationId,
   );
 
@@ -433,6 +438,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
 
   // 是否需要提示积分不足
   const creditInsufficient =
+    subscriptionEnabled &&
     (hasCreditDeductionInsufficientError(messageList) ||
       historyCreditExhausted) &&
     !creditBalancePositive;
