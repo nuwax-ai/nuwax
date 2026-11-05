@@ -11,7 +11,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-        "commit": "db9f23a61e7f218873400cd9bf2ac3c1b258daeb"
+        "commit": "99fa559fc0ef83e7ac13982c504a14d92ea77910"
       },
       "projectDir": ".",
       "workspaceMode": "project-workspace",
@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "ba744f25b967a4070ddf479e24586b4a20c95ebb4c272c936b10428a771c6c95",
+        "sha256": "13cb0b82bb75cbe2f355ee9007b2404bb4d27678d65825eb8ac7b0ce51c15124",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -48,16 +48,16 @@
         ]
       },
       "toolchain": {
-        "node": "v24.14.0",
+        "node": "v24.22.1",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-27T03:33:11.655Z",
+      "builtAt": "2026-11-05T06:12:14.728Z",
       "cache": {
-        "key": "23b28822b0fe4fc2f92b607bbdaab5ebffff4fb0ce336bf6846b4e900e30304e",
+        "key": "e81a003166c5dcf19177efcfa5f16b0cd5da19e66041d0b97af4cc088b80c186",
         "hit": true,
-        "reusedAt": "2026-10-30T12:42:07.643Z"
+        "reusedAt": "2026-11-05T12:28:04.642Z"
       }
     },
     {
@@ -70,7 +70,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "0c1773c3515e682a6b1abd1560491dd26f6d4cda"
+        "commit": "57c27574369e0c7e692928584151f4fd9ba339da"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -78,10 +78,12 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "23b7874464df9561516928c1c2ccf15ae15dc74cef2f5909e61b2844909fb94d",
+        "sha256": "4e25a06889717a90433c126a0e2aef4230a24029b84076f7ed5fcf5fd793f563",
         "files": [
           "adapter.json",
           "adapter.patch",
+          "overlay/imEntryRedirect.d.ts",
+          "overlay/imEntryRedirect.js",
           "overlay/index.html",
           "overlay/scope-styles.d.mts",
           "overlay/scope-styles.mjs",
@@ -94,15 +96,16 @@
         ]
       },
       "toolchain": {
-        "node": "v24.14.0",
+        "node": "v24.22.1",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-30T12:42:29.065Z",
+      "builtAt": "2026-11-05T10:44:53.353Z",
       "cache": {
-        "key": "885412be8a16aaa06b34a058449c1406ab17d0d9ab30fbe7662f682d1521bd9b",
-        "hit": false
+        "key": "77d3de315a79a633fa68b8af0ea21b69680abac609596eb444ea320693064a53",
+        "hit": true,
+        "reusedAt": "2026-11-05T12:28:04.930Z"
       }
     }
   ]

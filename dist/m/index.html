@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 
 <head>
-  <link rel="stylesheet" href="/m/assets/uni.d0f33d46.css">
+  <link rel="stylesheet" href="/m/assets/uni.6b0c1044.css">
 
 	<meta charset="UTF-8" />
 	<script>
@@ -40,6 +40,41 @@
 				const { protocol, host, href, hash } = window.location;
 				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
 				const baseUrl = protocol + '//' + host;
+
+        // 邀请路由已经在 M 站登录/业务链路中，桌面打开也不能被通用分流丢到首页。
+        const invitePage = '/subpackages/pages/space-invite/space-invite';
+        const mobileEntry = new URL(href);
+        if (hash.startsWith('#' + invitePage + '?')) {
+          if (!isMobile) {
+            const query = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+            const code = query.get('code');
+            if (code) {
+              query.delete('code');
+              window.location.replace(baseUrl + '/invite/space/' + encodeURIComponent(code) + (query.toString() ? '?' + query.toString() : ''));
+            }
+          }
+          return;
+        }
+        if (hash.startsWith('#/subpackages/pages/login/login?')) {
+          const back = new URLSearchParams(hash.substring(hash.indexOf('?') + 1)).get('redirect') || '';
+          if (back.startsWith(invitePage + '?') || back.startsWith('/m/#' + invitePage + '?') || back.startsWith('/invite/space/')) return;
+        }
+        // 兼容 Web 以 /m/?redirect=<原邀请地址> 交接的入口。
+        if (!hash || hash === '#/' || hash === '#') {
+          const incoming = mobileEntry.searchParams.get('redirect');
+          if (incoming) {
+            try {
+              const source = new URL(incoming, baseUrl);
+              const invite = source.pathname.match(/^\/invite\/space\/([^/]+)\/?$/);
+              if (source.origin === baseUrl && invite) {
+                const query = new URLSearchParams(source.search);
+                query.set('code', decodeURIComponent(invite[1]));
+                window.location.replace(baseUrl + '/m/#' + invitePage + '?' + query.toString());
+                return;
+              }
+            } catch (_error) {}
+          }
+        }
 				const agentDetailPathMobile = '/pages/agent-detail/agent-detail'; //分包前的页面路径
 				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
 				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径
@@ -173,8 +208,8 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-B2D6p1f3.js"></script>
-  <link rel="stylesheet" crossorigin href="/m/assets/index-_3EDpDl4.css">
+  <script type="module" crossorigin src="/m/assets/index-CM_BYITr.js"></script>
+  <link rel="stylesheet" crossorigin href="/m/assets/index-CRPx9rOt.css">
 </head>
 
 <body>
