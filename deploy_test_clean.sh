@@ -1,6 +1,6 @@
 #!/bin/bash
 # 临时 test 提测：目标分支准备源码并构建，成功后备份、删除和重建双远端 test。
-# 用法：bash deploy_test_clean.sh <目标分支>；DRY_RUN=1 时完全只读。
+# 用法：bash deploy_test_clean.sh [目标分支]；省略时使用当前分支，DRY_RUN=1 完全只读。
 # dist 只提交到 test；目标分支全部非 dist 改动（包括已有业务改动）会自动提交。
 
 if [ -z "${BASH_VERSION:-}" ] || (shopt -qo posix) 2>/dev/null; then
@@ -19,18 +19,19 @@ main() {
   trap 'exit 143' TERM
 
   if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
-    echo "用法：bash deploy_test_clean.sh <目标分支>"
+    echo "用法：bash deploy_test_clean.sh [目标分支]（省略时使用当前分支）"
     echo "DRY_RUN=1 只读演练；真实运行会提交目标分支全部非 dist 改动。"
     return 0
   fi
-  [ "$#" = "1" ] || die "必须明确指定一个目标分支：bash deploy_test_clean.sh <目标分支>"
-  TARGET_BRANCH="$1"
+  [ "$#" -le "1" ] || die "最多指定一个目标分支：bash deploy_test_clean.sh [目标分支]"
+  START_BRANCH="$(git branch --show-current)"
+  [ -n "$START_BRANCH" ] || die "请先检出一个本地分支，不能从 detached HEAD 运行"
+  TARGET_BRANCH="${1:-$START_BRANCH}"
   case "$TARGET_BRANCH" in test|HEAD|refs/*|-*) die "不能将 ${TARGET_BRANCH} 用作目标分支" ;; esac
   git check-ref-format "refs/heads/$TARGET_BRANCH" >/dev/null || die "目标分支名无效"
   DRY_RUN="${DRY_RUN:-0}"
   [ "$DRY_RUN" = "0" ] || [ "$DRY_RUN" = "1" ] || die "DRY_RUN 只能为 0 或 1"
-  START_BRANCH="$(git branch --show-current)"
-  [ -n "$START_BRANCH" ] || die "请先检出一个本地分支，不能从 detached HEAD 运行"
+  log "本次提测目标分支：${TARGET_BRANCH}"
 
   if [ "$DRY_RUN" = "1" ]; then
     git rev-parse --verify "refs/heads/${TARGET_BRANCH}^{commit}" >/dev/null 2>&1 ||
