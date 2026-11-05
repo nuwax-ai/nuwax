@@ -39,12 +39,6 @@
       padding-left 0.3s ease-in-out, background-color 0.3s ease;
     overflow: hidden;
     position: relative;
-    // 背景放在主列自身，避免主题材质先覆盖两列、再在二级列重复叠加。
-    // 使用变量保留旧布局回退，同时允许主题 CSS 替换完整背景（含透明渐变）。
-    background: var(
-      --nuwax-sidebar-bg,
-      var(--xagi-nav-primary-fallback-bg, @navSecondMenuBg)
-    );
     // 单栏模式（主导航改造）：一级 icon 竖栏已移除，侧栏即最左列，取消左侧圆角
     border-radius: 0;
 
@@ -176,8 +170,6 @@
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
-    background: var(--nuwax-sidebar-secondary-bg, #fafafa);
-    border-right: 1px solid var(--nuwax-border-default, #f0f0f3);
     border-radius: 0;
     margin-right: 0;
     // opacity/padding/border 与 width 同步过渡（收起/展开由 SidebarNavLayout 驱动
@@ -287,6 +279,20 @@
     }
   }
 }
+// 材质的默认规则低于公开主题入口的优先级，避免路由 CSS 后加载时覆盖主题渐变。
+// 尺寸、收展等布局规则仍留在上方，只有背景与分隔线交给主题覆盖。
+:where(.container) > .nav-menus {
+  background: var(
+    --nuwax-sidebar-bg,
+    var(--xagi-nav-primary-fallback-bg, @navSecondMenuBg)
+  );
+}
+
+:where(.container) > .second-column {
+  background: var(--nuwax-sidebar-secondary-bg, #fafafa);
+  border-right: 1px solid var(--nuwax-border-default, #f0f0f3);
+}
+
 // 风格1下的二级导航样式适配
 :global(.xagi-nav-style1) {
   .container {
