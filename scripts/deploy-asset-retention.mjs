@@ -95,9 +95,14 @@ const buildIdentity = (value) => {
  * 首次修复时从当前部署分支的本地历史补回此前漏保留的 CSS。
  * 先用快照 version.json 定位构建，避免把其他分支/客户端产物算成部署代数；
  * 从该构建向前只取保留窗口内的不同构建，写入原有年龄体系，后续正常过期。
- * 不 fetch，不访问其他 ref；浅克隆/缺历史时按已有快照部署并打印限制。
+ * 不 fetch；默认检查 HEAD，新临时部署可通过 DIST_RETENTION_HISTORY_REF 指定旧 test。
+ * 浅克隆/缺历史时按已有快照部署并打印限制。
  */
-export function backfillHistoricalCss({ snapshotDir, repoDir = ROOT } = {}) {
+export function backfillHistoricalCss({
+  snapshotDir,
+  repoDir = ROOT,
+  historyRef = process.env.DIST_RETENTION_HISTORY_REF || 'HEAD',
+} = {}) {
   if (!isEnabled()) return;
   const manifest = readManifest(snapshotDir);
   if (manifest?.historicalCssBackfilled) return;
@@ -130,7 +135,7 @@ export function backfillHistoricalCss({ snapshotDir, repoDir = ROOT } = {}) {
       '--format=%H',
       '-n',
       '200',
-      'HEAD',
+      historyRef,
       '--',
       'dist/version.json',
     ])
