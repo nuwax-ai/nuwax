@@ -621,6 +621,21 @@ test('a failed source push does not delete test or merge unbuilt remote source',
   assert.match(error.stderr, /源码.*补推/);
 });
 
+test('origin configured as the same internal repository is published once', async (t) => {
+  const state = await fixture(t);
+  await git(state.root, 'remote', 'set-url', 'gitlab', state.remotes.origin);
+  const result = await deploy(state);
+  assert.match(result.stdout, /同一仓库/);
+  assert.match(result.stdout, /跳过重复写入/);
+  const source = await head(state, 'origin', target);
+  const artifact = await head(state, 'origin');
+  assert.equal(await head(state, 'gitlab', target), source);
+  assert.equal(await head(state, 'gitlab'), artifact);
+  assert.equal(await git(state.root, 'rev-parse', `${artifact}^`), source);
+  assert.equal(await existsAt(state, source, 'dist'), false);
+  assert.match(result.stdout, /双远端 test 推送完成/);
+});
+
 test('target and test concurrent updates stop without combining them into built source', async (t) => {
   for (const kind of ['TEST', 'TARGET']) {
     await t.test(kind, async (sub) => {

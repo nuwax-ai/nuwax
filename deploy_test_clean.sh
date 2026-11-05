@@ -91,6 +91,13 @@ main() {
   GITLAB_OLD_TEST="$(cached_head gitlab test)"
   ORIGIN_OLD_TARGET="$(cached_head origin "$TARGET_BRANCH")"
   GITLAB_OLD_TARGET="$(cached_head gitlab "$TARGET_BRANCH")"
+  # 同事机器常把 origin 配成内网仓库，ensure_gitlab_remote 又会补一个同地址的 gitlab。
+  # 两次 fetch 之间若有人写入，以较晚的 gitlab 快照为准，避免同一仓库被记成两个旧提交。
+  if remotes_share_repository origin gitlab; then
+    log "origin 与 gitlab 指向同一仓库，按一个远端发布"
+    ORIGIN_OLD_TEST="$GITLAB_OLD_TEST"
+    ORIGIN_OLD_TARGET="$GITLAB_OLD_TARGET"
+  fi
   record old-origin-test "$ORIGIN_OLD_TEST"
   record old-gitlab-test "$GITLAB_OLD_TEST"
   if [ -n "$GITLAB_OLD_TEST" ] && git cat-file -e "$GITLAB_OLD_TEST:dist" 2>/dev/null; then
@@ -144,9 +151,10 @@ main() {
   CURRENT_STEP="双推目标分支 ${TARGET_BRANCH}"
   for remote in origin gitlab; do
     if [ "$remote" = origin ]; then tip="$ORIGIN_OLD_TARGET"; else tip="$GITLAB_OLD_TARGET"; fi
-    expect_remote "$remote" "$TARGET_BRANCH" "$tip"
     # 不调用 push_both_remotes：其自愈合并会使已构建源码在推送期间发生变化。
-    git push "$remote" "$SOURCE_HEAD:refs/heads/$TARGET_BRANCH"
+    if remote_needs_update "$remote" "$TARGET_BRANCH" "$tip" "$SOURCE_HEAD"; then
+      git push "$remote" "$SOURCE_HEAD:refs/heads/$TARGET_BRANCH"
+    fi
     record target-published "$remote"
   done
   expect_remote origin "$TARGET_BRANCH" "$SOURCE_HEAD"
@@ -163,10 +171,12 @@ main() {
   CURRENT_STEP="删除双远端旧 test"
   for remote in gitlab origin; do
     if [ "$remote" = origin ]; then tip="$ORIGIN_OLD_TEST"; else tip="$GITLAB_OLD_TEST"; fi
-    expect_remote "$remote" test "$tip"
-    if [ -n "$tip" ]; then
-      git push "$remote" --delete test
-      record deleted "$remote"
+    # 目标状态是「分支不存在」。同一仓库时，先删的那一端会让后一端读到空，不能当成别人删过。
+    if remote_needs_update "$remote" test "$tip" ""; then
+      if [ -n "$tip" ]; then
+        git push "$remote" --delete test
+        record deleted "$remote"
+      fi
     fi
     expect_remote "$remote" test ""
   done
@@ -187,8 +197,9 @@ main() {
   git diff --quiet "$SOURCE_HEAD" "$TEST_HEAD" -- . ':(top,exclude)dist' || die "test 源码偏离已构建目标，停止推送"
   CURRENT_STEP="发布新 test"
   for remote in origin gitlab; do
-    expect_remote "$remote" test ""
-    git push "$remote" "$TEST_HEAD:refs/heads/test"
+    if remote_needs_update "$remote" test "" "$TEST_HEAD"; then
+      git push "$remote" "$TEST_HEAD:refs/heads/test"
+    fi
     record published "$remote"
   done
   expect_remote origin test "$TEST_HEAD"
@@ -289,6 +300,47 @@ expect_remote() {
   local actual
   actual="$(remote_head "$1" "$2")" || die "无法读取 $1/$2，停止后续发布"
   [ "$actual" = "$3" ] || die "$1/$2 出现并发更新（预期 ${3:-不存在}，实际 ${actual:-不存在}），停止；不自动合入或覆盖"
+}
+
+# 比较主机和仓库路径。https、ssh 和带账号的 URL 视为同一仓库；不同主机（例如 IP 与域名）不在这里合并。
+canonical_remote_url() {
+  local url host path
+  url="$(git remote get-url "$1")"
+  url="${url%.git}"
+  url="${url%/}"
+  if [[ "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+@)?([^/]+)/(.+)$ ]]; then
+    host="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+    path="${BASH_REMATCH[3]}"
+    printf '%s/%s' "$host" "$path"
+    return 0
+  fi
+  if [[ "$url" =~ ^([^@]+@)?([^:]+):(.+)$ ]]; then
+    host="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+    path="${BASH_REMATCH[3]}"
+    printf '%s/%s' "$host" "$path"
+    return 0
+  fi
+  printf '%s' "$url"
+}
+
+remotes_share_repository() {
+  [ "$(canonical_remote_url "$1")" = "$(canonical_remote_url "$2")" ]
+}
+
+# 写入前核对远端。返回 0 表示仍是记录的旧值，调用方应推送或删除。
+# 返回 1 表示已经是本次目标：origin 与 gitlab 指向同一内网仓库时，第一次写入会让第二次读到新值。
+# 既不是旧值也不是目标提交，才是别人的并发更新，直接停止。
+remote_needs_update() { # remote branch previous desired
+  local actual
+  actual="$(remote_head "$1" "$2")" || die "无法读取 $1/$2，停止后续发布"
+  if [ "$actual" = "$4" ]; then
+    log "$1/$2 已是目标状态，跳过重复写入"
+    return 1
+  fi
+  if [ "$actual" != "$3" ]; then
+    die "$1/$2 出现并发更新（预期 ${3:-不存在}，实际 ${actual:-不存在}），停止；不自动合入或覆盖"
+  fi
+  return 0
 }
 
 save_test_rollback() {
