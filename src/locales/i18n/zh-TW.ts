@@ -5801,6 +5801,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder": "請輸入積分有效期",
 
   // ── 系统管理 - 用户积分查询 ────────────────────────────
+  "PC.Pages.SystemUserCredits.invalidUserId": "請輸入有效的使用者 ID",
+  "PC.Pages.SystemUserCredits.invalidOperationIdentity": "使用者或租戶資訊無效，請重新整理後重試",
   "PC.Pages.SystemUserCredits.colUserId": "用戶ID",
   "PC.Pages.SystemUserCredits.colUserName": "用戶名稱",
   "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "用戶名稱/手機號/郵箱",

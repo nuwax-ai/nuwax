@@ -5791,6 +5791,8 @@ export const JA_JP: SystemLangMap = {
     'クレジット有効期間を入力してください',
 
   // ── 系统管理 - 用户积分查询 ────────────────────────────
+  "PC.Pages.SystemUserCredits.invalidUserId": "有効なユーザー ID を入力してください",
+  "PC.Pages.SystemUserCredits.invalidOperationIdentity": "ユーザーまたはテナント情報が無効です。更新して再試行してください。",
   "PC.Pages.SystemUserCredits.colUserId": "ユーザーID",
   "PC.Pages.SystemUserCredits.colUserName": "ユーザー名",
   "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "ユーザー名/携帯番号/メール",

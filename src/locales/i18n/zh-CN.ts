@@ -6055,6 +6055,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.fieldRemark": "备注",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "请输入备注",
   // ── 系统管理 - 用户积分查询 ────────────────────────────
+  "PC.Pages.SystemUserCredits.invalidUserId": "请输入有效的用户 ID",
+  "PC.Pages.SystemUserCredits.invalidOperationIdentity": "用户或租户信息无效，请刷新后重试",
   "PC.Pages.SystemUserCredits.colUserId": "用户ID",
   "PC.Pages.SystemUserCredits.colUserName": "用户名称",
   "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "用户名称/手机号/邮箱",
