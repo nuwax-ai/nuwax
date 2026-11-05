@@ -491,7 +491,11 @@ const SidebarSearchModal: React.FC = () => {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder={dict(`${I18N_PREFIX}.placeholder`)}
+            placeholder={dict(
+              `${I18N_PREFIX}.${
+                activeTab === 'task' ? 'taskTitlePlaceholder' : 'placeholder'
+              }`,
+            )}
             autoComplete="off"
           />
           <button

@@ -17,6 +17,7 @@ import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import type { QrLoginResult } from '@/types/interfaces/qrLogin';
 import {
   filterIdpByUa,
   IDP_RETURN_PATH_KEY,
@@ -56,6 +57,7 @@ import BasicLayout from './BasicLayout';
 import IdpLoginButtons from './IdpLoginButtons';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
+import QrCodeLogin from './QrCodeLogin';
 import SiteProtocol from './SiteProtocol';
 
 const { Title } = Typography;
@@ -146,6 +148,7 @@ const Login: React.FC = () => {
   const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
   const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
+  const [qrConfirming, setQrConfirming] = useState(false);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
@@ -200,6 +203,48 @@ const Login: React.FC = () => {
     }, 0);
   };
 
+  const completeLogin = async (
+    result: Pick<QrLoginResult, 'token' | 'expireDate'> & {
+      redirect?: string | null;
+    },
+    account?: string,
+    isCurrent: () => boolean = () => true,
+  ) => {
+    const authResult = await finishBusinessLogin(result.token);
+    if (!isCurrent()) return;
+    if (authResult !== 'ready') {
+      throw new Error(
+        dict(
+          authResult === 'missing-dev-token'
+            ? 'PC.Pages.Login.missingDevToken'
+            : 'PC.Pages.Login.hostSessionSyncFailed',
+        ),
+      );
+    }
+    if (result.expireDate) localStorage.setItem(EXPIRE_DATE, result.expireDate);
+    if (account) localStorage.setItem(PHONE, account);
+    else localStorage.removeItem(PHONE);
+    try {
+      const latestUserInfo = await UserService.refreshUserInfo();
+      if (!isCurrent()) return;
+      if (!account && (latestUserInfo?.phone || latestUserInfo?.email)) {
+        localStorage.setItem(
+          PHONE,
+          latestUserInfo.phone || latestUserInfo.email,
+        );
+      }
+      await syncLangFromUserInfo(latestUserInfo);
+    } catch (error) {
+      console.error('[Login] Sync language after login failed:', error);
+    }
+    if (!isCurrent()) return;
+    await loadMenus(true);
+    if (!isCurrent()) return;
+    await initI18n(true);
+    if (!isCurrent()) return;
+    redirectAfterCaptchaCallback(result.redirect);
+  };
+
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
     {
@@ -207,27 +252,16 @@ const Login: React.FC = () => {
       normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        const { expireDate, token, redirect: responseRedirectUrl } = result;
-        const authResult = await finishBusinessLogin(token);
-        if (authResult !== 'ready') {
-          message.error(
-            authResult === 'missing-dev-token'
-              ? '登录接口未返回本地调试所需的 Token'
-              : '客户端登录会话同步失败，请升级客户端后重试',
-          );
-          return;
-        }
-        localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {
-          const latestUserInfo = await UserService.refreshUserInfo();
-          await syncLangFromUserInfo(latestUserInfo);
+          await completeLogin(result, params[0].phoneOrEmail);
         } catch (error) {
-          console.error('[Login] Sync language after login failed:', error);
+          message.error(
+            error instanceof Error
+              ? error.message
+              : dict('PC.Toast.Global.networkError'),
+          );
+          throw error;
         }
-        await loadMenus(true);
-        await initI18n(true);
-        redirectAfterCaptchaCallback(responseRedirectUrl);
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
@@ -384,6 +418,8 @@ const Login: React.FC = () => {
   const startIdpLogin = (item: AuthIdpLoginItem) => {
     if (idpNavigating) return;
     const go = async () => {
+      setLoginType(LoginTypeEnum.Password);
+      loginTypeRef.current = LoginTypeEnum.Password;
       setIdpNavigating(true);
       const result = await startIdpNavigation({
         providerId: item.id,
@@ -777,8 +813,25 @@ const Login: React.FC = () => {
   };
 
   const handleChangeType = (value: string) => {
-    setLoginType(Number(value));
-    loginTypeRef.current = Number(value);
+    const select = () => {
+      setLoginType(Number(value));
+      loginTypeRef.current = Number(value);
+    };
+    if (Number(value) === LoginTypeEnum.QrCode && !checked) {
+      confirm({
+        title: dict('PC.Pages.Login.serviceAgreementTitle'),
+        icon: <ExclamationCircleFilled />,
+        content: <SiteProtocol />,
+        okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+        cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
+        onOk() {
+          setChecked(true);
+          select();
+        },
+      });
+      return;
+    }
+    select();
   };
   const { token } = theme.useToken();
   const options: SegmentedItemType[] = [
@@ -797,6 +850,10 @@ const Login: React.FC = () => {
         </EllipsisTooltip>
       ),
       value: LoginTypeEnum.Code + '',
+    },
+    {
+      label: dict('PC.Pages.Login.qrLogin'),
+      value: LoginTypeEnum.QrCode + '',
     },
   ];
 
@@ -838,144 +895,169 @@ const Login: React.FC = () => {
                 options={options}
                 value={loginType + ''}
                 onChange={handleChangeType}
+                disabled={
+                  qrConfirming || loading || captchaSubmitting || idpNavigating
+                }
                 block
               />
-              <Form
-                form={form}
-                validateTrigger="onBlur"
-                initialValues={{ areaCode: '86' }}
-                rootClassName={cx(styles.form, 'flex', 'flex-col')}
-                name="login"
-                onFinish={onFinish}
-              >
-                <Form.Item>
-                  <Title level={3} style={{ marginTop: 48 }}>
-                    {dict(
-                      'PC.Pages.Login.welcome',
-                      tenantConfigInfo?.siteName || '',
-                    )}
-                  </Title>
-                </Form.Item>
-                <Form.Item>
-                  {loginType === LoginTypeEnum.Password ||
-                  tenantConfigInfo?.authType === 3 ? (
-                    <Form.Item
-                      name="phoneOrEmail"
-                      noStyle
-                      rules={getPhoneOrEmailRules()}
-                    >
-                      <Input
-                        rootClassName={cx(styles.input)}
-                        placeholder={dict(
-                          loginType === LoginTypeEnum.Password
-                            ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
-                            : 'PC.Pages.Login.inputEmailPlaceholder',
-                        )}
-                      />
-                    </Form.Item>
-                  ) : (
-                    <Space.Compact
-                      block
-                      className={cx(styles['phone-input-compact'])}
-                    >
-                      <div
-                        className={cx(
-                          styles.icon,
-                          'flex',
-                          'flex-row',
-                          'items-center',
-                        )}
-                      >
-                        +86
-                        <DownOutlined
-                          style={{ marginLeft: 6, fontSize: '14px' }}
-                        />
-                      </div>
+              {loginType === LoginTypeEnum.QrCode ? (
+                checked ? (
+                  <QrCodeLogin
+                    onSuccess={(result, isCurrent) =>
+                      completeLogin(result, undefined, isCurrent)
+                    }
+                    onConfirmingChange={setQrConfirming}
+                  />
+                ) : (
+                  <Button
+                    block
+                    className={styles['qr-agreement']}
+                    onClick={() => handleChangeType(LoginTypeEnum.QrCode + '')}
+                  >
+                    {dict('PC.Pages.Login.qrLogin')}
+                  </Button>
+                )
+              ) : (
+                <Form
+                  form={form}
+                  validateTrigger="onBlur"
+                  initialValues={{ areaCode: '86' }}
+                  rootClassName={cx(styles.form, 'flex', 'flex-col')}
+                  name="login"
+                  onFinish={onFinish}
+                >
+                  <Form.Item>
+                    <Title level={3} style={{ marginTop: 48 }}>
+                      {dict(
+                        'PC.Pages.Login.welcome',
+                        tenantConfigInfo?.siteName || '',
+                      )}
+                    </Title>
+                  </Form.Item>
+                  <Form.Item>
+                    {loginType === LoginTypeEnum.Password ||
+                    tenantConfigInfo?.authType === 3 ? (
                       <Form.Item
                         name="phoneOrEmail"
                         noStyle
                         rules={getPhoneOrEmailRules()}
                       >
                         <Input
+                          rootClassName={cx(styles.input)}
                           placeholder={dict(
-                            'PC.Pages.Login.inputPhonePlaceholder',
-                          )}
-                          rootClassName={cx(
-                            styles.input,
-                            styles['current-input'],
+                            loginType === LoginTypeEnum.Password
+                              ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
+                              : 'PC.Pages.Login.inputEmailPlaceholder',
                           )}
                         />
                       </Form.Item>
-                    </Space.Compact>
-                  )}
-                </Form.Item>
-                {loginType === LoginTypeEnum.Password && (
-                  <Form.Item name="password" rules={passwordRules}>
-                    <Input.Password
-                      rootClassName={cx(styles.input)}
-                      autoComplete="off"
-                      placeholder={dict(
-                        'PC.Pages.Login.inputPasswordPlaceholder',
-                      )}
-                    />
-                  </Form.Item>
-                )}
-                {needImageCaptcha && (
-                  <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
-                    <ImageCaptcha
-                      ref={imageCaptchaRef}
-                      inputClassName={cx(styles.input)}
-                    />
-                  </Form.Item>
-                )}
-
-                <Form.Item className={cx(styles.login)}>
-                  <Button
-                    className={cx(styles.btn)}
-                    block
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading || captchaSubmitting}
-                  >
-                    {loginType === LoginTypeEnum.Password
-                      ? dict('PC.Pages.Login.login')
-                      : dict('PC.Pages.Login.nextStep')}
-                  </Button>
-                </Form.Item>
-                <Form.Item
-                  className={cx('mb-16')}
-                  style={{ marginTop: '-10px' }}
-                >
-                  <div
-                    className={cx(
-                      'flex',
-                      'flex-row',
-                      'items-start',
-                      styles['protocol-wrapper'],
+                    ) : (
+                      <Space.Compact
+                        block
+                        className={cx(styles['phone-input-compact'])}
+                      >
+                        <div
+                          className={cx(
+                            styles.icon,
+                            'flex',
+                            'flex-row',
+                            'items-center',
+                          )}
+                        >
+                          +86
+                          <DownOutlined
+                            style={{ marginLeft: 6, fontSize: '14px' }}
+                          />
+                        </div>
+                        <Form.Item
+                          name="phoneOrEmail"
+                          noStyle
+                          rules={getPhoneOrEmailRules()}
+                        >
+                          <Input
+                            placeholder={dict(
+                              'PC.Pages.Login.inputPhonePlaceholder',
+                            )}
+                            rootClassName={cx(
+                              styles.input,
+                              styles['current-input'],
+                            )}
+                          />
+                        </Form.Item>
+                      </Space.Compact>
                     )}
-                  >
-                    <Checkbox
-                      checked={checked}
-                      style={{ marginRight: 5 }}
-                      onChange={(e) => setChecked(e.target.checked)}
-                    />
-                    <SiteProtocol onToggle={() => setChecked(!checked)} />
-                  </div>
-                </Form.Item>
-              </Form>
+                  </Form.Item>
+                  {loginType === LoginTypeEnum.Password && (
+                    <Form.Item name="password" rules={passwordRules}>
+                      <Input.Password
+                        rootClassName={cx(styles.input)}
+                        autoComplete="off"
+                        placeholder={dict(
+                          'PC.Pages.Login.inputPasswordPlaceholder',
+                        )}
+                      />
+                    </Form.Item>
+                  )}
+                  {needImageCaptcha && (
+                    <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
+                      <ImageCaptcha
+                        ref={imageCaptchaRef}
+                        inputClassName={cx(styles.input)}
+                      />
+                    </Form.Item>
+                  )}
+
+                  <Form.Item className={cx(styles.login)}>
+                    <Button
+                      className={cx(styles.btn)}
+                      block
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading || captchaSubmitting}
+                    >
+                      {loginType === LoginTypeEnum.Password
+                        ? dict('PC.Pages.Login.login')
+                        : dict('PC.Pages.Login.nextStep')}
+                    </Button>
+                  </Form.Item>
+                </Form>
+              )}
+              <div
+                className={cx(
+                  'flex',
+                  'flex-row',
+                  'items-start',
+                  styles['protocol-wrapper'],
+                )}
+              >
+                <Checkbox
+                  checked={checked}
+                  disabled={qrConfirming}
+                  style={{ marginRight: 5 }}
+                  onChange={(e) => setChecked(e.target.checked)}
+                />
+                <SiteProtocol
+                  onToggle={() => {
+                    if (!qrConfirming) setChecked(!checked);
+                  }}
+                />
+              </div>
 
               <IdpLoginButtons
                 items={idpItems}
                 onSelect={startIdpLogin}
-                disabled={idpNavigating}
+                disabled={idpNavigating || qrConfirming}
                 trailingAction={
                   // 仅商业桌面宿主可见；保留无第三方登录时的企业入口。
                   isDesktopHost() && (
                     <Button
                       type="link"
                       size="small"
+                      disabled={qrConfirming}
                       style={{ padding: 0, height: 'auto' }}
                       onClick={() => {
+                        setLoginType(LoginTypeEnum.Password);
+                        loginTypeRef.current = LoginTypeEnum.Password;
                         setEnterpriseError('');
                         setEnterpriseOpen(true);
                       }}

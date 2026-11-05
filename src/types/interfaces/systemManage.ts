@@ -970,7 +970,7 @@ export interface ResourceStatSummaryDTO {
 
 /** 资源统计明细查询参数 */
 export interface ResourceStatDetailParams {
-  userId?: number;
+  userId?: number | string;
   type?: 'CONSUMPTION' | 'SALES';
   targetType?: string;
   targetId?: number;

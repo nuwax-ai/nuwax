@@ -104,6 +104,7 @@ export async function getInitialState(): Promise<InitialStateType> {
       '/verify-code',
       '/set-password',
       '/invite/space/',
+      '/qrlogin/',
       '/chat-temp',
       '/examples/agent-intervention-demo',
       ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),

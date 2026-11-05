@@ -1560,14 +1560,18 @@ export async function apiSystemRevenueDetail(
 /**
  * 获取资源统计汇总
  */
-export async function apiGetResourceStatSummary(params?: {
-  userId?: number;
-  dtStart?: string;
-  dtEnd?: string;
-}): Promise<RequestResponse<ResourceStatSummaryDTO>> {
+export async function apiGetResourceStatSummary(
+  params?: {
+    userId?: number | string;
+    dtStart?: string;
+    dtEnd?: string;
+  },
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<ResourceStatSummaryDTO>> {
   return request('/api/system/bill/resource-stat/summary', {
     method: 'GET',
     params,
+    ...options,
   });
 }
 
@@ -1576,10 +1580,12 @@ export async function apiGetResourceStatSummary(params?: {
  */
 export async function apiGetResourceStatDetail(
   params: ResourceStatDetailParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
 ): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
   return request('/api/system/bill/resource-stat/detail', {
     method: 'GET',
     params,
+    ...options,
   });
 }
 

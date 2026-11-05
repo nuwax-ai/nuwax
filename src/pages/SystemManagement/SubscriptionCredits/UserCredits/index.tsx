@@ -6,11 +6,13 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import { positiveInt64Id } from '@/utils/int64Id';
 import type {
   ActionType,
   ParamsType,
   ProColumns,
 } from '@ant-design/pro-components';
+import { message } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
 import { apiGetCreditSummaryList } from '../services/credit';
@@ -49,13 +51,18 @@ async function fetchUserCreditSummaryTableRequest(
 }> {
   try {
     const userIdRaw = params.userId;
-    const userId =
-      userIdRaw !== undefined && userIdRaw !== ''
-        ? Number(userIdRaw)
-        : undefined;
+    const userId = positiveInt64Id(userIdRaw);
+    if (
+      userIdRaw !== undefined &&
+      userIdRaw !== null &&
+      String(userIdRaw).trim() !== '' &&
+      !userId
+    ) {
+      message.error(dict('PC.Pages.SystemUserCredits.invalidUserId'));
+      return { data: [], total: 0, success: false };
+    }
     const res = await apiGetCreditSummaryList({
-      userId:
-        userId !== undefined && !Number.isNaN(userId) ? userId : undefined,
+      userId,
       usernamePhoneOrEmail: params.usernamePhoneOrEmail?.trim() || undefined,
       pageNum: params.current || 1,
       pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
@@ -80,12 +87,14 @@ async function fetchUserCreditSummaryTableRequest(
 function navigateToUserCreditRecords(
   userId: UserCreditSummaryInfo['userId'],
 ): void {
-  if (userId === undefined || userId === null) {
+  const id = positiveInt64Id(userId);
+  if (!id) {
+    message.error(dict('PC.Pages.SystemUserCredits.invalidUserId'));
     return;
   }
   history.push(
     `/system/subscription-credits/credit-records?userId=${encodeURIComponent(
-      String(userId),
+      id,
     )}`,
   );
 }

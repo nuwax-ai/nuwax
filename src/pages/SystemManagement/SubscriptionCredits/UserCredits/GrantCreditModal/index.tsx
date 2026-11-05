@@ -1,6 +1,8 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
+import { positiveInt64Id } from '@/utils/int64Id';
 import {
   Col,
   DatePicker,
@@ -87,22 +89,21 @@ const GrantCreditModal: React.FC<GrantCreditModalProps> = ({
   };
 
   const handleSubmit = async (values: GrantCreditFormValues) => {
-    const userId = userRecord?.userId;
-    const tenantId = Number(
-      (tenantConfigInfo as { tenantId?: number } | undefined)?.tenantId,
+    const userId = positiveInt64Id(userRecord?.userId);
+    const tenantId = positiveInt64Id(
+      (tenantConfigInfo as { tenantId?: unknown } | undefined)?.tenantId,
     );
-    if (userId === undefined || userId === null) {
-      return;
-    }
-
-    if (!tenantId) {
+    if (!userId || !tenantId) {
+      message.error(
+        dict('PC.Pages.SystemUserCredits.invalidOperationIdentity'),
+      );
       return;
     }
 
     // 表单字段 → AddCreditParams；tenantId 来自租户配置 model
     const payload: AddCreditParams = {
       tenantId,
-      userId: Number(userId),
+      userId,
       creditType: values.creditType,
       amount: values.amount,
       bizNo: values.bizNo?.trim() || undefined,
@@ -112,10 +113,13 @@ const GrantCreditModal: React.FC<GrantCreditModalProps> = ({
 
     setSubmitting(true);
     try {
-      await apiSystemAddCredit(payload);
+      const response = await apiSystemAddCredit(payload);
+      if (response.code !== SUCCESS_CODE) return;
       message.success(dict('PC.Pages.SystemUserCredits.grantSuccess'));
       onSuccess?.();
       onClose();
+    } catch {
+      // 请求层已提示错误，保留表单并消费 onFinish 的异步拒绝。
     } finally {
       setSubmitting(false);
     }
