@@ -12,6 +12,11 @@ const isDevelopment =
 
 const routes = [
   {
+    path: '/qrlogin/:sceneId',
+    component: '@/pages/QrLoginEntry',
+    layout: false,
+  },
+  {
     path: '/invite/space/:code',
     component: '@/pages/SpaceInvite',
     layout: false,
