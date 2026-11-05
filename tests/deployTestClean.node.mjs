@@ -239,11 +239,79 @@ async function hook(state, remote, program) {
 }
 async function runDirectory(state) {
   const common = path.join(state.root, '.git/nuwax-deploy');
-  return path.join(
-    common,
-    (await fs.readdir(common)).find(
-      (name) => name.startsWith('clean-') && name !== 'clean-test.lock',
+  const directories = await Promise.all(
+    (
+      await fs.readdir(common)
+    )
+      .filter((name) => name.startsWith('clean-') && name !== 'clean-test.lock')
+      .map(async (name) => ({
+        directory: path.join(common, name),
+        modified: (await fs.stat(path.join(common, name, 'state'))).mtimeMs,
+      })),
+  );
+  return directories.sort((a, b) => b.modified - a.modified)[0].directory;
+}
+
+function latestRollback(state) {
+  return path.join(state.root, '.git/nuwax-deploy/test-rollback.bundle');
+}
+
+async function assertRollback(state, file, expected) {
+  const restored = await fs.mkdtemp(path.join(state.temporary, 'restore-'));
+  await git(state.root, 'init', '--bare', restored);
+  // 从空仓库导入，验证恢复不依赖原仓库尚未被 GC 的对象。
+  await git(restored, 'bundle', 'verify', file);
+  await git(
+    restored,
+    'fetch',
+    file,
+    'refs/nuwax-deploy/*:refs/heads/restored/*',
+  );
+  const refs = await git(
+    restored,
+    'for-each-ref',
+    '--format=%(refname) %(objectname)',
+  );
+  assert.deepEqual(
+    Object.fromEntries(
+      refs.split('\n').map((line) => {
+        const [ref, sha] = line.split(' ');
+        return [ref.split('/').at(-1), sha];
+      }),
     ),
+    expected,
+  );
+  for (const sha of Object.values(expected)) {
+    assert.equal(
+      await git(restored, 'show', `${sha}:source.txt`),
+      await show(state, sha, 'source.txt'),
+    );
+  }
+  await git(restored, 'fsck', '--full', '--no-dangling');
+}
+
+async function assertNoBackupBranches(state) {
+  for (const remote of ['origin', 'gitlab']) {
+    assert.equal(
+      await git(
+        state.root,
+        'ls-remote',
+        '--heads',
+        remote,
+        'refs/heads/backup/test/*',
+      ),
+      '',
+    );
+  }
+  assert.equal(
+    await git(
+      state.root,
+      'for-each-ref',
+      '--format=%(refname)',
+      'refs/heads/backup/test',
+      'refs/nuwax-deploy',
+    ),
+    '',
   );
 }
 
@@ -333,28 +401,12 @@ test('commits all non-dist input and remote source on target, rebuilding test wi
   assert.equal(await existsAt(state, artifact, 'dist/unhashed.js'), false);
   assert.equal(await git(state.root, 'branch', '--show-current'), target);
   assert((await calls(state)).every((call) => call.branch === target));
-  const backups = await git(
-    state.root,
-    'ls-remote',
-    '--heads',
-    'origin',
-    'refs/heads/backup/test/*',
-  );
-  assert(
-    backups.includes(`${oldOrigin}\t`) &&
-      backups.includes(`${oldGitlab}\t`) &&
-      backups.includes(`${state.seed}\t`),
-  );
-  assert.equal(
-    backups,
-    await git(
-      state.root,
-      'ls-remote',
-      '--heads',
-      'gitlab',
-      'refs/heads/backup/test/*',
-    ),
-  );
+  await assertRollback(state, latestRollback(state), {
+    origin: oldOrigin,
+    gitlab: oldGitlab,
+    local: state.seed,
+  });
+  await assertNoBackupBranches(state);
   assert.equal(await head(state, 'origin', 'dev'), dev);
 });
 
@@ -601,7 +653,7 @@ test('target and test concurrent updates stop without combining them into built 
   }
 });
 
-test('a deletion rejection preserves both old backups and prints an exact restore for the missing remote', async (t) => {
+test('a deletion rejection preserves the local bundle and prints an exact restore for the missing remote', async (t) => {
   const state = await fixture(t);
   await hook(
     state,
@@ -621,18 +673,22 @@ test('a deletion rejection preserves both old backups and prints an exact restor
     await fs.readFile(path.join(await runDirectory(state), 'state'), 'utf8'),
     /deleted\tgitlab/,
   );
-  const backups = await git(
-    state.root,
-    'ls-remote',
-    '--heads',
-    'gitlab',
-    'refs/heads/backup/test/*',
-  );
-  assert(backups.includes(state.seed));
+  const bundle = path.join(await runDirectory(state), 'test-rollback.bundle');
+  assert(error.stderr.includes(`git bundle unbundle ${bundle}`));
+  await assertRollback(state, bundle, {
+    origin: state.seed,
+    gitlab: state.seed,
+    local: state.seed,
+  });
+  await assertNoBackupBranches(state);
 });
 
 test('a partial artifact publish retains the exact candidate and recovery commands', async (t) => {
   const state = await fixture(t);
+  await deploy(state);
+  const previous = await head(state, 'origin');
+  const savedBundle = await fs.readFile(latestRollback(state));
+  await write(state.root, 'source.txt', 'second deployment source');
   await hook(
     state,
     'gitlab',
@@ -649,20 +705,119 @@ test('a partial artifact publish retains the exact candidate and recovery comman
     new RegExp(`git push gitlab ${candidate}:refs/heads/test`),
   );
   assert(await fs.stat(path.join(await runDirectory(state), 'built-dist.tar')));
+  assert.deepEqual(await fs.readFile(latestRollback(state)), savedBundle);
+  const bundle = path.join(await runDirectory(state), 'test-rollback.bundle');
+  await assertRollback(state, bundle, {
+    origin: previous,
+    gitlab: previous,
+    local: previous,
+  });
   assert.equal(await git(state.root, 'branch', '--show-current'), 'test');
-  assert.doesNotMatch(error.stdout, /✅/);
+  assert.doesNotMatch(error.stdout, /✅ 双远端 test 推送完成/);
+  const stateLog = await fs.readFile(
+    path.join(await runDirectory(state), 'state'),
+    'utf8',
+  );
+  assert.match(stateLog, /failed\t发布新 test/);
+  assert.doesNotMatch(stateLog, /complete\t/);
 });
 
-test('a backup rejection leaves both old test branches untouched', async (t) => {
+test('a bundle failure keeps old tests and the previous recovery file, cleaning temporary refs', async (t) => {
   const state = await fixture(t);
-  await hook(
-    state,
-    'gitlab',
-    "if (process.argv[2].startsWith('refs/heads/backup/test/')) process.exit(1);",
+  await deploy(state);
+  const previous = await head(state, 'origin');
+  const savedBundle = await fs.readFile(latestRollback(state));
+  const realGit = (
+    await run(state.root, 'sh', ['-c', 'command -v git'])
+  ).stdout.trim();
+  await fs.writeFile(
+    path.join(state.tools, 'git'),
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'bundle' && args[1] === 'create') process.exit(1);
+const result = require('child_process').spawnSync(${JSON.stringify(
+      realGit,
+    )}, args, {stdio:'inherit'});
+process.exit(result.status ?? 1);
+`,
+    { mode: 0o755 },
   );
-  await failure(deploy(state));
-  assert.equal(await head(state, 'origin'), state.seed);
-  assert.equal(await head(state, 'gitlab'), state.seed);
+  assert.match(
+    (await failure(deploy(state))).stderr,
+    /保存旧 test 本机恢复文件/,
+  );
+  assert.equal(await head(state, 'origin'), previous);
+  assert.equal(await head(state, 'gitlab'), previous);
+  assert.deepEqual(await fs.readFile(latestRollback(state)), savedBundle);
+  await assertNoBackupBranches(state);
+});
+
+test('successful deployments retain one regular recovery bundle containing only the latest old tips', async (t) => {
+  const state = await fixture(t);
+  await deploy(state);
+  const previous = await head(state, 'origin');
+  await write(state.root, 'source.txt', 'next source version');
+  await deploy(state);
+  await assertRollback(state, latestRollback(state), {
+    origin: previous,
+    gitlab: previous,
+    local: previous,
+  });
+  const common = path.join(state.root, '.git/nuwax-deploy');
+  assert.deepEqual(
+    (await fs.readdir(common)).filter((name) => name.endsWith('.bundle')),
+    ['test-rollback.bundle'],
+  );
+  for (const name of await fs.readdir(common)) {
+    if (name.startsWith('clean-')) {
+      assert.equal(
+        await fs
+          .stat(path.join(common, name, 'test-rollback.bundle'))
+          .catch(() => null),
+        null,
+      );
+    }
+  }
+  await assertNoBackupBranches(state);
+});
+
+test('a shallow single-branch clone completes history before creating a standalone recovery bundle', async (t) => {
+  const state = await fixture(t);
+  const next = await makeCommit(state, state.seed, {
+    'source.txt': 'shallow target source',
+  });
+  for (const remote of ['origin', 'gitlab'])
+    await publish(state, remote, target, next);
+  const shallow = path.join(state.temporary, 'shallow-source');
+  await git(
+    state.root,
+    'clone',
+    '--depth=1',
+    '--no-local',
+    '--branch',
+    target,
+    `file://${state.remotes.origin}`,
+    shallow,
+  );
+  state.root = shallow;
+  await git(shallow, 'config', 'user.name', 'Deploy Fixture');
+  await git(shallow, 'config', 'user.email', 'deploy@example.invalid');
+  await git(shallow, 'remote', 'add', 'gitlab', state.remotes.gitlab);
+  assert.equal(
+    await git(shallow, 'rev-parse', '--is-shallow-repository'),
+    'true',
+  );
+  assert.equal(await existsAt(state, state.seed, 'source.txt'), false);
+  await deploy(state);
+  assert.equal(
+    await git(shallow, 'rev-parse', '--is-shallow-repository'),
+    'false',
+  );
+  await assertRollback(state, latestRollback(state), {
+    origin: state.seed,
+    gitlab: state.seed,
+  });
+  await assertNoBackupBranches(state);
 });
 
 test('a test recreated concurrently after deletion is preserved instead of merging or overwriting it', async (t) => {
