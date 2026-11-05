@@ -11,6 +11,7 @@
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
 import type {
+  HostDshLauncherBridge,
   HostLocalFilesBridge,
   HostThemesBridge,
 } from '@/types/interfaces/hostBridge';
@@ -86,6 +87,17 @@ export function isDesktopHost(): boolean {
   if (getDesktopShellPreviewPlatform()) return true;
   const p = getBridge()?.host?.getProduct?.();
   return p === 'nuwax' || p === 'nuwawork';
+}
+
+export function getDshLauncherBridge(): HostDshLauncherBridge | null {
+  const launcher = getBridge()?.dshRuntime;
+  if (
+    !isDesktopHost() ||
+    typeof launcher?.getState !== 'function' ||
+    typeof launcher.open !== 'function'
+  )
+    return null;
+  return launcher as HostDshLauncherBridge;
 }
 
 /** 按调用时能力取得主题管理器；旧客户端和普通浏览器使用浏览器存储。 */

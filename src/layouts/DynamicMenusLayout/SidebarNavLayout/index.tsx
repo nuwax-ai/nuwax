@@ -70,6 +70,7 @@ import SquareSection from '../SquareSection';
 import { useMenuNavigation } from '../useMenuNavigation';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import { handleOpenUrl } from '../utils';
+import DshLauncher from './DshLauncher';
 import styles from './index.less';
 import { useSidebarUserNameVisibility } from './useSidebarUserNameVisibility';
 
@@ -517,6 +518,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
           <CreditsBalance showFooter={false} />
+          <DshLauncher />
           <div className={cx(styles['sidebar-footer-row'])}>
             {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
             <User placement="topLeft">

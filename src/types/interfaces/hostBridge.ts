@@ -111,6 +111,12 @@ export interface HostThemesBridge {
   onChanged(listener: (state: HostThemesState) => void): () => void;
 }
 
+/** 只打开已由用户启用的 DS-Bot；模型授权及启停仍由客户端设置管理。 */
+export interface HostDshLauncherBridge {
+  getState(): Promise<{ enabled: boolean } | null>;
+  open(): Promise<{ ok: boolean; error?: string }>;
+}
+
 export interface TitlebarDragRegion {
   x: number;
   y: number;
@@ -527,6 +533,7 @@ export interface HostBridgeContract {
   theme: { syncTheme(payload: ShellThemePayload): void };
   /** 本机主题管理；旧宿主缺席时前端使用 Web 存储适配器。 */
   themes?: HostThemesBridge;
+  dshRuntime?: HostDshLauncherBridge;
   layout: {
     setNewTaskAvailable(available: boolean): void;
     setSecondMenuAvailable(available: boolean): void;
