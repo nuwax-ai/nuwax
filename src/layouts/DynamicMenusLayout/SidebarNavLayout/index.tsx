@@ -463,7 +463,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   return (
     <div
       className={navigationClassName}
-      data-theme-part="sidebar"
       ref={rootRef}
       // 分隔条（absolute）的定位锚点：与外层 #mobile-menu-container 同盒，
       // 原 absolute 子元素（sidebar-expand-btn）锚点等效不变
@@ -473,6 +472,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           会话列表(三tab) + 底部栏(用户+消息/设备/更多) */}
       <div
         className={cx(styles['nav-menus'], 'noselect')}
+        data-theme-part="sidebar"
         style={{
           width: primarySidebarCollapsed ? 0 : navColumnWidth,
           // 拖拽调宽中临时关掉 less 的 width 过渡（否则分隔条跟随迟滞）；
@@ -484,7 +484,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           borderLeft: 'none',
           paddingLeft: 0,
           opacity: primarySidebarCollapsed ? 0 : 1,
-          backgroundColor: secondaryBackgroundColor,
+          ...({
+            '--xagi-nav-primary-fallback-bg': secondaryBackgroundColor,
+          } as React.CSSProperties),
         }}
       >
         {/* 桌面端沉浸式：左缘竖线，从避让区下沿开始（保持原视觉分隔） */}
