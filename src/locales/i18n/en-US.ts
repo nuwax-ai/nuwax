@@ -6074,6 +6074,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.fieldRemark": "Remark",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "Please enter remark",
   // ── System Management - User Credits Query ────────────────────────────
+  "PC.Pages.SystemUserCredits.invalidUserId": "Enter a valid user ID",
+  "PC.Pages.SystemUserCredits.invalidOperationIdentity": "User or tenant information is invalid. Refresh and try again.",
   "PC.Pages.SystemUserCredits.colUserId": "User ID",
   "PC.Pages.SystemUserCredits.colUserName": "Username",
   "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "Username / Phone / Email",
