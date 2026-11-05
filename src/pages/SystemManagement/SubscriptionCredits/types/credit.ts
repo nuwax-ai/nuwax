@@ -74,7 +74,7 @@ export interface CreditPackageSortItem {
  */
 export interface UserCreditSummarySearchParams {
   usernamePhoneOrEmail?: string;
-  userId?: number;
+  userId?: number | string;
   pageNum?: number;
   pageSize?: number;
 }
@@ -93,10 +93,10 @@ export interface CreditSummaryUserInfo {
  */
 export interface DeductCreditParams {
   /*租户ID */
-  tenantId: number;
+  tenantId: number | string;
 
   /*用户ID */
-  userId: number;
+  userId: number | string;
 
   /*积分类型：SUBSCRIPTION-订阅积分，PURCHASE-增购积分，ACTIVITY-活动积分，MANUAL-手动发放,可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT */
   creditType: CreditFlowTypeEnum;
@@ -119,10 +119,10 @@ export interface DeductCreditParams {
  */
 export interface AddCreditParams {
   /*租户ID */
-  tenantId: number;
+  tenantId: number | string;
 
   /*用户ID */
-  userId: number;
+  userId: number | string;
 
   /*积分类型：SUBSCRIPTION-订阅积分，PURCHASE-增购积分，ACTIVITY-活动积分，MANUAL-手动发放,可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT */
   creditType: CreditFlowTypeEnum;
@@ -145,7 +145,7 @@ export interface AddCreditParams {
  */
 export interface UserCreditSummaryInfo {
   // 用户ID
-  userId?: number;
+  userId?: number | string;
   // 总积分
   totalCredit?: number;
   // 订阅积分
@@ -167,7 +167,7 @@ export interface UserCreditFlowSearchParams
   extends UserCreditSummarySearchParams {
   // 可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT
   creditType?: CreditFlowTypeEnum;
-  lastId?: number;
+  lastId?: number | string;
   pageSize?: number;
 }
 
@@ -176,7 +176,7 @@ export interface UserCreditFlowSearchParams
  */
 export interface UserCreditFlowInfo {
   // 流水ID
-  id: number;
+  id: number | string;
   // 用户ID
   userId: string;
   // 批次号

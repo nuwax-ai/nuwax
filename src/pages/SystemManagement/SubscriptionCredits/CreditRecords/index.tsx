@@ -3,13 +3,14 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
+import { positiveInt64Id } from '@/utils/int64Id';
 import type {
   ActionType,
   FormInstance,
   ParamsType,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Statistic, Tag } from 'antd';
+import { Statistic, Tag, message } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import { CREDIT_FLOW_TYPE_SEARCH_KEYS } from '../creditTypeOptions';
@@ -32,12 +33,12 @@ type CreditFlowListTableParams = ParamsType &
 const DEFAULT_PAGE_SIZE = 15;
 
 /** 从 URL 查询串解析 userId（与列表页 query 一致） */
-function parseUserIdFromSearch(search: string): number | undefined {
+function parseUserIdFromSearch(search: string): string | undefined {
   const q = new URLSearchParams(search);
   const raw = q.get('userId');
   if (raw === null || raw === '') return undefined;
-  const n = Number(raw);
-  return Number.isNaN(n) ? undefined : n;
+  // 保留非法输入供请求校验，不能丢掉筛选后变成所有用户的流水查询。
+  return raw.trim() || undefined;
 }
 
 /**
@@ -68,7 +69,7 @@ const CreditRecords: React.FC = () => {
   const [tablePageSize, setTablePageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // 游标分页映射
-  const lastIdMapRef = useRef<Record<number, number | undefined>>({
+  const lastIdMapRef = useRef<Record<number, string | undefined>>({
     1: undefined,
   });
   const queryKeyRef = useRef<string>('');
@@ -255,7 +256,7 @@ const CreditRecords: React.FC = () => {
       key: 'beforeAmount',
       search: false,
       width: 150,
-      render: (_, record) => record.beforeAmount || '-',
+      render: (_, record) => record.beforeAmount ?? '-',
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.afterAmount'),
@@ -263,7 +264,7 @@ const CreditRecords: React.FC = () => {
       key: 'afterAmount',
       width: 150,
       search: false,
-      render: (_, record) => record.afterAmount || '-',
+      render: (_, record) => record.afterAmount ?? '-',
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.created'),
@@ -286,9 +287,20 @@ const CreditRecords: React.FC = () => {
     const current = Number(params.current ?? 1);
     const pageSize = Number(params.pageSize ?? DEFAULT_PAGE_SIZE);
     const usernamePhoneOrEmail = params.userName?.trim() || undefined;
+    const userId = positiveInt64Id(params.userId);
+    if (
+      params.userId !== undefined &&
+      params.userId !== null &&
+      String(params.userId).trim() !== '' &&
+      !userId
+    ) {
+      message.error(dict('PC.Pages.SystemUserCredits.invalidUserId'));
+      setHasNextPage(false);
+      return { data: [], total: 0, success: false };
+    }
 
     const queryKey = JSON.stringify({
-      userId: params.userId ?? '',
+      userId: userId ?? '',
       usernamePhoneOrEmail: usernamePhoneOrEmail ?? '',
       creditType: params.creditType,
       pageSize,
@@ -303,7 +315,7 @@ const CreditRecords: React.FC = () => {
     try {
       const lastId = lastIdMapRef.current[current];
       const payload: UserCreditFlowSearchParams = {
-        userId: params.userId,
+        userId,
         usernamePhoneOrEmail,
         creditType: params.creditType,
         lastId,
@@ -312,12 +324,12 @@ const CreditRecords: React.FC = () => {
       const res = await apiGetCreditFlowList(payload);
       if (res?.code === SUCCESS_CODE) {
         const list = res.data || [];
-        const nextPageAvailable = list.length > 0;
+        const nextPageLastId = positiveInt64Id(list[list.length - 1]?.id);
+        // 舍入后的数值游标不可恢复；保留本页展示，停止向错误游标翻页。
+        const nextPageAvailable =
+          list.length > 0 && nextPageLastId !== undefined;
         setShowPagination(current > 1 || nextPageAvailable);
         setHasNextPage(nextPageAvailable);
-        const nextPageLastId = list.length
-          ? list[list.length - 1]?.id
-          : undefined;
         lastIdMapRef.current[current + 1] = nextPageLastId;
 
         return {

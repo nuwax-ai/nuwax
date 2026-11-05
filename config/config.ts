@@ -6,6 +6,7 @@ import { defineConfig } from 'umi';
 import { readPdfCharacterMaps } from '../scripts/pdf-character-maps';
 import routes from '../src/routes';
 import { getImEntryRedirect } from '../src/utils/imEntryRedirect';
+import { getQrLoginEntryRedirect } from '../src/utils/qrLoginEntry';
 import { getSpaceInviteEntryRedirect } from '../src/utils/spaceInvite';
 
 export default defineConfig({
@@ -117,6 +118,12 @@ export default defineConfig({
         // 手机邀请和旧 Web 登录回跳统一转换到 M 站，并携带原始邀请码。
         const inviteRedirect = (${getSpaceInviteEntryRedirect.toString()})(href, isMobile);
         if (inviteRedirect) { window.location.replace(inviteRedirect); return; }
+        // 登录二维码的打开方统一使用 M 站确认；手机 Cookie 属于手机自己的账号。
+        const qrLoginRedirect = (${getQrLoginEntryRedirect.toString()})(href);
+        if (qrLoginRedirect) {
+          if (qrLoginRedirect !== href) window.location.replace(qrLoginRedirect);
+          return;
+        }
         // IM 直达只搬原始 query。spaceId 换成群会话由 M 站承接页在登录后完成。
         const imEntryRedirect = (${getImEntryRedirect.toString()})(href, isMobile);
         if (imEntryRedirect) { window.location.replace(imEntryRedirect); return; }
