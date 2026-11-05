@@ -1,5 +1,5 @@
 #!/bin/bash
-# 临时 test 提测：目标分支准备源码并构建，成功后备份、删除和重建双远端 test。
+# 临时 test 提测：目标分支准备源码并构建，保存本机恢复文件后重建双远端 test。
 # 用法：bash deploy_test_clean.sh [目标分支]；省略时使用当前分支，DRY_RUN=1 完全只读。
 # dist 只提交到 test；目标分支全部非 dist 改动（包括已有业务改动）会自动提交。
 
@@ -43,7 +43,7 @@ main() {
     log "2. 提交全部非 dist 改动，汇合同名双远端目标分支；不合入 dev 或旧 test"
     log "3. 目标分支升级子模块并提交 pin/适配；运行质量门和 build:prod:m"
     log "4. 构建若修改源码，提交后重新过门和构建一次；普通双推目标分支并核对 HEAD"
-    log "5. 备份两端和本地旧 test；核对远端未变后删除 gitlab/test、origin/test"
+    log "5. 将两端和本地旧 test 保存到本机恢复文件（不创建 backup 分支）；核对后删除两端旧 test"
     log "6. 从最终目标提交创建 test，仅提交完整 dist；普通双推并核对 HEAD"
     log "7. 切回 ${TARGET_BRANCH}；失败保留产物和状态，打印补推/恢复命令"
     return 0
@@ -79,7 +79,13 @@ main() {
   if [ -d dist ]; then tar -cf "$RUN_DIR/original-dist.tar" dist; fi
   ensure_gitlab_remote
   # 显式 refspec 兼容只抓取 main 的单分支克隆；输入固定为本轮 fetch 到的提交。
-  retry_git 3 fetch origin --prune '+refs/heads/*:refs/remotes/origin/*'
+  # bundle 不保留 shallow 边界；先补齐历史，避免生成缺少父提交的恢复文件。
+  if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+    log "当前为浅克隆，先补齐 Git 历史以生成完整恢复文件"
+    retry_git 3 fetch origin --unshallow --prune '+refs/heads/*:refs/remotes/origin/*'
+  else
+    retry_git 3 fetch origin --prune '+refs/heads/*:refs/remotes/origin/*'
+  fi
   retry_git 3 fetch gitlab --prune '+refs/heads/*:refs/remotes/gitlab/*'
   ORIGIN_OLD_TEST="$(cached_head origin test)"
   GITLAB_OLD_TEST="$(cached_head gitlab test)"
@@ -146,14 +152,8 @@ main() {
   expect_remote origin "$TARGET_BRANCH" "$SOURCE_HEAD"
   expect_remote gitlab "$TARGET_BRANCH" "$SOURCE_HEAD"
 
-  CURRENT_STEP="备份旧 test"
-  for remote in origin gitlab; do
-    if [ "$remote" = origin ]; then tip="$ORIGIN_OLD_TEST"; else tip="$GITLAB_OLD_TEST"; fi
-    [ -z "$tip" ] || backup_test "$remote" "$tip"
-  done
-  if git show-ref --verify --quiet refs/heads/test; then
-    backup_test local "$(git rev-parse refs/heads/test)"
-  fi
+  CURRENT_STEP="保存旧 test 本机恢复文件"
+  save_test_rollback
   expect_remote gitlab test "$GITLAB_OLD_TEST"
   expect_remote origin test "$ORIGIN_OLD_TEST"
   expect_remote origin "$TARGET_BRANCH" "$SOURCE_HEAD"
@@ -173,7 +173,8 @@ main() {
 
   CURRENT_STEP="从目标提交创建本地 test 并提交 dist"
   if git show-ref --verify --quiet refs/heads/test; then
-    git branch -m test "backup/test/$RUN_ID/local"
+    [ "$(git rev-parse refs/heads/test)" = "$LOCAL_OLD_TEST" ] || die "本地 test 在保存恢复文件后发生变化，停止重建"
+    git branch -D test
   fi
   git checkout -b test "$SOURCE_HEAD"
   rm -rf dist
@@ -192,10 +193,17 @@ main() {
   done
   expect_remote origin test "$TEST_HEAD"
   expect_remote gitlab test "$TEST_HEAD"
-  record complete "$TEST_HEAD"
   git checkout "$TARGET_BRANCH"
   git -c credential.interactive=never submodule update --init --recursive
+  if [ "${ROLLBACK_READY:-0}" = "1" ]; then
+    # 仅成功时原子替换上一份常规恢复文件；失败运行保留自己的文件和产物。
+    mv -f "$ROLLBACK_BUNDLE" "$COMMON_DIR/nuwax-deploy/test-rollback.bundle"
+    ROLLBACK_BUNDLE="$COMMON_DIR/nuwax-deploy/test-rollback.bundle"
+    record rollback-latest "$ROLLBACK_BUNDLE"
+    log "本机最近一次恢复文件：$ROLLBACK_BUNDLE（无需切换任何 backup 分支）"
+  fi
   rm -f "$RUN_DIR/original-dist.tar" "$RUN_DIR/previous-dist.tar" "$RUN_DIR/built-dist.tar"
+  record complete "$TEST_HEAD"
   log "✅ 双远端 test 推送完成：${TEST_HEAD}（源码 ${TARGET_BRANCH}@${SOURCE_HEAD}）"
   log "运行记录：${RUN_DIR}/state；环境部署由现有扫描系统完成"
 }
@@ -283,13 +291,39 @@ expect_remote() {
   [ "$actual" = "$3" ] || die "$1/$2 出现并发更新（预期 ${3:-不存在}，实际 ${actual:-不存在}），停止；不自动合入或覆盖"
 }
 
-backup_test() {
-  local label="$1" tip="$2" destination ref="backup/test/$RUN_ID/$1"
-  for destination in origin gitlab; do
-    git push "$destination" "$tip:refs/heads/$ref"
-    expect_remote "$destination" "$ref" "$tip"
+save_test_rollback() {
+  local label tip ref
+  local refs=()
+  [ "$(git rev-parse --is-shallow-repository)" = "false" ] || die "仓库仍为浅克隆，不能生成完整恢复文件；未删除旧 test"
+  LOCAL_OLD_TEST="$(git rev-parse --verify refs/heads/test^{commit} 2>/dev/null || true)"
+  record old-local-test "$LOCAL_OLD_TEST"
+  for label in origin gitlab local; do
+    case "$label" in
+      origin) tip="$ORIGIN_OLD_TEST" ;;
+      gitlab) tip="$GITLAB_OLD_TEST" ;;
+      local) tip="$LOCAL_OLD_TEST" ;;
+    esac
+    [ -n "$tip" ] || continue
+    # bundle 需要命名引用；使用临时私有引用，不在本地/远端创建分支。
+    ref="refs/nuwax-deploy/$RUN_ID/$label"
+    git update-ref "$ref" "$tip" ""
+    refs+=("$ref")
   done
-  record "backup-$label" "$ref"
+  [ "${#refs[@]}" != "0" ] || return 0
+  ROLLBACK_BUNDLE="$RUN_DIR/test-rollback.bundle"
+  git bundle create "$ROLLBACK_BUNDLE" "${refs[@]}"
+  git bundle verify "$ROLLBACK_BUNDLE"
+  ROLLBACK_READY=1
+  record rollback-bundle "$ROLLBACK_BUNDLE"
+  clear_rollback_refs
+}
+
+clear_rollback_refs() {
+  [ -n "${RUN_ID:-}" ] || return 0
+  local ref tip
+  while read -r ref tip; do
+    git update-ref -d "$ref" "$tip" || return 1
+  done < <(git for-each-ref --format='%(refname) %(objectname)' "refs/nuwax-deploy/$RUN_ID/")
 }
 
 print_command() { printf '    '; printf '%q ' "$@"; printf '\n'; }
@@ -302,6 +336,10 @@ clean_exit() {
     if [ -n "${RUN_DIR:-}" ]; then
       record failed "${CURRENT_STEP:-预检}"
       echo "运行记录与产物：$RUN_DIR" >&2
+      if [ "${ROLLBACK_READY:-0}" = "1" ]; then
+        echo "旧 test 已保存到本机恢复文件：$ROLLBACK_BUNDLE；需要恢复时先在本仓库导入对象：" >&2
+        print_command git bundle unbundle "$ROLLBACK_BUNDLE" >&2
+      fi
       if [ -n "${TEST_HEAD:-}" ]; then
         echo "确认远端 test 缺失或已指向本轮提交后，可补推同一产物（不要合入旧 test）：" >&2
         for remote in origin gitlab; do print_command git push "$remote" "$TEST_HEAD:refs/heads/test" >&2; done
@@ -319,6 +357,7 @@ clean_exit() {
       fi
     fi
   fi
+  clear_rollback_refs || echo "临时恢复引用清理失败，请核对 refs/nuwax-deploy/${RUN_ID:-}" >&2
   if [ "${LOCK_HELD:-0}" = "1" ]; then rm -rf "$LOCK_DIR"; fi
   exit "$status"
 }
