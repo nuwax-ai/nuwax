@@ -15,18 +15,21 @@ describe('首页分组收起偏好', () => {
     localStorage.clear();
   });
 
-  it('没有记录时分组默认展开', () => {
-    expect(readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY)).toBe(false);
+  it('没有记录时项目默认收起，任务默认展开', () => {
+    expect(readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY)).toBe(true);
     expect(readCollapsedFlag(TASK_SECTION_COLLAPSED_KEY)).toBe(false);
   });
 
-  it('收起落盘，展开时清掉记录', () => {
+  it('显式收起与展开均可落盘并覆盖默认值', () => {
     writeCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY, true);
     expect(readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY)).toBe(true);
 
     writeCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY, false);
     expect(readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY)).toBe(false);
-    expect(localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY)).toBeNull();
+    expect(localStorage.getItem(PROJECT_SECTION_COLLAPSED_KEY)).toBe('0');
+
+    localStorage.setItem(PROJECT_SECTION_COLLAPSED_KEY, 'invalid');
+    expect(readCollapsedFlag(PROJECT_SECTION_COLLAPSED_KEY)).toBe(true);
   });
 
   it('项目行收起集合可往返，空集合不留记录', () => {
