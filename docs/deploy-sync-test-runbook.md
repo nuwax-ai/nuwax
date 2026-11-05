@@ -2,9 +2,29 @@
 
 > 一条命令 + 一张自助表。任何人在仓库根目录都能跑，不依赖 agent 陪跑。
 
+## 当前提测流程：使用新入口
+
+日常提测统一使用 `deploy_test_clean.sh`。旧 `deploy_test.sh` 和全链脚本暂时保留兼容；新流程不再要求先把功能合入 dev。
+
+| 对比项 | 旧流程：`deploy_test.sh` | 新流程：`deploy_test_clean.sh` |
+| --- | --- | --- |
+| 提测准备 | 先将自己的 feature 分支合入 dev，再运行旧脚本 | 切到本次要测试的 feature、版本或 release 分支，直接运行新脚本；也可显式指定目标分支 |
+| 源码路径 | 汇合双远端 dev，再合入已有 test，已有 test 中的功能可能继续保留 | 只汇合同名目标分支的双远端提交，从最终目标提交重建 test，不合入 dev 或旧 test |
+| 源码准备与构建 | 在组合后的 test 上升级微应用、过质量门和构建 | 在目标分支提交全部非 dist 改动、升级微应用并提交 gitlink/pin/适配，过质量门和完整构建 |
+| 产物归属 | dist 随 test 提交、推送 | 目标分支不新增 dist 产物提交；新 test 在目标源码基础上只增加 dist 提交 |
+| test 更新方式 | 沿用已有 test 的历史并合并 | 构建和目标源码双推成功后，先备份，再删除 GitLab/GitHub 旧 test，创建并双推同名新 test |
+
+最常用的操作是在自己的目标分支运行：
+
+```bash
+bash deploy_test_clean.sh
+```
+
+脚本会自动提交目标分支全部非 dist 改动，包括已有业务修改，运行前请确认这些代码都要进入本次提测。要同时测试多个功能，先把它们合入选定的目标分支；目标分支本身已包含的功能不会被自动拆除。测试环境仍由现有部署系统扫描 test 分支的 dist 并同步静态文件，流程不涉及 K8S。
+
 ## 临时 test 通道：从指定分支重建
 
-新增入口与旧 `deploy_test.sh` 并存；需要本次测试只包含指定目标分支时使用：
+新入口与旧脚本并存，日常提测使用以下命令：
 
 ```bash
 bash deploy_test_clean.sh                    # 使用当前分支
@@ -32,7 +52,9 @@ DRY_RUN=1 bash deploy_test_clean.sh          # 演练当前分支
 
 两端仓库无法跨库原子替换，删除到重建之间 test 会短暂不存在；执行期间应暂停其他提测脚本和人工对 test 的更新。脚本使用本地运行锁并在远端操作前后核对 SHA，但不能阻止其他机器同时写入。异常终止留下 `nuwax-deploy/clean-test.lock` 时，确认没有本轮进程后再移除锁；不自动删除未知进程的锁。备份分支供回退使用，后续由维护者确认后清理。
 
-## 两条提测通道：选哪个
+## 旧入口：快速通道与全链
+
+以下两条通道保留兼容原来的 dev → test 流程；当前日常提测使用上文的新入口。
 
 |  | 快速通道 `bash deploy_test.sh` | 全链 `bash scripts/deploy_sync_test.sh` |
 | --- | --- | --- |
@@ -65,7 +87,17 @@ npm 会把附加参数接到复合命令的最后一段（`deploy-asset-retentio
 MOBILE_BUILD_REPO=<仓库地址> npm run build:prod:m
 ```
 
-`MOBILE_BUILD_BRANCH` 可覆盖 M 端分支。构建日志会打印实际使用的来源与拉到的 M 端提交号。
+M 端默认分支为 `feat-2026.11`，不会跟随前端当前分支或目标分支名；`MOBILE_BUILD_BRANCH` 可覆盖。`npm run build:prod:m` 构建 PC 前端后，下载 M 端所选分支已提交的 `unpackage/dist/build/web` 到 `dist/m`，不会在此重新编译 M 端源码。M 端源码更新后，需先在 nuwax-mobile 完成 H5 构建，并将产物提交、推送到所选分支，再运行前端提测。
+
+```bash
+# 前端使用 release 分支，M 端沿用默认 feat-2026.11 产物
+bash deploy_test_clean.sh release-2026.11.05
+
+# 按需指定 M 端分支；不改变前端目标分支的选取规则
+MOBILE_BUILD_BRANCH=<M端分支名> bash deploy_test_clean.sh release-2026.11.05
+```
+
+构建日志会打印实际使用的来源、分支与拉到的 M 端提交号。
 
 ## 怎么跑（全链）
 
