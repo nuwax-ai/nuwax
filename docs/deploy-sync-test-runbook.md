@@ -2,9 +2,58 @@
 
 > 一条命令 + 一张自助表。任何人在仓库根目录都能跑，不依赖 agent 陪跑。
 
+## 当前提测流程：使用新入口
+
+日常提测统一使用 `deploy_test_clean.sh`。**新流程不需要 dev 作为中转分支，也不修改或推送 dev**；直接以本次选定的目标分支提测。旧 `deploy_test.sh` 和全链脚本暂时保留兼容。
+
+| 对比项 | 旧流程：`deploy_test.sh` | 新流程：`deploy_test_clean.sh` |
+| --- | --- | --- |
+| 提测准备 | 先将自己的 feature 分支合入 dev，再运行旧脚本 | 切到本次要测试的 feature、版本或 release 分支，直接运行新脚本；也可显式指定目标分支 |
+| 源码路径 | 汇合双远端 dev，再合入已有 test，已有 test 中的功能可能继续保留 | 只汇合同名目标分支的双远端提交，从最终目标提交重建 test，不合入 dev 或旧 test |
+| 源码准备与构建 | 在组合后的 test 上升级微应用、过质量门和构建 | 在目标分支提交全部非 dist 改动、升级微应用并提交 gitlink/pin/适配，过质量门和完整构建 |
+| 产物归属 | dist 随 test 提交、推送 | 目标分支不新增 dist 产物提交；新 test 在目标源码基础上只增加 dist 提交 |
+| test 更新方式 | 沿用已有 test 的历史并合并 | 构建和目标源码双推成功后，先备份，再删除 GitLab/GitHub 旧 test，创建并双推同名新 test |
+
+### 旧流程图：功能先汇总到 dev
+
+```mermaid
+flowchart TD
+  A["功能分支 A"] --> D["dev：汇总待测代码"]
+  B["功能分支 B"] --> D
+  D -->|deploy_test.sh| T["合入已有 test"]
+  T --> G["在 test 上升级微应用、过质量门和构建"]
+  G --> P["提交 dist，推送 GitHub / GitLab"]
+  P --> E["部署系统扫描 dist，同步静态文件"]
+```
+
+### 新流程图：目标分支直接提测
+
+```mermaid
+flowchart TD
+  A["本次要测试的功能 A"] -->|按需先合入| T["本次目标分支"]
+  B["本次要测试的功能 B"] -->|按需先合入| T
+  T -->|deploy_test_clean.sh| S["在目标分支提交源码、gitlink / pin / 适配"]
+  S --> G["在目标分支过质量门、完整构建"]
+  G --> U["目标源码推送 GitHub / GitLab 并核对一致"]
+  U --> K["备份并删除两端旧 test"]
+  K --> N["从最终目标提交创建新 test"]
+  N --> P["仅在 test 增加 dist 提交并双推"]
+  P --> E["部署系统扫描 dist，同步静态文件"]
+```
+
+单个功能可以直接用该功能分支作为目标分支，无需额外建立汇总分支；多个功能一起测试时，先手动合入本次目标分支。新脚本不负责挑选或合并不同功能分支，也不要求先合入 dev。
+
+最常用的操作是在自己的目标分支运行：
+
+```bash
+bash deploy_test_clean.sh
+```
+
+脚本会自动提交目标分支全部非 dist 改动，包括已有业务修改，运行前请确认这些代码都要进入本次提测。要同时测试多个功能，先把它们合入选定的目标分支；目标分支本身已包含的功能不会被自动拆除。测试环境仍由现有部署系统扫描 test 分支的 dist 并同步静态文件，流程不涉及 K8S。
+
 ## 临时 test 通道：从指定分支重建
 
-新增入口与旧 `deploy_test.sh` 并存；需要本次测试只包含指定目标分支时使用：
+新入口与旧脚本并存，日常提测使用以下命令：
 
 ```bash
 bash deploy_test_clean.sh                    # 使用当前分支
@@ -20,6 +69,13 @@ DRY_RUN=1 bash deploy_test_clean.sh          # 演练当前分支
 4. 构建和目标分支双推成功后，将两端及本地旧 test 分别备份到 `backup/test/<运行编号>/{origin,gitlab,local}`，每份备份均推到两端；不存在的旧分支跳过。核对远端未变后，依次删除 GitLab、GitHub 旧 test。
 5. 从最终目标提交新建 test，只增加完整 dist 的产物提交，普通双推并回读确认相同 HEAD。成功后切回目标分支；环境部署仍由现有扫描系统执行。
 
+新入口完成后核对以下两组提交，dev 不参与本次提测：
+
+```text
+origin/<目标分支> / gitlab/<目标分支> → 相同源码 SHA
+origin/test / gitlab/test → 相同产物 SHA（父提交为最终目标源码）
+```
+
 哈希资源仍保留默认 3 代；上一版 dist 取自删除前的 GitLab/test，CSS 历史回填通过 `DIST_RETENTION_HISTORY_REF` 指向该旧提交。每轮重建都从同一份旧产物快照开始，避免重建两次使资源提前过期。M 端沿用下文的来源选择及 `MOBILE_BUILD_REPO` / `MOBILE_BUILD_BRANCH` 覆写。
 
 ### 失败恢复
@@ -32,7 +88,9 @@ DRY_RUN=1 bash deploy_test_clean.sh          # 演练当前分支
 
 两端仓库无法跨库原子替换，删除到重建之间 test 会短暂不存在；执行期间应暂停其他提测脚本和人工对 test 的更新。脚本使用本地运行锁并在远端操作前后核对 SHA，但不能阻止其他机器同时写入。异常终止留下 `nuwax-deploy/clean-test.lock` 时，确认没有本轮进程后再移除锁；不自动删除未知进程的锁。备份分支供回退使用，后续由维护者确认后清理。
 
-## 两条提测通道：选哪个
+## 旧入口：快速通道与全链
+
+以下两条通道保留兼容原来的 dev → test 流程；当前日常提测使用上文的新入口。
 
 |  | 快速通道 `bash deploy_test.sh` | 全链 `bash scripts/deploy_sync_test.sh` |
 | --- | --- | --- |
@@ -65,9 +123,19 @@ npm 会把附加参数接到复合命令的最后一段（`deploy-asset-retentio
 MOBILE_BUILD_REPO=<仓库地址> npm run build:prod:m
 ```
 
-`MOBILE_BUILD_BRANCH` 可覆盖 M 端分支。构建日志会打印实际使用的来源与拉到的 M 端提交号。
+M 端默认分支为 `feat-2026.11`，不会跟随前端当前分支或目标分支名；`MOBILE_BUILD_BRANCH` 可覆盖。`npm run build:prod:m` 构建 PC 前端后，下载 M 端所选分支已提交的 `unpackage/dist/build/web` 到 `dist/m`，不会在此重新编译 M 端源码。M 端源码更新后，需先在 nuwax-mobile 完成 H5 构建，并将产物提交、推送到所选分支，再运行前端提测。
 
-## 怎么跑（全链）
+```bash
+# 前端使用 release 分支，M 端沿用默认 feat-2026.11 产物
+bash deploy_test_clean.sh release-2026.11.05
+
+# 按需指定 M 端分支；不改变前端目标分支的选取规则
+MOBILE_BUILD_BRANCH=<M端分支名> bash deploy_test_clean.sh release-2026.11.05
+```
+
+构建日志会打印实际使用的来源、分支与拉到的 M 端提交号。
+
+## 怎么跑（旧全链）
 
 ```bash
 bash scripts/deploy_sync_test.sh
@@ -77,7 +145,7 @@ bash scripts/deploy_sync_test.sh
 - 总耗时受构建缓存和网络影响，以本次输出为准
 - `DRY_RUN=1` 演练不执行写操作；`INIT_ONLY=1` 只生成配置
 
-## 脚本自动处理（不用管）
+## 旧入口自动处理
 
 | 场景 | 脚本行为 |
 | --- | --- |
@@ -94,7 +162,7 @@ bash scripts/deploy_sync_test.sh
 | 断点续跑 | 中途修完问题**直接重跑同一命令**，已过步骤自动跳过（质量门不重付） |
 | test 组合源码与已测 dev 不同 | 步骤 7.1 自动补过质量门（只改机器产物时不重复跑） |
 
-## 会停下来的三种情况（需要人）
+## 旧入口会停下来的三种情况
 
 ### 1. 质量门挂（test:conversation 有失败套件）
 
@@ -121,7 +189,7 @@ git commit && bash scripts/deploy_sync_test.sh   # 断点续跑
 
 报错自带**冲突文件清单 + 上游前进范围**。处置归属：微应用适配负责人基于新候选重制 `adapter.json` 指向的 `adapter.patch`，随构建提交；**其他同事拉最新分支重跑即可，无需本地处理**。
 
-## 完成后（核对两个远端）
+## 旧入口完成后（核对两个远端）
 
 脚本末尾自动打印两个远端的分支落点；每个对应分支的 HEAD 必须一致：
 
@@ -131,13 +199,13 @@ origin/dev / gitlab/dev → 相同 SHA
 origin/test / gitlab/test → 相同产物 SHA
 ```
 
-## 约定（写进 AGENTS.md 的三条）
+## 旧入口约定
 
 1. 主区不干净自动进 worktree，不要手工清场
 2. `src/constants/version.ts` 只存 APP_VERSION / APP_NAME；提交哈希运行时读取 `dist/version.json`，不烤入源码
 3. 网络抖动等脚本自愈，勿手工重启整链
 
-## 遗留告警（知悉即可，不阻塞）
+## 旧入口遗留告警
 
 - `gitlab/dev 存在 N 个独有提交`：先汇合双方历史，之后将组合 dev 同步到两个远端。
 - `构建产物无变更，跳过提交`：本轮无代码变化，推送为 no-op，正常
