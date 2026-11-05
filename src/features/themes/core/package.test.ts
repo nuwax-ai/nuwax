@@ -102,6 +102,8 @@ describe('portable theme contract', () => {
     const s = resolveThemePackage(officialThemePackage, 'light', false, 0);
     expect(s.tokens.primary).toBe('#2563eb');
     expect(s.tokens['surface.bg']).toBe('#f3f4f6');
+    expect(s.tokens['sidebar.secondary.bg']).toBe('#fafafa');
+    expect(s.tokens['sidebar.secondary.bg']).not.toBe(s.tokens['sidebar.bg']);
     expect(
       resolveThemePackage(officialThemePackage, 'system', true, 1).mode,
     ).toBe('light');
@@ -130,6 +132,24 @@ describe('portable theme contract', () => {
     });
     expect(() => assertInstallableThemeId('nuwax-default')).toThrow('reserved');
     expect(() => assertInstallableThemeId('sample')).not.toThrow();
+  });
+  it('resolves independent secondary navigation colors and preserves older package palettes', () => {
+    const legacy = snap(
+      files('', { 'sidebar.bg': '#111a2b', 'surface.bg': '#182438' }),
+    );
+    expect(legacy.tokens['sidebar.secondary.bg']).toBe('#182438');
+    expect(
+      tokenToCssVariables({ 'surface.bg': '#182438' })[
+        '--nuwax-sidebar-secondary-bg'
+      ],
+    ).toBe('#182438');
+    const explicit = snap(
+      files('', { 'surface.bg': '#182438', 'sidebar.secondary.bg': '#1b293b' }),
+    );
+    expect(explicit.tokens['sidebar.secondary.bg']).toBe('#1b293b');
+    expect(
+      tokenToCssVariables(explicit.tokens)['--nuwax-sidebar-secondary-bg'],
+    ).toBe('#1b293b');
   });
   it.each(['light', 'dark'] as const)(
     'maps %s inverse text to filled controls',

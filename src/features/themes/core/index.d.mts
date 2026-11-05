@@ -5,6 +5,7 @@ export type ThemeTokenName =
   | 'app.bg'
   | 'surface.bg'
   | 'sidebar.bg'
+  | 'sidebar.secondary.bg'
   | 'elevated.bg'
   | 'input.bg'
   | 'text.primary'

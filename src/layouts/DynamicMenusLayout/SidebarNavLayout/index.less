@@ -160,7 +160,7 @@
 
   // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
   // 形态参考经典风格 2（2026-09-12 需求）贴边满铺；配色按原型：辅助列 #fafafa +
-  // 右边框 #f0f0f3 与内容区分隔（单栏锁定纯色浅底，浅色字面量安全）
+  // 右边框与内容区分隔；主题运行时通过独立的二级导航色保留列间层次。
   .second-column {
     display: flex;
     flex-direction: column;
@@ -171,7 +171,7 @@
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
-    background: var(--nuwax-sidebar-bg, #fafafa);
+    background: var(--nuwax-sidebar-secondary-bg, #fafafa);
     border-right: 1px solid var(--nuwax-border-default, #f0f0f3);
     border-radius: 0;
     margin-right: 0;
@@ -195,12 +195,10 @@
     --xagi-nav-second-main-font-size: 13.5px;
     --xagi-nav-second-leaf-font-size: 13.5px;
     --xagi-nav-second-icon-size: 16px;
-    // hover 中性浅灰 #f6f5f9（原型 tm-item:hover），与选中浅紫 #f1effb 明确区分。
-    // 勿引用 var(--xagi-nav-row-hover-bg)：该 CSS 变量全仓无定义点（仅 less 变量
-    // 带 fallback 引用），无 fallback 的引用会断链致 hover 落到白底
-    --xagi-nav-second-row-hover-bg: #f6f5f9;
+    // 主题分别控制悬停和选中态；未接入主题时保留原型的浅灰、浅紫底色。
+    --xagi-nav-second-row-hover-bg: var(--nuwax-hover-bg, #f6f5f9);
     --xagi-nav-second-row-hover-shadow: none;
-    --xagi-nav-second-row-active-bg: #f1effb;
+    --xagi-nav-second-row-active-bg: var(--nuwax-selected-bg, #f1effb);
     --xagi-nav-second-row-active-shadow: none;
     // 选中项字重加粗 500（2026-09-12 需求）：仅单栏注入，base 组件默认 normal
     --xagi-nav-second-row-active-font-weight: 500;

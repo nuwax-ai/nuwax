@@ -126,6 +126,7 @@ const HoverMenu: React.FC = () => {
         menuVisible ? styles.visible : styles.hidden,
         isSecondMenuCollapsed && styles['hover-menu-container-collapsed'],
       )}
+      data-theme-part="secondary-sidebar"
       onMouseEnter={() => {
         // 鼠标进入悬浮菜单区域时，设置状态并取消隐藏定时器
         setMouseInHoverMenu(true);

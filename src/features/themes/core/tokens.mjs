@@ -3,6 +3,7 @@ const light = {
   'app.bg': '#ffffff',
   'surface.bg': '#f3f4f6',
   'sidebar.bg': '#f2f2f2',
+  'sidebar.secondary.bg': '#fafafa',
   'elevated.bg': '#ffffff',
   'input.bg': '#ffffff',
   'text.primary': '#111827',
@@ -49,6 +50,7 @@ const dark = {
   'app.bg': '#18181b',
   'surface.bg': '#202024',
   'sidebar.bg': '#202024',
+  'sidebar.secondary.bg': '#252529',
   'elevated.bg': '#27272a',
   'input.bg': '#27272a',
   'text.primary': '#f4f4f5',
@@ -84,6 +86,9 @@ export const defaultTokens = { light, dark };
 export const tokenNames = Object.keys(light);
 const kebab = (key) => key.replaceAll('.', '-');
 export function tokenToCssVariables(tokens) {
+  // An older host may publish a snapshot without the secondary navigation token.
+  if (!Object.hasOwn(tokens, 'sidebar.secondary.bg') && tokens['surface.bg'])
+    tokens = { ...tokens, 'sidebar.secondary.bg': tokens['surface.bg'] };
   const result = {};
   result['--xagi-background-image'] = 'var(--nuwax-background-image, none)';
   for (const key of tokenNames)

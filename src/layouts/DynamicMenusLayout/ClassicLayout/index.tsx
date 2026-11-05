@@ -337,6 +337,7 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
       {shouldShowSecondMenu && (
         <div
           className={cx(styles['nav-menus'], 'noselect')}
+          data-theme-part="secondary-sidebar"
           style={{
             width: isSecondMenuCollapsed
               ? 0
@@ -348,7 +349,7 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
             borderLeft: isImmersiveShell() ? 'none' : undefined,
             paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
             opacity: isSecondMenuCollapsed ? 0 : 1,
-            backgroundColor: secondaryBackgroundColor,
+            backgroundColor: `var(--nuwax-sidebar-secondary-bg, ${secondaryBackgroundColor})`,
           }}
         >
           {/* 桌面端沉浸式：替代 border-left 的竖线，从避让区下沿（搜索/新建会话栏顶部）开始 */}

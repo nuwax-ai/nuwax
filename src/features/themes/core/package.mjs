@@ -498,9 +498,19 @@ export function resolveThemePackage(pkg, preference, systemDark, revision) {
     preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
   const mode = own(m.variants, wanted) ? wanted : Object.keys(m.variants)[0],
     v = m.variants[mode];
+  const supplied = tokens(
+    json(decode(p.files[v.tokens], v.tokens), v.tokens),
+    v.tokens,
+  );
   const t = {
       ...defaultTokens[mode],
-      ...tokens(json(decode(p.files[v.tokens], v.tokens), v.tokens), v.tokens),
+      ...supplied,
+      // Older packages already define their content material; keep the secondary
+      // navigation in that palette instead of introducing an unrelated default.
+      'sidebar.secondary.bg':
+        supplied['sidebar.secondary.bg'] ??
+        supplied['surface.bg'] ??
+        defaultTokens[mode]['sidebar.secondary.bg'],
     },
     out = {},
     assets = {};

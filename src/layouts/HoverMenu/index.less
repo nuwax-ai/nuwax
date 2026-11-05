@@ -6,7 +6,7 @@
   top: 0;
   height: 100%;
   // 使用与 layout 一致的背景色
-  background: @navSecondMenuBg;
+  background: var(--nuwax-sidebar-secondary-bg, @navSecondMenuBg);
   border-right: @lineWidth solid
     var(--xagi-layout-border-primary, @navBorderColor);
   z-index: 998; // 比一级菜单层级低一点
@@ -17,7 +17,7 @@
 
   &.hover-menu-container-collapsed {
     border-radius: 0 @borderRadius @borderRadius 0;
-    background: @colorBgContainer;
+    background: var(--nuwax-sidebar-secondary-bg, @colorBgContainer);
     border-right-width: 0;
     box-shadow: 12px 0 24px -4px rgba(0, 0, 0, 12%);
   }
