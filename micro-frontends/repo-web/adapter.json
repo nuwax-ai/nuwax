@@ -4,7 +4,7 @@
   "sourceDir": "submodules/nuwax-repo-web",
   "branch": "main",
   "typeCheckBaseline": true,
-  "pin": "85b4a56234dc66dceb98708812cae8242a5a7dd5",
+  "pin": "99fa559fc0ef83e7ac13982c504a14d92ea77910",
   "patch": "adapter.patch",
   "overlay": "overlay",
   "entry": "/micro-apps/repo/index.html",
