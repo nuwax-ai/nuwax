@@ -101,13 +101,15 @@ Token JSON 是扁平字典，只写需要覆盖的值，未填写的键继承官
 
 | 界面 | 入口 |
 | --- | --- |
-| 主站 | `sidebar`, `conversation`, `input`, `theme-settings`, `resource-catalog`, `app-catalog` |
+| 主站 | `app-background`, `workspace-content`, `sidebar`, `conversation`, `input`, `theme-settings`, `resource-catalog`, `app-catalog` |
 | 工作流 | `workflow-canvas`（画布、节点与连线的外观） |
 | 消息／资料库 overlay | `sidebar`, `conversation`, `input`, `message-bubble`, `search`（对应组件存在时标记） |
 | 内容渲染器 | `markdown`, `terminal` |
 | 桌面壳 | `theme-manager`, `browser-toolbar` |
 
 消息和资料库通过主站 `props/update` 同步，只修改 `micro-frontends/**` overlay，不编辑上游子模块。文档纸张、用户内容和图片保留自己的颜色。任意业务 class 不属于稳定 API。
+
+背景图属于 `app-background` 的装饰层；`workspace-content` 包含当前页面的工具栏、正文和输入区，可统一设置内容底板。图片主题应保持正文底板足够不透明，避免背景细节直接穿透文字；`conversation` 等内层容器沿用内容底板，不要反复叠加同一张背景图或相互冲突的透明色块。页面与裸全屏形态共用这些入口，主题不需要依赖业务 class 或重排页面结构。
 
 工作流画布与节点、开发会话的 Markdown 和流式输出、文件结果卡片、文件预览工具栏及订阅设置／统计页面消费上述 Token。切换明暗只更新外观，不重建图数据、消息或编辑器。页面预览的 URL 工具栏属于宿主外观；iframe 内的网页不注入主题，保留网页自己的样式。业务组件对尺寸 Token 的覆盖以实际接入为准，公开 Token 不表示每一个固定间距或圆角都已替换。
 

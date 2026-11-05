@@ -286,7 +286,10 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     // 组件是空壳，页面实例全在容器内；两形态子树同构，翻转不销毁保活实例）。
     if (variant === 'bare') {
       return (
-        <div className={cx('w-full', 'h-full', 'overflow-hide')}>
+        <div
+          data-theme-part="workspace-content"
+          className={cx('w-full', 'h-full', 'overflow-hide')}
+        >
           <WorkCommercialRouteBoundary>{children}</WorkCommercialRouteBoundary>
           <OpenedAppTabsKeepAlive />
           <ClientConversationKeepAlive />
@@ -309,6 +312,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
       : undefined;
     return (
       <div
+        data-theme-part="workspace-content"
         className={cx(
           'flex-1',
           styles[
@@ -356,6 +360,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    */
   return (
     <div
+      data-theme-part="app-background"
       className={
         variant === 'bare'
           ? cx(
