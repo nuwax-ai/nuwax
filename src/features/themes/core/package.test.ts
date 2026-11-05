@@ -104,6 +104,12 @@ describe('portable theme contract', () => {
     expect(s.tokens['surface.bg']).toBe('#f3f4f6');
     expect(
       resolveThemePackage(officialThemePackage, 'system', true, 1).mode,
+    ).toBe('light');
+    expect(Object.keys(officialThemePackage.manifest.variants)).toEqual([
+      'light',
+    ]);
+    expect(
+      resolveThemePackage(deepSeekThemePackage, 'system', true, 1).mode,
     ).toBe('dark');
     expect(snap(deepSeekThemePackage.files).themeId).toBe('deepseek-inspired');
     const vars = tokenToCssVariables(s.tokens);

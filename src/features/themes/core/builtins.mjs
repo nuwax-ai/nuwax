@@ -16,12 +16,12 @@ function make(id, name, light, dark) {
         version: '1.0.0',
         variants: {
           light: { tokens: 'light.json' },
-          dark: { tokens: 'dark.json' },
+          ...(dark ? { dark: { tokens: 'dark.json' } } : {}),
         },
       }),
     ),
     'light.json': encodeThemeText(JSON.stringify(light)),
-    'dark.json': encodeThemeText(JSON.stringify(dark)),
+    ...(dark ? { 'dark.json': encodeThemeText(JSON.stringify(dark)) } : {}),
     'README.md': encodeThemeText(
       'Theme package schemaVersion 1. See docs/theme-packages.md.',
     ),
@@ -31,7 +31,6 @@ export const officialThemePackage = make(
   'nuwax-default',
   'Nuwax Default',
   defaultTokens.light,
-  defaultTokens.dark,
 );
 export const deepSeekThemePackage = make(
   'deepseek-inspired',

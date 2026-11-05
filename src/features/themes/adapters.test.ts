@@ -6,14 +6,14 @@ import {
   mermaidAppearance,
   monacoFontOptions,
 } from './adapters';
-import { officialThemePackage, resolveThemePackage } from './core';
+import { deepSeekThemePackage, resolveThemePackage } from './core';
 
 describe('independent renderer appearance', () => {
   it('updates workflow drawing without writing graph cells or history', () => {
     const graph = { drawBackground: vi.fn(), drawGrid: vi.fn() };
     for (const mode of ['light', 'dark'] as const) {
       const snapshot = resolveThemePackage(
-        officialThemePackage,
+        deepSeekThemePackage,
         mode,
         false,
         1,
@@ -33,7 +33,7 @@ describe('independent renderer appearance', () => {
       editor: { defineTheme: vi.fn(), setTheme: vi.fn() },
     } as unknown as typeof import('monaco-editor');
     const snapshot = resolveThemePackage(
-      officialThemePackage,
+      deepSeekThemePackage,
       'dark',
       false,
       1,
@@ -55,7 +55,7 @@ describe('independent renderer appearance', () => {
   });
   it('uses the same package colors for diagram labels and terminal canvas', () => {
     const snapshot = resolveThemePackage(
-      officialThemePackage,
+      deepSeekThemePackage,
       'dark',
       false,
       1,

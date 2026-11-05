@@ -110,11 +110,11 @@ describe('browser registry commit semantics', () => {
   });
   it('follows system changes after storage becomes unwritable', async () => {
     const f = fixture();
-    await f.repo.select('nuwax-default', 'system');
+    await f.repo.select('deepseek-inspired', 'system');
     f.fail();
     f.dark();
     // Let the already queued appearance update complete.
-    await f.repo.exportPackage('nuwax-default');
+    await f.repo.exportPackage('deepseek-inspired');
     expect(f.repo.getState().snapshot.mode).toBe('dark');
     expect(f.repo.getState().selection.mode).toBe('system');
     expect(f.repo.getState().error).toBeUndefined();
