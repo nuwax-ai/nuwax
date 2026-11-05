@@ -215,11 +215,11 @@ assert_submodule_files_clean() {
 
 commit_source() {
   git reset -q HEAD -- dist
-  # git add 的排除 pathspec 仍可能把 ignored dist 判为显式输入并报错。
-  # 先枚举非 ignored 文件（含已跟踪的删除），NUL 分隔也保护特殊文件名。
-  git ls-files --cached --others --exclude-standard -z -- . ':(top,exclude)dist' >"$RUN_DIR/source-paths"
+  # 已跟踪源码即使后来被 ignore，修改/删除仍要提交；只对新增文件应用忽略规则。
+  git add -u -- . ':(top,exclude)dist'
+  git ls-files --others --exclude-standard -z -- . ':(top,exclude)dist' >"$RUN_DIR/source-paths"
   if [ -s "$RUN_DIR/source-paths" ]; then
-    git --literal-pathspecs add -A --pathspec-from-file="$RUN_DIR/source-paths" --pathspec-file-nul
+    git --literal-pathspecs add --pathspec-from-file="$RUN_DIR/source-paths" --pathspec-file-nul
   fi
   if ! git diff --cached --quiet; then git commit --no-verify -m "$1"; fi
 }

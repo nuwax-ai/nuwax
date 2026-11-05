@@ -358,6 +358,58 @@ test('commits all non-dist input and remote source on target, rebuilding test wi
   assert.equal(await head(state, 'origin', 'dev'), dev);
 });
 
+test('tracked files covered by ignore rules are updated or deleted while new ignored files stay untracked', async (t) => {
+  const state = await fixture(t);
+  await write(state.root, '.cursor/rules/project-rules.mdc', 'tracked rules');
+  await write(state.root, '.cursorrules', 'unchanged tracked rules');
+  await write(state.root, 'k8s/config/keep.yaml', 'unchanged tracked config');
+  await write(state.root, 'k8s/config/remove.yaml', 'remove this config');
+  await git(state.root, 'add', '.cursor', '.cursorrules', 'k8s');
+  await git(state.root, 'commit', '-m', 'fixture tracked config');
+  await fs.appendFile(
+    path.join(state.root, '.gitignore'),
+    '.cursor\n.cursorrules\n/k8s\n',
+  );
+  await git(state.root, 'add', '.gitignore');
+  await git(state.root, 'commit', '-m', 'fixture ignore tracked directories');
+  await write(
+    state.root,
+    '.cursor/rules/project-rules.mdc',
+    'updated tracked rules',
+  );
+  await write(state.root, 'k8s/config/remove.yaml', null);
+  await write(state.root, '.cursor/rules/new.mdc', 'ignored local rules');
+  await write(state.root, 'k8s/config/new.yaml', 'ignored local config');
+  await write(state.root, 'source.txt', 'updated source');
+  await write(state.root, 'dist/local-cache.txt', 'local artifact');
+  await git(state.root, 'add', '-f', 'dist');
+  await deploy(state, {}, null);
+  const source = await head(state, 'origin', target);
+  const artifact = await head(state, 'origin');
+  assert.equal(source, await head(state, 'gitlab', target));
+  assert.equal(artifact, await head(state, 'gitlab'));
+  assert.equal(
+    await show(state, source, '.cursor/rules/project-rules.mdc'),
+    'updated tracked rules',
+  );
+  assert.equal(
+    await show(state, source, '.cursorrules'),
+    'unchanged tracked rules',
+  );
+  assert.equal(
+    await show(state, source, 'k8s/config/keep.yaml'),
+    'unchanged tracked config',
+  );
+  assert.equal(await existsAt(state, source, 'k8s/config/remove.yaml'), false);
+  assert.equal(await show(state, source, 'source.txt'), 'updated source');
+  assert.equal(await existsAt(state, source, 'dist'), false);
+  for (const file of ['.cursor/rules/new.mdc', 'k8s/config/new.yaml']) {
+    assert.equal(await existsAt(state, source, file), false);
+    assert.equal(await existsAt(state, artifact, file), false);
+    assert(await fs.stat(path.join(state.root, file)));
+  }
+});
+
 test('build source changes are committed on target and rebuilt at the final commit without dist history', async (t) => {
   const state = await fixture(t);
   const previous = await makeCommit(state, state.seed, {
