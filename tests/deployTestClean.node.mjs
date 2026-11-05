@@ -640,7 +640,29 @@ if (process.argv[2] === 'refs/heads/test' && process.argv[4] === ${JSON.stringif
   assert.doesNotMatch(error.stdout, /✅/);
 });
 
-test('dry-run preserves dirty files, staged dist, refs and index and requires an explicit target', async (t) => {
+test('omitting the target deploys the current local branch including its non-dist input', async (t) => {
+  const state = await fixture(t);
+  const current = 'current-source';
+  await git(state.root, 'checkout', '-b', current);
+  await write(state.root, 'current-only.txt', 'current branch source');
+  await deploy(state, {}, null);
+  const source = await head(state, 'origin', current);
+  const artifact = await head(state, 'origin');
+  assert.equal(source, await head(state, 'gitlab', current));
+  assert.equal(artifact, await head(state, 'gitlab'));
+  assert.equal(await git(state.root, 'rev-parse', `${artifact}^`), source);
+  assert.equal(
+    await show(state, source, 'current-only.txt'),
+    'current branch source',
+  );
+  assert.equal(await existsAt(state, source, 'dist'), false);
+  assert.equal(await head(state, 'origin', target), state.seed);
+  assert.equal(await head(state, 'gitlab', target), state.seed);
+  assert((await calls(state)).every((call) => call.branch === current));
+  assert.equal(await git(state.root, 'branch', '--show-current'), current);
+});
+
+test('dry-run preserves dirty files, staged dist, refs and index for explicit and current targets', async (t) => {
   const state = await fixture(t);
   await write(state.root, 'source.txt', 'WIP');
   await write(state.root, 'dist/index.html', 'staged dist');
@@ -656,11 +678,48 @@ test('dry-run preserves dirty files, staged dist, refs and index and requires an
   });
   const before = await snapshot();
   assert.match((await deploy(state, { DRY_RUN: '1' })).stdout, /只读演练/);
+  assert.match(
+    (await deploy(state, { DRY_RUN: '1' }, null)).stdout,
+    new RegExp(`检出 ${target}`),
+  );
   assert.deepEqual(await snapshot(), before);
-  assert.match((await failure(deploy(state, {}, null))).stderr, /必须明确指定/);
+  assert.match(
+    (
+      await failure(
+        run(
+          state.root,
+          'bash',
+          ['deploy_test_clean.sh', target, 'extra'],
+          state.env,
+        ),
+      )
+    ).stderr,
+    /最多指定/,
+  );
   assert.match(
     (await failure(deploy(state, {}, 'test'))).stderr,
     /不能将 test/,
+  );
+});
+
+test('implicit test and detached HEAD targets fail before creating state or changing remotes', async (t) => {
+  const state = await fixture(t);
+  await git(state.root, 'checkout', 'test');
+  assert.match((await failure(deploy(state, {}, null))).stderr, /不能将 test/);
+  await git(state.root, 'checkout', '--detach', state.seed);
+  assert.match(
+    (await failure(deploy(state, {}, null))).stderr,
+    /detached HEAD/,
+  );
+  assert.equal(await head(state, 'origin'), state.seed);
+  assert.equal(await head(state, 'gitlab'), state.seed);
+  assert.equal(await git(state.root, 'rev-parse', 'HEAD'), state.seed);
+  assert.equal(
+    await fs.stat(path.join(state.root, '.git/nuwax-deploy')).then(
+      () => true,
+      () => false,
+    ),
+    false,
   );
 });
 
