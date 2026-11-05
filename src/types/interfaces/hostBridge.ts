@@ -74,6 +74,12 @@ export interface HostThemeInfo {
   description?: string;
   modes: HostThemeMode[];
   source: 'builtin' | 'installed' | 'linked';
+  /** Read-only card preview; package styles never execute in the settings page. */
+  preview?: {
+    mode: HostThemeMode;
+    tokens: Record<string, string>;
+    image?: string;
+  };
 }
 export interface HostThemesState {
   revision: number;
