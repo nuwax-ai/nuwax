@@ -3,14 +3,11 @@
  *
  * <p>项目分组头、任务分组头以及项目行内的展开状态都记在 localStorage：
  * 用户收起后刷新页面或重开客户端仍保持收起。分组权重是「最后一次操作」，
- * 不做过期；项目分组默认收起，任务分组默认展开。读取失败时沿用默认值，
+ * 不做过期；读取失败（无痕模式、配额满、历史脏值）一律回退默认展开，
  * 不能因为读偏好把列表渲染打断。
  */
 
-import {
-  COLLAPSED_PROJECT_KEYS_KEY,
-  PROJECT_SECTION_COLLAPSED_KEY,
-} from '@/constants/homeLayout.constants';
+import { COLLAPSED_PROJECT_KEYS_KEY } from '@/constants/homeLayout.constants';
 
 export {
   COLLAPSED_PROJECT_KEYS_KEY,
@@ -27,26 +24,24 @@ function storage(): Storage | null {
   }
 }
 
-/** 显式的展开和收起均优先于默认值；兼容历史的 '1' 收起记录。 */
+/** 读取分组头收起态；没有记录或读取失败按展开处理 */
 export function readCollapsedFlag(key: string): boolean {
   try {
-    const value = storage()?.getItem(key);
-    if (value === '1') return true;
-    if (value === '0') return false;
+    return storage()?.getItem(key) === '1';
   } catch {
-    // 无痕模式等不可读环境仍可使用默认布局
+    return false;
   }
-  return key === PROJECT_SECTION_COLLAPSED_KEY;
 }
 
-/** 展开必须显式落盘，否则项目分组刷新后会回到默认收起。 */
+/** 写入分组头收起态；展开时删除记录，避免无意义残留 */
 export function writeCollapsedFlag(key: string, collapsed: boolean): void {
   try {
     const store = storage();
     if (!store) return;
-    store.setItem(key, collapsed ? '1' : '0');
+    if (collapsed) store.setItem(key, '1');
+    else store.removeItem(key);
   } catch {
-    // 持久化失败不影响当前交互，下次进入使用默认值
+    // 持久化失败不影响当前交互，下次进入退化为默认展开
   }
 }
 

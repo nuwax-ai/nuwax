@@ -50,14 +50,19 @@
     }
   }
 
-  // 任务分组头与项目头平级，左缘同 15px 垂直对齐
+  // 任务分组头：滚动区内、项目列表下方；与项目头平级，左缘同 15px 垂直对齐
   // （原型 .tabs.task-tabs 带 30px 缩进，按需求定调改为平级不缩进）
   .task-section-tabs {
     margin-top: 6px;
     padding: 2px 15px 0 24px;
   }
 
-  .section-tabs-fixed {
+  // 分组头吸顶；仅项目头可见时，任务头向下偏移，避免互相覆盖。
+  // margin-top 并入 padding-top——吸顶条整块不透明，滚动内容不会从头顶缝隙穿出
+  .section-tabs-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     height: @projectSectionHeaderHeight;
     box-sizing: border-box;
     margin-top: 0;
@@ -67,37 +72,24 @@
     // (layout-bg-secondary=#F2F2F2)浅一档，列表顶部会显出一条浅色带
     background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
 
-    // 任务独占分组时沿用首个标题的高度和顶距。
+    // 任务独占分组时沿用首个标题的高度和顶距；项目标题可见时才下移吸顶。
     &.task-section-tabs-with-project {
+      top: @projectSectionHeaderHeight;
       height: 28px;
       padding-top: 8px;
     }
   }
 
-  .sidebar-section-wrapper {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+  .task-list-section {
+    flex-shrink: 0;
   }
 
   // 单栏项目列表：padding 7/15/16/15（右侧 15px 与顶部导航菜单项右缘对齐，
   // 均止于 x=245；原右 7px 使列表比导航宽出 8px）。
   // 原文件尾曾二次声明同名规则覆盖此处的 0 15px 16px，现按实际生效值并入，级联结果不变
   .project-list-section {
-    // 为任务标题和列表保留空间；项目再多也只在本区内滚动。
-    flex: 0 1 auto;
-    min-height: 0;
-    max-height: 40%;
-    overflow: auto;
-    box-sizing: border-box;
+    flex-shrink: 0;
     padding: 7px 15px 16px;
-    .scrollbar-scroll-show();
-  }
-
-  .sidebar-tasks-collapsed .project-list-section {
-    max-height: none;
   }
 
   .task-load-more {
