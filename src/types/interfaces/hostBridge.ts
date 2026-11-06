@@ -459,9 +459,17 @@ export interface HostBridgeContract {
     onStateChange?(listener: (state: ClientUpdateState) => void): () => void;
     check(): Promise<ClientUpdateCheckResult | null>;
     /** installAfterDownload 为 true 时，下载并继续安装、重启；否则仅下载。 */
-    download(): Promise<{ success: boolean; error?: string }>;
+    download(): Promise<{
+      success: boolean;
+      error?: string;
+      canceled?: boolean;
+    }>;
     /** 安装已下载更新；一键策略也可由此入口补齐下载。 */
-    install(): Promise<{ success: boolean; error?: string }>;
+    install(): Promise<{
+      success: boolean;
+      error?: string;
+      canceled?: boolean;
+    }>;
   };
   events: {
     onHostCommand(callback: ((payload: HostCommand) => void) | null): void;
