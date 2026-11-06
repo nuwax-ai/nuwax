@@ -6,11 +6,22 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import dayjs from 'dayjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const h = vi.hoisted(() => ({ summary: vi.fn(), detail: vi.fn() }));
+const h = vi.hoisted(() => ({
+  summary: vi.fn(),
+  detail: vi.fn(),
+  rank: vi.fn(),
+  trend: vi.fn(),
+}));
+vi.mock('@ant-design/plots', () => ({
+  Line: ({ data }: any) => (
+    <output aria-label="trend chart">{JSON.stringify(data)}</output>
+  ),
+}));
 vi.mock('umi', () => ({
   useLocation: () => ({ state: null }),
   useNavigate: () => vi.fn(),
@@ -18,6 +29,8 @@ vi.mock('umi', () => ({
 vi.mock('@/services/systemManage', () => ({
   apiGetResourceStatSummary: h.summary,
   apiGetResourceStatDetail: h.detail,
+  apiGetUserTokenRank: h.rank,
+  apiGetUserTokenTrend: h.trend,
 }));
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string, ...args: unknown[]) => [key, ...args].join(' '),
@@ -144,12 +157,228 @@ async function openUserView() {
   ).toBeInTheDocument();
 }
 beforeEach(() => {
+  h.rank
+    .mockReset()
+    .mockResolvedValue(
+      ok({ records: [rankRow()], total: 80, pageNum: 1, pageSize: 20 }),
+    );
+  h.trend.mockReset().mockResolvedValue(
+    ok([
+      { dt: '20261102', ...tokenMetrics, totalTokens: '9007199254740993' },
+      { dt: '20261101', ...tokenMetrics },
+    ]),
+  );
   h.summary.mockReset().mockResolvedValue(summary());
   h.detail
     .mockReset()
     .mockImplementation((params: any) =>
       Promise.resolve(detail(params.userId)),
     );
+});
+
+const tokenMetrics = {
+  inputTokens: '10',
+  cacheInputTokens: '3',
+  outputTokens: '7',
+  totalTokens: '20',
+  creditAmount: '1.25',
+  callCount: '2',
+};
+const rankRow = (userId = '9007199254740993') => ({
+  rank: 9,
+  userId,
+  nickName: 'rank-user',
+  status: -1,
+  ...tokenMetrics,
+});
+
+async function openRanking() {
+  render(<ModelMonitor />);
+  await screen.findByText('platform-row');
+  fireEvent.click(
+    screen.getByRole('radio', { name: 'PC.Pages.ModelMonitor.rankingTitle' }),
+  );
+  await screen.findByText('rank-user');
+}
+
+describe('用户 Token 排名与每日趋势', () => {
+  it('使用服务端排名与总数，翻页保持已提交日期，重新查询和重置回首页', async () => {
+    await openRanking();
+    expect(h.rank).toHaveBeenLastCalledWith(
+      {
+        dtStart: dayjs().startOf('month').format('YYYYMMDD'),
+        dtEnd: dayjs().format('YYYYMMDD'),
+        sortField: 'totalTokens',
+        pageNum: 1,
+        pageSize: 20,
+      },
+      expect.objectContaining({
+        skipErrorHandler: true,
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(
+      within(screen.getByText('rank-user').closest('tr')!).getByText('9'),
+    ).toBeInTheDocument();
+    const applied = h.rank.mock.calls.at(-1)![0];
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    fireEvent.click(screen.getByTitle('2'));
+    await waitFor(() =>
+      expect(h.rank.mock.calls.at(-1)![0]).toEqual({ ...applied, pageNum: 2 }),
+    );
+    fireEvent.click(queryButton());
+    await waitFor(() =>
+      expect(h.rank.mock.calls.at(-1)![0]).toMatchObject({
+        dtStart: '20261101',
+        dtEnd: '20261102',
+        pageNum: 1,
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.reset' }),
+    );
+    await waitFor(() => expect(h.rank.mock.calls.at(-1)![0]).toEqual(applied));
+  });
+
+  it('禁用用户仍能钻取；完整长 ID 和生效日期用于趋势，按日排序且保留精确数值', async () => {
+    await openRanking();
+    const applied = h.rank.mock.calls.at(-1)![0];
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.viewTrend' }),
+    );
+    const chart = await screen.findByLabelText('trend chart');
+    expect(h.trend).toHaveBeenLastCalledWith(
+      {
+        userId: '9007199254740993',
+        dtStart: applied.dtStart,
+        dtEnd: applied.dtEnd,
+      },
+      expect.anything(),
+    );
+    expect(userInput()).toHaveValue('9007199254740993');
+    expect(chart.textContent!.indexOf('2026-11-01')).toBeLessThan(
+      chart.textContent!.indexOf('2026-11-02'),
+    );
+    expect(screen.getByText('9,007,199,254,740,993')).toBeInTheDocument();
+    expect(screen.getAllByText('1.25')).toHaveLength(2);
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: 'PC.Pages.ModelMonitor.nonCacheInputTokens',
+      }),
+    );
+    expect(JSON.parse(chart.textContent!)[0].exact).toBe('10');
+    // 排名钻取不依赖旧汇总/模型明细接口是否可用。
+    expect(h.detail).toHaveBeenCalledTimes(1);
+  });
+
+  it('拒绝使用已经舍入的数值 ID 定位用户', async () => {
+    h.rank.mockResolvedValueOnce(
+      ok({ records: [rankRow(9007199254740992 as any)], total: 1 }),
+    );
+    await openRanking();
+    expect(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.viewTrend' }),
+    ).toBeDisabled();
+    expect(h.trend).not.toHaveBeenCalled();
+  });
+
+  it('排名切换日期或离开视图取消旧请求，迟到结果不能覆盖新排名', async () => {
+    await openRanking();
+    let resolve!: (data: unknown) => void;
+    h.rank.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    fireEvent.click(queryButton());
+    const signal = h.rank.mock.calls.at(-1)![1].signal;
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    fireEvent.click(queryButton());
+    await screen.findByText('rank-user');
+    expect(signal.aborted).toBe(true);
+    await act(async () =>
+      resolve(
+        ok({
+          records: [{ ...rankRow('101'), nickName: 'stale-rank' }],
+          total: 1,
+        }),
+      ),
+    );
+    expect(screen.queryByText('stale-rank')).toBeNull();
+    const activeSignal = h.rank.mock.calls.at(-1)![1].signal;
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: 'PC.Pages.ModelMonitor.platformScope',
+      }),
+    );
+    expect(activeSignal.aborted).toBe(true);
+  });
+
+  it('排名失败与合法空结果分开，重试消费网络拒绝', async () => {
+    await openRanking();
+    h.rank.mockRejectedValueOnce(new Error('offline'));
+    fireEvent.click(queryButton());
+    await screen.findByText('PC.Pages.ModelMonitor.queryFailed');
+    expect(screen.queryByText('rank-user')).toBeNull();
+    expect(
+      screen.queryByText('PC.Pages.ModelMonitor.noConsumption'),
+    ).toBeNull();
+    h.rank.mockResolvedValueOnce(ok({ records: [], total: 0 }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.retry' }),
+    );
+    await screen.findByText('PC.Pages.ModelMonitor.noConsumption');
+  });
+
+  it('手动查询用户同样可看趋势，换用户与日期丢弃迟到响应，草稿不会发请求', async () => {
+    await openUserView();
+    queryUser('101');
+    await screen.findByText('user-101');
+    let resolve!: (data: unknown) => void;
+    h.trend.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole('radio', { name: 'PC.Pages.ModelMonitor.trendTitle' }),
+    );
+    await waitFor(() => expect(h.trend).toHaveBeenCalledTimes(1));
+    const signal = h.trend.mock.calls[0][1].signal;
+    fireEvent.change(userInput(), { target: { value: '202' } });
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    expect(h.trend).toHaveBeenCalledTimes(1);
+    fireEvent.click(queryButton());
+    await screen.findByLabelText('trend chart');
+    expect(signal.aborted).toBe(true);
+    expect(h.trend.mock.calls.at(-1)![0]).toEqual({
+      userId: '202',
+      dtStart: '20261101',
+      dtEnd: '20261102',
+    });
+    await act(async () => resolve(ok([{ dt: '19990101', ...tokenMetrics }])));
+    expect(screen.getByLabelText('trend chart')).not.toHaveTextContent('1999');
+    const activeSignal = h.trend.mock.calls.at(-1)![1].signal;
+    cleanup();
+    expect(activeSignal.aborted).toBe(true);
+  });
+
+  it('趋势业务失败后可独立重试，空趋势不绘制零折线', async () => {
+    await openRanking();
+    h.trend.mockResolvedValueOnce({ code: '4000', data: [] });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.viewTrend' }),
+    );
+    await screen.findByText('PC.Pages.ModelMonitor.trendFailed');
+    expect(screen.queryByLabelText('trend chart')).toBeNull();
+    h.trend.mockResolvedValueOnce(ok([]));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.retry' }),
+    );
+    await screen.findByText('PC.Pages.ModelMonitor.noConsumption');
+    expect(screen.queryByLabelText('trend chart')).toBeNull();
+  });
 });
 afterEach(cleanup);
 
