@@ -79,7 +79,12 @@ import type {
   UploadResultDto,
   UserSandBoxSelectDto,
   UserStatsResult,
+  UserTokenRankDTO,
+  UserTokenRankParams,
+  UserTokenTrendDTO,
+  UserTokenTrendParams,
 } from '@/types/interfaces/systemManage';
+import { parseInt64Json } from '@/utils/parseInt64Json';
 import { request } from 'umi';
 
 // 查询用户列表
@@ -1589,9 +1594,32 @@ export async function apiGetResourceStatDetail(
   });
 }
 
-/**
- * 获取当前用户资源统计汇总
- */
+/** 用户 Token 消耗排名（服务端排序、分页） */
+export async function apiGetUserTokenRank(
+  params: UserTokenRankParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<PageNum<UserTokenRankDTO>>> {
+  return request('/api/system/bill/resource-stat/user-rank', {
+    method: 'GET',
+    params,
+    transformResponse: [parseInt64Json],
+    ...options,
+  });
+}
+
+export async function apiGetUserTokenTrend(
+  params: UserTokenTrendParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<UserTokenTrendDTO[]>> {
+  return request('/api/system/bill/resource-stat/user-trend', {
+    method: 'GET',
+    params,
+    transformResponse: [parseInt64Json],
+    ...options,
+  });
+}
+
+/** 获取当前用户资源统计汇总 */
 export async function apiGetMyResourceStatSummary(params?: {
   dtStart?: string;
   dtEnd?: string;

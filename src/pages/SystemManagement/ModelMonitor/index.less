@@ -40,6 +40,18 @@
   margin-bottom: @marginSm;
 }
 
+.rank-content,
+.trend-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.user-id {
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+}
+
 .user-metrics {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 
