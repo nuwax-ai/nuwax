@@ -101,12 +101,12 @@ function connect() {
 
 describe('正式消息适配的连接恢复', () => {
   it.each([false, true])(
-    'WS open=%s，10 秒未完成握手后关闭旧连接并重试',
+    'WS open=%s，15 秒未完成握手后关闭旧连接并重试',
     async (opened) => {
       socket.connect(null);
       const old = Transport.instances[0];
       if (opened) old.open();
-      await vi.advanceTimersByTimeAsync(9_999);
+      await vi.advanceTimersByTimeAsync(14_999);
       expect(old.close).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(1);
       expect(old.close).toHaveBeenCalledOnce();
@@ -254,6 +254,7 @@ describe('正式消息适配的连接恢复', () => {
     socket.connect(null);
     Transport.instances[1].ack();
     expect(socket.connected).toBe(true);
-    expect(vi.getTimerCount()).toBe(1);
+    // 心跳与 PONG 看门狗各一个定时器。
+    expect(vi.getTimerCount()).toBe(2);
   });
 });
