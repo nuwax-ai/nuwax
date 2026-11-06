@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Workbench.open": "Plugin workbench",
   "PC.Themes.recovery": "Recovery mode uses the default theme. Restore default here, or reopen without ?theme=default to use your selection.",
   "PC.Themes.title": "Themes",
   "PC.Themes.desktopHint": "Import a theme or link a local folder. Saved changes apply automatically.",

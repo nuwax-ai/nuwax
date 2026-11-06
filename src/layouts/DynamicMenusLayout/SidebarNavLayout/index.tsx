@@ -73,6 +73,7 @@ import { handleOpenUrl } from '../utils';
 import DshLauncher from './DshLauncher';
 import styles from './index.less';
 import { useSidebarUserNameVisibility } from './useSidebarUserNameVisibility';
+import WorkbenchLauncher from './WorkbenchLauncher';
 
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
@@ -521,6 +522,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
           <CreditsBalance showFooter={false} />
           <DshLauncher />
+          <WorkbenchLauncher />
           <div className={cx(styles['sidebar-footer-row'])}>
             {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
             <User placement="topLeft">

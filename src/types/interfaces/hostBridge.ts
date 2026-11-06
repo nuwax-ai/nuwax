@@ -123,6 +123,10 @@ export interface HostDshLauncherBridge {
   open(): Promise<{ ok: boolean; error?: string }>;
 }
 
+export interface HostWorkbenchBridge {
+  open(conversationId: string): Promise<{ ok: boolean; error?: string }>;
+}
+
 export interface TitlebarDragRegion {
   x: number;
   y: number;
@@ -548,6 +552,7 @@ export interface HostBridgeContract {
   /** 本机主题管理；旧宿主缺席时前端使用 Web 存储适配器。 */
   themes?: HostThemesBridge;
   dshRuntime?: HostDshLauncherBridge;
+  workbench?: HostWorkbenchBridge;
   layout: {
     setNewTaskAvailable(available: boolean): void;
     setSecondMenuAvailable(available: boolean): void;
