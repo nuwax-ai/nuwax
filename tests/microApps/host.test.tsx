@@ -422,6 +422,7 @@ describe('持久微应用宿主', () => {
         path: '/repo/doc/a',
         active: true,
         navigationRevision: 0,
+        theme: mocks.load.mock.calls[0][0].props.theme,
       }),
     );
     expect(view.container.querySelector('[data-micro-app]')).toBe(container);

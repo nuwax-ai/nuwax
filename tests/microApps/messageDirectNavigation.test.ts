@@ -46,6 +46,20 @@ beforeAll(async () => {
     path.join(temporary, 'nuwax-im-web/src'),
     { recursive: true },
   );
+  const adapter = JSON.parse(
+    readFileSync(
+      path.join(root, 'micro-frontends/message/adapter.json'),
+      'utf8',
+    ),
+  );
+  for (const [target, source] of Object.entries<string>(
+    adapter.sharedOverlay,
+  )) {
+    cpSync(
+      path.join(root, source),
+      path.join(temporary, 'nuwax-im-web', target),
+    );
+  }
   const entry = path.join(temporary, 'entry.ts');
   writeFileSync(
     entry,
