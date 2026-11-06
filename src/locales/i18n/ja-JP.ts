@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Workbench.open": "プラグインワークスペース",
   "PC.Themes.recovery": "復旧モードでは標準テーマを使用します。標準に戻すか、URL の ?theme=default を削除して開き直すと選択したテーマを使用できます。",
   "PC.Themes.title": "テーマ",
   "PC.Themes.desktopHint": "テーマをインポートするか、ローカルフォルダーを関連付けます。保存した変更は自動で反映されます。",
