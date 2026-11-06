@@ -2024,7 +2024,6 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
                       {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
                       <div
                         className={cx(styles['middle-panel'], {
-                          [styles['middle-panel-visible']]: canShowFileView,
                           [styles['middle-panel-hidden']]: !canShowFileView,
                         })}
                       >

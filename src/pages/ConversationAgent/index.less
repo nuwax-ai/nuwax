@@ -111,20 +111,10 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
-      border-right-width 0.3s ease-in-out;
 
+    // 与 AppDevPro 的 leftHidden 一致：直接移出布局，不过渡宽度和透明度。
     &.middle-panel-hidden {
-      width: 0;
-      opacity: 0;
-      border-right-width: 0;
-      pointer-events: none;
-    }
-
-    &.middle-panel-visible {
-      width: 280px;
-      opacity: 1;
-      pointer-events: auto;
+      display: none;
     }
   }
 
