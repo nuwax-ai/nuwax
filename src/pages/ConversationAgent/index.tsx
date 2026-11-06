@@ -2038,6 +2038,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
                           enableVersionControl={enableVersionControl}
                           tree={{
                             ...fileView.tree,
+                            toolbarTitle: dict(
+                              'PC.Pages.ConversationAgentMiddlePanel.files',
+                            ),
                             loadedFolderIds: workspaceFiles.loadedFolderIds,
                             loadingFolderIds: workspaceFiles.loadingFolderIds,
                             onLoadDirectory: workspaceFiles.onLoadDirectory,
@@ -2055,7 +2058,10 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
                           treeClassName="w-full h-full"
                           onImportProject={handleImportProject}
                           importProjectLabel={dict(
-                            'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                            'PC.Components.FileTreePanel.FileTreeToolbar.importArtifacts',
+                          )}
+                          exportProjectLabel={dict(
+                            'PC.Components.FileTreePanel.FileTreeToolbar.exportArtifacts',
                           )}
                           isImportingProject={isImportingProject}
                           sourceControl={{
