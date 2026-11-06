@@ -62,14 +62,21 @@ export function resolveAutoSelection({
     return { selectedId: null, reason: 'none' };
   }
 
-  // legacy：与既有 effect 行为一致（记忆无条件顶替，不校验是否在列表内）
+  // legacy：
   const isValueValid = isInList(computerList, value);
   let selectedId: string | null = null;
   let reason: AutoSelectionDecision['reason'] = 'none';
-  if (savedSelection) {
+
+  // 云端缺席时，云端记忆 -1 绝不能当作待等待记忆，必须回落有效列表项（NW-360）
+  const isCloudMemoryAbsent =
+    savedSelection === CLOUD_SANDBOX_ID &&
+    !isInList(computerList, CLOUD_SANDBOX_ID);
+
+  if (savedSelection && !isCloudMemoryAbsent) {
     selectedId = savedSelection;
     reason = 'memory';
   }
+
   if (!selectedId && !isValueValid && computerList.length > 0) {
     selectedId = computerList[0].id;
     reason = 'fallback-first';
