@@ -1373,6 +1373,63 @@ describe('@ 弹层·首页模式（专家+资料库）', () => {
 });
 
 describe('插件选择与草稿兼容', () => {
+  it('结构化草稿保留多行正文及技能、资料、文件 chip 的顺序和发送信息', async () => {
+    const ref = createRef<MentionEditorHandle>();
+    const ids = vi.fn();
+    const docs = vi.fn();
+    const { container } = render(
+      <MentionEditor
+        ref={ref}
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onSkillIdsChange={ids}
+        onDocsChange={docs}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '第一行\n第二行 ');
+    act(() => ref.current?.handleAtIconMentionSelect(skill));
+    await act(async () => {});
+    act(() =>
+      ref.current?.handleAtIconMentionSelect({
+        kind: 'doc',
+        slugId: 'doc-1',
+        name: '<资料>',
+        pageType: 'md',
+      }),
+    );
+    act(() => ref.current?.handleAtIconMentionSelect(file));
+    const serialized = getSerializedEditorText(editor);
+    const content = ref.current!.getDraftContent();
+    act(() => ref.current?.setEditorText('另一个会话'));
+    await act(async () => {});
+    expect(editor.querySelector('[data-mention-id]')).toBeNull();
+    act(() => ref.current?.setEditorText('', content));
+    await act(async () => {});
+    expect(getSerializedEditorText(editor)).toBe(serialized);
+    expect(editor.querySelectorAll('[data-mention-id]')).toHaveLength(3);
+    expect(
+      editor.querySelector('[data-mention-kind="doc"]')?.textContent,
+    ).toContain('<资料>');
+    expect(editor.querySelector('资料')).toBeNull();
+    expect(ids).toHaveBeenLastCalledWith([42]);
+    expect(docs).toHaveBeenLastCalledWith([
+      { slugId: 'doc-1', title: '<资料>', pageType: 'md' },
+    ]);
+    fireEvent.click(
+      editor.querySelector(
+        '[data-mention-kind="skill"] [data-mention-delete]',
+      )!,
+    );
+    expect(ids).toHaveBeenLastCalledWith([]);
+    expect(
+      ref
+        .current!.getDraftContent()
+        .some((part) => typeof part !== 'string' && part.kind === 'skill'),
+    ).toBe(false);
+  });
   it('插件只追加一次，现有同 ID 工作流不受影响，新插件可在组件栏取消', () => {
     const { result } = renderHook(() => {
       const selected = useSelectedComponent();
@@ -1403,7 +1460,7 @@ describe('插件选择与草稿兼容', () => {
     expect(result.current.selectedComponentList).toEqual([workflow]);
     expect(result.current.commandManualComponents).toHaveLength(0);
   });
-  it('文件引用以文本存储，技能仍使用 version 1 的 skillIds 快照', () => {
+  it('兼容旧版纯文本与 skillIds 草稿', () => {
     saveDraft('mention-test', {
       version: 1,
       text: '@output/报告.md @写作 ',

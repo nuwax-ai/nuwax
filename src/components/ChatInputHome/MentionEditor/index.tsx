@@ -26,6 +26,10 @@
 import type { ExpertListItem } from '@/components/business-component/ExpertListView';
 import type { KnowledgeListItem } from '@/components/business-component/KnowledgeListView';
 import type { SkillListItem } from '@/components/business-component/SkillListView';
+import type {
+  ConversationDraftContent,
+  ConversationDraftMention,
+} from '@/features/conversation/domain/conversationPageCache';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import classNames from 'classnames';
@@ -237,7 +241,7 @@ const serializeEditorNode = (node: Node, stripChips = false): string => {
     return '';
   }
 
-  // 剥离模式：mention chip 不参与文本（草稿落盘场景，防引用字面量残留）
+  // 摘要模式剥离 chip，防止名称字面量与结构化引用重复。
   if (stripChips && isMentionChipEl(node)) {
     return '';
   }
@@ -1521,31 +1525,46 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * onChange 回传让受控 value 与编辑器内容保持一致
      */
     const setEditorText = useCallback(
-      (text: string) => {
+      (text: string, content?: ConversationDraftContent) => {
         if (!editorRef.current) return;
         isHistoryActionRef.current = true;
         closeMentionPopup();
         editorRef.current.textContent = text;
-        if (!text.trim()) {
+        if (content?.length) {
+          editorRef.current.replaceChildren(
+            ...content.map((part) =>
+              typeof part === 'string'
+                ? document.createTextNode(part)
+                : createMentionChip(part),
+            ),
+          );
+        }
+        const serializedText = getSerializedEditorText(editorRef.current);
+        if (!serializedText.trim()) {
           ensureCaretAnchor();
         }
         resetUndoStack(editorRef.current.innerHTML);
         syncMentionsFromDom();
-        setIsEditorEmpty(!text.trim());
-        lastEmittedValueRef.current = text;
-        onChange?.(text);
+        setIsEditorEmpty(!serializedText.trim());
+        lastEmittedValueRef.current = serializedText;
+        onChange?.(serializedText);
         // 恢复/切换后光标落在内容末尾：回到会话即可继续输入（对齐飞书/微信）
         placeCaretAtEnd(editorRef.current);
         queueMicrotask(() => {
           isHistoryActionRef.current = false;
         });
       },
-      [onChange, resetUndoStack, closeMentionPopup, syncMentionsFromDom],
+      [
+        onChange,
+        resetUndoStack,
+        closeMentionPopup,
+        syncMentionsFromDom,
+        createMentionChip,
+      ],
     );
 
     /**
-     * 草稿落盘用的纯文本：mention chip 剥离——chip 无法跨刷新/切换还原，
-     * 序列化残留的 @/ 名称字面量会污染恢复后的输入框
+     * 草稿摘要剥离 chip，完整内容由 getDraftContent 保存。
      */
     const getPlainText = useCallback(
       () =>
@@ -1555,12 +1574,55 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [],
     );
 
+    const getDraftContent = useCallback(() => {
+      if (!editorRef.current) return [];
+      const clone = editorRef.current.cloneNode(true) as HTMLElement;
+      // 使用原文中不存在的分隔符，让现有多行序列化保留文本和引用的顺序。
+      let separator = '\uFFFC';
+      while (clone.textContent?.includes(separator)) separator += '\uFFFC';
+      const mentions: ConversationDraftMention[] = [];
+      clone
+        .querySelectorAll<HTMLElement>('[data-mention-id]')
+        .forEach((chip) => {
+          const mention: ConversationDraftMention =
+            chip.dataset.mentionKind === 'file'
+              ? {
+                  kind: 'file',
+                  name: chip.dataset.mentionName || '',
+                  relativePath: chip.dataset.mentionPath || '',
+                }
+              : chip.dataset.mentionKind === 'doc'
+              ? {
+                  kind: 'doc',
+                  name: chip.dataset.mentionName || '',
+                  slugId: chip.dataset.mentionSlugId || '',
+                  pageType: chip.dataset.mentionPageType,
+                }
+              : {
+                  kind: 'skill',
+                  name: chip.dataset.mentionName || '',
+                  targetId: Number(chip.dataset.mentionId),
+                };
+          const index = mentions.push(mention) - 1;
+          chip.replaceWith(
+            document.createTextNode(`${separator}${index}${separator}`),
+          );
+        });
+      return getSerializedEditorText(clone)
+        .split(separator)
+        .flatMap(
+          (part, index): ConversationDraftContent =>
+            index % 2 ? [mentions[Number(part)]] : part ? [part] : [],
+        );
+    }, []);
+
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
       hasFocus: () => !!editorRef.current?.contains(document.activeElement),
       clear,
       setEditorText,
       getPlainText,
+      getDraftContent,
       handleAtIconMentionSelect,
       insertTriggerText,
       focus: () => {

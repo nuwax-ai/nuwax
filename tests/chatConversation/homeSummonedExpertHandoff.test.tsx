@@ -4,6 +4,7 @@
  * 桩法对齐 chatInputUnified.home.test.tsx：umi / services / 子组件一律 mock，
  * ChatInputUnified 以捕获 props 的桩替代，断言透传收敛到 summonedExpert prop。
  */
+import useHomeInputContext from '@/models/homeInputContext';
 import Home from '@/pages/Home';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
@@ -12,20 +13,39 @@ import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderView,
   screen,
   waitFor,
 } from '@testing-library/react';
+import {
+  createContext,
+  useContext,
+  type PropsWithChildren,
+  type ReactElement,
+} from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // 透传上下文底层数据（与真实 pageHandoffContext model 同构：读清一次性）；
 // 经 hoisted 暴露给 umi mock 与用例断言共享
 const handoffMap = vi.hoisted(() => ({} as Record<string, unknown>));
 
+const HomeInputContext = createContext<ReturnType<
+  typeof useHomeInputContext
+> | null>(null);
+const HomeInputProvider = ({ children }: PropsWithChildren) => (
+  <HomeInputContext.Provider value={useHomeInputContext()}>
+    {children}
+  </HomeInputContext.Provider>
+);
+const render = (ui: ReactElement) =>
+  renderView(ui, { wrapper: HomeInputProvider });
+
 vi.mock('umi', () => ({
   // Home 消费 effect 依赖 location.key（同路由 push 重新消费），测试固定一个 key
   useLocation: () => ({ key: 'test-home-key' }),
   useModel: (name: string) => {
+    const homeInput = useContext(HomeInputContext);
+    if (name === 'homeInputContext') return homeInput;
     if (name === 'pageHandoffContext') {
       return {
         contextMap: handoffMap,
@@ -119,6 +139,7 @@ vi.mock('@/hooks/useConversation', () => ({
 vi.mock('@/hooks/useSelectedComponent', () => ({
   default: () => ({
     selectedComponentList: [],
+    selectedComponentDetails: [],
     handleSelectComponent: vi.fn(),
     initSelectedComponentList: vi.fn(),
   }),

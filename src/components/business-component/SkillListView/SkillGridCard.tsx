@@ -62,7 +62,7 @@ const SkillGridCard: React.FC<SkillCardBaseProps> = ({
           </div>
         </div>
         <div className={cx(styles['card-actions'])}>
-          {/* 悬停/键盘聚焦浮现（不占位），方形圆角 tint 底 */}
+          {/* 保留按钮占位，悬停/键盘聚焦时浮现。 */}
           <Button
             size="small"
             className={cx(styles['card-hire'], styles['card-select'])}

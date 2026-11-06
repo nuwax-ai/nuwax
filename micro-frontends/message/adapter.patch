@@ -2985,33 +2985,51 @@ index 282cf1e..b6e9a10 100644
  
  interface ImportMeta {
 diff --git a/nuwax-im-web/src/ws/ImSocket.ts b/nuwax-im-web/src/ws/ImSocket.ts
-index e0b42b2..ae5f7ed 100644
+index e0b42b2..3169e67 100644
 --- a/nuwax-im-web/src/ws/ImSocket.ts
 +++ b/nuwax-im-web/src/ws/ImSocket.ts
-@@ -123,6 +123,13 @@ const MAX_BACKOFF_MS = 30_000;
-  * 没有这个超时，半开的连接会永久停在 {@code connecting}。
-  */
- const CONNECT_ACK_TIMEOUT_MS = 15_000;
-+/** 离线时不建连，只按这个间隔在本地复查 navigator.onLine。 */
+@@ -115,6 +115,9 @@ export interface SocketListeners {
+ }
+ 
+ const MAX_BACKOFF_MS = 30_000;
++const HANDSHAKE_TIMEOUT_MS = 10_000;
 +const OFFLINE_PROBE_MS = 15_000;
-+/**
-+ * 握手拒绝里可以重试的业务码。
-+ * IM_10503 是平台暂时不可用，IM_90002 是服务繁忙；二者都不是鉴权失败。
-+ */
 +const RETRYABLE_CODES = new Set(['IM_10503', 'IM_90002']);
  
- export class ImSocket {
-   private ws: WebSocket | null = null;
-@@ -149,6 +156,8 @@ export class ImSocket {
-   private pingsSincePong = 0;
-   /** ★判死阈值（ms）：2×心跳间隔 + 5s，且恒小于服务端读空闲的 3×间隔。 */
-   private pongTimeoutMs = 65_000;
-+  /** 宿主补上的 online/offline 监听是否已挂上。登出、拒绝、被踢后要摘掉。 */
+ /**
+  * ★CONNECT 帧发出后等 CONNECT_ACK 的上限。
+@@ -132,6 +135,8 @@ export class ImSocket {
+   private pongWatchdogTimer: ReturnType<typeof setInterval> | null = null;
+   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+   private connectTimer: ReturnType<typeof setTimeout> | null = null;
++  private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
 +  private recoveryListening = false;
- 
+   private backoffMs = 1000;
+   private manualClose = false;
+   private stopReconnect = false;
+@@ -153,21 +158,6 @@ export class ImSocket {
    state: ConnState = 'idle';
    listeners: SocketListeners = {};
-@@ -184,6 +193,8 @@ export class ImSocket {
+ 
+-  constructor() {
+-    // ★★半开连接（休眠唤醒 / Wi-Fi 切 4G / NAT 超时）不会派发 onclose，而后台标签的
+-    //   定时器又会被节流到一分钟以上 ⇒ 回到前台/恢复联网时立刻补一次验活，
+-    //   别让用户回到页面后还要再等一个心跳周期。
+-    //   ★Node 单测里没有 document/window.addEventListener，两道 guard 缺一不可。
+-    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+-      document.addEventListener('visibilitychange', () => {
+-        if (document.visibilityState === 'visible') this.probeLiveness();
+-      });
+-    }
+-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+-      window.addEventListener('online', () => this.probeLiveness());
+-    }
+-  }
+-
+   /**
+    * 连接（或重连）。deviceId 取标签页级唯一值。
+    *
+@@ -184,6 +174,8 @@ export class ImSocket {
      this.token = token;
      this.manualClose = false;
      this.stopReconnect = false;
@@ -3020,7 +3038,7 @@ index e0b42b2..ae5f7ed 100644
      // ★★必须先关掉在世的旧连接（DEV-157）。本类不变量是「一个实例任何时刻最多一条连接」，
      //   而 connect() 原本是无条件 openSocket()：调用两次就有两条同 deviceId 的连接同时在世。
      //   服务端的处置是【静默关闭旧 Channel】（§5.6.1 同 deviceId 重连），于是：
-@@ -202,6 +213,7 @@ export class ImSocket {
+@@ -202,6 +194,7 @@ export class ImSocket {
      this.manualClose = true;
      this.stopReconnect = true;
      this.clearTimers();
@@ -3028,21 +3046,25 @@ index e0b42b2..ae5f7ed 100644
      this.closeCurrentSocket('logout');
      this.setState('closed');
    }
-@@ -270,7 +282,12 @@ export class ImSocket {
+@@ -234,6 +227,7 @@ export class ImSocket {
+     //   （新连接此时还没 CONNECT，服务端按未鉴权拒绝）。
+     this.stopHeartbeat();
+     this.clearConnectTimer();
++    this.clearHandshake();
+     if (!old) return;
+     old.onopen = null;
+     old.onmessage = null;
+@@ -270,7 +264,8 @@ export class ImSocket {
    private sendUp(op: number, body: unknown): string | null {
      if (!this.connected || !this.ws) return null;
      const pkt = upPacket(op, body, `w${++this.reqSeq}`);
 -    this.ws.send(JSON.stringify(pkt));
-+    try {
-+      this.ws.send(JSON.stringify(pkt));
-+    } catch {
-+      this.recoverConnection();
-+      return null;
-+    }
++    try { this.ws.send(JSON.stringify(pkt)); }
++    catch { this.recoverConnection(); return null; }
      return pkt.reqId ?? null;
    }
  
-@@ -286,12 +303,22 @@ export class ImSocket {
+@@ -286,12 +281,22 @@ export class ImSocket {
      // ★门禁只看 stopReconnect，<b>不再</b>要求 this.token 非空。
      //   平台模式下 token 恒为 null（凭据在同域 Cookie 里），若继续用 `!this.token` 拦，
      //   症状是"点开 IM 什么都不发生、控制台一行日志都没有"——因为压根没发起连接。
@@ -3054,7 +3076,7 @@ index e0b42b2..ae5f7ed 100644
      //   这一行兜的是重入路径：例如"HTTP 401 的 disconnect()"与"重连定时器"同时到达。
      this.closeCurrentSocket('replaced');
      this.setState(isReconnect ? 'reconnecting' : 'connecting');
-+    // offline 是本机信号。等待期间只做本地探测，online 事件可提前唤醒。
++    // offline 是本机信号；等待期间只做本地探测，online 事件可提前唤醒。
 +    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
 +      this.setState('reconnecting');
 +      this.reconnectTimer = setTimeout(() => {
@@ -3066,48 +3088,63 @@ index e0b42b2..ae5f7ed 100644
      const scheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
      const url = `${scheme}${window.location.host}${WS_PATH}`;
      let ws: WebSocket;
-@@ -302,6 +329,8 @@ export class ImSocket {
+@@ -302,6 +307,9 @@ export class ImSocket {
        return;
      }
      this.ws = ws;
-+    // 卡在 CONNECTING、永远不触发 open 时，也要在同一时限内放弃这条连接。
-+    this.armConnectTimer();
++    this.handshakeTimer = setTimeout(() => {
++      if (this.ws === ws) this.recoverConnection();
++    }, HANDSHAKE_TIMEOUT_MS);
  
      // ★★四个 handler 一开始都先判 {@code this.ws !== ws}：本 socket 已被顶替/已被主动关闭时，
      //   它的事件一律【不得】影响状态机（DEV-157）。少了这道护栏，
-@@ -320,7 +349,12 @@ export class ImSocket {
+@@ -320,7 +328,10 @@ export class ImSocket {
        this.lastPongAt = Date.now();
        this.pingsSincePong = 0;
        const pkt = upPacket(Op.CONNECT, body);
 -      ws.send(JSON.stringify(pkt));
-+      try {
-+        ws.send(JSON.stringify(pkt));
-+      } catch {
-+        this.recoverConnection();
-+        return;
-+      }
++      // 底层连接已打开，随后由 CONNECT_ACK 超时负责握手。
++      this.clearHandshake();
++      try { ws.send(JSON.stringify(pkt)); }
++      catch { this.recoverConnection(); return; }
        this.armConnectTimer();
      };
  
-@@ -352,7 +386,8 @@ export class ImSocket {
+@@ -341,18 +352,11 @@ export class ImSocket {
+       // ★陈旧连接的 close 不是"当前连接断了"：既不排重连，也不许停当前连接的心跳
+       //   （原实现在这里无条件 stopHeartbeat()，会把顶替者的心跳一起清掉）。
+       if (this.ws !== ws) return;
+-      this.ws = null;
+-      this.stopHeartbeat();
+-      this.clearConnectTimer();
+-      if (this.manualClose || this.stopReconnect) {
+-        this.setState('closed');
+-        return;
+-      }
+-      this.scheduleReconnect();
++      this.recoverConnection();
      };
  
      ws.onerror = () => {
 -      // onerror 之后必跟 onclose，重连统一在 onclose 处理
-+      // 部分运行环境（宿主 webview）onerror 之后不一定跟 onclose，不能把重连只押在 onclose 上。
-+      if (this.ws === ws) this.markSocketDead('transport-error');
++      if (this.ws === ws) this.recoverConnection();
      };
    }
  
-@@ -375,12 +410,18 @@ export class ImSocket {
+@@ -360,6 +364,7 @@ export class ImSocket {
+     const body = (pkt.body ?? {}) as Record<string, unknown>;
+     switch (pkt.op) {
+       case Op.CONNECT_ACK: {
++        this.clearHandshake();
+         this.ackBody = pkt.body as ConnectAckBody;
+         this.backoffMs = 1000;
+         this.clearConnectTimer();
+@@ -375,19 +380,22 @@ export class ImSocket {
          break;
        }
        case Op.CONNECT_REJECT: {
 +        const code = pkt.code ?? String(body['code'] ?? '');
-+        if (RETRYABLE_CODES.has(code)) {
-+          this.recoverConnection();
-+          break;
-+        }
++        if (RETRYABLE_CODES.has(code)) { this.recoverConnection(); break; }
          // ★鉴权失败不重连：token 已失效，重连只会打爆 DEVCAP/审计日志
          this.stopReconnect = true;
 -        this.clearConnectTimer();
@@ -3121,12 +3158,22 @@ index e0b42b2..ae5f7ed 100644
          break;
        }
        case Op.PONG:
-@@ -430,11 +471,15 @@ export class ImSocket {
+-        // ★★这不是"无需处理"：PONG 是判定半开连接【唯一】的证据。
+-        //   半开时 onclose 不会来，只有"PING 发得出去、PONG 回不来"能暴露它。
+-        this.lastPongAt = Date.now();
+-        this.pingsSincePong = 0;
++        if (this.state === 'connected') {
++          this.lastPongAt = Date.now();
++          this.pingsSincePong = 0;
++        }
+         break;
+       case Op.MSG_RECV:
+         this.listeners.onMsgRecv?.(body);
+@@ -430,11 +438,14 @@ export class ImSocket {
          break;
        case Op.KICK: {
          const kick = body as Partial<KickBody>;
 -        const shouldReconnect = kick.reason === 'server_restart';
-+        // 服务端可以在 server_restart 上再带 stopReconnect，宿主必须服从这条显式指令。
 +        const shouldReconnect = kick.reason === 'server_restart' && body['stopReconnect'] !== true;
          if (!shouldReconnect) this.stopReconnect = true;
 +        this.clearTimers();
@@ -3139,40 +3186,25 @@ index e0b42b2..ae5f7ed 100644
          break;
        }
        case Op.ERROR: {
-@@ -503,12 +548,81 @@ export class ImSocket {
-     return this.pingsSincePong > 0 && this.lastPongAt > 0 && Date.now() - this.lastPongAt > this.pongTimeoutMs;
+@@ -450,7 +461,8 @@ export class ImSocket {
+   private startHeartbeat(intervalSec: number | undefined): void {
+     this.stopHeartbeat();
+     // ★服务端下发的是秒（ImProtocol.HEARTBEAT_INTERVAL_SEC=30 默认）；防呆 clamp [5,300]
+-    const sec = Math.min(300, Math.max(5, intervalSec ?? 30));
++    const seconds = Number(intervalSec);
++    const sec = Number.isFinite(seconds) ? Math.min(300, Math.max(5, seconds)) : 30;
+     const intervalMs = sec * 1000;
+     // ★阈值必须落在 (1×interval, 3×interval) 之间：
+     //   小于 1× 会误杀正常心跳；≥3× 就落到服务端读空闲之后 —— 客户端永远比服务端晚发现。
+@@ -464,6 +476,61 @@ export class ImSocket {
+     }, checkEveryMs);
    }
  
--  /** ★回前台/恢复联网时的即时验活：超时就判死，否则补发一次 PING。 */
-+  /**
-+   * ★回前台/恢复联网时的即时验活：墙上时钟已超过阈值就判死，否则补发一次 PING。
-+   *
-+   * <p>看门狗仍要求「确实发出过 PING」才判死，避免后台节流误杀。
-+   * 回到前台时定时器可能一整段都没跑过，这里改看上次 PONG 的墙上时钟。
-+   */
-   private probeLiveness(): void {
-+    if (this.manualClose || this.stopReconnect) return;
-     if (this.state !== 'connected') return;
-+    if (this.lastPongAt > 0 && Date.now() - this.lastPongAt > this.pongTimeoutMs) {
-+      this.markSocketDead('pong-timeout');
-+      return;
-+    }
-     this.sendPing();
-   }
- 
-+  /**
-+   * 主动丢掉当前连接并重连。
-+   *
-+   * @param immediate 为 true 时不等退避，下一拍就重连（online / 回到前台）
-+   */
 +  private recoverConnection(immediate = false): void {
 +    this.clearTimers();
 +    this.closeCurrentSocket('reconnect');
 +    if (this.manualClose || this.stopReconnect) return;
-+    if (!immediate) {
-+      this.scheduleReconnect();
-+      return;
-+    }
++    if (!immediate) { this.scheduleReconnect(); return; }
 +    this.setState('reconnecting');
 +    this.reconnectTimer = setTimeout(() => {
 +      this.reconnectTimer = null;
@@ -3180,49 +3212,53 @@ index e0b42b2..ae5f7ed 100644
 +    }, 0);
 +  }
 +
-+  /** 联网恢复时，若当前不在已连接态，立刻重连；已连接仍交给 probeLiveness。 */
 +  private readonly onOnline = () => {
-+    if (this.manualClose || this.stopReconnect || this.state === 'connected') return;
-+    this.recoverConnection(true);
++    if (!this.manualClose && !this.stopReconnect) this.recoverConnection(true);
 +  };
-+
-+  /** 掉线后关掉当前连接，并停止在离线期间创建新的 WebSocket。 */
 +  private readonly onOffline = () => {
-+    if (this.manualClose || this.stopReconnect) return;
-+    this.recoverConnection(true);
++    if (!this.manualClose && !this.stopReconnect) this.recoverConnection(true);
 +  };
-+
-+  /** 回到前台时，已连接交给上游验活；若还在退避，则立刻重连。 */
 +  private readonly onVisible = () => {
 +    if (document.visibilityState !== 'visible' || this.manualClose || this.stopReconnect) return;
-+    if (this.state === 'connected') return;
-+    if (this.reconnectTimer) this.recoverConnection(true);
++    if (this.state === 'connected') {
++      if (this.connected) this.probeLiveness();
++      else this.recoverConnection(true);
++    } else if (this.reconnectTimer) this.recoverConnection(true);
 +  };
 +
 +  private listenForRecovery(): void {
-+    if (this.recoveryListening || typeof window === 'undefined') return;
++    if (this.recoveryListening) return;
 +    this.recoveryListening = true;
-+    window.addEventListener('online', this.onOnline);
-+    window.addEventListener('offline', this.onOffline);
-+    if (typeof document !== 'undefined') {
++    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
++      window.addEventListener('online', this.onOnline);
++      window.addEventListener('offline', this.onOffline);
++    }
++    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
 +      document.addEventListener('visibilitychange', this.onVisible);
 +    }
 +  }
 +
 +  private stopListeningForRecovery(): void {
-+    if (!this.recoveryListening || typeof window === 'undefined') return;
++    if (!this.recoveryListening) return;
 +    this.recoveryListening = false;
-+    window.removeEventListener('online', this.onOnline);
-+    window.removeEventListener('offline', this.onOffline);
-+    if (typeof document !== 'undefined') {
++    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
++      window.removeEventListener('online', this.onOnline);
++      window.removeEventListener('offline', this.onOffline);
++    }
++    if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
 +      document.removeEventListener('visibilitychange', this.onVisible);
 +    }
 +  }
 +
-   /**
-    * ★判定连接已死并重连。
-    *
-@@ -547,7 +661,7 @@ export class ImSocket {
++  private clearHandshake(): void {
++    if (this.handshakeTimer) clearTimeout(this.handshakeTimer);
++    this.handshakeTimer = null;
++  }
++
+   private stopHeartbeat(): void {
+     if (this.heartbeatTimer) {
+       clearInterval(this.heartbeatTimer);
+@@ -547,7 +614,7 @@ export class ImSocket {
    private scheduleReconnect(): void {
      if (this.stopReconnect || this.manualClose || this.reconnectTimer) return;
      this.setState('reconnecting');
@@ -3230,6 +3266,14 @@ index e0b42b2..ae5f7ed 100644
 +    const delay = Math.round(this.backoffMs * (0.75 + Math.random() * 0.25));
      this.backoffMs = Math.min(MAX_BACKOFF_MS, this.backoffMs * 2);
      this.reconnectTimer = setTimeout(() => {
+       this.reconnectTimer = null;
+@@ -558,6 +625,7 @@ export class ImSocket {
+   private clearTimers(): void {
+     this.stopHeartbeat();
+     this.clearConnectTimer();
++    this.clearHandshake();
+     if (this.reconnectTimer) {
+       clearTimeout(this.reconnectTimer);
        this.reconnectTimer = null;
 diff --git a/nuwax-im-web/tsconfig.node.json b/nuwax-im-web/tsconfig.node.json
 index 9d92f0d..8387ffb 100644

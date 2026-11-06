@@ -51,7 +51,7 @@
     "sync:openui-runtime": "./scripts/sync-openui-runtime.sh",
     "test": "vitest",
     "test:conversation": "vitest run --config vitest.conversation.config.ts",
-    "test:deploy": "node --test tests/deploySyncTest.node.mjs tests/deployTest.node.mjs tests/downloadMobileBuild.node.mjs",
+    "test:deploy": "node --test tests/deploySyncTest.node.mjs tests/deployTest.node.mjs tests/deployTestClean.node.mjs tests/downloadMobileBuild.node.mjs",
     "test:micro-app-build": "node --test tests/microApps/build-pipeline.node.mjs tests/microApps/upgrade-pipeline.node.mjs",
     "test:scripts": "node --test tests/doctor.node.mjs && npm run test:deploy && npm run test:micro-app-build && npm run test:typecheck",
     "test:typecheck": "node --test scripts/check-types.test.mjs",

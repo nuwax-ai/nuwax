@@ -33,6 +33,7 @@ const writeFile = (root, rel, content = 'x') => {
 beforeEach(() => {
   process.env.DIST_RETENTION = '1';
   delete process.env.DIST_RETAIN_GENERATIONS;
+  delete process.env.DIST_RETENTION_HISTORY_REF;
 });
 
 describe('isHashedAsset', () => {
@@ -298,6 +299,29 @@ describe('首次部署 CSS 历史回填', () => {
     expect(fs.readFileSync(path.join(dist, 'index.html'), 'utf-8')).toBe(
       '<html>new</html>',
     );
+  });
+
+  it('目标源码不含旧 test 历史时，从显式旧 test 引用回填 CSS', () => {
+    const { repo, dist } = makeHistory('history-explicit-test');
+    const git = (args) =>
+      execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
+    git(['branch', 'old-test']);
+    git(['checkout', '--orphan', 'source-only']);
+    git(['rm', '-rf', '--cached', '.']);
+    writeFile(repo, 'source.txt', 'source without deployment history');
+    git(['add', 'source.txt']);
+    git(['commit', '-qm', 'clean source']);
+    process.env.DIST_RETENTION_HISTORY_REF = 'old-test';
+    const snap = path.join(repo, 'snapshot');
+    snapshot({ distDir: dist, snapshotDir: snap, repoDir: repo });
+    expect(
+      fs.readFileSync(path.join(snap, 'Home.aaaa0002.chunk.css'), 'utf8'),
+    ).toBe('css-2');
+    expect(
+      JSON.parse(
+        fs.readFileSync(path.join(snap, '.dist-retention.json'), 'utf8'),
+      ).files['Home.aaaa0002.chunk.css'],
+    ).toBe(1);
   });
 
   it('迁移旗标跨合并传承，过期 CSS 不会被历史重新复活', () => {
