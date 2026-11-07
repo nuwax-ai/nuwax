@@ -41,14 +41,21 @@ export function resolveMicroAppAuthTarget(raw: string): string | null {
 }
 
 /** 会话失效与主站共用清理入口，释放隐藏实例后再交还认证页面。 */
-export async function expireMicroAppSession(raw: string): Promise<void> {
+export async function expireMicroAppSession(
+  raw: string,
+  microApp?: string,
+): Promise<void> {
   const target = resolveMicroAppAuthTarget(raw);
   if (!target) return;
   const sourceHref = window.location.href;
   clearStoragePreservingUserPrefs();
   clearLoginStatusCache();
   try {
-    await hostBridge.auth.clear();
+    await hostBridge.auth.clear({
+      source: 'micro-app',
+      reason: 'auth-expired',
+      microApp,
+    });
   } catch (error) {
     console.warn('[micro-app] 宿主会话清理失败', error);
   }
