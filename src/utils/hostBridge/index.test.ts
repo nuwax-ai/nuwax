@@ -581,6 +581,38 @@ describe('hostBridge（统一对外接入层）', () => {
   });
 
   describe('auth.clear', () => {
+    it('退出原因同时写控制台与宿主，并剔除查询凭据、动态 ID 和额外字段', async () => {
+      const fn = vi
+        .fn<(diagnostic?: unknown) => Promise<boolean>>()
+        .mockResolvedValue(true);
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+      (window as any).NuwaClawBridge = { auth: { clear: fn } };
+      await auth.clear({
+        source: 'web-request',
+        reason: 'http-401',
+        requestUrl: '/api/user/12345?ticket=private-ticket#private-fragment',
+        method: 'get',
+        status: 401,
+        code: '4010',
+        ticket: 'private-ticket',
+      } as any);
+      const diagnostic = fn.mock.calls[0][0] as Record<string, unknown>;
+      expect(diagnostic).toMatchObject({
+        source: 'web-request',
+        reason: 'http-401',
+        requestPath: '/api/user/*',
+        method: 'GET',
+        status: 401,
+        code: '4010',
+      });
+      expect(info).toHaveBeenCalledWith('[AuthDiagnostic]', {
+        stage: 'clear-requested',
+        ...diagnostic,
+      });
+      expect(JSON.stringify(diagnostic)).not.toContain('private-');
+      expect(diagnostic).not.toHaveProperty('ticket');
+      info.mockRestore();
+    });
     it('调宿主 clear', async () => {
       const fn = vi.fn(async () => true);
       (window as any).NuwaClawBridge = { auth: { clear: fn } };
