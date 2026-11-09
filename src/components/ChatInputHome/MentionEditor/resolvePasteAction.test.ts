@@ -85,6 +85,24 @@ describe('resolvePasteAction (NW-128 粘贴转图)', () => {
     ).toBe('insert-plain-text');
   });
 
+  it.each([
+    '',
+    'application/msword',
+    'application/vnd.ms-excel',
+    'application/vnd.ms-powerpoint',
+    'application/x-mspowerpoint',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ])('真实 Office 或未知类型附件附带路径文字时仍上传：%s', (type) => {
+    expect(
+      resolvePasteAction({
+        items: [{ kind: 'file', type }, text()],
+        text: '/Documents/季度汇报.pptx',
+      }),
+    ).toBe('upload-files');
+  });
+
   it('纯文本剪贴板（无 file 项）：纯文本插入（去样式）', () => {
     expect(
       resolvePasteAction({

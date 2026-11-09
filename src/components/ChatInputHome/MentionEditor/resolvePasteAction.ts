@@ -115,8 +115,10 @@ export function resolvePasteAction({
   const fileItems = (items ?? []).filter((item) => item.kind === 'file');
 
   if (fileItems.length > 0) {
-    // 文字 + 全图片文件（Word/PPT 等快照图）：文字优先，不再转图
-    const allImages = fileItems.every((item) => item.type.startsWith('image/'));
+    // Office MIME 或空 MIME 也可能是真实附件，只有明确的图片快照可让文字优先。
+    const allImages = fileItems.every((item) =>
+      item.type.toLowerCase().startsWith('image/'),
+    );
     if (text.trim() && allImages) {
       return 'insert-plain-text';
     }

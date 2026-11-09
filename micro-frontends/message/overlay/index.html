@@ -44,6 +44,18 @@
     </style>
   </head>
   <body>
+    <!--
+      来电铃声预取，与上游 index.html 的 #boot-ringtone 同一份元素。
+      ringtone.ts 按这个 id 接管它；放在 #root 外，避免宿主骨架和 React 挂载时把它清掉。
+      %BASE_URL% 由 Vite 换成微应用 base，不要写成绝对路径。
+    -->
+    <audio
+      id="boot-ringtone"
+      src="%BASE_URL%ringtones/ringtone.m4a"
+      preload="auto"
+      loop
+      aria-hidden="true"
+    ></audio>
     <div id="root" data-message-app-scope>
       <div id="boot-skeleton" aria-hidden="true">
         <div class="chat-layout">

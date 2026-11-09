@@ -9,6 +9,7 @@ const LIST: ComputerOption[] = [
 ];
 
 const CLOUD_ONLY: ComputerOption[] = [{ id: '-1', name: '云端电脑' }];
+const PERSONAL_ONLY: ComputerOption[] = [{ id: '366', name: '我的电脑366' }];
 
 describe('resolveAutoSelection', () => {
   describe('strictAgentMemory（首页：沙箱按 agent 绑定）', () => {
@@ -151,6 +152,16 @@ describe('resolveAutoSelection', () => {
         agentSelectedMap: {},
       });
       expect(r).toEqual({ selectedId: '-1', reason: 'fallback-first' });
+    });
+
+    it('NW-360: 平台未配置云沙箱时，云端记忆 -1 自动失效回落列表第一项', () => {
+      const r = resolveAutoSelection({
+        agentId: 3091,
+        value: '-1',
+        computerList: PERSONAL_ONLY,
+        agentSelectedMap: { 3091: '-1' },
+      });
+      expect(r).toEqual({ selectedId: '366', reason: 'fallback-first' });
     });
   });
 });
