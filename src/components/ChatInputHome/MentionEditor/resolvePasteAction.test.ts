@@ -85,6 +85,21 @@ describe('resolvePasteAction (NW-128 粘贴转图)', () => {
     ).toBe('insert-plain-text');
   });
 
+  it('PPT/Office 文本框复制伴生空 type 或 drawing 快照：文字优先插入纯文本 (NW-128)', () => {
+    expect(
+      resolvePasteAction({
+        items: [img(''), text()],
+        text: 'PPT 文本框内容',
+      }),
+    ).toBe('insert-plain-text');
+    expect(
+      resolvePasteAction({
+        items: [img('application/x-mspowerpoint'), text()],
+        text: '幻灯片标题文字',
+      }),
+    ).toBe('insert-plain-text');
+  });
+
   it('纯文本剪贴板（无 file 项）：纯文本插入（去样式）', () => {
     expect(
       resolvePasteAction({

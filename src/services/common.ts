@@ -211,7 +211,14 @@ const errorHandler = (error: any, opts: any) => {
           // （含导航风格显式选择）与语言偏好（显式选过的语言）
           clearStoragePreservingUserPrefs();
           // Clear the host's cookie mirror and running services as well.
-          void hostBridge.auth.clear();
+          void hostBridge.auth.clear({
+            source: 'web-request',
+            reason: 'business-code',
+            requestUrl: url,
+            method: error?.config?.method ?? opts?.config?.method,
+            status: error?.response?.status ?? opts?.responseStatus,
+            code,
+          });
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
@@ -225,7 +232,14 @@ const errorHandler = (error: any, opts: any) => {
           clearMicroAppDevSession();
           eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
           clearLoginStatusCache();
-          void hostBridge.auth.clear();
+          void hostBridge.auth.clear({
+            source: 'web-request',
+            reason: 'business-code',
+            requestUrl: url,
+            method: error?.config?.method ?? opts?.config?.method,
+            status: error?.response?.status ?? opts?.responseStatus,
+            code,
+          });
           void navigateToAuthUrl(errorMessage);
           break;
 
@@ -274,7 +288,14 @@ const errorHandler = (error: any, opts: any) => {
     ) {
       if (isAnonymousLoginStep()) throw error;
       clearStoragePreservingUserPrefs();
-      void hostBridge.auth.clear();
+      void hostBridge.auth.clear({
+        source: 'web-request',
+        reason: 'http-401',
+        requestUrl: url,
+        method: error?.config?.method ?? opts?.config?.method,
+        status: error.response.status,
+        code: error.response.data?.code,
+      });
       clearLoginStatusCache();
       redirectToLogin(-1);
       throw error;
@@ -383,7 +404,10 @@ const responseInterceptors = [
 
       if (error) {
         // 如果errorThrower返回了错误对象，使用errorHandler处理它
-        return errorHandler?.(error, { config }) || response;
+        return (
+          errorHandler?.(error, { config, responseStatus: response.status }) ||
+          response
+        );
       }
     }
 

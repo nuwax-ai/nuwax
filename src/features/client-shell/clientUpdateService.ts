@@ -203,9 +203,17 @@ export async function download(): Promise<boolean> {
  * 透传宿主执行结果：success 后宿主进程将退出（清理+quitAndInstall 有数秒~数十秒空窗），
  * 失败（dev 包/MSI/宿主拒绝）由调用方浮出错误。
  */
-export async function install(): Promise<{ success: boolean; error?: string }> {
+export async function install(): Promise<{
+  success: boolean;
+  error?: string;
+  canceled?: boolean;
+}> {
   const res = await hostBridge.updater.install();
-  return { success: !!res?.success, error: res?.error };
+  return {
+    success: !!res?.success,
+    error: res?.error,
+    ...(res?.canceled ? { canceled: true } : {}),
+  };
 }
 
 /** 测试隔离：复位模块态。 */

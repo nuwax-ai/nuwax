@@ -153,7 +153,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       context.pendingMemory = undefined;
     } else {
       if (rememberedId && !isInList(rememberedId)) {
-        context.pendingMemory = rememberedId;
+        if (rememberedId !== '-1') {
+          context.pendingMemory = rememberedId;
+        }
         // 列表传播期间保留已有值与记忆，绝不据临时云端列表覆盖选择。
         if (keepCurrentSelection) return;
       }

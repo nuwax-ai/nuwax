@@ -46,6 +46,7 @@ function useSimulatedPercent(active: boolean): number {
 
 const ClientVersionBadge: React.FC = () => {
   const [state, setState] = useState<ClientUpdateState | null>(null);
+  const latestState = useRef<ClientUpdateState | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   /** running 保持局部忙碌到宿主退出；failed 显示宿主拒绝/异常。 */
@@ -68,6 +69,7 @@ const ClientVersionBadge: React.FC = () => {
     mounted.current = true;
     start();
     const unsubscribe = subscribe((next) => {
+      latestState.current = next;
       if (mounted.current) setState(next);
     });
     return () => {
@@ -119,6 +121,10 @@ const ClientVersionBadge: React.FC = () => {
       const ok = await triggerDownload();
       if (!mounted.current) return;
       if (oneClickUpdate) {
+        if (!ok && latestState.current?.status === 'downloaded') {
+          setInstallPhase('idle');
+          return;
+        }
         handedOff = ok;
         setInstallPhase(ok ? 'running' : 'failed');
       }
@@ -147,6 +153,10 @@ const ClientVersionBadge: React.FC = () => {
     try {
       const res = await triggerInstall();
       if (!mounted.current) return;
+      if (res?.canceled) {
+        setInstallPhase('idle');
+        return;
+      }
       if (!res?.success) {
         // dev 包/MSI/宿主拒绝：结束忙碌状态并浮出错误
         setInstallPhase('failed');

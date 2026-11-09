@@ -340,4 +340,12 @@ describe('clientUpdateService', () => {
       error: undefined,
     });
   });
+  it('preserves a canceled native version-switch confirmation', async () => {
+    installMock.mockResolvedValue({ success: false, canceled: true });
+    await expect(install()).resolves.toEqual({
+      success: false,
+      error: undefined,
+      canceled: true,
+    });
+  });
 });
