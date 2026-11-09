@@ -354,6 +354,14 @@ describe('匿名登录步骤的全局认证错误处理', () => {
         expect(mocks.clearLoginStatusCache).toHaveBeenCalledOnce();
         expect(mocks.redirectToLogin).toHaveBeenCalledWith(-1);
         expect(mocks.clearMicroAppDevSession).toHaveBeenCalledOnce();
+        expect(mocks.clearHostAuth).toHaveBeenCalledWith(
+          expect.objectContaining({
+            source: 'web-request',
+            reason: 'http-401',
+            status: 401,
+            requestUrl: pollingUrl,
+          }),
+        );
         expect(localStorage.getItem('login-form-draft')).toBeNull();
       });
     },
