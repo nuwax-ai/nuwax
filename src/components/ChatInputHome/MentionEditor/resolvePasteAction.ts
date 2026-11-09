@@ -108,23 +108,6 @@ export function resolvePasteText(text: string, html: string): string {
     .join('');
 }
 
-/**
- * 判断是否为剪贴板伴生快照文件项（Word/PPT/Keynote 等复制时随附的图片、临时文件或绘图对象）
- */
-function isSnapshotFileItem(type: string): boolean {
-  const lower = type.toLowerCase();
-  return (
-    lower.startsWith('image/') ||
-    lower === '' ||
-    lower.includes('powerpoint') ||
-    lower.includes('office') ||
-    lower.includes('drawing') ||
-    lower.includes('shape') ||
-    lower.includes('vector') ||
-    lower.includes('clipboard')
-  );
-}
-
 export function resolvePasteAction({
   items,
   text,
@@ -132,11 +115,11 @@ export function resolvePasteAction({
   const fileItems = (items ?? []).filter((item) => item.kind === 'file');
 
   if (fileItems.length > 0) {
-    // 文字 + 全图片/快照文件（Word/PPT 等伴生快照）：文字优先，不再整体转图上传
-    const allSnapshots = fileItems.every((item) =>
-      isSnapshotFileItem(item.type),
+    // Office MIME 或空 MIME 也可能是真实附件，只有明确的图片快照可让文字优先。
+    const allImages = fileItems.every((item) =>
+      item.type.toLowerCase().startsWith('image/'),
     );
-    if (text.trim() && allSnapshots) {
+    if (text.trim() && allImages) {
       return 'insert-plain-text';
     }
 
