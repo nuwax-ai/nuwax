@@ -100,13 +100,16 @@ function connect() {
 }
 
 describe('正式消息适配的连接恢复', () => {
-  it.each([false, true])(
-    'WS open=%s，15 秒未完成握手后关闭旧连接并重试',
-    async (opened) => {
+  it.each([
+    [false, 10_000],
+    [true, 15_000],
+  ])(
+    'WS open=%s，%i 毫秒未完成握手后关闭旧连接并重试',
+    async (opened, timeout) => {
       socket.connect(null);
       const old = Transport.instances[0];
       if (opened) old.open();
-      await vi.advanceTimersByTimeAsync(14_999);
+      await vi.advanceTimersByTimeAsync(Number(timeout) - 1);
       expect(old.close).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(1);
       expect(old.close).toHaveBeenCalledOnce();
@@ -179,11 +182,25 @@ describe('正式消息适配的连接恢复', () => {
 
   it('后台时钟跳过数小时，返回可见页面立即识别旧心跳', async () => {
     const old = connect();
+    // 先实际发出一次 PING，才有未收到 PONG 的超时证据。
+    await vi.advanceTimersByTimeAsync(5_000);
     vi.setSystemTime(Date.now() + 3 * 60 * 60_000);
     document.dispatchEvent(new Event('visibilitychange'));
     expect(old.close).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(Transport.instances).toHaveLength(2);
+  });
+
+  it('后台没有发出 PING 时，回到前台先探测，不误断健康连接', () => {
+    const old = connect();
+    const sent = old.send.mock.calls.length;
+    vi.setSystemTime(Date.now() + 3 * 60 * 60_000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(old.close).not.toHaveBeenCalled();
+    expect(old.send).toHaveBeenCalledTimes(sent + 1);
+    old.packet(2001);
+    expect(socket.connected).toBe(true);
+    expect(Transport.instances).toHaveLength(1);
   });
 
   it('持续传输失败按指数退避，30 秒封顶，不依赖 close 事件', async () => {
