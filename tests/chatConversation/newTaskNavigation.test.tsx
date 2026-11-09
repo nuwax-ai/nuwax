@@ -81,6 +81,7 @@ vi.mock('@/utils/hostBridge', () => ({
     layout: { setNewTaskAvailable: nav.syncNewTaskAvailable },
   },
   isDesktopHost: () => false,
+  getWorkbenchBridge: () => null,
   isImmersiveShell: () => false,
   isWinLinuxShell: () => false,
   isMac: () => false,
