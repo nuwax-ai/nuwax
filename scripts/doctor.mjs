@@ -178,9 +178,12 @@ export async function collectDoctorReport({
       )
         add(
           'warn',
-          `${label} 本地产物已过期（产物 main@${String(
-            manifest.source?.commit,
-          ).slice(0, 9)}，当前登记 ${gitlink.slice(0, 9)} / 适配有变化）`,
+          `${label} 本地产物已过期（产物 ${
+            manifest.source?.branch ?? app.adapter.branch
+          }@${String(manifest.source?.commit).slice(
+            0,
+            9,
+          )}，当前登记 ${gitlink.slice(0, 9)} / 适配有变化）`,
           'npm run sync:micro-apps',
         );
       else add('ok', `${label} 产物与登记版本一致`);
