@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
+import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
@@ -51,6 +52,14 @@ export interface ConversationAgentHeaderProps {
   isAgentDesktopOpen?: boolean;
   /** 打开 / 关闭智能体电脑 */
   onOpenDesktopPanel?: () => void;
+  /** 重启智能体电脑 / 客户端 */
+  onRestartServer?: () => void;
+  /** 重启智能体 */
+  onRestartAgent?: () => void;
+  /** 导出项目 */
+  onExportProject?: () => void;
+  /** 是否为云电脑（影响重启文案） */
+  isCloudComputer?: boolean;
 }
 
 /**
@@ -70,6 +79,10 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   isShowDesktop = false,
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
+  onRestartServer,
+  onRestartAgent,
+  onExportProject,
+  isCloudComputer,
 }) => {
   const displayName =
     agentConfigInfo?.name || dict('PC.Pages.ConversationAgent.prototypeTitle');
@@ -208,6 +221,14 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
             onClick={onOpenDesktopPanel}
           />
         </ConditionRender>
+
+        {/* 更多操作：重启电脑 / 重启智能体 / 导出项目 */}
+        <MoreActionsMenu
+          onRestartServer={onRestartServer}
+          onRestartAgent={onRestartAgent}
+          onExportProject={onExportProject}
+          isCloudComputer={isCloudComputer}
+        />
 
         {/* 发布按钮 */}
         <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
