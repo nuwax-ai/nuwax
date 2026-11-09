@@ -1,5 +1,5 @@
 /**
- * 把已登记微应用的远端 main 最新提交拉到本地，并同时写入 gitlink 与 adapter.pin。
+ * 把已登记微应用的远端分支最新提交拉到本地，并同时写入 gitlink 与 adapter.pin。
  * 只接受相对当前 gitlink 的快进，不把指针退回更旧的提交。
  * 补丁若不能直接贴到这份新源码上，就按三方合并重算 adapter.patch 并一起暂存。
  * 同一处被两边改过、合并不了时停止，不猜测冲突结果。
@@ -24,6 +24,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getPinnedSource, readMicroAppRegistry } from './sync-micro-apps.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -75,7 +76,9 @@ const readGitlink = (sourceDir) => {
   const line = git(root, ['ls-files', '--stage', '--', sourceDir]);
   const match = line.match(/^160000 ([a-f0-9]{40}) 0\t/);
   if (!match) {
-    throw new Error(`${sourceDir} 没有登记 gitlink，请先 git submodule update --init`);
+    throw new Error(
+      `${sourceDir} 没有登记 gitlink，请先 git submodule update --init`,
+    );
   }
   return match[1];
 };
@@ -164,7 +167,7 @@ const patchApplies = (source, commit, patchFile) => {
  *
  * @param id 应用 id
  * @param source 子模块目录
- * @param commit 新的 main 提交
+ * @param commit 新的上游提交
  * @param patchFile 当前补丁
  * @returns 重算后的补丁内容
  */
@@ -220,7 +223,7 @@ const rebasePatch = (id, source, commit, patchFile) => {
  *
  * @param id 应用 id
  * @param source 子模块目录
- * @param commit 新的 main 提交
+ * @param commit 新的上游提交
  * @param patchFile 补丁绝对路径
  * @returns 是否写回了新补丁
  */
@@ -235,14 +238,20 @@ const refreshAdapterPatch = (id, source, commit, patchFile) => {
   const next = rebasePatch(id, source, commit, patchFile);
   if (next.equals(original)) {
     throw new Error(
-      `${id} 的适配补丁无法直接应用到 ${commit.slice(0, 9)}，三方合并也没有产生新补丁`,
+      `${id} 的适配补丁无法直接应用到 ${commit.slice(
+        0,
+        9,
+      )}，三方合并也没有产生新补丁`,
     );
   }
   writeFileSync(patchFile, next);
   if (!patchApplies(source, commit, patchFile)) {
     writeFileSync(patchFile, original);
     throw new Error(
-      `${id} 重算后的适配补丁仍无法直接应用到 ${commit.slice(0, 9)}，已恢复原补丁`,
+      `${id} 重算后的适配补丁仍无法直接应用到 ${commit.slice(
+        0,
+        9,
+      )}，已恢复原补丁`,
     );
   }
   console.log(`[pull-pins] ${id}: 适配补丁已按 ${commit.slice(0, 9)} 重算`);
@@ -250,7 +259,7 @@ const refreshAdapterPatch = (id, source, commit, patchFile) => {
 };
 
 /**
- * 拉取一个应用的远端 main，快进 gitlink，并把 pin 写成同一个提交号。
+ * 拉取一个应用的登记分支，快进 gitlink，并把 pin 写成同一个提交号。
  *
  * @param id 应用 id，仅用于输出
  * @param adapterPath adapter.json 相对路径
@@ -258,6 +267,7 @@ const refreshAdapterPatch = (id, source, commit, patchFile) => {
 const pullApp = (id, adapterPath) => {
   const adapterFile = path.join(root, adapterPath);
   const adapter = JSON.parse(readFileSync(adapterFile, 'utf8'));
+  const remoteRef = `refs/remotes/origin/${adapter.branch}`;
   const sourceDir = adapter.sourceDir;
   const source = path.join(root, sourceDir);
   const gitlink = readGitlink(sourceDir);
@@ -275,7 +285,10 @@ const pullApp = (id, adapterPath) => {
     }
     if (pinned !== gitlink) {
       throw new Error(
-        `${id} 离线模式：adapter.pin ${pinned.slice(0, 9)} 与 gitlink ${gitlink.slice(
+        `${id} 离线模式：adapter.pin ${pinned.slice(
+          0,
+          9,
+        )} 与 gitlink ${gitlink.slice(
           0,
           9,
         )} 不一致，请在有网络的开发机执行 pnpm pull:micro-app-pins 对齐后提交`,
@@ -291,7 +304,10 @@ const pullApp = (id, adapterPath) => {
       );
     }
     console.log(
-      `[pull-pins] ${id}: 离线模式，跳过远端刷新，沿用已检出的 pin ${gitlink.slice(0, 9)}`,
+      `[pull-pins] ${id}: 离线模式，跳过远端刷新，沿用已检出的 pin ${gitlink.slice(
+        0,
+        9,
+      )}`,
     );
     return false;
   }
@@ -301,13 +317,16 @@ const pullApp = (id, adapterPath) => {
     '--no-tags',
     '--recurse-submodules=no',
     'origin',
-    '+refs/heads/main:refs/remotes/origin/main',
+    `+refs/heads/${adapter.branch}:${remoteRef}`,
   ]);
-  const remote = git(source, ['rev-parse', 'refs/remotes/origin/main^{commit}']);
+  const remote = git(source, ['rev-parse', `${remoteRef}^{commit}`]);
 
   if (!isAncestor(source, gitlink, remote)) {
     throw new Error(
-      `${id} 远端 main ${remote.slice(0, 9)} 不是本地 gitlink ${gitlink.slice(
+      `${id} 远端 ${adapter.branch} ${remote.slice(
+        0,
+        9,
+      )} 不是本地 gitlink ${gitlink.slice(
         0,
         9,
       )} 的快进，已停止，避免把指针退回旧提交`,
@@ -315,9 +334,15 @@ const pullApp = (id, adapterPath) => {
   }
 
   if (remote !== gitlink) {
-    const status = git(source, ['status', '--porcelain', '--untracked-files=no']);
+    const status = git(source, [
+      'status',
+      '--porcelain',
+      '--untracked-files=no',
+    ]);
     if (status) {
-      throw new Error(`${id} 子模块工作区有未提交改动，请先处理后再拉取：\n${status}`);
+      throw new Error(
+        `${id} 子模块工作区有未提交改动，请先处理后再拉取：\n${status}`,
+      );
     }
     git(source, [
       'checkout',
@@ -353,15 +378,19 @@ const pullApp = (id, adapterPath) => {
 const wanted = process.argv
   .slice(2)
   .filter((arg) => arg !== '--' && arg !== '--offline');
-const registry = JSON.parse(
-  readFileSync(path.join(root, 'micro-frontends/apps.json'), 'utf8'),
-);
+const registered = await readMicroAppRegistry(root);
+const registry = registered.map((app) => ({
+  id: app.id,
+  adapter: path.relative(root, app.adapterPath),
+}));
 const apps = wanted.length
   ? registry.filter((item) => wanted.includes(item.id))
   : registry;
 if (wanted.length && apps.length !== wanted.length) {
   throw new Error(
-    `未知应用：${wanted.join(', ')}。可选 ${registry.map((item) => item.id).join('、')}`,
+    `未知应用：${wanted.join(', ')}。可选 ${registry
+      .map((item) => item.id)
+      .join('、')}`,
   );
 }
 
@@ -372,6 +401,14 @@ if (!offline) {
 
 let refreshedPatch = false;
 for (const app of apps) {
+  await getPinnedSource(
+    root,
+    registered.find((item) => item.id === app.id),
+    undefined,
+    {
+      checkBranchHistory: false,
+    },
+  );
   refreshedPatch = pullApp(app.id, app.adapter) || refreshedPatch;
 }
 if (offline) {

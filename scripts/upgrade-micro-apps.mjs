@@ -21,11 +21,11 @@ const repoRelative = (root, file) =>
 
 export const upgradeUsage = `用法：npm run upgrade:micro-apps -- <message|repo|all> [选项]
 
-  message / repo             升级单个应用到远程 main
+  message / repo             升级单个应用到登记分支的远程最新提交
   all / --all                升级全部已登记应用
   --app <id>                 与位置参数选择应用等价
   --dry-run                  fetch 和预检，不改变 HEAD、pin 或 index
-  --ref <SHA或ref>            单应用选择 main 历史中的快进提交
+  --ref <SHA或ref>            单应用选择登记分支历史中的快进提交
   --allow-overlay-changes    人工审查后允许上游 overlay 同名文件变化
   --no-rebase-patch          补丁贴不上时不要三方重算（默认会重算）
   -h / --help                查看帮助
@@ -314,8 +314,8 @@ async function rollback(states, git, root) {
           entry.path === state.app.adapter.sourceDir
             ? state.newPin
             : entry.path === repoRelative(root, state.app.adapterPath)
-              ? state.newAdapterOid
-              : state.newPatchOid;
+            ? state.newAdapterOid
+            : state.newPatchOid;
         if (
           current.mode !== entry.mode ||
           (current.oid !== entry.oid && current.oid !== owned)
@@ -422,9 +422,9 @@ export async function upgradeMicroApps({
         )
           throw new Error(`${app.id} 有进行中的 Git 操作：${marker}`);
       }
-      // main ref 可由下面的 fetch 补齐；这里先验证 index/pin、提交和来源。
+      // 登记分支的 ref 可由下面的 fetch 补齐；这里先验证 index/pin、提交和来源。
       const source = await getPinnedSource(root, app, execute, {
-        checkMainHistory: false,
+        checkBranchHistory: false,
       });
       const head = await git(app.source, ['rev-parse', 'HEAD']);
       if (head !== source.commit)
@@ -455,18 +455,20 @@ export async function upgradeMicroApps({
     scratch = await fs.mkdtemp(path.join(cache, 'upgrade-check-'));
     for (const state of states) {
       const { app } = state;
+      const branch = app.adapter.branch;
+      const remoteRef = `refs/remotes/origin/${branch}`;
       await checked(app.source, [
         'fetch',
         '--no-tags',
         '--recurse-submodules=no',
         'origin',
-        '+refs/heads/main:refs/remotes/origin/main',
+        `+refs/heads/${branch}:${remoteRef}`,
       ]);
       state.newPin = await checked(app.source, [
         'rev-parse',
         '--verify',
         '--end-of-options',
-        `${ref || 'refs/remotes/origin/main'}^{commit}`,
+        `${ref || remoteRef}^{commit}`,
       ]);
       try {
         await checked(app.source, [
@@ -479,11 +481,11 @@ export async function upgradeMicroApps({
           'merge-base',
           '--is-ancestor',
           state.newPin,
-          'refs/remotes/origin/main',
+          remoteRef,
         ]);
       } catch (cause) {
         throw new Error(
-          `${app.id} 候选必须在 main 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
+          `${app.id} 候选必须在 ${branch} 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
           { cause },
         );
       }
@@ -515,10 +517,7 @@ export async function upgradeMicroApps({
       } catch (cause) {
         const conflicted = [];
         try {
-          const patchText = await fs.readFile(
-            snapshot.snapshot.patch,
-            'utf8',
-          );
+          const patchText = await fs.readFile(snapshot.snapshot.patch, 'utf8');
           const files = [
             ...patchText.matchAll(/^diff --git a\/(\S+) b\/(\S+)$/gm),
           ].map((m) => m[2]);
@@ -539,11 +538,20 @@ export async function upgradeMicroApps({
         }
         const fail = (extra = '') =>
           new Error(
-            `${app.id} adapter patch 与候选 main 冲突，请先调整适配` +
+            `${app.id} adapter patch 与候选 ${branch} 冲突，请先调整适配` +
               (conflicted.length
-                ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join('\n')}`
+                ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join(
+                    '\n',
+                  )}`
                 : '') +
-              `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(0, 9)}${state.oldPin === state.newPin ? '（本次为本地适配未重制，非上游前进）' : ''}` +
+              `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(
+                0,
+                9,
+              )}${
+                state.oldPin === state.newPin
+                  ? '（本次为本地适配未重制，非上游前进）'
+                  : ''
+              }` +
               extra +
               `\n处置：微应用适配负责人基于新候选重制 adapter.patch 并随构建提交；` +
               `其他同事无需本地处理，拉取最新分支（dev/版本分支）后重跑构建即可。` +
@@ -585,8 +593,8 @@ export async function upgradeMicroApps({
           state.rebasedPatch
             ? '（适配补丁已自动重算）'
             : state.oldPin === state.newPin
-              ? '（无变化）'
-              : ''
+            ? '（无变化）'
+            : ''
         }`,
       );
       if (state.overlayChanged.length)
