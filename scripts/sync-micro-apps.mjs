@@ -130,8 +130,21 @@ export async function readMicroAppRegistry(root) {
       );
     }
     const assetBase = `/micro-apps/${item.id}/`;
+    const validBranch =
+      typeof adapter.branch === 'string' &&
+      (await runCommand(
+        'git',
+        ['check-ref-format', `refs/heads/${adapter.branch}`],
+        {
+          cwd: root,
+          capture: true,
+        },
+      ).then(
+        () => true,
+        () => false,
+      ));
     if (
-      adapter.branch !== 'main' ||
+      !validBranch ||
       !/^[a-f0-9]{40}$/.test(adapter.pin ?? '') ||
       adapter.assetBase !== assetBase ||
       adapter.entry !== `${assetBase}index.html` ||
@@ -141,7 +154,7 @@ export async function readMicroAppRegistry(root) {
       names.has(adapter.appName)
     ) {
       throw new Error(
-        `${item.id} 的 main pin、appName、entry 或业务/资源路径契约无效`,
+        `${item.id} 的 branch、pin、appName、entry 或业务/资源路径契约无效`,
       );
     }
     names.add(adapter.appName);
@@ -160,12 +173,12 @@ export async function readMicroAppRegistry(root) {
   return result;
 }
 
-/** 使用主仓 index 的 gitlink；子仓 HEAD、dirty 文件和 main 的新提交都不改变本次输入。 */
+/** 使用主仓 index 的 gitlink；子仓 HEAD、dirty 文件和远端新提交都不改变本次输入。 */
 export async function getPinnedSource(
   root,
   app,
   execute = runCommand,
-  { checkMainHistory = true } = {},
+  { checkBranchHistory = true } = {},
 ) {
   const git = (args, cwd = root) =>
     execute('git', args, { cwd, capture: true });
@@ -214,8 +227,10 @@ export async function getPinnedSource(
     '--get',
     `${moduleKey}.branch`,
   ]);
-  if (branch !== 'main')
-    throw new Error(`${app.id} 子模块 branch 必须是 main，当前为 ${branch}`);
+  if (branch !== app.adapter.branch)
+    throw new Error(
+      `${app.id} 子模块 branch ${branch} 与 adapter.branch ${app.adapter.branch} 不一致`,
+    );
   const url = await git([
     'config',
     '-f',
@@ -225,16 +240,16 @@ export async function getPinnedSource(
   ]);
   try {
     await git(['rev-parse', '--verify', `${pin}^{commit}`], app.source);
-    if (checkMainHistory) {
+    if (checkBranchHistory) {
       await git(
-        ['merge-base', '--is-ancestor', pin, 'refs/remotes/origin/main'],
+        ['merge-base', '--is-ancestor', pin, `refs/remotes/origin/${branch}`],
         app.source,
       );
     }
   } catch (cause) {
     throw new Error(
       `${app.id} 固定提交不可用${
-        checkMainHistory ? '或不在本地 origin/main 历史' : ''
+        checkBranchHistory ? `或不在本地 origin/${branch} 历史` : ''
       }；请先初始化/核查子模块，sync:micro-apps 不会自行 fetch/升级`,
       { cause },
     );

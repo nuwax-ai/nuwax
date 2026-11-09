@@ -2,6 +2,26 @@
  * 业务页面与桌面宿主的桥契约；不依赖 Electron 或父仓，前端可独立构建。
  * 客户端通过 scripts/sync-host-bridge-contract.mjs 生成本文件的只读快照。
  */
+/** 仅用于诊断，宿主不能用页面上报的原因决定认证状态。 */
+export interface HostAuthClearDiagnostic {
+  eventId: string;
+  source: 'web-request' | 'micro-app' | 'user-menu' | 'unspecified';
+  reason:
+    | 'http-401'
+    | 'business-code'
+    | 'auth-expired'
+    | 'manual-logout'
+    | 'unspecified';
+  requestPath?: string;
+  method?: string;
+  status?: number;
+  code?: string;
+  microApp?: string;
+  pagePath?: string;
+  visibility?: string;
+  online?: boolean;
+}
+
 /** 宿主打开指定会话的扩展指令载荷。 */
 export interface OpenConversationCommand {
   type: 'open-conversation';
@@ -497,7 +517,7 @@ export interface HostBridgeContract {
     getToken(): Promise<string | null>;
     /** @deprecated 商业宿主返回 false，不持久化 token；用 syncSession 确认 cookie 会话。 */
     persistToken(token: string): Promise<boolean>;
-    clear(): Promise<boolean>;
+    clear(diagnostic?: HostAuthClearDiagnostic): Promise<boolean>;
     configureServerHost(
       host: string,
     ): Promise<{ success: boolean; serverHost?: string; error?: string }>;

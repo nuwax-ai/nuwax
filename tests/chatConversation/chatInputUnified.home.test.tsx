@@ -64,6 +64,8 @@ const editor = vi.hoisted(() => ({
   clear: vi.fn(),
   openCapabilityWithType: vi.fn(),
   lastProps: {} as Record<string, any>,
+  content: undefined as any[] | undefined,
+  setDraftContent: vi.fn<(content: any[]) => void>(),
 }));
 vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
   const React = await import('react');
@@ -71,13 +73,66 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
     // 与真实实现同款缺省值（不含专家），供 ChatInputUnified 计算开放范围
     DEFAULT_CAPABILITY_RESOURCE_TYPES: ['skill', 'connector', 'knowledge'],
     default: React.forwardRef((props: any, ref: any) => {
-      editor.lastProps = props;
+      const contentRef = React.useRef<any[] | undefined>();
+      editor.content = contentRef.current;
+      editor.lastProps = {
+        ...props,
+        onChange: (text: string) => {
+          contentRef.current = undefined;
+          editor.content = undefined;
+          props.onChange?.(text);
+        },
+      };
+      const setEditorText = (text: string, content?: any[]) => {
+        contentRef.current = content;
+        editor.content = content;
+        props.onChange?.(
+          content
+            ? content
+                .map((part) =>
+                  typeof part === 'string' ? part : `@${part.name}`,
+                )
+                .join('')
+            : text,
+        );
+        props.onSkillIdsChange?.(
+          content
+            ?.filter(
+              (part) => typeof part !== 'string' && part.kind === 'skill',
+            )
+            .map((part) => part.targetId) ?? [],
+        );
+        props.onDocsChange?.(
+          content
+            ?.filter((part) => typeof part !== 'string' && part.kind === 'doc')
+            .map(({ slugId, name, pageType }) => ({
+              slugId,
+              title: name,
+              pageType,
+            })) ?? [],
+        );
+      };
+      editor.setDraftContent.mockImplementation((content) =>
+        setEditorText('', content),
+      );
       React.useImperativeHandle(ref, () => ({
         focus: editor.focus,
-        clear: editor.clear,
+        clear: () => {
+          contentRef.current = undefined;
+          editor.content = undefined;
+          editor.clear();
+        },
         openCapabilityWithType: editor.openCapabilityWithType,
         // 真实契约：整体设置文本并经 onChange 回传（草稿恢复/切换会话走此通道）
-        setEditorText: (text: string) => props.onChange?.(text),
+        setEditorText,
+        getPlainText: () =>
+          contentRef.current
+            ? contentRef.current
+                .filter((part) => typeof part === 'string')
+                .join('')
+            : String(props.value ?? ''),
+        getDraftContent: () =>
+          contentRef.current ?? [String(props.value ?? '')],
       }));
       return React.createElement(
         'div',
@@ -267,6 +322,7 @@ function renderHomeInput(props: Record<string, any> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  editor.content = undefined;
   computer.useRealSelector = false;
   computerApi.list.mockResolvedValue({
     code: '0000',
@@ -627,6 +683,70 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
 });
 
 describe('首页草稿（draftKey=home）', () => {
+  it('草稿恢复后仍遵守当前智能体的技能开关', () => {
+    saveDraft('home', {
+      version: 1,
+      text: '正文',
+      content: ['正文 ', { kind: 'skill', targetId: 42, name: '写作' }],
+    });
+    const onEnter = vi.fn();
+    renderHomeInput({ onEnter, enableMention: false });
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter.mock.calls[0][2]).toEqual([]);
+  });
+  it('选择技能和资料后立即离开，返回可见且发送包含原引用，删除后不复活', () => {
+    const content = [
+      '结合资料 ',
+      { kind: 'skill', targetId: 42, name: '写作' },
+      ' ',
+      { kind: 'doc', slugId: 'doc-1', name: '资料', pageType: 'md' },
+    ];
+    const first = renderHomeInput();
+    act(() => editor.setDraftContent(content));
+    first.unmount();
+    expect(loadDraft('home')?.content).toEqual(content);
+    const onEnter = vi.fn();
+    const second = renderHomeInput({ onEnter });
+    expect(screen.getByTestId('mention-editor').textContent).toContain('@写作');
+    expect(screen.getByTestId('mention-editor').textContent).toContain('@资料');
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter.mock.calls[0][2]).toEqual([42]);
+    expect(onEnter.mock.calls[0][5]).toEqual([
+      { slugId: 'doc-1', title: '资料', pageType: 'md' },
+    ]);
+    second.unmount();
+    expect(loadDraft('home')).toBeNull();
+
+    saveDraft('home', {
+      version: 1,
+      text: '',
+      content: [{ kind: 'skill', targetId: 42, name: '写作' }],
+    });
+    const third = renderHomeInput();
+    act(() => editor.setDraftContent([]));
+    third.unmount();
+    expect(loadDraft('home')).toBeNull();
+  });
+
+  it('同实例切换草稿作用域时技能和资料不串入空会话', () => {
+    saveDraft('home', {
+      version: 1,
+      text: '',
+      content: [{ kind: 'skill', targetId: 42, name: '写作' }],
+    });
+    const onEnter = vi.fn();
+    const { rerender } = renderHomeInput({ onEnter });
+    expect(editor.content).toEqual([
+      { kind: 'skill', targetId: 42, name: '写作' },
+    ]);
+    rerender(<ChatInputUnified onEnter={onEnter} draftKey="chat:empty" />);
+    expect(editor.content).toBeUndefined();
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(loadDraft('home')?.content).toEqual([
+      { kind: 'skill', targetId: 42, name: '写作' },
+    ]);
+  });
   const attachment = {
     uid: 'home-pdf',
     name: '报告.pdf',

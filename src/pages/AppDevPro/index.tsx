@@ -1,9 +1,22 @@
+import { SvgIcon } from '@/components/base';
 import {
   GitVersionRecordPanel,
   PagePreviewIframe,
   type GitVersionRecordPanelHandle,
 } from '@/components/business-component';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
+import ConversationAgentFilePreview from '@/components/business-component/ConversationFilePreview';
+import {
+  getFileTabId,
+  getToolTabId,
+  usePreviewTabs,
+  WORKSPACE_PREVIEW_TOOL_IDS,
+  type PreviewTab,
+  type PreviewToolId,
+} from '@/components/business-component/ConversationFilePreview/hooks/usePreviewTabs';
+import filePreviewStyles from '@/components/business-component/ConversationFilePreview/index.less';
+import PreviewTabBar from '@/components/business-component/ConversationFilePreview/PreviewTabBar';
+import PreviewChromeActions from '@/components/business-component/ConversationFilePreview/PreviewTabBar/PreviewChromeActions';
 import {
   CreditInsufficientPageBanner,
   CreditInsufficientProvider,
@@ -114,17 +127,7 @@ import AppDevPublishProgressModal from './components/AppDevPublishProgressModal'
 import AppDevPublishVersionRecords from './components/AppDevPublishVersionRecords';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
-import ConversationAgentFilePreview from './ConversationAgentFilePreview';
-import {
-  getFileTabId,
-  getToolTabId,
-  usePreviewTabs,
-  WORKSPACE_PREVIEW_TOOL_IDS,
-  type PreviewTab,
-  type PreviewToolId,
-} from './ConversationAgentFilePreview/hooks/usePreviewTabs';
-import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
-import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
+import DatabaseGlyph from './components/DatabaseGlyph';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import {
   useUserAppEnvPod,
@@ -202,6 +205,11 @@ const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
   'database',
   'database-config',
 ];
+
+/** 应用开发里「预览」页签的文案与会话页不同 */
+const APP_DEV_PREVIEW_TOOL_I18N: Partial<Record<PreviewToolId, string>> = {
+  preview: 'PC.Pages.AppDevPro.appPreview',
+};
 
 /** 工作区根目录 manifest 文件名；存在时才视为可自动启动预览的有效项目 */
 const WORKSPACE_MANIFEST_ROOT_FILE = 'workspace.manifest.toml';
@@ -590,14 +598,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     [conversationInfo, enableVersionControl],
   );
 
-  /** 常驻工作区工具页签（应用预览改为按需打开，可关闭） */
-  const workspaceToolIds = useMemo((): PreviewToolId[] => {
-    const tools: PreviewToolId[] = [];
-    if (isVersionControlEnabled) {
-      tools.push('version-control');
-    }
-    return tools;
-  }, [isVersionControlEnabled]);
+  /** 文件工作区没有常驻预览页签；版本控制由预览组件按开关插入 */
+  const workspaceToolIds = useMemo((): PreviewToolId[] => [], []);
+
+  /** 数据库、远程桌面图标只在应用开发页使用 */
+  const previewTabExtraIcons = useMemo(
+    (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
+      database: <DatabaseGlyph size={14} />,
+      'remote-desktop': (
+        <SvgIcon name="icons-nav-computer-star" style={{ fontSize: 14 }} />
+      ),
+    }),
+    [],
+  );
 
   // 版本管控是否开启的 ref
   isVersionControlEnabledRef.current = isVersionControlEnabled;
@@ -2655,6 +2668,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
     workspaceToolIds,
+    showVersionControl: isVersionControlEnabled,
+    toolI18nMap: APP_DEV_PREVIEW_TOOL_I18N,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
       setWorkspaceView('files');
@@ -4395,6 +4410,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   // ==================================== 渲染组件元素 ====================================
 
+  /** 文件区里的预览页签仍使用原来的空白占位 */
+  const appDevFileToolPanels = useMemo(
+    () => ({
+      preview: <div className={filePreviewStyles['app-preview-placeholder']} />,
+    }),
+    [],
+  );
+
   /** 「版本控制」页签：Git 提交记录 */
   const versionControlPanel = useMemo(() => {
     if (!isVersionControlEnabled) {
@@ -4450,6 +4473,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onTabReorder={previewTabs.reorderTabs}
               permanentWorkspaceToolIds={workspaceToolIds}
               showMoreActions={false}
+              extraToolIcons={previewTabExtraIcons}
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
@@ -4464,6 +4488,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onTabReorder={noop}
               permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
               showMoreActions={false}
+              extraToolIcons={previewTabExtraIcons}
             />
           ) : workspaceView === 'remote-desktop' ? (
             <div className={cx(styles['tool-workspace-bar'])}>
@@ -4501,6 +4526,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                   preview={fileView.preview}
                   diffFile={gitSourceControl.selectedDiffFile ?? undefined}
                   activeTab={previewTabs.activeTab}
+                  toolPanels={appDevFileToolPanels}
                   versionPanel={versionControlPanel}
                   providerClassName={fileView.className}
                   className={cx(

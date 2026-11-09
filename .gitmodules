@@ -5,4 +5,4 @@
 [submodule "submodules/nuwax-im"]
 	path = submodules/nuwax-im
 	url = https://git.yichamao.com/agent-platform/nuwax-im.git
-	branch = main
+	branch = feat-video-meeting

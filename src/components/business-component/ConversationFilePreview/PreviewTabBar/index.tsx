@@ -31,9 +31,11 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import {
+  getToolTabId,
   isPermanentWorkspaceToolTab,
   WORKSPACE_PREVIEW_TOOL_IDS,
 } from '../hooks/usePreviewTabs';
+import PreviewChromeActions from './PreviewChromeActions';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
 import PreviewTabModelSelect from './PreviewTabModelSelect';
@@ -73,12 +75,28 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
+  /** 是否展示更多操作菜单，线上环境不展示 */
+  showMoreActions?: boolean;
   /** 空间模型列表（TaskAgent 模型下拉） */
   originalModelConfigList?: ModelConfigInfo[];
   /** 智能体配置（TaskAgent 模型下拉） */
   agentConfigInfo?: AgentConfigInfo;
   /** 切换模型 */
   onModelChange?: (modelId: number, modelName: string) => void | Promise<void>;
+  /** 预览页签激活时是否展示地址栏，默认不展示 */
+  showPreviewAddressBar?: boolean;
+  /** 当前环境的应用预览地址（传入后在操作区前展示地址栏） */
+  previewUrl?: string;
+  /** 地址栏回车后跳转预览 iframe */
+  onNavigatePreview?: (url: string) => void;
+  /** 刷新应用预览 iframe */
+  onRefreshPreview?: () => void;
+  /** 页面额外的工具页签图标，覆盖内置图标 */
+  extraToolIcons?: Partial<Record<PreviewToolId, React.ReactNode>>;
+  /** 标签栏右侧操作区；传入后替换内置的模型选择和更多操作 */
+  trailingActions?: React.ReactNode;
+  /** 标签列表左侧附加内容，例如应用预览地址栏之外的提示 */
+  leadingExtra?: React.ReactNode;
 }
 
 interface TabItemFaceProps {
@@ -282,6 +300,7 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
+  'database-config': <SettingOutlined style={{ fontSize: 14 }} />,
 };
 
 /**
@@ -303,9 +322,17 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
+  showMoreActions = true,
   originalModelConfigList,
   agentConfigInfo,
   onModelChange,
+  showPreviewAddressBar = false,
+  previewUrl,
+  onNavigatePreview,
+  onRefreshPreview,
+  extraToolIcons,
+  trailingActions,
+  leadingExtra,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -459,9 +486,20 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       return;
     }
 
-    /** 更新标签栏轨道宽度 */
+    const lastWidthRef = { current: -1 };
+    let rafId = 0;
+
+    /** 更新标签栏轨道宽度；宽度未变时不 setState，避免 ResizeObserver 反馈环 */
     const updateTrackWidth = () => {
-      setTrackScrollWidth(trackEl.scrollWidth - 2); // 此处 -2 为了防止计算宽度不够精确导致内容未撑满的情况下出现滚动条
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const next = Math.max(0, trackEl.scrollWidth - 2);
+        if (lastWidthRef.current === next) {
+          return;
+        }
+        lastWidthRef.current = next;
+        setTrackScrollWidth(next);
+      });
     };
 
     updateTrackWidth();
@@ -470,6 +508,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     const resizeObserver = new ResizeObserver(updateTrackWidth);
     resizeObserver.observe(trackEl);
     return () => {
+      cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
     };
   }, [tabs]);
@@ -596,7 +635,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     }
     /** 渲染工具标签图标 */
     if (tab.type === 'tool' && tab.toolId) {
-      return TOOL_ICON_MAP[tab.toolId] || null;
+      return extraToolIcons?.[tab.toolId] ?? TOOL_ICON_MAP[tab.toolId] ?? null;
     }
     /** 渲染默认标签图标 */
     return null;
@@ -678,25 +717,40 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             />
           </div>
         </div>
+      </div>
 
-        {/* 更多操作菜单 */}
-        <div className={cx(styles['tab-bar-actions'])}>
-          {active ? (
-            <>
+      {leadingExtra}
+
+      {/* 应用预览：地址栏。默认关闭，避免会话页预览页签出现地址栏 */}
+      {showPreviewAddressBar && activeTabId === getToolTabId('preview') ? (
+        <PreviewChromeActions
+          previewUrl={previewUrl}
+          onNavigatePreview={onNavigatePreview}
+          onRefreshPreview={onRefreshPreview}
+        />
+      ) : null}
+
+      {/* 更多操作 + 模型选择；传入 trailingActions 时由页面替换 */}
+      <div className={cx(styles['tab-bar-actions'])}>
+        {trailingActions ?? (
+          <>
+            {active ? (
               <PreviewTabModelSelect
                 originalModelConfigList={originalModelConfigList}
                 agentConfigInfo={agentConfigInfo}
                 onModelChange={onModelChange}
               />
+            ) : null}
+            {active && showMoreActions ? (
               <MoreActionsMenu
                 onRestartServer={onRestartServer}
                 onRestartAgent={onRestartAgent}
                 onExportProject={onExportProject}
                 isCloudComputer={isCloudComputer}
               />
-            </>
-          ) : null}
-        </div>
+            ) : null}
+          </>
+        )}
       </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}

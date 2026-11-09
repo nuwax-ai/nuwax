@@ -146,7 +146,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
             ...(entry.name === 'nuwax-im-web' ? { host } : {}),
             onAuthExpired: (target: string) => {
               if (mounted) {
-                void expireMicroAppSession(target).catch((error) =>
+                void expireMicroAppSession(target, entry.name).catch((error) =>
                   console.error('[micro-app] 认证跳转失败', error),
                 );
               }

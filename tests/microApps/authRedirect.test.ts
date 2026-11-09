@@ -61,12 +61,20 @@ describe('微应用认证交还宿主', () => {
   it('失效时先清主站会话及微应用，非法目标不改变会话', async () => {
     await expireMicroAppSession('javascript:alert(1)');
     expect(mocks.clear).not.toHaveBeenCalled();
-    await expireMicroAppSession('https://business.example/login');
+    await expireMicroAppSession(
+      'https://business.example/login',
+      'nuwax-im-web',
+    );
     expect(mocks.clear).toHaveBeenCalledTimes(1);
     expect(mocks.navigate).toHaveBeenCalledWith(
       'https://business.example/login',
     );
     expect(mocks.clearHost).toHaveBeenCalledTimes(1);
+    expect(mocks.clearHost).toHaveBeenCalledWith({
+      source: 'micro-app',
+      reason: 'auth-expired',
+      microApp: 'nuwax-im-web',
+    });
     expect(mocks.clearLogin).toHaveBeenCalledTimes(1);
     expect(mocks.clear.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.navigate.mock.invocationCallOrder[0],

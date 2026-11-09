@@ -5,6 +5,7 @@
  */
 
 import type { CapabilityTypeEnum } from '@/components/ChatInputHome/CapabilityModal/types';
+import type { ConversationDraftContent } from '@/features/conversation/domain/conversationPageCache';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -333,13 +334,14 @@ export interface MentionEditorHandle {
    * 内容末尾便于继续输入。与外部 value 同步通道不同：无视「编辑器聚焦」守卫
    * 直达 DOM——切换会话时编辑器常处于聚焦态，value 通道会被聚焦守卫拦截，
    * 造成草稿在 state 里但输入框不显示
+   * content 存在时按保存顺序恢复正文和引用 chip，缺省保持纯文本置数。
    */
-  setEditorText: (text: string) => void;
+  setEditorText: (text: string, content?: ConversationDraftContent) => void;
   /**
-   * 草稿落盘用的纯文本：mention chip 剥离（chip 无法跨刷新/切换还原，
-   * 残留的 @/ 名称字面量会污染恢复后的输入框）
+   * 草稿摘要用的纯文本：剥离 chip，完整引用由 getDraftContent 保存。
    */
   getPlainText: () => string;
+  getDraftContent: () => ConversationDraftContent;
   /** 以编程方式插入提及项（追加到编辑器末尾） */
   handleAtIconMentionSelect: (item: MentionItem) => void;
   /** 获取焦点 */

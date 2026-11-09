@@ -980,6 +980,48 @@ export interface ResourceStatDetailParams {
   pageSize?: number;
 }
 
+/** Token 排名和趋势中的 int64 可由服务端以十进制字符串返回。 */
+export interface UserTokenMetrics {
+  inputTokens: number | string;
+  cacheInputTokens: number | string;
+  outputTokens: number | string;
+  totalTokens: number | string;
+  creditAmount: number | string;
+  callCount: number | string;
+}
+
+export interface UserTokenRankDTO extends UserTokenMetrics {
+  rank: number;
+  userId: number | string;
+  userName?: string;
+  nickName?: string;
+  phone?: string;
+  email?: string;
+  /** 1 启用，-1 禁用或已删除；历史消耗仍可查询。 */
+  status?: number;
+}
+
+export interface UserTokenRankParams {
+  targetType?: string;
+  targetId?: string;
+  dtStart?: string;
+  dtEnd?: string;
+  sortField?: 'totalTokens';
+  pageNum: number;
+  pageSize: number;
+}
+
+export interface UserTokenTrendParams {
+  userId: string;
+  dtStart: string;
+  dtEnd: string;
+}
+
+export interface UserTokenTrendDTO extends UserTokenMetrics {
+  /** yyyyMMdd */
+  dt: string;
+}
+
 /** 资源统计明细记录 */
 export interface ResourceStatDTO {
   id: number;

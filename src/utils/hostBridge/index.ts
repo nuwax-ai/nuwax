@@ -17,6 +17,10 @@ import type {
 } from '@/types/interfaces/hostBridge';
 import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
 import {
+  createAuthClearDiagnostic,
+  type AuthClearContext,
+} from '@/utils/authDiagnostic';
+import {
   getDesktopShellPreviewPlatform,
   setDesktopShellPreviewHostCommandHandler,
   updateDesktopShellPreviewLayoutState,
@@ -304,9 +308,18 @@ export const auth = {
     }
   },
   /** 登出 / token 失效：清宿主凭证（并触发宿主停服务）。失败静默忽略。 */
-  async clear(): Promise<void> {
+  async clear(context?: AuthClearContext): Promise<void> {
+    const diagnostic = createAuthClearDiagnostic(context);
     try {
-      await getBridge()?.auth?.clear?.();
+      console.info('[AuthDiagnostic]', {
+        stage: 'clear-requested',
+        ...diagnostic,
+      });
+    } catch {
+      /* 日志失败不阻断既有登出流程。 */
+    }
+    try {
+      await getBridge()?.auth?.clear?.(diagnostic);
     } catch {
       /* 宿主缺失或调用失败均忽略——不阻塞 nuwax 自身的登出/重定向 */
     }

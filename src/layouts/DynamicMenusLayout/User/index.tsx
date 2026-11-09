@@ -51,7 +51,10 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     debounceInterval: 300,
     onSuccess: async () => {
       clearStoragePreservingUserPrefs();
-      await hostBridge.auth.clear();
+      await hostBridge.auth.clear({
+        source: 'user-menu',
+        reason: 'manual-logout',
+      });
       // 清除菜单信息
       clearMenuInfo();
 
