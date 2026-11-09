@@ -104,6 +104,11 @@ export function getDshLauncherBridge(): HostDshLauncherBridge | null {
   return launcher as HostDshLauncherBridge;
 }
 
+export function getWorkbenchBridge(): NuwaClawBridgeLike['workbench'] | null {
+  const bridge = getBridge()?.workbench;
+  return isDesktopHost() && typeof bridge?.open === 'function' ? bridge : null;
+}
+
 /** 按调用时能力取得主题管理器；旧客户端和普通浏览器使用浏览器存储。 */
 export async function getThemesBridge(): Promise<HostThemesBridge | null> {
   const bridge = getBridge();

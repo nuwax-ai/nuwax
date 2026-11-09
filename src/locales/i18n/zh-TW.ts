@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_TW: SystemLangMap = {
+  "PC.Workbench.open": "外掛工作台",
   "PC.Themes.recovery": "復原模式正在使用預設主題。可在此還原預設，或移除網址中的 ?theme=default 後重新開啟以使用所選主題。",
   "PC.Themes.title": "主題",
   "PC.Themes.desktopHint": "匯入主題，或關聯本機目錄；儲存修改後自動生效。",
