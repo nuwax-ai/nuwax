@@ -162,16 +162,34 @@ const QrCodeLogin: React.FC<Props> = ({
     setPhase('loading');
     setGeneration((value) => value + 1);
   };
+  // 品牌名固定为「女娲Nuwax」，只翻译前后的提示，保留各语言的语序。
+  const [hintBeforeApp, hintAfterApp] = dict(
+    'PC.Pages.Login.qrHintWithAppName',
+  ).split('{0}');
   const statusText =
-    phase === 'scanned'
-      ? dict('PC.Pages.Login.qrScanned')
-      : phase === 'confirming'
-      ? dict('PC.Pages.Login.qrConfirming')
-      : phase === 'expired'
-      ? dict('PC.Pages.Login.qrExpired')
-      : phase === 'error'
-      ? errorText
-      : dict('PC.Pages.Login.qrHint');
+    phase === 'scanned' ? (
+      dict('PC.Pages.Login.qrScanned')
+    ) : phase === 'confirming' ? (
+      dict('PC.Pages.Login.qrConfirming')
+    ) : phase === 'expired' ? (
+      dict('PC.Pages.Login.qrExpired')
+    ) : phase === 'error' ? (
+      errorText
+    ) : (
+      <>
+        {hintBeforeApp}
+        <Typography.Link
+          href="https://nuwax.com/app.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {dict('PC.Pages.Login.qrClientName', '女娲Nuwax')}
+        </Typography.Link>
+        {hintAfterApp}
+        <br />
+        {dict('PC.Pages.Login.qrLoginOrDownload')}
+      </>
+    );
 
   return (
     <div className={styles.panel}>
