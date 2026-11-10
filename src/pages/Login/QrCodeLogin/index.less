@@ -24,6 +24,53 @@
 
 .qr-image {
   position: relative;
+
+  :global(.ant-qrcode-mask) {
+    background: rgba(255, 255, 255, 84%);
+  }
+}
+
+.expired-refresh {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: @colorTextSecondary;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid @colorPrimary;
+    outline-offset: -3px;
+  }
+}
+
+.expired-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  color: @colorPrimary;
+  font-size: 36px;
+}
+
+.expired-message {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
 }
 
 .logo {

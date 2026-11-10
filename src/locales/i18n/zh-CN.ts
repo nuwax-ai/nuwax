@@ -3611,6 +3611,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Login.qrScanned": "扫码成功，请在 App 上确认登录",
   "PC.Pages.Login.qrConfirming": "登录中，请稍候…",
   "PC.Pages.Login.qrExpired": "二维码已过期，请刷新后重新扫码",
+  "PC.Pages.Login.qrExpiredTitle": "二维码已过期",
+  "PC.Pages.Login.qrClickRefresh": "请点击刷新",
   "PC.Pages.Login.qrRefresh": "刷新二维码",
   "PC.Pages.Login.qrLoadFailed": "扫码登录暂不可用，请刷新二维码重试",
   "PC.Pages.Login.missingDevToken": "登录接口未返回本地调试所需的 Token",
