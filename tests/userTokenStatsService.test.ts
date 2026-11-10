@@ -1,6 +1,7 @@
 import {
   apiGetUserTokenRank,
   apiGetUserTokenTrend,
+  apiSearchUsageUsers,
 } from '@/services/systemManage';
 import { parseInt64Json } from '@/utils/parseInt64Json';
 import { describe, expect, it, vi } from 'vitest';
@@ -52,6 +53,32 @@ describe('用户 Token 统计服务契约', () => {
       }),
     );
     expect(trend.data[0].totalTokens).toBe('9223372036854775807');
+  });
+
+  it('用户名和手机号复用用户管理的分页筛选契约，用户 ID 不丢精度', async () => {
+    request.mockImplementation(async (_url, options) =>
+      options.transformResponse[0](
+        '{"code":"0000","data":{"records":[{"id":9007199254740993,"userName":"account","nickName":"name"}],"total":1}}',
+      ),
+    );
+    const signal = new AbortController().signal;
+    for (const kw of ['account', '13800138000']) {
+      const params = { pageNo: 2, pageSize: 20, queryFilter: { userName: kw } };
+      const result = await apiSearchUsageUsers(params, {
+        signal,
+        skipErrorHandler: true,
+      });
+      expect(request).toHaveBeenLastCalledWith(
+        '/api/system/user/list',
+        expect.objectContaining({
+          method: 'POST',
+          data: params,
+          signal,
+          skipErrorHandler: true,
+        }),
+      );
+      expect(result.data.records[0].id).toBe('9007199254740993');
+    }
   });
 
   it('只转换不安全整数，不改写字符串、转义引号、小数和指数', () => {

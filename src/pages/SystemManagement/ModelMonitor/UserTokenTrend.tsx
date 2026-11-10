@@ -42,6 +42,7 @@ export default function UserTokenTrend({
   const label = dict(
     `PC.Pages.ModelMonitor.${metrics.find(([key]) => key === metric)![1]}`,
   );
+  // 未返回的日期不补零，避免将数据缺失误记为零消耗。
   const points = useMemo(
     () =>
       (data ?? []).map((row) => ({
@@ -79,9 +80,6 @@ export default function UserTokenTrend({
             }))}
             onChange={(value) => setMetric(value as typeof metric)}
           />
-          <p className={styles['query-context']}>
-            {dict('PC.Pages.ModelMonitor.trendHint')}
-          </p>
           <div
             role="img"
             aria-label={dict(

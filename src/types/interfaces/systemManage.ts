@@ -131,6 +131,12 @@ export interface SystemUserListInfo {
   // 加入时间
   created: string;
 }
+
+export type SystemUserOptionInfo = Pick<
+  SystemUserListInfo,
+  'nickName' | 'userName'
+> & { id: number | string };
+
 export interface SystemUserConfig {
   /** 租户ID */
   tenantId: number;

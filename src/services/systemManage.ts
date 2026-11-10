@@ -66,6 +66,7 @@ import type {
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
+  SystemUserOptionInfo,
   SystemWebappListParams,
   SystemWebappPage,
   SystemWorkflowListParams,
@@ -94,6 +95,19 @@ export async function apiSystemUserList(
   return request('/api/system/user/list', {
     method: 'POST',
     data,
+  });
+}
+
+/** 用户选择器保留完整 int64 ID，避免查询到舍入后的其他账号。 */
+export async function apiSearchUsageUsers(
+  data: SystemUserListParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<Page<SystemUserOptionInfo>>> {
+  return request('/api/system/user/list', {
+    method: 'POST',
+    data,
+    transformResponse: [parseInt64Json],
+    ...options,
   });
 }
 
