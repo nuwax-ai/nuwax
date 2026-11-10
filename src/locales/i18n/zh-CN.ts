@@ -4263,6 +4263,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.addModel": "新增模型",
   "PC.Pages.SpaceLibrary.CreateModel.apiConfig": "接口配置",
   "PC.Pages.SpaceLibrary.CreateModel.apiProtocol": "接口协议",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimit": "每用户每日 Token 上限",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimitHelp": "限制每位用户每天的 Token 消耗量，留空或填 0 表示不限制。",
   "PC.Pages.SpaceLibrary.CreateModel.callStrategy": "调用策略",
   "PC.Pages.SpaceLibrary.CreateModel.disable": "禁用",
   "PC.Pages.SpaceLibrary.CreateModel.disableTooltip": "禁用后，将不可再被选择，正在使用中的智能体不受影响",

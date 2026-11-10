@@ -216,7 +216,9 @@ export interface ModelConfigDto {
   maxTokens: number;
   /** 最大上下文长度 */
   maxContextTokens?: number;
-  /** 模型接口协议（可用值: OpenAI, Ollama, Zhipu, Anthropic） */
+  /** 每位用户每天的 token 消耗上限，null 或 0 表示不限制 */
+  tokenLimit?: number | null;
+  /** 模型接口协议 */
   apiProtocol: ModelApiProtocolEnum;
   /** API列表 */
   apiInfoList: ApiInfo[];

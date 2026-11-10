@@ -26,12 +26,13 @@ export enum ModelCapabilityTypeEnum {
   Reasoning = 'Reasoning',
 }
 
-// 模型接口协议，可选值：OpenAI, Ollama, Zhipu, Anthropic 可用值:OpenAI,Ollama,Zhipu,Anthropic
+// 模型接口协议
 export enum ModelApiProtocolEnum {
   OpenAI = 'OpenAI',
   Ollama = 'Ollama',
   Zhipu = 'Zhipu',
   Anthropic = 'Anthropic',
+  Responses = 'Responses',
 }
 
 // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime

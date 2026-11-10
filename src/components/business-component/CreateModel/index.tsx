@@ -129,6 +129,7 @@ const CREATE_MODEL_DEFAULT_VALUES = {
   types: [],
   maxTokens: 4096,
   maxContextTokens: 128000,
+  tokenLimit: 0,
   dimension: 1536,
   enabled: ModelComponentStatusEnum.Enabled,
   usageScenarios: MODEL_USAGE_SCENARIO_LIST.map((v) => v.value),
@@ -207,6 +208,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
       // 避免 ColorPicker/Input 受控值异常(未开启 showTagFields 时无表单项,无副作用)
       form.setFieldsValue({
         ...result,
+        tokenLimit: result?.tokenLimit ?? 0,
         tag: result?.tag ?? undefined,
         tagColor: result?.tagColor ?? undefined,
         cost: result?.cost ?? undefined,
@@ -976,6 +978,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
             />
           </Form.Item>
         </ConditionRender>
+
+        <Form.Item
+          name="tokenLimit"
+          label={dict('PC.Pages.SpaceLibrary.CreateModel.tokenLimit')}
+          extra={dict('PC.Pages.SpaceLibrary.CreateModel.tokenLimitHelp')}
+        >
+          <InputNumber className={cx('w-full')} min={0} precision={0} />
+        </Form.Item>
 
         {/* 启用模型开关 */}
         <Form.Item

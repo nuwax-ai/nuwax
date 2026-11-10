@@ -3947,6 +3947,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.addModel": "モデルの追加",
   "PC.Pages.SpaceLibrary.CreateModel.apiConfig": "API 構成",
   "PC.Pages.SpaceLibrary.CreateModel.apiProtocol": "API プロトコル",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimit": "ユーザーごとの1日あたりのトークン上限",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimitHelp": "各ユーザーの1日あたりのトークン使用量を制限します。空欄または0の場合は無制限です。",
   "PC.Pages.SpaceLibrary.CreateModel.callStrategy": "コール戦略",
   "PC.Pages.SpaceLibrary.CreateModel.disable": "無効にする",
   "PC.Pages.SpaceLibrary.CreateModel.disableTooltip": "無効にすると選択できなくなります。現在使用しているエージェントは影響を受けません",
