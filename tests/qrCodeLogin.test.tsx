@@ -122,7 +122,7 @@ describe('扫码登录生命周期', () => {
     await flush();
     expect(onSuccess).not.toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'PC.Pages.Login.qrHint',
+      'PC.Pages.Login.qrHintWithAppName',
     );
   });
 
@@ -165,7 +165,7 @@ describe('扫码登录生命周期', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onConfirmingChange).not.toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'PC.Pages.Login.qrHint',
+      'PC.Pages.Login.qrHintWithAppName',
     );
     expect(
       screen.getByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' }),
@@ -214,7 +214,7 @@ describe('扫码登录生命周期', () => {
     );
     await flush();
     expect(screen.getByRole('status')).toHaveTextContent(
-      'PC.Pages.Login.qrHint',
+      'PC.Pages.Login.qrHintWithAppName',
     );
   });
 
