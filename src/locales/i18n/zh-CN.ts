@@ -3605,7 +3605,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Login.qrLogin": "扫码登录",
   "PC.Pages.Login.switchToAccountLogin": "切换到账号登录",
   "PC.Pages.Login.switchToQrLogin": "切换到扫码登录",
-  "PC.Pages.Login.qrHint": "请使用女娲 App 扫码登录",
+  "PC.Pages.Login.qrHintWithAppName": "请使用 {0} 扫码登录",
   "PC.Pages.Login.qrScanned": "扫码成功，请在 App 上确认登录",
   "PC.Pages.Login.qrConfirming": "登录中，请稍候…",
   "PC.Pages.Login.qrExpired": "二维码已过期，请刷新后重新扫码",

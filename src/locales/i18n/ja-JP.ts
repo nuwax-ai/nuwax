@@ -3508,7 +3508,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.qrLogin": "QRコードログイン",
   "PC.Pages.Login.switchToAccountLogin": "アカウントログインに切り替え",
   "PC.Pages.Login.switchToQrLogin": "QRコードログインに切り替え",
-  "PC.Pages.Login.qrHint": "Nuwaxアプリでスキャンしてログイン",
+  "PC.Pages.Login.qrHintWithAppName": "{0}でスキャンしてログイン",
   "PC.Pages.Login.qrScanned": "スキャンしました。アプリでログインを承認してください",
   "PC.Pages.Login.qrConfirming": "ログイン中です。お待ちください…",
   "PC.Pages.Login.qrExpired": "QRコードの期限が切れました。更新して再度スキャンしてください",
