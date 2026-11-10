@@ -10,6 +10,7 @@ import {
   runCommand,
 } from '../../scripts/sync-micro-apps.mjs';
 import {
+  keepRemoteConflictSides,
   parseUpgradeArguments,
   upgradeMicroApps as performUpgradeMicroApps,
 } from '../../scripts/upgrade-micro-apps.mjs';
@@ -1400,4 +1401,28 @@ test('dry-run 遇到可重算补丁时不写回 adapter.patch', async (t) => {
   assert.equal(result.status, 'dry-run');
   assert.equal(result.apps[0].patchRebased, true);
   assert.deepEqual(await snapshot(f), before);
+});
+
+test('三方冲突段采用远端代码，并去掉因此不再使用的导入', () => {
+  const conflicted = [
+    "import { getMessagePortalRoot, redirectMessageAuth } from './hostRuntime';",
+    '<<<<<<< ours',
+    'window.location.replace(authRedirectTarget);',
+    '=======',
+    'redirectMessageAuth(authRedirectTarget);',
+    '>>>>>>> theirs',
+    'getMessagePortalRoot();',
+    '',
+  ].join('\n');
+  const resolved = keepRemoteConflictSides(conflicted);
+  assert.match(resolved, /window\.location\.replace\(authRedirectTarget\)/);
+  assert.doesNotMatch(resolved, /redirectMessageAuth|<<<<<<<|>>>>>>>/);
+  assert.match(resolved, /import \{ getMessagePortalRoot \} from '\.\/hostRuntime';/);
+});
+
+test('无法识别的冲突标记不会被当成远端代码', () => {
+  assert.throws(
+    () => keepRemoteConflictSides('<<<<<<< theirs\nremote\n=======\npatch\n>>>>>>> ours\n'),
+    /无法按远端代码取舍/,
+  );
 });

@@ -220,8 +220,64 @@ async function overlayChanges(git, state, snapshot) {
   return files.split('\0').filter((file) => file && !preserved.has(file));
 }
 
+/**
+ * 三方冲突时保留远端一侧。
+ * worktree 检出的是 adapter.json 所配分支的远端提交，git apply --3way
+ * 的第一段（ours / HEAD）就是这份远端代码。只替换冲突段，已经贴上的宿主适配保留。
+ *
+ * @param {string} source 带冲突标记的文件文本
+ * @returns {string} 冲突段改为远端代码后的文本
+ */
+export function keepRemoteConflictSides(source) {
+  const markerCount = source.match(/^<<<<<<< /gm)?.length ?? 0;
+  if (markerCount === 0) return source;
+  let resolvedCount = 0;
+  const resolved = source.replace(
+    /^<<<<<<< (?:ours|HEAD)\r?\n([\s\S]*?)^=======\r?\n[\s\S]*?^>>>>>>> [^\n]+\r?\n/gm,
+    (_match, remoteSide) => {
+      resolvedCount += 1;
+      return remoteSide;
+    },
+  );
+  if (resolvedCount !== markerCount || /^<<<<<<< |^>>>>>>> /m.test(resolved)) {
+    throw new Error('补丁冲突标记无法按远端代码取舍');
+  }
+  return dropUnusedNamedImports(resolved);
+}
+
+/** 冲突段改回远端后，补丁引进但已不再使用的具名导入删掉，避免产物编译报未使用。 */
+function dropUnusedNamedImports(source) {
+  return source.replace(
+    /^import\s+(type\s+)?\{([^}]+)\}\s+from\s+(['"][^'"]+['"]);?[ \t]*\r?\n/gm,
+    (line, typeKeyword, names, specifier) => {
+      const parts = names
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const elsewhere = source.replace(line, '\n');
+      const used = parts.filter((part) => {
+        const name = part.split(/\s+as\s+/).pop().trim();
+        return new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(
+          elsewhere,
+        );
+      });
+      if (used.length === parts.length) return line;
+      if (used.length === 0) return '';
+      const typePrefix = typeKeyword || '';
+      return `import ${typePrefix}{ ${used.join(', ')} } from ${specifier};\n`;
+    },
+  );
+}
+
 /** 子仓有旧 blob，空归档没有，贴不上时只能在 worktree 里三方重算。 */
-async function rebasePatchOnto(execute, source, commit, patchFile, workParent) {
+async function rebasePatchOnto(
+  execute,
+  source,
+  commit,
+  patchFile,
+  workParent,
+  log = () => {},
+) {
   await fs.mkdir(workParent, { recursive: true });
   const parent = await fs.mkdtemp(path.join(workParent, 'rebase-'));
   const work = path.join(parent, 'work');
@@ -231,10 +287,33 @@ async function rebasePatchOnto(execute, source, commit, patchFile, workParent) {
       ['worktree', 'add', '--detach', '--quiet', work, commit],
       { cwd: source, capture: true },
     );
-    await execute('git', ['apply', '--3way', patchFile], {
-      cwd: work,
-      capture: true,
-    });
+    try {
+      await execute('git', ['apply', '--3way', patchFile], {
+        cwd: work,
+        capture: true,
+      });
+    } catch (applyError) {
+      const unmerged = await execute(
+        'git',
+        ['diff', '--name-only', '--diff-filter=U'],
+        { cwd: work, capture: true },
+      );
+      const files = unmerged
+        .split('\n')
+        .map((file) => file.trim())
+        .filter(Boolean);
+      if (!files.length) throw applyError;
+      for (const file of files) {
+        const fullPath = path.join(work, file);
+        const text = await fs.readFile(fullPath, 'utf8');
+        await fs.writeFile(fullPath, keepRemoteConflictSides(text));
+      }
+      log(
+        `[upgrade] 补丁与远端冲突，冲突段采用配置分支远端代码：${files.join(
+          ', ',
+        )}`,
+      );
+    }
     await execute(
       'git',
       ['add', '-A', '--', '.', ':(exclude)*.rej', ':(exclude)*.orig'],
@@ -568,6 +647,7 @@ export async function upgradeMicroApps({
             state.newPin,
             snapshot.snapshot.patch,
             path.join(cache, 'patch-rebase'),
+            log,
           );
           const remadePath = path.join(scratch, `${app.id}-rebased.patch`);
           await fs.writeFile(remadePath, remade);
