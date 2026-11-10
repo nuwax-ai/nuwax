@@ -90,12 +90,12 @@ const QrCodeLogin: React.FC<Props> = ({
             dict('PC.Pages.Login.qrLoadFailed'),
         );
       }
+      setCode(data);
       if (data.expireSeconds <= 0) {
         expire();
         return;
       }
       const deadline = Date.now() + data.expireSeconds * 1000;
-      setCode(data);
       setPhase('waiting');
       expiryTimer = setTimeout(expire, data.expireSeconds * 1000);
 
@@ -171,8 +171,6 @@ const QrCodeLogin: React.FC<Props> = ({
       dict('PC.Pages.Login.qrScanned')
     ) : phase === 'confirming' ? (
       dict('PC.Pages.Login.qrConfirming')
-    ) : phase === 'expired' ? (
-      dict('PC.Pages.Login.qrExpired')
     ) : phase === 'error' ? (
       errorText
     ) : (
@@ -201,11 +199,15 @@ const QrCodeLogin: React.FC<Props> = ({
           <Spin size="large" />
         ) : phase === 'scanned' ? (
           <CheckCircleFilled className={styles.scanned} />
-        ) : phase === 'waiting' && code ? (
+        ) : (phase === 'waiting' || phase === 'expired') && code ? (
           <div
             className={styles['qr-image']}
-            role="img"
-            aria-label={dict('PC.Pages.Login.qrCodeLabel')}
+            role={phase === 'expired' ? undefined : 'img'}
+            aria-label={
+              phase === 'expired'
+                ? undefined
+                : dict('PC.Pages.Login.qrCodeLabel')
+            }
           >
             <QRCode
               value={code.qrContent}
@@ -213,6 +215,29 @@ const QrCodeLogin: React.FC<Props> = ({
               type="svg"
               bgColor="#fff"
               errorLevel={tenantLogoUrl ? 'H' : 'M'}
+              aria-hidden={phase === 'expired' || undefined}
+              status={phase === 'expired' ? 'expired' : 'active'}
+              onRefresh={retry}
+              statusRender={({ onRefresh }) => (
+                <button
+                  type="button"
+                  className={styles['expired-refresh']}
+                  aria-label={dict('PC.Pages.Login.qrRefresh')}
+                  onClick={onRefresh}
+                >
+                  <span className={styles['expired-icon']} aria-hidden>
+                    <ReloadOutlined />
+                  </span>
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className={styles['expired-message']}
+                  >
+                    <span>{dict('PC.Pages.Login.qrExpiredTitle')}</span>
+                    <span>{dict('PC.Pages.Login.qrClickRefresh')}</span>
+                  </span>
+                </button>
+              )}
             />
             {/* 租户图标可能跨域且非方形，等比展示，加载成功后才覆盖码面。 */}
             {tenantLogoUrl && (
@@ -242,8 +267,8 @@ const QrCodeLogin: React.FC<Props> = ({
         )}
       </div>
       <Typography.Paragraph
-        role="status"
-        aria-live="polite"
+        role={phase === 'expired' ? undefined : 'status'}
+        aria-live={phase === 'expired' ? undefined : 'polite'}
         type={phase === 'error' ? 'danger' : 'secondary'}
       >
         {statusText}
