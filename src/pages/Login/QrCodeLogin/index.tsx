@@ -183,9 +183,11 @@ const QrCodeLogin: React.FC<Props> = ({
           target="_blank"
           rel="noopener noreferrer"
         >
-          女娲Nuwax
+          {dict('PC.Pages.Login.qrClientName', '女娲Nuwax')}
         </Typography.Link>
         {hintAfterApp}
+        <br />
+        {dict('PC.Pages.Login.qrLoginOrDownload')}
       </>
     );
 
