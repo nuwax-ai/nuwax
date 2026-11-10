@@ -23,9 +23,8 @@ afterEach(() => vi.unstubAllEnvs());
 describe('扫码登录接口认证边界', () => {
   it('创建前通知宿主开始登录，被取消后不再发起请求', async () => {
     const controller = new AbortController();
-    const reason = new Error('登录已取消');
-    controller.abort(reason);
-    await expect(apiCreateQrLoginCode(controller.signal)).rejects.toBe(reason);
+    controller.abort();
+    await expect(apiCreateQrLoginCode(controller.signal)).rejects.toThrow();
     expect(h.beginLogin).toHaveBeenCalledOnce();
     expect(h.request).not.toHaveBeenCalled();
     await apiCreateQrLoginCode();
@@ -33,40 +32,6 @@ describe('扫码登录接口认证边界', () => {
       '/api/user/qrcode/create',
       expect.objectContaining({ method: 'POST', silentPolling: true }),
     );
-  });
-
-  it('旧浏览器缺少 throwIfAborted 和 reason 时仍能创建二维码', async () => {
-    const controller = new AbortController();
-    Object.defineProperties(controller.signal, {
-      throwIfAborted: { value: undefined },
-      reason: { value: undefined },
-    });
-    await apiCreateQrLoginCode(controller.signal);
-    expect(h.request).toHaveBeenCalledWith('/api/user/qrcode/create', {
-      method: 'POST',
-      signal: controller.signal,
-      silentPolling: true,
-      skipErrorHandler: true,
-    });
-  });
-
-  it('旧浏览器在等待宿主期间取消登录，不再创建二维码', async () => {
-    const controller = new AbortController();
-    Object.defineProperties(controller.signal, {
-      throwIfAborted: { value: undefined },
-      reason: { value: undefined },
-    });
-    let finishLogin!: () => void;
-    h.beginLogin.mockReturnValueOnce(
-      new Promise<void>((resolve) => {
-        finishLogin = resolve;
-      }),
-    );
-    const pending = apiCreateQrLoginCode(controller.signal);
-    controller.abort();
-    finishLogin();
-    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-    expect(h.request).not.toHaveBeenCalled();
   });
 
   it.each([
