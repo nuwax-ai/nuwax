@@ -221,6 +221,38 @@ async function overlayChanges(git, state, snapshot) {
 }
 
 /**
+ * 从补丁里去掉目标树上不存在、且不是新增文件的 diff。
+ * 切换子模块分支时，旧分支独有文件不能再打到新分支上。
+ * 新增文件（--- /dev/null）保留，它们是宿主补丁自己带进来的。
+ *
+ * @param {string} patch 完整 adapter.patch
+ * @param {Iterable<string>} existingFiles 目标提交里的路径
+ * @returns {{ patch: string, dropped: string[] }}
+ */
+export function omitUnavailablePatchFiles(patch, existingFiles) {
+  const present = new Set(existingFiles);
+  const dropped = [];
+  const kept = [];
+  for (const section of String(patch).split(/(?=^diff --git )/m)) {
+    if (!section.startsWith('diff --git ')) {
+      kept.push(section);
+      continue;
+    }
+    const target = section.match(/^diff --git a\/(\S+) b\/(\S+)/)?.[2];
+    const isNewFile =
+      /^new file mode /m.test(section) || /^--- \/dev\/null$/m.test(section);
+    if (target && !isNewFile && !present.has(target)) {
+      dropped.push(target);
+      continue;
+    }
+    kept.push(section);
+  }
+  let text = kept.join('');
+  if (text && !text.endsWith('\n')) text += '\n';
+  return { patch: text, dropped };
+}
+
+/**
  * 三方冲突时保留远端一侧。
  * worktree 检出的是 adapter.json 所配分支的远端提交，git apply --3way
  * 的第一段（ours / HEAD）就是这份远端代码。只替换冲突段，已经贴上的宿主适配保留。
@@ -287,8 +319,29 @@ async function rebasePatchOnto(
       ['worktree', 'add', '--detach', '--quiet', work, commit],
       { cwd: source, capture: true },
     );
+    const listed = await execute(
+      'git',
+      ['ls-tree', '-r', '--name-only', commit],
+      { cwd: source, capture: true },
+    );
+    const filtered = omitUnavailablePatchFiles(
+      await fs.readFile(patchFile, 'utf8'),
+      listed.split('\n').filter(Boolean),
+    );
+    if (filtered.dropped.length) {
+      log(
+        `[upgrade] 目标提交没有这些文件，已从补丁去掉：${filtered.dropped.join(
+          ', ',
+        )}`,
+      );
+    }
+    const filteredPatch = path.join(parent, 'filtered.patch');
+    await fs.writeFile(filteredPatch, filtered.patch);
+    if (!/^diff --git /m.test(filtered.patch)) {
+      return Buffer.from('');
+    }
     try {
-      await execute('git', ['apply', '--3way', patchFile], {
+      await execute('git', ['apply', '--3way', filteredPatch], {
         cwd: work,
         capture: true,
       });
@@ -563,9 +616,24 @@ export async function upgradeMicroApps({
           remoteRef,
         ]);
       } catch (cause) {
-        throw new Error(
-          `${app.id} 候选必须在 ${branch} 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
-          { cause },
+        const tip = await checked(app.source, [
+          'rev-parse',
+          '--verify',
+          '--end-of-options',
+          `${remoteRef}^{commit}`,
+        ]);
+        // --ref 可以指向分支上的旧提交或旁支。那种选择仍必须是快进，不能借分支切换绕过。
+        // 没指定 ref、候选就是 adapter.branch 的远端尖端时，pin 不在这条历史上就是切换子模块分支：
+        // 移到尖端并重算补丁，而不是把回退当成升级失败。
+        if (ref || state.newPin !== tip) {
+          throw new Error(
+            `${app.id} 候选必须在 ${branch} 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
+            { cause },
+          );
+        }
+        state.branchSwitch = true;
+        log(
+          `[upgrade] ${app.id} 按 ${branch} 切换子模块：当前 pin 不是 origin/${branch} 的快进，改到该分支尖端并重算适配补丁`,
         );
       }
       state.newAdapter = updatedAdapter(
@@ -651,7 +719,9 @@ export async function upgradeMicroApps({
           );
           const remadePath = path.join(scratch, `${app.id}-rebased.patch`);
           await fs.writeFile(remadePath, remade);
-          await checked(working, ['apply', '--check', remadePath]);
+          if (/^diff --git /m.test(remade.toString())) {
+            await checked(working, ['apply', '--check', remadePath]);
+          }
           state.rebasedPatch = remade;
         } catch (rebaseCause) {
           throw fail(
@@ -670,8 +740,14 @@ export async function upgradeMicroApps({
         );
       log(
         `[upgrade] ${app.id}: ${state.oldPin} -> ${state.newPin}${
+          state.branchSwitch
+            ? '（分支切换'
+            : ''
+        }${
           state.rebasedPatch
-            ? '（适配补丁已自动重算）'
+            ? `${state.branchSwitch ? '，' : '（'}适配补丁已自动重算）`
+            : state.branchSwitch
+            ? '）'
             : state.oldPin === state.newPin
             ? '（无变化）'
             : ''

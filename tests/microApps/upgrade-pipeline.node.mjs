@@ -11,6 +11,7 @@ import {
 } from '../../scripts/sync-micro-apps.mjs';
 import {
   keepRemoteConflictSides,
+  omitUnavailablePatchFiles,
   parseUpgradeArguments,
   upgradeMicroApps as performUpgradeMicroApps,
 } from '../../scripts/upgrade-micro-apps.mjs';
@@ -947,6 +948,87 @@ test('单个 ref 接收 commitish，可选择 main 上经过旧 pin 的较早提
   assert.equal(result.status, 'upgraded');
   assert.equal(result.apps[0].newPin, selected);
   await assertPinned(f, 'repo', selected);
+});
+
+test('omitUnavailablePatchFiles 只去掉目标上不存在的修改，保留新增文件', () => {
+  const patch = [
+    'diff --git a/keep.txt b/keep.txt',
+    '--- a/keep.txt',
+    '+++ b/keep.txt',
+    '@@ -1 +1 @@',
+    '-old',
+    '+host',
+    'diff --git a/missing.txt b/missing.txt',
+    '--- a/missing.txt',
+    '+++ b/missing.txt',
+    '@@ -1 +1 @@',
+    '-gone',
+    '+host',
+    'diff --git a/added.txt b/added.txt',
+    'new file mode 100644',
+    '--- /dev/null',
+    '+++ b/added.txt',
+    '@@ -0,0 +1 @@',
+    '+added',
+    '',
+  ].join('\n');
+  const result = omitUnavailablePatchFiles(patch, ['keep.txt']);
+  assert.deepEqual(result.dropped, ['missing.txt']);
+  assert.match(result.patch, /b\/keep\.txt/);
+  assert.match(result.patch, /b\/added\.txt/);
+  assert.doesNotMatch(result.patch, /missing\.txt/);
+});
+
+test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分支移动 pin 并重算补丁', async (t) => {
+  const f = await fixture(t);
+  const app = f.apps.message;
+  await git(app.upstream, ['branch', 'stable', app.ancestor]);
+  const adapter = JSON.parse(
+    await fs.readFile(path.join(f.root, app.adapterRelative), 'utf8'),
+  );
+  adapter.branch = 'stable';
+  await fs.writeFile(
+    path.join(f.root, app.adapterRelative),
+    `${JSON.stringify(adapter, null, 4)}\n`,
+  );
+  await git(f.root, [
+    'config',
+    '-f',
+    '.gitmodules',
+    'submodule.submodules/nuwax-im.branch',
+    'stable',
+  ]);
+  await fs.appendFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    [
+      'diff --git a/nuwax-im-web/missing.txt b/nuwax-im-web/missing.txt',
+      '--- a/nuwax-im-web/missing.txt',
+      '+++ b/nuwax-im-web/missing.txt',
+      '@@ -1 +1 @@',
+      '-gone',
+      '+host',
+      '',
+    ].join('\n'),
+  );
+  await commit(f.root, 'fixture switch message to stable');
+  const logs = [];
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    log: (line) => logs.push(line),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].newPin, app.ancestor);
+  assert.equal(result.apps[0].patchRebased, true);
+  await assertPinned(f, 'message', app.ancestor);
+  const remade = await fs.readFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    'utf8',
+  );
+  assert.match(remade, /\+adapted fixed main/);
+  assert.doesNotMatch(remade, /missing\.txt/);
+  assert.ok(logs.some((line) => /按 stable 切换子模块/.test(line)));
+  assert.ok(logs.some((line) => /missing\.txt/.test(line)));
 });
 
 test('ref 拒绝旧 pin 之前的提交、非 main 旁支和 all，dry-run 同样守边界', async (t) => {
