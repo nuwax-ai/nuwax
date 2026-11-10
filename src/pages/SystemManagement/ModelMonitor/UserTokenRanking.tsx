@@ -10,6 +10,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 import styles from './index.less';
 import { userTokenColumns } from './userTokenColumns';
+import type { UsageUser } from './UserUsageSelect';
 import { useUserTokenRank } from './useUserTokenStats';
 
 interface RankingQuery extends UserTokenRankParams {
@@ -28,7 +29,7 @@ const monthQuery = (): RankingQuery => ({
 export default function UserTokenRanking({
   onViewTrend,
 }: {
-  onViewTrend: (query: UserTokenTrendParams) => void;
+  onViewTrend: (query: UserTokenTrendParams, user: UsageUser) => void;
 }) {
   const [dates, setDates] = useState<[Dayjs, Dayjs]>(() => [
     dayjs().startOf('month'),
@@ -136,11 +137,17 @@ export default function UserTokenRanking({
                       disabled={!userId}
                       onClick={() => {
                         if (userId)
-                          onViewTrend({
-                            userId,
-                            dtStart: query.dtStart,
-                            dtEnd: query.dtEnd,
-                          });
+                          onViewTrend(
+                            {
+                              userId,
+                              dtStart: query.dtStart,
+                              dtEnd: query.dtEnd,
+                            },
+                            {
+                              value: userId,
+                              label: row.nickName || row.userName || userId,
+                            },
+                          );
                       }}
                     >
                       {dict('PC.Pages.ModelMonitor.viewTrend')}

@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
   detail: vi.fn(),
   rank: vi.fn(),
   trend: vi.fn(),
+  users: vi.fn(),
 }));
 vi.mock('@ant-design/plots', () => ({
   Line: ({ data }: any) => (
@@ -31,6 +32,7 @@ vi.mock('@/services/systemManage', () => ({
   apiGetResourceStatDetail: h.detail,
   apiGetUserTokenRank: h.rank,
   apiGetUserTokenTrend: h.trend,
+  apiSearchUsageUsers: h.users,
 }));
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string, ...args: unknown[]) => [key, ...args].join(' '),
@@ -108,6 +110,8 @@ vi.mock('@/components/ProComponents', () => ({
 }));
 
 const ok = (data: unknown) => ({ code: '0000', data });
+const userPage = (records: unknown[], total = records.length) =>
+  ok({ records, total });
 const summary = () =>
   ok({
     consumption: {
@@ -143,9 +147,14 @@ const detail = (id: string) =>
 const queryButton = () =>
   screen.getByRole('button', { name: 'PC.Common.Global.query' });
 const userInput = () =>
-  screen.getByRole('textbox', { name: 'PC.Pages.ModelMonitor.userId' });
-const queryUser = (id: string) => {
-  fireEvent.change(userInput(), { target: { value: id } });
+  screen.getByRole('combobox', { name: 'PC.Pages.ModelMonitor.user' });
+const selectUser = async (id: string) => {
+  fireEvent.mouseDown(userInput());
+  fireEvent.change(userInput(), { target: { value: `account-${id}` } });
+  await screen.findByTitle(`account-${id}`);
+};
+const queryUser = async (id: string) => {
+  await selectUser(id);
   fireEvent.click(queryButton());
 };
 async function openUserView() {
@@ -156,7 +165,34 @@ async function openUserView() {
     screen.getByText('PC.Pages.ModelMonitor.selectUserHint'),
   ).toBeInTheDocument();
 }
+const tokenMetrics = {
+  inputTokens: '10',
+  cacheInputTokens: '3',
+  outputTokens: '7',
+  totalTokens: '20',
+  creditAmount: '1.25',
+  callCount: '2',
+};
+const rankRow = (userId = '9007199254740993') => ({
+  rank: 9,
+  userId,
+  nickName: 'rank-user',
+  status: -1,
+  ...tokenMetrics,
+});
+
 beforeEach(() => {
+  h.users.mockReset().mockImplementation(async ({ queryFilter }: any) =>
+    userPage(
+      ['101', '202', '303', '9007199254740993']
+        .map((id) => ({
+          id,
+          userName: `account-${id}`,
+          nickName: '',
+        }))
+        .filter((user) => user.userName.includes(queryFilter.userName)),
+    ),
+  );
   h.rank
     .mockReset()
     .mockResolvedValue(
@@ -174,22 +210,6 @@ beforeEach(() => {
     .mockImplementation((params: any) =>
       Promise.resolve(detail(params.userId)),
     );
-});
-
-const tokenMetrics = {
-  inputTokens: '10',
-  cacheInputTokens: '3',
-  outputTokens: '7',
-  totalTokens: '20',
-  creditAmount: '1.25',
-  callCount: '2',
-};
-const rankRow = (userId = '9007199254740993') => ({
-  rank: 9,
-  userId,
-  nickName: 'rank-user',
-  status: -1,
-  ...tokenMetrics,
 });
 
 async function openRanking() {
@@ -256,7 +276,7 @@ describe('用户 Token 排名与每日趋势', () => {
       },
       expect.anything(),
     );
-    expect(userInput()).toHaveValue('9007199254740993');
+    expect(screen.getByTitle('rank-user')).toBeInTheDocument();
     expect(chart.textContent!.indexOf('2026-11-01')).toBeLessThan(
       chart.textContent!.indexOf('2026-11-02'),
     );
@@ -331,9 +351,9 @@ describe('用户 Token 排名与每日趋势', () => {
     await screen.findByText('PC.Pages.ModelMonitor.noConsumption');
   });
 
-  it('手动查询用户同样可看趋势，换用户与日期丢弃迟到响应，草稿不会发请求', async () => {
+  it('选择用户同样可看趋势，换用户与日期丢弃迟到响应，草稿不会发请求', async () => {
     await openUserView();
-    queryUser('101');
+    await queryUser('101');
     await screen.findByText('user-101');
     let resolve!: (data: unknown) => void;
     h.trend.mockReturnValueOnce(
@@ -346,7 +366,7 @@ describe('用户 Token 排名与每日趋势', () => {
     );
     await waitFor(() => expect(h.trend).toHaveBeenCalledTimes(1));
     const signal = h.trend.mock.calls[0][1].signal;
-    fireEvent.change(userInput(), { target: { value: '202' } });
+    await selectUser('202');
     fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     expect(h.trend).toHaveBeenCalledTimes(1);
     fireEvent.click(queryButton());
@@ -383,7 +403,7 @@ describe('用户 Token 排名与每日趋势', () => {
 afterEach(cleanup);
 
 describe('下一版本用户 Token 消耗查询', () => {
-  it('保留平台口径；用户视图未输入 ID 不查询，消费汇总不混入销售', async () => {
+  it('保留平台口径；用户视图未选用户不查询，消费汇总不混入销售', async () => {
     await openUserView();
     expect(h.detail.mock.calls[0][0]).toMatchObject({
       userId: '-1',
@@ -391,7 +411,7 @@ describe('下一版本用户 Token 消耗查询', () => {
     });
     expect(h.detail).toHaveBeenCalledTimes(1);
     const id = '9007199254740993';
-    queryUser(id);
+    await queryUser(id);
     await screen.findByText(`user-${id}`);
     expect(h.summary).toHaveBeenLastCalledWith(
       expect.objectContaining({ userId: id }),
@@ -419,10 +439,9 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('翻页使用生效条件，修改草稿不串到下一页，重新查询回第一页', async () => {
     await openUserView();
-    queryUser('101');
+    await queryUser('101');
     await screen.findByText('user-101');
     const applied = h.detail.mock.calls.at(-1)![0];
-    fireEvent.change(userInput(), { target: { value: '202' } });
     fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     fireEvent.click(screen.getByRole('button', { name: 'next page' }));
     await waitFor(() =>
@@ -432,6 +451,8 @@ describe('下一版本用户 Token 消耗查询', () => {
       }),
     );
     await screen.findByText('user-101');
+    await selectUser('202');
+    expect(screen.queryByText('user-101')).toBeNull();
     fireEvent.click(queryButton());
     await screen.findByText('user-202');
     expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
@@ -450,17 +471,156 @@ describe('下一版本用户 Token 消耗查询', () => {
     );
   });
 
-  it.each(['', '-1', 'abc', '1.5', '0', '9223372036854775808'])(
-    '拒绝无效 ID %s，不发全量或截断后的用户查询',
-    async (id) => {
-      await openUserView();
-      queryUser(id);
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'PC.Pages.ModelMonitor.invalidUserId',
-      );
-      expect(h.detail).toHaveBeenCalledTimes(1);
-    },
-  );
+  it('未匹配的搜索文字不视为已选用户，不发全量或猜测 ID 的统计查询', async () => {
+    await openUserView();
+    fireEvent.mouseDown(userInput());
+    fireEvent.change(userInput(), { target: { value: 'missing-account' } });
+    await waitFor(() =>
+      expect(h.users.mock.calls.at(-1)![0]).toEqual({
+        pageNo: 1,
+        pageSize: 20,
+        queryFilter: { userName: 'missing-account' },
+      }),
+    );
+    await screen.findByText('PC.Pages.ModelMonitor.noMatchingUser');
+    expect(queryButton()).toBeDisabled();
+    expect(h.detail).toHaveBeenCalledTimes(1);
+  });
+
+  it('清空选中用户立即清理统计对象和旧数据', async () => {
+    await openUserView();
+    await queryUser('101');
+    await screen.findByText('user-101');
+    expect(
+      screen.getByText(/PC.Pages.ModelMonitor.activeUserQuery account-101/),
+    ).toBeInTheDocument();
+    fireEvent.mouseDown(document.querySelector('.ant-select-clear')!);
+    expect(screen.queryByText('user-101')).toBeNull();
+    expect(
+      screen.queryByText(/PC.Pages.ModelMonitor.activeUserQuery/),
+    ).toBeNull();
+    expect(queryButton()).toBeDisabled();
+    expect(h.detail).toHaveBeenCalledTimes(2);
+  });
+
+  it('唯一命中自动选中；多个命中必须从下拉选择，搜索新用户先清理原选择', async () => {
+    await openUserView();
+    await selectUser('101');
+    expect(queryButton()).toBeEnabled();
+    expect(h.detail).toHaveBeenCalledTimes(1);
+    h.users.mockResolvedValueOnce(
+      userPage([
+        { id: '101', userName: 'account-101', nickName: '' },
+        { id: '202', userName: 'account-202', nickName: '' },
+      ]),
+    );
+    fireEvent.mouseDown(userInput());
+    fireEvent.change(userInput(), { target: { value: 'shared-name' } });
+    expect(queryButton()).toBeDisabled();
+    await screen.findByText('account-101', {
+      selector: '.ant-select-item-option-content > div',
+    });
+    const second = await screen.findByText('account-202', {
+      selector: '.ant-select-item-option-content > div',
+    });
+    expect(queryButton()).toBeDisabled();
+    fireEvent.click(second);
+    expect(
+      screen.getByText('account-202', {
+        selector: '.ant-select-selection-item',
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(queryButton());
+    await screen.findByText('user-202');
+    expect(h.summary.mock.calls.at(-1)![0].userId).toBe('202');
+  });
+
+  it('按服务端总数判断唯一命中，分页失败可重试并保留之前的候选用户', async () => {
+    await openUserView();
+    h.users.mockResolvedValueOnce(
+      userPage([{ id: '101', userName: 'account-101', nickName: '' }], 21),
+    );
+    fireEvent.mouseDown(userInput());
+    fireEvent.change(userInput(), { target: { value: 'account' } });
+    await screen.findByText('account-101', {
+      selector: '.ant-select-item-option-content > div',
+    });
+    expect(queryButton()).toBeDisabled();
+    h.users.mockRejectedValueOnce(new Error('offline'));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.ModelMonitor.loadMoreUsers',
+      }),
+    );
+    await screen.findByText('PC.Pages.ModelMonitor.userSearchFailed');
+    expect(
+      screen.getByText('account-101', {
+        selector: '.ant-select-item-option-content > div',
+      }),
+    ).toBeVisible();
+    h.users.mockResolvedValueOnce(
+      userPage([{ id: '202', userName: 'account-202', nickName: '' }], 21),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.retry' }),
+    );
+    const second = await screen.findByText('account-202', {
+      selector: '.ant-select-item-option-content > div',
+    });
+    expect(h.users.mock.calls.at(-1)![0]).toEqual({
+      pageNo: 2,
+      pageSize: 20,
+      queryFilter: { userName: 'account' },
+    });
+    fireEvent.click(second);
+    fireEvent.click(queryButton());
+    await screen.findByText('user-202');
+  });
+
+  it('用户名和手机号搜索可切换；取消迟到结果，失败可重试并使用匹配用户的完整 ID', async () => {
+    await openUserView();
+    expect(h.users).not.toHaveBeenCalled();
+    let resolve!: (value: unknown) => void;
+    h.users.mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    fireEvent.mouseDown(userInput());
+    fireEvent.change(userInput(), { target: { value: 'account-101' } });
+    await waitFor(() => expect(h.users).toHaveBeenCalledTimes(1));
+    expect(h.users.mock.calls[0][0]).toMatchObject({
+      queryFilter: { userName: 'account-101' },
+    });
+    const signal = h.users.mock.calls[0][1].signal;
+    h.users.mockRejectedValueOnce(new Error('offline'));
+    fireEvent.change(userInput(), { target: { value: '13800138000' } });
+    await screen.findByText('PC.Pages.ModelMonitor.userSearchFailed');
+    expect(h.users.mock.calls.at(-1)![0]).toMatchObject({
+      queryFilter: { userName: '13800138000' },
+    });
+    expect(signal.aborted).toBe(true);
+    await act(async () =>
+      resolve(userPage([{ id: '101', userName: 'stale-user' }])),
+    );
+    expect(screen.queryByText('stale-user')).toBeNull();
+    h.users.mockResolvedValueOnce(
+      userPage([
+        {
+          id: '9007199254740993',
+          userName: 'phone-user',
+          nickName: '',
+        },
+      ]),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.retry' }),
+    );
+    await screen.findByTitle('phone-user');
+    fireEvent.click(queryButton());
+    await screen.findByText('user-9007199254740993');
+    expect(h.summary.mock.calls.at(-1)![0].userId).toBe('9007199254740993');
+  });
 
   it('切用户取消旧请求；即使旧请求忽略取消并迟到，也不覆盖新用户', async () => {
     await openUserView();
@@ -476,10 +636,10 @@ describe('下一版本用户 Token 消耗查询', () => {
         resolveDetail = resolve;
       }),
     );
-    queryUser('101');
+    await queryUser('101');
     await waitFor(() => expect(h.detail).toHaveBeenCalledTimes(2));
     const signal = h.detail.mock.calls.at(-1)![1].signal as AbortSignal;
-    queryUser('202');
+    await queryUser('202');
     await screen.findByText('user-202');
     expect(signal.aborted).toBe(true);
     await act(async () => {
@@ -492,10 +652,10 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('查询失败清空旧数据并可重试，不把失败展示成零消耗', async () => {
     await openUserView();
-    queryUser('101');
+    await queryUser('101');
     await screen.findByText('user-101');
     h.summary.mockRejectedValueOnce(new Error('offline'));
-    queryUser('202');
+    await queryUser('202');
     await screen.findByText('PC.Pages.ModelMonitor.queryFailed');
     expect(screen.queryByText('user-101')).toBeNull();
     expect(
@@ -511,7 +671,7 @@ describe('下一版本用户 Token 消耗查询', () => {
   it('业务失败同样可重试；成功且无消费才展示零和空明细', async () => {
     await openUserView();
     h.detail.mockResolvedValueOnce({ code: '4000', data: null });
-    queryUser('303');
+    await queryUser('303');
     await screen.findByText('PC.Pages.ModelMonitor.queryFailed');
     h.summary.mockResolvedValueOnce(
       ok({ consumption: null, sales: { totalInputTokens: 900 } }),
@@ -528,13 +688,13 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('重置回平台统计并清理用户筛选，卸载取消在途请求', async () => {
     await openUserView();
-    queryUser('101');
+    await queryUser('101');
     await screen.findByText('user-101');
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.reset' }),
     );
     await screen.findByText('platform-row');
-    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
     expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
       userId: '-1',
       type: 'SALES',

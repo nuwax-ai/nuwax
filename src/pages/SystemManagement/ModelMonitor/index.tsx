@@ -12,7 +12,7 @@ import {
   sumBigNumbersToNumber,
 } from '@/utils/numberFormat';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Alert, Button, DatePicker, Empty, Input, Segmented } from 'antd';
+import { Alert, Button, DatePicker, Empty, Segmented } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'umi';
@@ -29,6 +29,7 @@ import useModelMonitorStats, {
 } from './useModelMonitorStats';
 import UserTokenRanking from './UserTokenRanking';
 import UserTokenTrend from './UserTokenTrend';
+import UserUsageSelect, { type UsageUser } from './UserUsageSelect';
 
 const { RangePicker } = DatePicker;
 
@@ -39,8 +40,7 @@ const ModelMonitor: React.FC = () => {
     'platform',
   );
   const [userTab, setUserTab] = useState('detail');
-  const [userIdInput, setUserIdInput] = useState('');
-  const [userIdError, setUserIdError] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UsageUser>();
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().startOf('day'),
     dayjs().endOf('day'),
@@ -58,22 +58,19 @@ const ModelMonitor: React.FC = () => {
     page.pageSize,
   );
   const isUserScope = scope === 'user';
+  const handleUserChange = useCallback((user?: UsageUser) => {
+    setSelectedUser(user);
+    setQuery(null);
+    setPage((previous) => ({ ...previous, current: 1 }));
+  }, []);
 
   const handleSearch = () => {
-    const value = userIdInput.trim();
-    if (
-      isUserScope &&
-      (!/^[1-9][0-9]{0,18}$/.test(value) ||
-        BigInt(value) > BigInt('9223372036854775807'))
-    ) {
-      setUserIdError(true);
-      return;
-    }
-    setUserIdError(false);
+    const userId = isUserScope ? selectedUser?.value : '-1';
+    if (!userId) return;
     setPage((previous) => ({ ...previous, current: 1 }));
     setQuery({
       scope: isUserScope ? 'user' : 'platform',
-      userId: isUserScope ? value : '-1',
+      userId,
       dtStart: dateRange[0].format('YYYYMMDD'),
       dtEnd: dateRange[1].format('YYYYMMDD'),
     });
@@ -83,8 +80,7 @@ const ModelMonitor: React.FC = () => {
     const today = dayjs();
     setScope('platform');
     setUserTab('detail');
-    setUserIdInput('');
-    setUserIdError(false);
+    setSelectedUser(undefined);
     setDateRange([today.startOf('day'), today.endOf('day')]);
     setPage((previous) => ({ ...previous, current: 1 }));
     setQuery({
@@ -315,7 +311,6 @@ const ModelMonitor: React.FC = () => {
             const next = value as typeof scope;
             setScope(next);
             setUserTab('detail');
-            setUserIdError(false);
             setPage((previous) => ({ ...previous, current: 1 }));
             setQuery(
               next === 'platform'
@@ -331,11 +326,10 @@ const ModelMonitor: React.FC = () => {
         />
         {scope === 'rank' ? (
           <UserTokenRanking
-            onViewTrend={(next) => {
+            onViewTrend={(next, user) => {
               setScope('user');
               setUserTab('trend');
-              setUserIdInput(next.userId);
-              setUserIdError(false);
+              setSelectedUser(user);
               setDateRange([dayjs(next.dtStart), dayjs(next.dtEnd)]);
               setPage((previous) => ({ ...previous, current: 1 }));
               setQuery({ scope: 'user', ...next });
@@ -345,18 +339,9 @@ const ModelMonitor: React.FC = () => {
           <>
             <div className={styles['filter-bar']}>
               {isUserScope && (
-                <Input
-                  className={styles['user-input']}
-                  aria-label={dict('PC.Pages.ModelMonitor.userId')}
-                  placeholder={dict('PC.Pages.ModelMonitor.userIdPlaceholder')}
-                  value={userIdInput}
-                  status={userIdError ? 'error' : undefined}
-                  onChange={(event) => {
-                    setUserIdInput(event.target.value);
-                    setUserIdError(false);
-                  }}
-                  onPressEnter={handleSearch}
-                  allowClear
+                <UserUsageSelect
+                  value={selectedUser}
+                  onChange={handleUserChange}
                 />
               )}
               <span className={styles['filter-label']}>
@@ -379,21 +364,22 @@ const ModelMonitor: React.FC = () => {
               <Button onClick={handleReset}>
                 {dict('PC.Common.Global.reset')}
               </Button>
-              <Button type="primary" onClick={handleSearch}>
+              <Button
+                type="primary"
+                disabled={isUserScope && !selectedUser}
+                onClick={handleSearch}
+              >
                 {dict('PC.Common.Global.query')}
               </Button>
             </div>
 
-            {userIdError && (
-              <div role="alert" className={styles['validation-error']}>
-                {dict('PC.Pages.ModelMonitor.invalidUserId')}
-              </div>
-            )}
             {isUserScope && query && (
               <div className={styles['query-context']}>
                 {dict(
                   'PC.Pages.ModelMonitor.activeUserQuery',
-                  query.userId,
+                  `${selectedUser?.label || query.userId} (ID: ${
+                    query.userId
+                  })`,
                   query.dtStart,
                   query.dtEnd,
                 )}
