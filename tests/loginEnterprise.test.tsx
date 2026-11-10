@@ -21,7 +21,8 @@ const h = vi.hoisted(() => ({
   initI18n: vi.fn(),
   navigateAfterLogin: vi.fn(),
   search: '',
-  tenantConfig: {} as { openQrCodeLogin?: number | null },
+  tenantConfig: {} as { openQrLogin?: number | null },
+  loadEnd: true,
 }));
 
 vi.mock('umi', () => ({
@@ -30,7 +31,7 @@ vi.mock('umi', () => ({
   useModel: (name: string) =>
     name === 'tenantConfigInfo'
       ? {
-          loadEnd: true,
+          loadEnd: h.loadEnd,
           tenantConfigInfo: h.tenantConfig,
           runTenantConfig: vi.fn(),
         }
@@ -99,6 +100,7 @@ beforeEach(() => {
   h.configureServerHost.mockReset().mockResolvedValue({ success: true });
   h.search = '';
   h.tenantConfig = {};
+  h.loadEnd = true;
   h.createQrCode.mockReset().mockResolvedValue({
     code: '0000',
     data: {
@@ -137,33 +139,90 @@ afterEach(() => {
 
 describe('扫码登录接入现有登录页', () => {
   beforeEach(() => {
-    h.tenantConfig = { openQrCodeLogin: 1 };
+    h.tenantConfig = { openQrLogin: 1 };
   });
 
   it.each([undefined, null, 0])(
     '配置为 %s 时隐藏扫码入口，不发起二维码请求',
-    async (openQrCodeLogin) => {
-      h.tenantConfig = { openQrCodeLogin };
+    async (openQrLogin) => {
+      h.tenantConfig = { openQrLogin };
       render(<Login />);
       await screen.findByText('PC.Pages.Login.passwordLogin');
       expect(screen.queryByText('PC.Pages.Login.qrLogin')).toBeNull();
+      expect(
+        screen.queryByRole('button', {
+          name: 'PC.Pages.Login.switchToQrLogin',
+        }),
+      ).toBeNull();
       expect(screen.getAllByRole('radio')).toHaveLength(2);
       expect(h.createQrCode).not.toHaveBeenCalled();
       expect(h.qrStatus).not.toHaveBeenCalled();
     },
   );
 
-  it('开启后扫码入口排首位，保留密码登录默认选中', async () => {
+  it('开启后默认展示扫码页，账号登录标签由右上角切换后呈现', async () => {
     render(<Login />);
-    await screen.findByText('PC.Pages.Login.qrLogin');
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(h.createQrCode).toHaveBeenCalledOnce();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
     const options = screen.getAllByRole('radio');
     expect(options.map((option) => option.parentElement?.textContent)).toEqual([
-      'PC.Pages.Login.qrLogin',
       'PC.Pages.Login.passwordLogin',
       'PC.Pages.Login.codeLoginOrRegister',
     ]);
-    expect(options[1]).toBeChecked();
+    expect(options[0]).toBeChecked();
+    expect(
+      screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+    ).toBeEnabled();
+  });
+
+  it('配置异步返回开启后直接展示扫码页，不先展示账号表单', async () => {
+    h.loadEnd = false;
+    h.tenantConfig = {};
+    const { rerender } = render(<Login />);
+    expect(screen.queryByRole('radiogroup')).toBeNull();
     expect(h.createQrCode).not.toHaveBeenCalled();
+    h.loadEnd = true;
+    h.tenantConfig = { openQrLogin: 1 };
+    rerender(<Login />);
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(h.createQrCode).toHaveBeenCalledOnce();
+  });
+
+  it('扫码与账号登录往返切换会取消旧扫码请求，并保留验证码登录选项', async () => {
+    render(<Login />);
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    const firstSignal = h.createQrCode.mock.calls[0][0] as AbortSignal;
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
+    expect(firstSignal.aborted).toBe(true);
+    fireEvent.click(screen.getByText('PC.Pages.Login.codeLoginOrRegister'));
+    expect(screen.getAllByRole('radio')[1]).toBeChecked();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+    );
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    expect(h.createQrCode).toHaveBeenCalledTimes(2);
+    const secondSignal = h.createQrCode.mock.calls[1][0] as AbortSignal;
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
+    expect(secondSignal.aborted).toBe(true);
+    expect(screen.getAllByRole('radio')[1]).toBeChecked();
+    expect(
+      screen.queryByPlaceholderText('PC.Pages.Login.inputPasswordPlaceholder'),
+    ).toBeNull();
   });
 
   it('扫码中关闭配置会取消请求，回到密码登录且不消费迟到确认', async () => {
@@ -174,10 +233,9 @@ describe('扫码登录接入现有登录页', () => {
       }),
     );
     const { rerender } = render(<Login />);
-    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
     await waitFor(() => expect(h.qrStatus).toHaveBeenCalledOnce());
     const signal = h.createQrCode.mock.calls[0][0] as AbortSignal;
-    h.tenantConfig = { openQrCodeLogin: 0 };
+    h.tenantConfig = { openQrLogin: 0 };
     rerender(<Login />);
     expect(signal.aborted).toBe(true);
     expect(screen.queryByText('PC.Pages.Login.qrLogin')).toBeNull();
@@ -207,8 +265,12 @@ describe('扫码登录接入现有登录页', () => {
       data: { status: 'CONFIRMED', token: '' },
     });
     const { unmount } = render(<Login />);
-    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
     await waitFor(() => expect(h.finishLogin).toHaveBeenCalledOnce());
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    ).toBeDisabled();
     unmount();
     await act(async () => {
       resolveSession('ready');
@@ -231,7 +293,6 @@ describe('扫码登录接入现有登录页', () => {
     });
     localStorage.setItem('PHONE', 'previous-user');
     render(<Login />);
-    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
     await waitFor(() => expect(h.navigateAfterLogin).toHaveBeenCalledOnce());
     expect(h.finishLogin).toHaveBeenCalledOnce();
     expect(h.finishLogin).toHaveBeenCalledWith('');
@@ -247,17 +308,22 @@ describe('扫码登录接入现有登录页', () => {
 
   it('切回密码登录会取消扫码会话；取消协议勾选也停止轮询', async () => {
     render(<Login />);
-    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
     await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
     const firstSignal = h.createQrCode.mock.calls[0][0] as AbortSignal;
-    fireEvent.click(screen.getByText('PC.Pages.Login.passwordLogin'));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
     expect(firstSignal.aborted).toBe(true);
     expect(
       screen.getByPlaceholderText(
         'PC.Pages.Login.inputUnifiedAccountPlaceholder',
       ),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByText('PC.Pages.Login.qrLogin'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+    );
     await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
     const secondSignal = h.createQrCode.mock.calls[1][0] as AbortSignal;
     fireEvent.click(screen.getByRole('checkbox'));
@@ -274,7 +340,6 @@ describe('扫码登录接入现有登录页', () => {
     });
     h.finishLogin.mockResolvedValueOnce('host-cookie-sync-failed');
     render(<Login />);
-    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
     await screen.findByText('PC.Pages.Login.hostSessionSyncFailed');
     expect(
       screen.getByRole('button', { name: 'PC.Pages.Login.qrRefresh' }),

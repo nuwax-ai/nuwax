@@ -3637,6 +3637,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Login.login": "Login",
   "PC.Pages.Login.nextStep": "Next",
   "PC.Pages.Login.qrLogin": "QR code login",
+  "PC.Pages.Login.switchToAccountLogin": "Switch to account login",
+  "PC.Pages.Login.switchToQrLogin": "Switch to QR code login",
   "PC.Pages.Login.qrHint": "Scan with the Nuwax app to log in",
   "PC.Pages.Login.qrScanned": "Scanned. Confirm login in the app",
   "PC.Pages.Login.qrConfirming": "Logging in, please wait…",

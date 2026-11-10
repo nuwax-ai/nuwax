@@ -33,7 +33,12 @@ import {
   startIdpNavigation,
 } from '@/utils/idpNavigation';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
-import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import {
+  DesktopOutlined,
+  DownOutlined,
+  ExclamationCircleFilled,
+  QrcodeOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -111,9 +116,10 @@ const EllipsisTooltip: React.FC<{ title: string; children: string }> = ({
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [selectedLoginType, setLoginType] = useState<LoginTypeEnum>(
+  const [accountLoginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
+  const [showAccountLogin, setShowAccountLogin] = useState(false);
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
   /**
    * 防止快速重复点击导致重复触发验证码弹窗。
@@ -154,20 +160,17 @@ const Login: React.FC = () => {
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
   const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
-  const qrLoginEnabled = tenantConfigInfo?.openQrCodeLogin === 1;
+  const qrLoginEnabled = tenantConfigInfo?.openQrLogin === 1;
   const loginType =
-    selectedLoginType === LoginTypeEnum.QrCode && !qrLoginEnabled
-      ? LoginTypeEnum.Password
-      : selectedLoginType;
+    qrLoginEnabled && !showAccountLogin
+      ? LoginTypeEnum.QrCode
+      : accountLoginType;
 
   useEffect(() => {
-    // 配置关闭时立即卸载扫码面板，取消在途轮询并回到密码登录。
-    if (!qrLoginEnabled && selectedLoginType === LoginTypeEnum.QrCode) {
-      setLoginType(LoginTypeEnum.Password);
-      loginTypeRef.current = LoginTypeEnum.Password;
-      setQrConfirming(false);
-    }
-  }, [qrLoginEnabled, selectedLoginType]);
+    loginTypeRef.current = loginType;
+    // 配置关闭时扫码面板已卸载，释放确认态，恢复账号登录操作。
+    if (!qrLoginEnabled) setQrConfirming(false);
+  }, [loginType, qrLoginEnabled]);
 
   // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
   const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
@@ -433,6 +436,7 @@ const Login: React.FC = () => {
     if (idpNavigating) return;
     const go = async () => {
       setLoginType(LoginTypeEnum.Password);
+      setShowAccountLogin(true);
       loginTypeRef.current = LoginTypeEnum.Password;
       setIdpNavigating(true);
       const result = await startIdpNavigation({
@@ -829,8 +833,11 @@ const Login: React.FC = () => {
   const handleChangeType = (value: string) => {
     if (Number(value) === LoginTypeEnum.QrCode && !qrLoginEnabled) return;
     const select = () => {
-      setLoginType(Number(value));
-      loginTypeRef.current = Number(value);
+      const nextType = Number(value);
+      setShowAccountLogin(nextType !== LoginTypeEnum.QrCode);
+      // 单独保留账号登录方式，扫码往返后仍回到用户上次选择的密码/验证码页。
+      if (nextType !== LoginTypeEnum.QrCode) setLoginType(nextType);
+      loginTypeRef.current = nextType;
     };
     if (Number(value) === LoginTypeEnum.QrCode && !checked) {
       confirm({
@@ -850,18 +857,6 @@ const Login: React.FC = () => {
   };
   const { token } = theme.useToken();
   const options: SegmentedItemType[] = [
-    ...(qrLoginEnabled
-      ? [
-          {
-            label: (
-              <EllipsisTooltip title={dict('PC.Pages.Login.qrLogin')}>
-                {dict('PC.Pages.Login.qrLogin')}
-              </EllipsisTooltip>
-            ),
-            value: LoginTypeEnum.QrCode + '',
-          },
-        ]
-      : []),
     {
       label: (
         <EllipsisTooltip title={dict('PC.Pages.Login.passwordLogin')}>
@@ -879,6 +874,11 @@ const Login: React.FC = () => {
       value: LoginTypeEnum.Code + '',
     },
   ];
+  const switchLoginLabel = dict(
+    loginType === LoginTypeEnum.QrCode
+      ? 'PC.Pages.Login.switchToAccountLogin'
+      : 'PC.Pages.Login.switchToQrLogin',
+  );
 
   // 配置和登录方式就绪后一次呈现整页，避免先露出左侧介绍、再补表单。
   if (!loadEnd || !idpReady) return <AppStartup />;
@@ -903,7 +903,39 @@ const Login: React.FC = () => {
       <BasicLayout>
         <div>
           {loadEnd && idpReady && (
-            <div className={cx(styles['login-form-box'])}>
+            <div
+              className={cx(styles['login-form-box'], {
+                [styles['with-qr-switch']]: qrLoginEnabled,
+              })}
+            >
+              {qrLoginEnabled && (
+                <Tooltip title={switchLoginLabel} placement="leftTop">
+                  <button
+                    type="button"
+                    className={styles['login-mode-switch']}
+                    aria-label={switchLoginLabel}
+                    disabled={
+                      qrConfirming ||
+                      loading ||
+                      captchaSubmitting ||
+                      idpNavigating
+                    }
+                    onClick={() =>
+                      handleChangeType(
+                        (loginType === LoginTypeEnum.QrCode
+                          ? accountLoginType
+                          : LoginTypeEnum.QrCode) + '',
+                      )
+                    }
+                  >
+                    {loginType === LoginTypeEnum.QrCode ? (
+                      <DesktopOutlined aria-hidden />
+                    ) : (
+                      <QrcodeOutlined aria-hidden />
+                    )}
+                  </button>
+                </Tooltip>
+              )}
               {idpError && (
                 <Alert
                   type="error"
@@ -913,19 +945,20 @@ const Login: React.FC = () => {
                   message={idpError}
                 />
               )}
-              <Segmented
-                className={cx(styles.segmented)}
-                options={options}
-                value={loginType + ''}
-                onChange={handleChangeType}
-                disabled={
-                  qrConfirming || loading || captchaSubmitting || idpNavigating
-                }
-                block
-              />
+              {loginType !== LoginTypeEnum.QrCode && (
+                <Segmented
+                  className={cx(styles.segmented)}
+                  options={options}
+                  value={loginType + ''}
+                  onChange={handleChangeType}
+                  disabled={loading || captchaSubmitting || idpNavigating}
+                  block
+                />
+              )}
               {loginType === LoginTypeEnum.QrCode ? (
                 checked ? (
                   <QrCodeLogin
+                    logoUrl={tenantConfigInfo?.siteLogo}
                     onSuccess={(result, isCurrent) =>
                       completeLogin(result, undefined, isCurrent)
                     }
@@ -1080,6 +1113,7 @@ const Login: React.FC = () => {
                       style={{ padding: 0, height: 'auto' }}
                       onClick={() => {
                         setLoginType(LoginTypeEnum.Password);
+                        setShowAccountLogin(true);
                         loginTypeRef.current = LoginTypeEnum.Password;
                         setEnterpriseError('');
                         setEnterpriseOpen(true);

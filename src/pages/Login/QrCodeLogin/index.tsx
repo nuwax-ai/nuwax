@@ -16,13 +16,20 @@ type Phase =
   | 'error';
 
 interface Props {
+  logoUrl?: string;
   onSuccess: (result: QrLoginResult, isCurrent: () => boolean) => Promise<void>;
   onConfirmingChange: (confirming: boolean) => void;
 }
 
 const POLL_INTERVAL_MS = 2000;
 
-const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
+const QrCodeLogin: React.FC<Props> = ({
+  logoUrl,
+  onSuccess,
+  onConfirmingChange,
+}) => {
+  const tenantLogoUrl = logoUrl?.trim();
+  const [loadedLogoUrl, setLoadedLogoUrl] = useState<string>();
   const [generation, setGeneration] = useState(0);
   const [code, setCode] = useState<QrLoginCode>();
   const [phase, setPhase] = useState<Phase>('loading');
@@ -177,8 +184,34 @@ const QrCodeLogin: React.FC<Props> = ({ onSuccess, onConfirmingChange }) => {
         ) : phase === 'scanned' ? (
           <CheckCircleFilled className={styles.scanned} />
         ) : phase === 'waiting' && code ? (
-          <div role="img" aria-label={dict('PC.Pages.Login.qrCodeLabel')}>
-            <QRCode value={code.qrContent} size={200} type="svg" />
+          <div
+            className={styles['qr-image']}
+            role="img"
+            aria-label={dict('PC.Pages.Login.qrCodeLabel')}
+          >
+            <QRCode
+              value={code.qrContent}
+              size={200}
+              type="svg"
+              bgColor="#fff"
+              errorLevel={tenantLogoUrl ? 'H' : 'M'}
+            />
+            {/* 租户图标可能跨域且非方形，等比展示，加载成功后才覆盖码面。 */}
+            {tenantLogoUrl && (
+              <img
+                key={tenantLogoUrl}
+                src={tenantLogoUrl}
+                alt=""
+                aria-hidden
+                className={styles.logo}
+                style={{
+                  visibility:
+                    loadedLogoUrl === tenantLogoUrl ? 'visible' : 'hidden',
+                }}
+                onLoad={() => setLoadedLogoUrl(tenantLogoUrl)}
+                onError={() => setLoadedLogoUrl(undefined)}
+              />
+            )}
           </div>
         ) : (
           <Button
