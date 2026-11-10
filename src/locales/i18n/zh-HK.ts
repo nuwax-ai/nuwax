@@ -3519,7 +3519,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Login.qrLogin": "掃碼登入",
   "PC.Pages.Login.switchToAccountLogin": "切換至帳戶登入",
   "PC.Pages.Login.switchToQrLogin": "切換至掃碼登入",
-  "PC.Pages.Login.qrHint": "請使用女媧 App 掃碼登入",
+  "PC.Pages.Login.qrHintWithAppName": "請使用 {0} 掃碼登入",
   "PC.Pages.Login.qrScanned": "掃碼成功，請在 App 上確認登入",
   "PC.Pages.Login.qrConfirming": "登入中，請稍候…",
   "PC.Pages.Login.qrExpired": "二維碼已過期，請重新整理後再次掃碼",
