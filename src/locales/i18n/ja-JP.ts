@@ -3506,6 +3506,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.login": "ログイン",
   "PC.Pages.Login.nextStep": "次",
   "PC.Pages.Login.qrLogin": "QRコードログイン",
+  "PC.Pages.Login.switchToAccountLogin": "アカウントログインに切り替え",
+  "PC.Pages.Login.switchToQrLogin": "QRコードログインに切り替え",
   "PC.Pages.Login.qrHint": "Nuwaxアプリでスキャンしてログイン",
   "PC.Pages.Login.qrScanned": "スキャンしました。アプリでログインを承認してください",
   "PC.Pages.Login.qrConfirming": "ログイン中です。お待ちください…",

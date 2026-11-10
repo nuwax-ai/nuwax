@@ -10,7 +10,7 @@
 @divider-width: 1px;
 
 .login-form-box {
-  // width: 100%; /* 宽度自适应 */
+  position: relative;
   width: 470px;
   max-height: 680px;
   min-height: 680px;
@@ -22,6 +22,42 @@
   box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
   backdrop-filter: blur(12px);
   overflow: auto;
+
+  .login-mode-switch {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 72px;
+    height: 72px;
+    padding: 8px;
+    border: 0;
+    border-radius: 0 10px 0 0;
+    background: @colorPrimary;
+    color: #fff;
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    cursor: pointer;
+
+    :global(.anticon) {
+      font-size: 28px;
+    }
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 3px #fff;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
 
   .phone-input-compact {
     border-radius: @borderRadius;
@@ -192,6 +228,10 @@
     height: auto;
     max-height: none;
     padding: 24px;
+
+    &.with-qr-switch .segmented {
+      margin-top: 32px;
+    }
   }
 
   .login-form-footer {
