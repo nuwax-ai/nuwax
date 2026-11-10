@@ -4264,6 +4264,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.addModel": "Add Model",
   "PC.Pages.SpaceLibrary.CreateModel.apiConfig": "API Config",
   "PC.Pages.SpaceLibrary.CreateModel.apiProtocol": "API Protocol",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimit": "Daily Token Limit per User",
+  "PC.Pages.SpaceLibrary.CreateModel.tokenLimitHelp": "Limit each user's daily token usage. Leave blank or enter 0 for unlimited usage.",
   "PC.Pages.SpaceLibrary.CreateModel.callStrategy": "Call Strategy",
   "PC.Pages.SpaceLibrary.CreateModel.disable": "Disable",
   "PC.Pages.SpaceLibrary.CreateModel.disableTooltip": "Once disabled, it can no longer be selected. Agents currently using it will not be affected",

@@ -31,7 +31,7 @@ export interface ModelListItemProps {
   // 模型的标签
   tagList?: string[];
   // 模型接口协议
-  apiProtocol: 'OpenAI' | 'Ollama';
+  apiProtocol: `${ModelApiProtocolEnum}`;
   // 模型的大小
   size?: string | number;
   // 最大输出token数, token上限
@@ -57,7 +57,7 @@ export interface ModelFormData {
   model: string;
   // 网络类型，可选值：Internet 公网; Intranet 内网,可用值:Internet,Intranet
   networkType: ModelNetworkTypeEnum;
-  // 模型接口协议，可选值：OpenAI, Ollama
+  // 模型接口协议
   apiProtocol: ModelApiProtocolEnum;
   // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime
   strategy: ModelStrategyEnum;
@@ -69,6 +69,8 @@ export interface ModelFormData {
   maxTokens: number;
   // 最大上下文长度，默认128000
   maxContextTokens: number;
+  /** 每位用户每天的 token 消耗上限，null 或 0 表示不限制 */
+  tokenLimit?: number | null;
   // 管控状态
   accessControl?: AccessControlEnum;
   // 可用范围
@@ -111,7 +113,7 @@ export interface ModelSaveParams extends ModelFormData {
 export interface ModelListParams {
   // 模型类型,可用值:Completions,Chat,Edits,Images,Embeddings,Audio,Other
   modelType: ModelTypeEnum;
-  // 模型接口协议，可选值：OpenAI, Ollama
+  // 模型接口协议
   apiProtocol?: ModelApiProtocolEnum;
   // 模型范围，不传则返回所有有权限的模型,可用值:Space,Tenant,Global
   scope?: ModelScopeEnum;

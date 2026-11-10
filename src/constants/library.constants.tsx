@@ -462,6 +462,10 @@ export const MODEL_API_PROTOCOL_LIST = [
     value: ModelApiProtocolEnum.Anthropic,
     label: 'Anthropic',
   },
+  {
+    value: ModelApiProtocolEnum.Responses,
+    label: 'Responses',
+  },
 ];
 
 // 模型可用场景列表

@@ -1109,7 +1109,7 @@ export interface ModelConfig {
   /** 模型标识 */
   model: string;
   /** 模型接口协议 */
-  apiProtocol: 'OpenAI' | 'Ollama' | 'Zhipu' | 'Anthropic';
+  apiProtocol: 'OpenAI' | 'Ollama' | 'Zhipu' | 'Anthropic' | 'Responses';
   /** 租户ID */
   tenantId: number;
   /** 空间ID */
