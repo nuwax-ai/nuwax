@@ -3645,6 +3645,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Login.qrScanned": "Scanned. Confirm login in the app",
   "PC.Pages.Login.qrConfirming": "Logging in, please wait…",
   "PC.Pages.Login.qrExpired": "QR code expired. Refresh and scan again",
+  "PC.Pages.Login.qrExpiredTitle": "QR code expired",
+  "PC.Pages.Login.qrClickRefresh": "Click to refresh",
   "PC.Pages.Login.qrRefresh": "Refresh QR code",
   "PC.Pages.Login.qrLoadFailed": "QR code login is unavailable. Refresh to retry",
   "PC.Pages.Login.missingDevToken": "The login response did not include a token required for local development",
