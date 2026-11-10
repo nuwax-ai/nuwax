@@ -145,6 +145,9 @@ export interface TenantConfigInfo {
   /*开启注册, 0 关闭；1 开启，如果为0，前端不展示注册入口 */
   openRegister: number;
 
+  /** 是否开启 App 扫码登录（1 开 / 0 关；未下发默认关闭，私有化需显式开启） */
+  openQrCodeLogin?: number;
+
   /*默认会话模型 */
   defaultChatModelId: number;
 

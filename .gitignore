@@ -10,6 +10,9 @@
 /.umi-production
 /.umi-test
 /dist
+# macOS 会在构建目录写入 .DS_Store。/dist 已忽略，提测脚本在 git add -f 前也会删掉它。
+/dist/.DS_Store
+/dist/**/.DS_Store
 /public/micro-apps/
 /.cache/micro-apps/
 /reports/a11y/*.json

@@ -41,7 +41,7 @@ main() {
     log "只读演练：不 fetch、不提交、不修改 refs/index/文件或远端"
     log "1. 预检、fetch origin/gitlab、记录旧 test；检出 ${TARGET_BRANCH}"
     log "2. 提交全部非 dist 改动，汇合同名双远端目标分支；不合入 dev 或旧 test"
-    log "3. 目标分支升级子模块并提交 pin/适配；运行质量门和 build:prod:m"
+    log "3. 目标分支按 adapter.json 分支的远端快进子模块并提交 pin/适配；运行质量门和 build:prod:m"
     log "4. 构建若修改源码，提交后重新过门和构建一次；普通双推目标分支并核对 HEAD"
     log "5. 将两端和本地旧 test 保存到本机恢复文件（不创建 backup 分支）；核对后删除两端旧 test"
     log "6. 从最终目标提交创建 test，仅提交完整 dist；普通双推并核对 HEAD"
@@ -123,7 +123,9 @@ main() {
   export MICRO_APP_REQUIRED=1 DIST_RETENTION=1
   export DIST_RETENTION_HISTORY_REF="${GITLAB_OLD_TEST:-HEAD}"
   verify_microapp_pins
-  npm run upgrade:micro-apps -- all
+  # 子模块 pin 跟 adapter.json 所配分支的远端。overlay 同名文件有远端改动时不中断，
+  # 冲突段已由升级脚本采用远端代码；覆盖层本身仍是宿主入口，宽度等可见差异需同步进 overlay。
+  npm run upgrade:micro-apps -- all --allow-overlay-changes
   npm run generate:version
   assert_submodule_files_clean
   commit_source "chore(micro-apps): prepare pins and adapters for test"

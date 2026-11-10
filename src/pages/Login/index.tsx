@@ -111,7 +111,7 @@ const EllipsisTooltip: React.FC<{ title: string; children: string }> = ({
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [loginType, setLoginType] = useState<LoginTypeEnum>(
+  const [selectedLoginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
@@ -154,6 +154,20 @@ const Login: React.FC = () => {
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
   const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+  const qrLoginEnabled = tenantConfigInfo?.openQrCodeLogin === 1;
+  const loginType =
+    selectedLoginType === LoginTypeEnum.QrCode && !qrLoginEnabled
+      ? LoginTypeEnum.Password
+      : selectedLoginType;
+
+  useEffect(() => {
+    // 配置关闭时立即卸载扫码面板，取消在途轮询并回到密码登录。
+    if (!qrLoginEnabled && selectedLoginType === LoginTypeEnum.QrCode) {
+      setLoginType(LoginTypeEnum.Password);
+      loginTypeRef.current = LoginTypeEnum.Password;
+      setQrConfirming(false);
+    }
+  }, [qrLoginEnabled, selectedLoginType]);
 
   // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
   const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
@@ -813,6 +827,7 @@ const Login: React.FC = () => {
   };
 
   const handleChangeType = (value: string) => {
+    if (Number(value) === LoginTypeEnum.QrCode && !qrLoginEnabled) return;
     const select = () => {
       setLoginType(Number(value));
       loginTypeRef.current = Number(value);
@@ -835,6 +850,18 @@ const Login: React.FC = () => {
   };
   const { token } = theme.useToken();
   const options: SegmentedItemType[] = [
+    ...(qrLoginEnabled
+      ? [
+          {
+            label: (
+              <EllipsisTooltip title={dict('PC.Pages.Login.qrLogin')}>
+                {dict('PC.Pages.Login.qrLogin')}
+              </EllipsisTooltip>
+            ),
+            value: LoginTypeEnum.QrCode + '',
+          },
+        ]
+      : []),
     {
       label: (
         <EllipsisTooltip title={dict('PC.Pages.Login.passwordLogin')}>
@@ -850,10 +877,6 @@ const Login: React.FC = () => {
         </EllipsisTooltip>
       ),
       value: LoginTypeEnum.Code + '',
-    },
-    {
-      label: dict('PC.Pages.Login.qrLogin'),
-      value: LoginTypeEnum.QrCode + '',
     },
   ];
 
