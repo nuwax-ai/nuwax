@@ -1,7 +1,8 @@
 #!/bin/bash
-# 临时 test 提测：目标分支准备源码并构建，保存本机恢复文件后重建双远端 test。
+# 临时 test 提测：目标分支准备源码并构建，保存本机恢复文件后只在内网仓库重建 test。
 # 用法：bash deploy_test_clean.sh [目标分支]；省略时使用当前分支，DRY_RUN=1 完全只读。
 # dist 只提交到 test；目标分支全部非 dist 改动（包括已有业务改动）会自动提交。
+# 目标分支源码仍推 origin 与 gitlab。test 含完整 dist 且每次都是新建分支，只推内网，不推 GitHub。
 
 if [ -z "${BASH_VERSION:-}" ] || (shopt -qo posix) 2>/dev/null; then
   exec bash "$0" "$@"
@@ -10,6 +11,8 @@ set -euo pipefail
 
 # 入口及函数在 checkout 前完整加载，允许目标分支尚未包含这个新入口。
 main() {
+  # clean_exit 在选定内网远端之前也会运行；空字符串表示还没有可补推的 test 远端。
+  TEST_REMOTES=""
   ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
   cd "$ROOT"
   source "$ROOT/scripts/deploy/lib.sh"
@@ -43,8 +46,8 @@ main() {
     log "2. 提交全部非 dist 改动，汇合同名双远端目标分支；不合入 dev 或旧 test"
     log "3. 目标分支按 adapter.json 分支的远端快进子模块并提交 pin/适配；运行质量门和 build:prod:m"
     log "4. 构建若修改源码，提交后重新过门和构建一次；普通双推目标分支并核对 HEAD"
-    log "5. 将两端和本地旧 test 保存到本机恢复文件（不创建 backup 分支）；核对后删除两端旧 test"
-    log "6. 从最终目标提交创建 test，仅提交完整 dist；普通双推并核对 HEAD"
+    log "5. 将 GitHub、内网和本地旧 test 保存到本机恢复文件（不创建 backup 分支）；只删除内网旧 test"
+    log "6. 从最终目标提交创建 test，仅提交完整 dist；只推内网并核对 HEAD"
     log "7. 切回 ${TARGET_BRANCH}；失败保留产物和状态，打印补推/恢复命令"
     return 0
   fi
@@ -98,6 +101,8 @@ main() {
     ORIGIN_OLD_TEST="$GITLAB_OLD_TEST"
     ORIGIN_OLD_TARGET="$GITLAB_OLD_TARGET"
   fi
+  # 在改动目标分支之前定好 test 落点。找不到内网仓库时停止，避免后面把 dist 推到 GitHub。
+  collect_test_remotes
   record old-origin-test "$ORIGIN_OLD_TEST"
   record old-gitlab-test "$GITLAB_OLD_TEST"
   if [ -n "$GITLAB_OLD_TEST" ] && git cat-file -e "$GITLAB_OLD_TEST:dist" 2>/dev/null; then
@@ -164,16 +169,19 @@ main() {
 
   CURRENT_STEP="保存旧 test 本机恢复文件"
   save_test_rollback
-  expect_remote gitlab test "$GITLAB_OLD_TEST"
-  expect_remote origin test "$ORIGIN_OLD_TEST"
+  # 只核对即将改写的内网 test。GitHub 上的旧 test 保持原样，期间被别人更新也不影响本次发布。
+  for remote in $TEST_REMOTES; do
+    if [ "$remote" = origin ]; then tip="$ORIGIN_OLD_TEST"; else tip="$GITLAB_OLD_TEST"; fi
+    expect_remote "$remote" test "$tip"
+  done
   expect_remote origin "$TARGET_BRANCH" "$SOURCE_HEAD"
   expect_remote gitlab "$TARGET_BRANCH" "$SOURCE_HEAD"
   [ "$(git branch --show-current)" = "$TARGET_BRANCH" ] && [ "$(git rev-parse HEAD)" = "$SOURCE_HEAD" ] && [ -z "$(source_status)" ] ||
     die "发布前目标源码发生变化，未删除远端 test"
-  CURRENT_STEP="删除双远端旧 test"
-  for remote in gitlab origin; do
+  CURRENT_STEP="删除内网旧 test"
+  for remote in $TEST_REMOTES; do
     if [ "$remote" = origin ]; then tip="$ORIGIN_OLD_TEST"; else tip="$GITLAB_OLD_TEST"; fi
-    # 目标状态是「分支不存在」。同一仓库时，先删的那一端会让后一端读到空，不能当成别人删过。
+    # 目标状态是「分支不存在」。同一仓库只选了一个远端，不会把第二次读到的空分支当成别人删除。
     if remote_needs_update "$remote" test "$tip" ""; then
       if [ -n "$tip" ]; then
         git push "$remote" --delete test
@@ -198,14 +206,14 @@ main() {
   record test "$TEST_HEAD"
   git diff --quiet "$SOURCE_HEAD" "$TEST_HEAD" -- . ':(top,exclude)dist' || die "test 源码偏离已构建目标，停止推送"
   CURRENT_STEP="发布新 test"
-  for remote in origin gitlab; do
+  # test 是删掉后重建的全新分支，并带上完整 dist。只写入内网，供测试环境扫描。
+  for remote in $TEST_REMOTES; do
     if remote_needs_update "$remote" test "" "$TEST_HEAD"; then
       git push "$remote" "$TEST_HEAD:refs/heads/test"
     fi
     record published "$remote"
+    expect_remote "$remote" test "$TEST_HEAD"
   done
-  expect_remote origin test "$TEST_HEAD"
-  expect_remote gitlab test "$TEST_HEAD"
   git checkout "$TARGET_BRANCH"
   git -c credential.interactive=never submodule update --init --recursive
   if [ "${ROLLBACK_READY:-0}" = "1" ]; then
@@ -217,7 +225,7 @@ main() {
   fi
   rm -f "$RUN_DIR/original-dist.tar" "$RUN_DIR/previous-dist.tar" "$RUN_DIR/built-dist.tar"
   record complete "$TEST_HEAD"
-  log "✅ 双远端 test 推送完成：${TEST_HEAD}（源码 ${TARGET_BRANCH}@${SOURCE_HEAD}）"
+  log "✅ 内网 test 推送完成：${TEST_HEAD}（源码 ${TARGET_BRANCH}@${SOURCE_HEAD}；远端 ${TEST_REMOTES}）"
   log "运行记录：${RUN_DIR}/state；环境部署由现有扫描系统完成"
 }
 
@@ -304,10 +312,76 @@ expect_remote() {
   [ "$actual" = "$3" ] || die "$1/$2 出现并发更新（预期 ${3:-不存在}，实际 ${actual:-不存在}），停止；不自动合入或覆盖"
 }
 
+# 配置里的远程地址。不用 git remote get-url：它会套用 insteadOf，
+# 把 https://git.yichamao.com 改写成实际传输地址后，主机判断会落空。
+configured_remote_url() {
+  git config --get "remote.${1}.url" 2>/dev/null || true
+}
+
+# 从远程 URL 解析主机名，用来区分内网仓库和 GitHub。
+# https、ssh:// 与 git@host:path 都能解析，端口会被去掉。
+# file:// 和本地路径没有可识别的主机，返回空字符串。
+url_host() {
+  local url="$1" host
+  url="${url%.git}"
+  url="${url%/}"
+  if [[ "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+@)?([^/:]+) ]]; then
+    host="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+    printf '%s' "${host%%:*}"
+    return 0
+  fi
+  if [[ "$url" =~ ^([^@]+@)?([^:]+):(.+)$ ]]; then
+    host="$(printf '%s' "${BASH_REMATCH[2]}" | tr '[:upper:]' '[:lower:]')"
+    printf '%s' "${host%%:*}"
+    return 0
+  fi
+  printf ''
+}
+
+# 内网仓库主机。默认 git.yichamao.com；设置 GITLAB_REMOTE_URL 时跟该地址的主机走。
+internal_repository_host() {
+  url_host "${GITLAB_REMOTE_URL:-https://git.yichamao.com/agent-platform/nuwax.git}"
+}
+
+# 选出本轮要删除并重建 test 的远端，写入 TEST_REMOTES。
+# 远端名字不能当依据：有的克隆把 origin 配成内网，名叫 gitlab 的远端也可能指向 GitHub。
+# 纳入规则：
+#   1. 主机是 github.com 的远端不发布 test，即使它的名字叫 gitlab。
+#   2. 主机等于内网主机的远端纳入。origin 指向 git.yichamao.com 时从这里进入。
+#   3. 名字叫 gitlab、且不是 GitHub 的远端纳入。本机 file:// 夹具和未使用标准主机的内网地址走这里。
+# 主机加路径相同的仓库只保留一个，gitlab 优先于 origin。
+# 没有内网仓库，或同时出现两个不同的内网仓库时停止，避免把带 dist 的新分支推到 GitHub。
+collect_test_remotes() {
+  local name host canon seen=" " count=0
+  TEST_REMOTES=""
+  for name in gitlab origin; do
+    git remote get-url "$name" >/dev/null 2>&1 || continue
+    host="$(url_host "$(configured_remote_url "$name")")"
+    if [ "$host" = "github.com" ]; then
+      continue
+    fi
+    if [ "$host" != "$(internal_repository_host)" ] && [ "$name" != "gitlab" ]; then
+      continue
+    fi
+    canon="$(canonical_remote_url "$name")"
+    case "$seen" in
+      *" $canon "*) continue ;;
+    esac
+    seen="$seen$canon "
+    TEST_REMOTES="${TEST_REMOTES:+$TEST_REMOTES }$name"
+    count=$((count + 1))
+  done
+  [ "$count" -ge 1 ] || die "找不到内网仓库远端，无法发布 test。请让 gitlab 指向内网仓库，或把 origin 配成 $(internal_repository_host)；不会改推 GitHub"
+  [ "$count" -eq 1 ] || die "识别到多个不同的内网仓库（${TEST_REMOTES}），无法确定 test 发布目标"
+  log "test 只发布到内网仓库：${TEST_REMOTES}"
+}
+
 # 比较主机和仓库路径。https、ssh 和带账号的 URL 视为同一仓库；不同主机（例如 IP 与域名）不在这里合并。
 canonical_remote_url() {
   local url host path
-  url="$(git remote get-url "$1")"
+  # 与主机判断一样读配置地址，避免 insteadOf 把同一仓库改写成两条本地路径。
+  url="$(configured_remote_url "$1")"
+  [ -n "$url" ] || url="$(git remote get-url "$1")"
   url="${url%.git}"
   url="${url%/}"
   if [[ "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+@)?([^/]+)/(.+)$ ]]; then
@@ -395,10 +469,10 @@ clean_exit() {
         print_command git bundle unbundle "$ROLLBACK_BUNDLE" >&2
       fi
       if [ -n "${TEST_HEAD:-}" ]; then
-        echo "确认远端 test 缺失或已指向本轮提交后，可补推同一产物（不要合入旧 test）：" >&2
-        for remote in origin gitlab; do print_command git push "$remote" "$TEST_HEAD:refs/heads/test" >&2; done
+        echo "确认内网 test 缺失或已指向本轮提交后，可补推同一产物（不要合入旧 test，也不要推 GitHub）：" >&2
+        for remote in $TEST_REMOTES; do print_command git push "$remote" "$TEST_HEAD:refs/heads/test" >&2; done
       fi
-      for remote in origin gitlab; do
+      for remote in $TEST_REMOTES; do
         if [ "$remote" = origin ]; then old="${ORIGIN_OLD_TEST:-}"; else old="${GITLAB_OLD_TEST:-}"; fi
         if [ -n "$old" ]; then
           echo "仅在 ${remote}/test 缺失且决定恢复旧版本时执行：" >&2

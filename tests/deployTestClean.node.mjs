@@ -355,9 +355,10 @@ test('commits all non-dist input and remote source on target, rebuilding test wi
   await git(state.root, 'add', '-f', 'dist');
   await deploy(state);
   const source = await head(state, 'origin', target);
-  const artifact = await head(state, 'origin');
+  const artifact = await head(state, 'gitlab');
   assert.equal(source, await head(state, 'gitlab', target));
-  assert.equal(artifact, await head(state, 'gitlab'));
+  // GitHub 上的旧 test 保持删除前的提交，新产物只在内网。
+  assert.equal(await head(state, 'origin'), oldOrigin);
   assert.equal(
     await git(state.root, 'rev-parse', `${source}:dist`),
     originalSourceTree,
@@ -437,9 +438,9 @@ test('tracked files covered by ignore rules are updated or deleted while new ign
   await git(state.root, 'add', '-f', 'dist');
   await deploy(state, {}, null);
   const source = await head(state, 'origin', target);
-  const artifact = await head(state, 'origin');
+  const artifact = await head(state, 'gitlab');
   assert.equal(source, await head(state, 'gitlab', target));
-  assert.equal(artifact, await head(state, 'gitlab'));
+  assert.equal(await head(state, 'origin'), state.seed);
   assert.equal(
     await show(state, source, '.cursor/rules/project-rules.mdc'),
     'updated tracked rules',
@@ -476,7 +477,8 @@ test('build source changes are committed on target and rebuilt at the final comm
   await publish(state, 'gitlab', 'test', previous);
   await deploy(state, { FIXTURE_BUILD_DIRTY: 'once' });
   const source = await head(state, 'origin', target);
-  const artifact = await head(state, 'origin');
+  const artifact = await head(state, 'gitlab');
+  assert.equal(await head(state, 'origin'), state.seed);
   const events = await calls(state);
   assert.equal(events.filter((call) => call.kind === 'gate').length, 2);
   assert.equal(events.filter((call) => call.kind === 'build').length, 2);
@@ -560,7 +562,8 @@ test('a remote-only target in a single-branch clone is fetched and deployed; abs
     );
   }
   await deploy(state);
-  assert.equal(await head(state, 'origin'), await head(state, 'gitlab'));
+  assert.equal(await head(state, 'origin'), '');
+  assert.notEqual(await head(state, 'gitlab'), '');
   assert.equal(await git(state.root, 'branch', '--show-current'), target);
 });
 
@@ -633,7 +636,46 @@ test('origin configured as the same internal repository is published once', asyn
   assert.equal(await head(state, 'gitlab'), artifact);
   assert.equal(await git(state.root, 'rev-parse', `${artifact}^`), source);
   assert.equal(await existsAt(state, source, 'dist'), false);
-  assert.match(result.stdout, /双远端 test 推送完成/);
+  assert.match(result.stdout, /内网 test 推送完成/);
+});
+
+test('origin pointing at the internal host receives test while GitHub stays unchanged', async (t) => {
+  const state = await fixture(t);
+  const internalUrl = 'https://git.yichamao.com/agent-platform/nuwax.git';
+  const githubUrl = 'https://github.com/nuwax-ai/nuwax.git';
+  await git(state.root, 'remote', 'set-url', 'origin', internalUrl);
+  await git(state.root, 'remote', 'set-url', 'gitlab', githubUrl);
+  // 推送仍落到本地裸仓库。主机判断看配置里的 URL，不看 insteadOf 改写后的实际地址。
+  await fs.appendFile(
+    path.join(state.root, '.git/config'),
+    `[url "${state.remotes.origin}"]\n\tinsteadOf = ${internalUrl}\n[url "${state.remotes.gitlab}"]\n\tinsteadOf = ${githubUrl}\n`,
+  );
+  const result = await deploy(state);
+  const source = await head(state, 'origin', target);
+  const artifact = await head(state, 'origin');
+  assert.equal(source, await head(state, 'gitlab', target));
+  assert.notEqual(artifact, state.seed);
+  assert.equal(await head(state, 'gitlab'), state.seed);
+  assert.equal(await git(state.root, 'rev-parse', `${artifact}^`), source);
+  assert.match(result.stdout, /test 只发布到内网仓库：origin/);
+});
+
+test('GitHub URLs on both remotes stop before deleting test', async (t) => {
+  const state = await fixture(t);
+  const originUrl = 'https://github.com/nuwax-ai/nuwax.git';
+  const gitlabUrl = 'https://github.com/nuwax-ai/nuwax-mirror.git';
+  await git(state.root, 'remote', 'set-url', 'origin', originUrl);
+  await git(state.root, 'remote', 'set-url', 'gitlab', gitlabUrl);
+  await fs.appendFile(
+    path.join(state.root, '.git/config'),
+    `[url "${state.remotes.origin}"]\n\tinsteadOf = ${originUrl}\n[url "${state.remotes.gitlab}"]\n\tinsteadOf = ${gitlabUrl}\n`,
+  );
+  const error = await failure(deploy(state));
+  assert.match(error.stderr, /找不到内网仓库/);
+  assert.equal(await head(state, 'origin'), state.seed);
+  assert.equal(await head(state, 'gitlab'), state.seed);
+  assert.equal(await head(state, 'origin', target), state.seed);
+  assert.equal(await head(state, 'gitlab', target), state.seed);
 });
 
 test('target and test concurrent updates stop without combining them into built source', async (t) => {
@@ -670,23 +712,24 @@ test('target and test concurrent updates stop without combining them into built 
 
 test('a deletion rejection preserves the local bundle and prints an exact restore for the missing remote', async (t) => {
   const state = await fixture(t);
+  // test 只删除内网远端。拒绝发生在 gitlab，GitHub 侧的 origin 不会收到删除。
   await hook(
     state,
-    'origin',
+    'gitlab',
     `if (process.argv[2] === 'refs/heads/test' && process.argv[4] === ${JSON.stringify(
       zero,
     )}) process.exit(1);`,
   );
   const error = await failure(deploy(state));
   assert.equal(await head(state, 'origin'), state.seed);
-  assert.equal(await head(state, 'gitlab'), '');
+  assert.equal(await head(state, 'gitlab'), state.seed);
   assert.match(
     error.stderr,
     new RegExp(`git push gitlab ${state.seed}:refs/heads/test`),
   );
-  assert.match(
+  assert.doesNotMatch(
     await fs.readFile(path.join(await runDirectory(state), 'state'), 'utf8'),
-    /deleted\tgitlab/,
+    /deleted\t/,
   );
   const bundle = path.join(await runDirectory(state), 'test-rollback.bundle');
   assert(error.stderr.includes(`git bundle unbundle ${bundle}`));
@@ -701,7 +744,8 @@ test('a deletion rejection preserves the local bundle and prints an exact restor
 test('a partial artifact publish retains the exact candidate and recovery commands', async (t) => {
   const state = await fixture(t);
   await deploy(state);
-  const previous = await head(state, 'origin');
+  const previousOrigin = await head(state, 'origin');
+  const previousGitlab = await head(state, 'gitlab');
   const savedBundle = await fs.readFile(latestRollback(state));
   await write(state.root, 'source.txt', 'second deployment source');
   await hook(
@@ -713,8 +757,9 @@ test('a partial artifact publish retains the exact candidate and recovery comman
   );
   const error = await failure(deploy(state));
   const candidate = await git(state.root, 'rev-parse', 'test');
-  assert.equal(await head(state, 'origin'), candidate);
+  assert.equal(await head(state, 'origin'), previousOrigin);
   assert.equal(await head(state, 'gitlab'), '');
+  assert.notEqual(candidate, previousOrigin);
   assert.match(
     error.stderr,
     new RegExp(`git push gitlab ${candidate}:refs/heads/test`),
@@ -723,12 +768,12 @@ test('a partial artifact publish retains the exact candidate and recovery comman
   assert.deepEqual(await fs.readFile(latestRollback(state)), savedBundle);
   const bundle = path.join(await runDirectory(state), 'test-rollback.bundle');
   await assertRollback(state, bundle, {
-    origin: previous,
-    gitlab: previous,
-    local: previous,
+    origin: previousOrigin,
+    gitlab: previousGitlab,
+    local: previousGitlab,
   });
   assert.equal(await git(state.root, 'branch', '--show-current'), 'test');
-  assert.doesNotMatch(error.stdout, /✅ 双远端 test 推送完成/);
+  assert.doesNotMatch(error.stdout, /✅ 内网 test 推送完成/);
   const stateLog = await fs.readFile(
     path.join(await runDirectory(state), 'state'),
     'utf8',
@@ -740,7 +785,8 @@ test('a partial artifact publish retains the exact candidate and recovery comman
 test('a bundle failure keeps old tests and the previous recovery file, cleaning temporary refs', async (t) => {
   const state = await fixture(t);
   await deploy(state);
-  const previous = await head(state, 'origin');
+  const previousOrigin = await head(state, 'origin');
+  const previousGitlab = await head(state, 'gitlab');
   const savedBundle = await fs.readFile(latestRollback(state));
   const realGit = (
     await run(state.root, 'sh', ['-c', 'command -v git'])
@@ -761,8 +807,8 @@ process.exit(result.status ?? 1);
     (await failure(deploy(state))).stderr,
     /保存旧 test 本机恢复文件/,
   );
-  assert.equal(await head(state, 'origin'), previous);
-  assert.equal(await head(state, 'gitlab'), previous);
+  assert.equal(await head(state, 'origin'), previousOrigin);
+  assert.equal(await head(state, 'gitlab'), previousGitlab);
   assert.deepEqual(await fs.readFile(latestRollback(state)), savedBundle);
   await assertNoBackupBranches(state);
 });
@@ -770,13 +816,14 @@ process.exit(result.status ?? 1);
 test('successful deployments retain one regular recovery bundle containing only the latest old tips', async (t) => {
   const state = await fixture(t);
   await deploy(state);
-  const previous = await head(state, 'origin');
+  const previousOrigin = await head(state, 'origin');
+  const previousGitlab = await head(state, 'gitlab');
   await write(state.root, 'source.txt', 'next source version');
   await deploy(state);
   await assertRollback(state, latestRollback(state), {
-    origin: previous,
-    gitlab: previous,
-    local: previous,
+    origin: previousOrigin,
+    gitlab: previousGitlab,
+    local: previousGitlab,
   });
   const common = path.join(state.root, '.git/nuwax-deploy');
   assert.deepEqual(
@@ -841,23 +888,34 @@ test('a test recreated concurrently after deletion is preserved instead of mergi
     'late-test.txt': 'another deploy',
   });
   await publish(state, 'gitlab', 'fixture-late', late);
-  await hook(
-    state,
-    'origin',
-    `
-if (process.argv[2] === 'refs/heads/test' && process.argv[4] === ${JSON.stringify(
-      zero,
-    )}) {
-  require('child_process').execFileSync('git', [${JSON.stringify(
-    `--git-dir=${state.remotes.gitlab}`,
-  )}, 'update-ref', 'refs/heads/test', ${JSON.stringify(late)}]);
-}`,
+  // 删除内网 test 成功后，post-receive 立刻把分支写回并发提交。脚本应停在核对，而不是覆盖它。
+  await fs.writeFile(
+    path.join(state.remotes.gitlab, 'hooks/post-receive'),
+    `#!/usr/bin/env node
+let input = '';
+process.stdin.on('data', (chunk) => {
+  input += chunk;
+});
+process.stdin.on('end', () => {
+  for (const line of input.split('\\n')) {
+    const [,, ref] = line.split(' ');
+    const next = line.split(' ')[1];
+    if (ref === 'refs/heads/test' && next === ${JSON.stringify(zero)}) {
+      require('child_process').execFileSync('git', [${JSON.stringify(
+        `--git-dir=${state.remotes.gitlab}`,
+      )}, 'update-ref', 'refs/heads/test', ${JSON.stringify(late)}]);
+    }
+  }
+});
+`,
+    { mode: 0o755 },
   );
   const error = await failure(deploy(state));
   assert.match(error.stderr, /gitlab\/test 出现并发更新/);
   assert.equal(await head(state, 'gitlab'), late);
   const candidate = await git(state.root, 'rev-parse', 'test');
-  assert.equal(await head(state, 'origin'), candidate);
+  assert.equal(await head(state, 'origin'), state.seed);
+  assert.equal(candidate, state.seed);
   assert.equal(await existsAt(state, candidate, 'late-test.txt'), false);
   assert.doesNotMatch(error.stdout, /✅/);
 });
@@ -869,9 +927,9 @@ test('omitting the target deploys the current local branch including its non-dis
   await write(state.root, 'current-only.txt', 'current branch source');
   await deploy(state, {}, null);
   const source = await head(state, 'origin', current);
-  const artifact = await head(state, 'origin');
+  const artifact = await head(state, 'gitlab');
   assert.equal(source, await head(state, 'gitlab', current));
-  assert.equal(artifact, await head(state, 'gitlab'));
+  assert.equal(await head(state, 'origin'), state.seed);
   assert.equal(await git(state.root, 'rev-parse', `${artifact}^`), source);
   assert.equal(
     await show(state, source, 'current-only.txt'),
@@ -1020,7 +1078,8 @@ test('real submodule upgrades and pins are committed only on target; child file 
   await git(path.join(state.root, 'submodules/app'), 'restore', 'app.txt');
   await deploy(state);
   const source = await head(state, 'origin', target);
-  const artifact = await head(state, 'origin');
+  const artifact = await head(state, 'gitlab');
+  assert.equal(await head(state, 'origin'), state.seed);
   assert.equal(
     JSON.parse(await show(state, source, 'micro-frontends/repo/adapter.json'))
       .pin,

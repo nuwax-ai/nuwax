@@ -33,7 +33,7 @@
 | `download-mobile-build.js` | `npm run build:m`；`build:prod:m` 尾段 | 下载 M 端已提交的 H5 产物到 `dist/m/`，不重新编译 M 源码；默认分支 `feat-2026.11`，`MOBILE_BUILD_BRANCH` 覆写；来源优先本地 nuwax-mobile 检出的 origin，无检出回退 GitHub，`MOBILE_BUILD_REPO` 覆写 |
 | `deploy_sync_test.sh` | `bash scripts/deploy_sync_test.sh` | 全链提测：个人分支 → 版本分支 → dev → test → 构建 → 推 gitlab/test。见 [runbook](../docs/deploy-sync-test-runbook.md) |
 | `../deploy_test.sh` | `bash deploy_test.sh` | 旧快速提测入口，保留兼容：先合入 dev，再 dev → test → 子模块自动升级到最新 main（适配预检）→ 质量门 → 构建 → 推双远端；起跑时仅子模块版本偏差不拦截 |
-| `../deploy_test_clean.sh` | `bash deploy_test_clean.sh [目标分支]` | **当前提测入口，不经过 dev**：省略目标时使用当前分支；多个功能先合入本次目标分支。全部非 dist 改动与 pin 提交在目标分支，目标分支构建、双推成功后才保存本机恢复文件并删除旧 test；新 test 仅增加 dist 并双推。成功保留最近一份恢复文件，不创建 backup 分支。新旧流程图及步骤见 [runbook](../docs/deploy-sync-test-runbook.md) |
+| `../deploy_test_clean.sh` | `bash deploy_test_clean.sh [目标分支]` | **当前提测入口，不经过 dev**：省略目标时使用当前分支；多个功能先合入本次目标分支。全部非 dist 改动与 pin 提交在目标分支，目标分支构建、双推成功后才保存本机恢复文件并只删除内网旧 test；新 test 仅增加 dist 并只推内网。成功保留最近一份恢复文件，不创建 backup 分支。新旧流程图及步骤见 [runbook](../docs/deploy-sync-test-runbook.md) |
 | `deploy/lib.sh` | 被上面两个脚本 source | 共用函数：重试、机器产物冲突消化、pin 撕裂修复、质量门、push/pull 自愈 |
 
 ## 质量门与检查
