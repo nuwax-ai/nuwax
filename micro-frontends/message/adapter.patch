@@ -1,13 +1,13 @@
 diff --git a/nuwax-im-web/src/App.tsx b/nuwax-im-web/src/App.tsx
-index d0bdcb6..749008b 100644
+index b4abbcc..3a74650 100644
 --- a/nuwax-im-web/src/App.tsx
 +++ b/nuwax-im-web/src/App.tsx
 @@ -1,3 +1,4 @@
-+import { getMessageElementById, getMessageInputRoot, getMessagePortalRoot, redirectMessageAuth } from './hostRuntime';
++import { getMessageElementById, getMessageInputRoot, getMessagePortalRoot } from './hostRuntime';
  import { useEffect, useLayoutEffect, useRef, useState } from 'react';
  import { Alert, App as AntApp } from 'antd';
- import { isPlatformMode } from './authMode';
-@@ -176,13 +177,13 @@ function Shell() {
+ import { PLATFORM_LOGIN_URL, isPlatformMode } from './authMode';
+@@ -219,13 +220,13 @@ function Shell() {
      const opts = { capture: true, passive: true } as const;
      window.addEventListener('focus', onLooking);
      document.addEventListener('visibilitychange', onLooking);
@@ -25,7 +25,7 @@ index d0bdcb6..749008b 100644
      };
    }, []);
  
-@@ -303,7 +304,7 @@ function Shell() {
+@@ -346,7 +347,7 @@ function Shell() {
     * （开发态热更新、或将来某次改动删掉了 HTML 里那段），不该为此抛错。
     */
    useLayoutEffect(() => {
@@ -34,16 +34,7 @@ index d0bdcb6..749008b 100644
    }, []);
  
    /**
-@@ -326,7 +327,7 @@ function Shell() {
-     redirectedRef.current = true;
-     // ★replace 而不是 assign：不留历史记录。
-     //   否则用户按返回键会回到 IM，IM 又把他送去登录页 —— 一个用返回键就能重现的跳转循环。
--    window.location.replace(authRedirectTarget);
-+    redirectMessageAuth(authRedirectTarget);
-   }, [authProbe, authRedirectTarget, inviteRoom]);
- 
-   // HTTP 401 → client.ts 广播 im:auth-expired
-@@ -435,7 +436,7 @@ function Shell() {
+@@ -512,7 +513,7 @@ function Shell() {
  
  export default function App() {
    return (
@@ -2187,18 +2178,18 @@ index 8ee5552..ccd9ff5 100644
   * ★安装 {@code window.__im} 桥（业务方从浏览器控制台接入的那扇门）。
   *
 diff --git a/nuwax-im-web/src/lib/meetingDetailDialog.tsx b/nuwax-im-web/src/lib/meetingDetailDialog.tsx
-index d2864c8..a8dcc83 100644
+index ae1df54..136afdc 100644
 --- a/nuwax-im-web/src/lib/meetingDetailDialog.tsx
 +++ b/nuwax-im-web/src/lib/meetingDetailDialog.tsx
 @@ -28,6 +28,7 @@
   */
- import { useEffect, useSyncExternalStore } from 'react';
+ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
  import { createPortal } from 'react-dom';
 +import { getMessagePortalRoot } from '../hostRuntime';
  
  import MeetingDetailDialog from '../components/MeetingDetailDialog';
  
-@@ -123,6 +124,6 @@ export default function MeetingDetailHost() {
+@@ -151,6 +152,6 @@ export default function MeetingDetailHost() {
          />
        </div>
      </div>,
@@ -3335,7 +3326,7 @@ index 9d92f0d..8387ffb 100644
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
 diff --git a/nuwax-im-web/tsconfig.test.json b/nuwax-im-web/tsconfig.test.json
-index 509f228..11e7e26 100644
+index 17327be..0ea1377 100644
 --- a/nuwax-im-web/tsconfig.test.json
 +++ b/nuwax-im-web/tsconfig.test.json
 @@ -39,6 +39,7 @@
