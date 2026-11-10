@@ -2167,6 +2167,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentEdit.SubscriptionStats.todayNew": "今日新增",
   "PC.Pages.AgentEdit.SubscriptionStats.totalSubscriptions": "总订阅数",
   "PC.Pages.AgentEdit.arrange": "编排",
+  "PC.Pages.AgentEdit.agentIdSuffix": "（id: {0}）",
   "PC.Pages.AgentEdit.draftAutoSavedAt": "草稿自动保存于 {0}",
   "PC.Pages.AgentEdit.publish": "发布",
   "PC.Pages.AgentEdit.showStand": "展示台",

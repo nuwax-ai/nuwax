@@ -1954,6 +1954,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentArrangeSubAgentEditModal.promptPlaceholder": "請輸入子智慧體 Prompt",
   "PC.Pages.AgentArrangeSubAgentEditModal.viewDoc": "檢視文件",
   "PC.Pages.AgentEdit.arrange": "編排",
+  "PC.Pages.AgentEdit.agentIdSuffix": "（id: {0}）",
   "PC.Pages.AgentEdit.draftAutoSavedAt": "草稿自動儲存於 {0}",
   "PC.Pages.AgentEdit.publish": "釋出",
   "PC.Pages.AgentEdit.showStand": "展示臺",

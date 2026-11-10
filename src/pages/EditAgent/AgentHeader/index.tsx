@@ -179,6 +179,11 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
             {agentConfigInfo?.name}
           </h3>
+          {agentConfigInfo?.id !== undefined && agentConfigInfo.id !== null && (
+            <span className={cx(styles['agent-id'])}>
+              {dict('PC.Pages.AgentEdit.agentIdSuffix', agentConfigInfo.id)}
+            </span>
+          )}
 
           <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
             <ConditionRender condition={agentConfigInfo?.space?.icon}>

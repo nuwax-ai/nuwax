@@ -1935,6 +1935,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeSubAgentEditModal.promptPlaceholder": "サブエージェントプロンプトを入力してください",
   "PC.Pages.AgentArrangeSubAgentEditModal.viewDoc": "ドキュメントを見る",
   "PC.Pages.AgentEdit.arrange": "オーケストレーション",
+  "PC.Pages.AgentEdit.agentIdSuffix": "（id: {0}）",
   "PC.Pages.AgentEdit.draftAutoSavedAt": "ドラフトは {0} に自動保存されました",
   "PC.Pages.AgentEdit.publish": "公開",
   "PC.Pages.AgentEdit.showStand": "ショールーム",

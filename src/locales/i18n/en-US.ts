@@ -2168,6 +2168,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentEdit.SubscriptionStats.todayNew": "Today's New",
   "PC.Pages.AgentEdit.SubscriptionStats.totalSubscriptions": "Total Subscriptions",
   "PC.Pages.AgentEdit.arrange": "Orchestration",
+  "PC.Pages.AgentEdit.agentIdSuffix": "(id: {0})",
   "PC.Pages.AgentEdit.draftAutoSavedAt": "Draft auto-saved at {0}",
   "PC.Pages.AgentEdit.publish": "Publish",
   "PC.Pages.AgentEdit.showStand": "Showroom",
