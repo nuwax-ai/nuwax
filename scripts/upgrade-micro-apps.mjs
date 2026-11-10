@@ -494,6 +494,20 @@ async function rollback(states, git, root) {
       errors.push(`${label}: ${error.message}`);
     }
   };
+  const gitmodulesState = states.find((state) => state.gitmodulesTouched);
+  if (gitmodulesState) {
+    await attempt('.gitmodules', async () => {
+      const file = path.join(root, '.gitmodules');
+      const contents = await fs.readFile(file);
+      if (
+        !contents.equals(gitmodulesState.oldGitmodules) &&
+        !contents.equals(gitmodulesState.newGitmodules)
+      )
+        throw new Error('文件已被另外修改，保留当前内容');
+      await fs.writeFile(file, gitmodulesState.oldGitmodules);
+      await git(root, ['add', '--', '.gitmodules']);
+    });
+  }
   for (const state of [...states].reverse()) {
     if (!state.touched) continue;
     await attempt(`${state.app.id} adapter`, async () => {
@@ -651,7 +665,13 @@ export async function upgradeMicroApps({
       // 登记分支的 ref 可由下面的 fetch 补齐；这里先验证 index/pin、提交和来源。
       const source = await getPinnedSource(root, app, execute, {
         checkBranchHistory: false,
+        // adapter.json 是登记的目标分支。.gitmodules 只是跟踪提示，名字不同就改过来，不在这里中止。
+        followAdapterBranch: true,
       });
+      if (source.recordedBranch !== app.adapter.branch)
+        log(
+          `[upgrade] ${app.id} .gitmodules 分支 ${source.recordedBranch} 与 adapter.branch ${app.adapter.branch} 不一致，按 adapter 改为 ${app.adapter.branch}`,
+        );
       const head = await git(app.source, ['rev-parse', 'HEAD']);
       if (head !== source.commit)
         throw new Error(`${app.id} 子仓 HEAD 偏离固定 gitlink，请先保留并处理`);
@@ -668,6 +688,8 @@ export async function upgradeMicroApps({
         branch: await branchOf(git, app.source),
         oldAdapter: await fs.readFile(app.adapterPath, 'utf8'),
         oldPatch: await fs.readFile(app.patch),
+        recordedBranch: source.recordedBranch,
+        moduleKey: source.moduleKey,
         fingerprint: (await adapterFingerprint(app)).sha256,
         index: await Promise.all(
           [
@@ -845,6 +867,10 @@ export async function upgradeMicroApps({
             : state.oldPin === state.newPin
             ? '（无变化）'
             : ''
+        }${
+          state.recordedBranch !== app.adapter.branch
+            ? `（.gitmodules 分支 ${state.recordedBranch} -> ${app.adapter.branch}）`
+            : ''
         }`,
       );
       if (state.overlayChanged.length)
@@ -864,7 +890,10 @@ export async function upgradeMicroApps({
     }));
     if (dryRun) return { status: 'dry-run', apps: summaries };
     const changed = states.filter(
-      (state) => state.oldPin !== state.newPin || state.rebasedPatch,
+      (state) =>
+        state.oldPin !== state.newPin ||
+        state.rebasedPatch ||
+        state.recordedBranch !== state.app.adapter.branch,
     );
     if (!changed.length) return { status: 'unchanged', apps: summaries };
     // 锁不能阻止手工编辑；写入前复核完整适配指纹、HEAD/分支与 index。
@@ -916,6 +945,28 @@ export async function upgradeMicroApps({
       });
     }
     await writeReceipt(receiptDir, receipt);
+    const branchRecords = changed.filter(
+      (state) => state.recordedBranch !== state.app.adapter.branch,
+    );
+    if (branchRecords.length) {
+      const gitmodulesPath = path.join(root, '.gitmodules');
+      const oldGitmodules = await fs.readFile(gitmodulesPath);
+      for (const state of branchRecords) {
+        await checked(root, [
+          'config',
+          '-f',
+          '.gitmodules',
+          `${state.moduleKey}.branch`,
+          state.app.adapter.branch,
+        ]);
+      }
+      const newGitmodules = await fs.readFile(gitmodulesPath);
+      for (const state of branchRecords) {
+        state.gitmodulesTouched = true;
+        state.oldGitmodules = oldGitmodules;
+        state.newGitmodules = newGitmodules;
+      }
+    }
     for (const state of changed) {
       signal?.throwIfAborted();
       state.touched = true;
@@ -955,6 +1006,9 @@ export async function upgradeMicroApps({
         repoRelative(root, state.app.adapterPath),
         ...(state.rebasedPatch ? [repoRelative(root, state.app.patch)] : []),
       ]),
+      ...(changed.some((state) => state.gitmodulesTouched)
+        ? ['.gitmodules']
+        : []),
     ]);
     for (const state of changed) {
       const entry = await indexEntry(git, root, state.app.adapter.sourceDir);

@@ -1013,6 +1013,46 @@ test('冲突丢掉的导入在名字仍被使用时补回', () => {
   assert.equal(restoreUsedPatchImports(restored, section), restored);
 });
 
+test('adapter.branch 与 .gitmodules 不一致时按 adapter 改跟踪分支', async (t) => {
+  const f = await fixture(t, { advance: false });
+  const app = f.apps.message;
+  await git(app.upstream, ['branch', 'stable', app.oldPin]);
+  const adapterFile = path.join(f.root, app.adapterRelative);
+  const adapter = JSON.parse(await fs.readFile(adapterFile, 'utf8'));
+  adapter.branch = 'stable';
+  await fs.writeFile(adapterFile, `${JSON.stringify(adapter, null, 4)}\n`);
+  await commit(f.root, 'fixture point message adapter at stable');
+  const branchKey = 'submodule.submodules/nuwax-im.branch';
+  const logs = [];
+  const dry = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    dryRun: true,
+    log: (line) => logs.push(line),
+  });
+  assert.equal(dry.status, 'dry-run');
+  assert.equal(
+    await git(f.root, ['config', '-f', '.gitmodules', '--get', branchKey]),
+    'main',
+  );
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    log: (line) => logs.push(line),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].newPin, app.oldPin);
+  assert.equal(
+    await git(f.root, ['config', '-f', '.gitmodules', '--get', branchKey]),
+    'stable',
+  );
+  assert.match(
+    await git(f.root, ['diff', '--cached', '--', '.gitmodules']),
+    /branch = stable/,
+  );
+  assert.ok(logs.some((line) => /按 adapter 改为 stable/.test(line)));
+});
+
 test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分支移动 pin 并重算补丁', async (t) => {
   const f = await fixture(t);
   const app = f.apps.message;

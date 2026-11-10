@@ -173,7 +173,7 @@ export async function getPinnedSource(
   root,
   app,
   execute = runCommand,
-  { checkBranchHistory = true } = {},
+  { checkBranchHistory = true, followAdapterBranch = false } = {},
 ) {
   const git = (args, cwd = root) =>
     execute('git', args, { cwd, capture: true });
@@ -222,10 +222,12 @@ export async function getPinnedSource(
     '--get',
     `${moduleKey}.branch`,
   ]);
-  if (branch !== app.adapter.branch)
+  // 同步和拉取仍要求两边同名。升级可以按 adapter.branch 继续，并在稍后把 .gitmodules 改过来。
+  if (branch !== app.adapter.branch && !followAdapterBranch)
     throw new Error(
       `${app.id} 子模块 branch ${branch} 与 adapter.branch ${app.adapter.branch} 不一致`,
     );
+  const selectedBranch = followAdapterBranch ? app.adapter.branch : branch;
   const url = await git([
     'config',
     '-f',
@@ -237,19 +239,30 @@ export async function getPinnedSource(
     await git(['rev-parse', '--verify', `${pin}^{commit}`], app.source);
     if (checkBranchHistory) {
       await git(
-        ['merge-base', '--is-ancestor', pin, `refs/remotes/origin/${branch}`],
+        [
+          'merge-base',
+          '--is-ancestor',
+          pin,
+          `refs/remotes/origin/${selectedBranch}`,
+        ],
         app.source,
       );
     }
   } catch (cause) {
     throw new Error(
       `${app.id} 固定提交不可用${
-        checkBranchHistory ? `或不在本地 origin/${branch} 历史` : ''
+        checkBranchHistory ? `或不在本地 origin/${selectedBranch} 历史` : ''
       }；请先初始化/核查子模块，sync:micro-apps 不会自行 fetch/升级`,
       { cause },
     );
   }
-  return { branch, url, commit: pin };
+  return {
+    branch: selectedBranch,
+    recordedBranch: branch,
+    moduleKey,
+    url,
+    commit: pin,
+  };
 }
 
 export async function adapterFingerprint(app) {
