@@ -10,6 +10,7 @@ import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSubscription from '@/hooks/useSubscription';
+import { useCreditSummaryPolling } from '@/layouts/DynamicMenusLayout/useCreditSummaryPolling';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
@@ -102,6 +103,9 @@ const BaseTemplate: React.FC = () => {
 
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+  // 独立会话不走 DynamicMenusLayout，这里单独挂同一份 summary 轮询。
+  // 租户关闭订阅时钩子内部不请求；余额大于 0 后收起增购提示。
+  useCreditSummaryPolling();
 
   // =========================== footer 渐变 ===========================
   const historyListRef = useRef<HTMLDivElement | null>(null);
