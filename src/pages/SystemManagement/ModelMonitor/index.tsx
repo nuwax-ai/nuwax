@@ -58,23 +58,36 @@ const ModelMonitor: React.FC = () => {
     page.pageSize,
   );
   const isUserScope = scope === 'user';
-  const handleUserChange = useCallback((user?: UsageUser) => {
-    setSelectedUser(user);
-    setQuery(null);
-    setPage((previous) => ({ ...previous, current: 1 }));
-  }, []);
+  const applyFilters = useCallback(
+    (
+      nextScope: typeof scope,
+      user: UsageUser | undefined,
+      dates: [Dayjs, Dayjs],
+    ) => {
+      const userId = nextScope === 'user' ? user?.value : '-1';
+      setPage((previous) => ({ ...previous, current: 1 }));
+      setQuery(
+        nextScope === 'rank' || !userId
+          ? null
+          : {
+              scope: nextScope,
+              userId,
+              dtStart: dates[0].format('YYYYMMDD'),
+              dtEnd: dates[1].format('YYYYMMDD'),
+            },
+      );
+    },
+    [],
+  );
+  const handleUserChange = useCallback(
+    (user?: UsageUser) => {
+      setSelectedUser(user);
+      applyFilters('user', user, dateRange);
+    },
+    [applyFilters, dateRange],
+  );
 
-  const handleSearch = () => {
-    const userId = isUserScope ? selectedUser?.value : '-1';
-    if (!userId) return;
-    setPage((previous) => ({ ...previous, current: 1 }));
-    setQuery({
-      scope: isUserScope ? 'user' : 'platform',
-      userId,
-      dtStart: dateRange[0].format('YYYYMMDD'),
-      dtEnd: dateRange[1].format('YYYYMMDD'),
-    });
-  };
+  const handleSearch = () => applyFilters(scope, selectedUser, dateRange);
 
   const handleReset = () => {
     const today = dayjs();
@@ -311,17 +324,7 @@ const ModelMonitor: React.FC = () => {
             const next = value as typeof scope;
             setScope(next);
             setUserTab('detail');
-            setPage((previous) => ({ ...previous, current: 1 }));
-            setQuery(
-              next === 'platform'
-                ? {
-                    scope: next,
-                    userId: '-1',
-                    dtStart: dateRange[0].format('YYYYMMDD'),
-                    dtEnd: dateRange[1].format('YYYYMMDD'),
-                  }
-                : null,
-            );
+            applyFilters(next, selectedUser, dateRange);
           }}
         />
         {scope === 'rank' ? (
@@ -352,10 +355,12 @@ const ModelMonitor: React.FC = () => {
                 allowClear={false}
                 onChange={(dates) => {
                   if (dates && dates[0] && dates[1]) {
-                    setDateRange([
+                    const nextDates: [Dayjs, Dayjs] = [
                       dayjs(dates[0].valueOf()),
                       dayjs(dates[1].valueOf()),
-                    ]);
+                    ];
+                    setDateRange(nextDates);
+                    applyFilters(scope, selectedUser, nextDates);
                   }
                 }}
                 format="YYYYMMDD"

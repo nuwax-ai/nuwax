@@ -30,6 +30,7 @@ export default function UserUsageSelect({
   onChange: (user?: UsageUser) => void;
 }) {
   const [keyword, setKeyword] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
   const [pageNo, setPageNo] = useState(1);
   const [open, setOpen] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -39,7 +40,8 @@ export default function UserUsageSelect({
     !!keyword && (!current || current.loading || current.pageNo !== pageNo);
 
   useEffect(() => {
-    if (!keyword) {
+    // 中文输入法组词期间不查询，确认后统一走 300ms 防抖。
+    if (!keyword || isComposing) {
       setResult(undefined);
       return;
     }
@@ -126,85 +128,91 @@ export default function UserUsageSelect({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [keyword, pageNo, retry, onChange]);
+  }, [keyword, isComposing, pageNo, retry, onChange]);
 
   return (
-    <Select<UsageUser>
+    <div
       className={styles['user-input']}
-      aria-label={dict('PC.Pages.ModelMonitor.user')}
-      placeholder={dict('PC.Pages.ModelMonitor.userSearchPlaceholder')}
-      showSearch
-      allowClear
-      labelInValue
-      filterOption={false}
-      value={value}
-      searchValue={keyword}
-      open={open}
-      onOpenChange={setOpen}
-      options={current?.users ?? []}
-      loading={loading}
-      onSearch={(text) => {
-        setKeyword(text.trim());
-        setPageNo(1);
-        if (value) onChange(undefined);
-      }}
-      onChange={(user) => {
-        setKeyword('');
-        setPageNo(1);
-        setOpen(false);
-        onChange(user);
-      }}
-      optionRender={(option) => (
-        <>
-          <div>{option.label}</div>
-          <div className={styles['user-id']}>ID: {option.value}</div>
-        </>
-      )}
-      notFoundContent={
-        loading ? (
-          <Spin size="small" />
-        ) : (
-          dict(
-            current?.failed
-              ? 'PC.Pages.ModelMonitor.userSearchFailed'
-              : keyword
-              ? 'PC.Pages.ModelMonitor.noMatchingUser'
-              : 'PC.Pages.ModelMonitor.userSearchPlaceholder',
-          )
-        )
-      }
-      popupRender={(menu) => (
-        <>
-          {menu}
-          {current?.failed ? (
-            <>
-              {current.users.length > 0 && (
-                <div role="alert">
-                  {dict('PC.Pages.ModelMonitor.userSearchFailed')}
-                </div>
-              )}
-              <Button
-                type="link"
-                block
-                onClick={() => setRetry((attempt) => attempt + 1)}
-              >
-                {dict('PC.Pages.ModelMonitor.retry')}
-              </Button>
-            </>
+      onCompositionStartCapture={() => setIsComposing(true)}
+      onCompositionEndCapture={() => setIsComposing(false)}
+    >
+      <Select<UsageUser>
+        style={{ width: '100%' }}
+        aria-label={dict('PC.Pages.ModelMonitor.user')}
+        placeholder={dict('PC.Pages.ModelMonitor.userSearchPlaceholder')}
+        showSearch
+        allowClear
+        labelInValue
+        filterOption={false}
+        value={value}
+        searchValue={keyword}
+        open={open}
+        onOpenChange={setOpen}
+        options={current?.users ?? []}
+        loading={loading}
+        onSearch={(text) => {
+          setKeyword(text.trim());
+          setPageNo(1);
+          if (value) onChange(undefined);
+        }}
+        onChange={(user) => {
+          setKeyword('');
+          setPageNo(1);
+          setOpen(false);
+          onChange(user);
+        }}
+        optionRender={(option) => (
+          <>
+            <div>{option.label}</div>
+            <div className={styles['user-id']}>ID: {option.value}</div>
+          </>
+        )}
+        notFoundContent={
+          loading ? (
+            <Spin size="small" />
           ) : (
-            pageNo * PAGE_SIZE < (current?.total ?? 0) && (
-              <Button
-                type="link"
-                block
-                loading={loading}
-                onClick={() => setPageNo((page) => page + 1)}
-              >
-                {dict('PC.Pages.ModelMonitor.loadMoreUsers')}
-              </Button>
+            dict(
+              current?.failed
+                ? 'PC.Pages.ModelMonitor.userSearchFailed'
+                : keyword
+                ? 'PC.Pages.ModelMonitor.noMatchingUser'
+                : 'PC.Pages.ModelMonitor.userSearchPlaceholder',
             )
-          )}
-        </>
-      )}
-    />
+          )
+        }
+        popupRender={(menu) => (
+          <>
+            {menu}
+            {current?.failed ? (
+              <>
+                {current.users.length > 0 && (
+                  <div role="alert">
+                    {dict('PC.Pages.ModelMonitor.userSearchFailed')}
+                  </div>
+                )}
+                <Button
+                  type="link"
+                  block
+                  onClick={() => setRetry((attempt) => attempt + 1)}
+                >
+                  {dict('PC.Pages.ModelMonitor.retry')}
+                </Button>
+              </>
+            ) : (
+              pageNo * PAGE_SIZE < (current?.total ?? 0) && (
+                <Button
+                  type="link"
+                  block
+                  loading={loading}
+                  onClick={() => setPageNo((page) => page + 1)}
+                >
+                  {dict('PC.Pages.ModelMonitor.loadMoreUsers')}
+                </Button>
+              )
+            )}
+          </>
+        )}
+      />
+    </div>
   );
 }

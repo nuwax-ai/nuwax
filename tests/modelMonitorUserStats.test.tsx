@@ -153,10 +153,6 @@ const selectUser = async (id: string) => {
   fireEvent.change(userInput(), { target: { value: `account-${id}` } });
   await screen.findByTitle(`account-${id}`);
 };
-const queryUser = async (id: string) => {
-  await selectUser(id);
-  fireEvent.click(queryButton());
-};
 async function openUserView() {
   render(<ModelMonitor />);
   await screen.findByText('platform-row');
@@ -222,7 +218,7 @@ async function openRanking() {
 }
 
 describe('用户 Token 排名与每日趋势', () => {
-  it('使用服务端排名与总数，翻页保持已提交日期，重新查询和重置回首页', async () => {
+  it('使用服务端排名与总数，改日期自动查询回首页，翻页沿用新日期且支持手动刷新和重置', async () => {
     await openRanking();
     expect(h.rank).toHaveBeenLastCalledWith(
       {
@@ -241,12 +237,11 @@ describe('用户 Token 排名与每日趋势', () => {
       within(screen.getByText('rank-user').closest('tr')!).getByText('9'),
     ).toBeInTheDocument();
     const applied = h.rank.mock.calls.at(-1)![0];
-    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     fireEvent.click(screen.getByTitle('2'));
     await waitFor(() =>
       expect(h.rank.mock.calls.at(-1)![0]).toEqual({ ...applied, pageNum: 2 }),
     );
-    fireEvent.click(queryButton());
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     await waitFor(() =>
       expect(h.rank.mock.calls.at(-1)![0]).toMatchObject({
         dtStart: '20261101',
@@ -254,6 +249,18 @@ describe('用户 Token 排名与每日趋势', () => {
         pageNum: 1,
       }),
     );
+    expect(h.rank).toHaveBeenCalledTimes(3);
+    await screen.findByText('rank-user');
+    fireEvent.click(screen.getByTitle('2'));
+    await waitFor(() =>
+      expect(h.rank.mock.calls.at(-1)![0]).toMatchObject({
+        dtStart: '20261101',
+        dtEnd: '20261102',
+        pageNum: 2,
+      }),
+    );
+    fireEvent.click(queryButton());
+    await waitFor(() => expect(h.rank.mock.calls.at(-1)![0].pageNum).toBe(1));
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.reset' }),
     );
@@ -262,8 +269,8 @@ describe('用户 Token 排名与每日趋势', () => {
 
   it('禁用用户仍能钻取；完整长 ID 和生效日期用于趋势，按日排序且保留精确数值', async () => {
     await openRanking();
-    const applied = h.rank.mock.calls.at(-1)![0];
     fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    await screen.findByText('rank-user');
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.viewTrend' }),
     );
@@ -271,8 +278,8 @@ describe('用户 Token 排名与每日趋势', () => {
     expect(h.trend).toHaveBeenLastCalledWith(
       {
         userId: '9007199254740993',
-        dtStart: applied.dtStart,
-        dtEnd: applied.dtEnd,
+        dtStart: '20261101',
+        dtEnd: '20261102',
       },
       expect.anything(),
     );
@@ -314,7 +321,6 @@ describe('用户 Token 排名与每日趋势', () => {
     fireEvent.click(queryButton());
     const signal = h.rank.mock.calls.at(-1)![1].signal;
     fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
-    fireEvent.click(queryButton());
     await screen.findByText('rank-user');
     expect(signal.aborted).toBe(true);
     await act(async () =>
@@ -351,9 +357,9 @@ describe('用户 Token 排名与每日趋势', () => {
     await screen.findByText('PC.Pages.ModelMonitor.noConsumption');
   });
 
-  it('选择用户同样可看趋势，换用户与日期丢弃迟到响应，草稿不会发请求', async () => {
+  it('选择用户同样可看趋势，换用户与日期自动查询并丢弃迟到响应', async () => {
     await openUserView();
-    await queryUser('101');
+    await selectUser('101');
     await screen.findByText('user-101');
     let resolve!: (data: unknown) => void;
     h.trend.mockReturnValueOnce(
@@ -367,10 +373,10 @@ describe('用户 Token 排名与每日趋势', () => {
     await waitFor(() => expect(h.trend).toHaveBeenCalledTimes(1));
     const signal = h.trend.mock.calls[0][1].signal;
     await selectUser('202');
+    await waitFor(() => expect(h.trend).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
-    expect(h.trend).toHaveBeenCalledTimes(1);
-    fireEvent.click(queryButton());
     await screen.findByLabelText('trend chart');
+    expect(h.trend).toHaveBeenCalledTimes(3);
     expect(signal.aborted).toBe(true);
     expect(h.trend.mock.calls.at(-1)![0]).toEqual({
       userId: '202',
@@ -403,6 +409,26 @@ describe('用户 Token 排名与每日趋势', () => {
 afterEach(cleanup);
 
 describe('下一版本用户 Token 消耗查询', () => {
+  it('平台统计改日期自动查询一次并回首页，查询按钮仍可刷新', async () => {
+    render(<ModelMonitor />);
+    await screen.findByText('platform-row');
+    fireEvent.click(screen.getByRole('button', { name: 'next page' }));
+    await screen.findByText('platform-row');
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
+    await screen.findByText('platform-row');
+    expect(h.detail).toHaveBeenCalledTimes(3);
+    expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
+      userId: '-1',
+      type: 'SALES',
+      dtStart: '20261101',
+      dtEnd: '20261102',
+      pageNum: 1,
+    });
+    fireEvent.click(queryButton());
+    await screen.findByText('platform-row');
+    expect(h.detail).toHaveBeenCalledTimes(4);
+  });
+
   it('保留平台口径；用户视图未选用户不查询，消费汇总不混入销售', async () => {
     await openUserView();
     expect(h.detail.mock.calls[0][0]).toMatchObject({
@@ -411,7 +437,7 @@ describe('下一版本用户 Token 消耗查询', () => {
     });
     expect(h.detail).toHaveBeenCalledTimes(1);
     const id = '9007199254740993';
-    await queryUser(id);
+    await selectUser(id);
     await screen.findByText(`user-${id}`);
     expect(h.summary).toHaveBeenLastCalledWith(
       expect.objectContaining({ userId: id }),
@@ -437,23 +463,33 @@ describe('下一版本用户 Token 消耗查询', () => {
     ).toHaveTextContent('2');
   });
 
-  it('翻页使用生效条件，修改草稿不串到下一页，重新查询回第一页', async () => {
+  it('改日期与换用户自动查询回首页，后续翻页使用最新条件', async () => {
     await openUserView();
-    await queryUser('101');
+    await selectUser('101');
     await screen.findByText('user-101');
-    const applied = h.detail.mock.calls.at(-1)![0];
-    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     fireEvent.click(screen.getByRole('button', { name: 'next page' }));
+    await waitFor(() => expect(h.detail.mock.calls.at(-1)![0].pageNum).toBe(2));
+    await screen.findByText('user-101');
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     await waitFor(() =>
       expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
-        ...applied,
-        pageNum: 2,
+        userId: '101',
+        dtStart: '20261101',
+        dtEnd: '20261102',
+        pageNum: 1,
       }),
     );
     await screen.findByText('user-101');
+    fireEvent.click(screen.getByRole('button', { name: 'next page' }));
+    await waitFor(() =>
+      expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
+        dtStart: '20261101',
+        dtEnd: '20261102',
+        pageNum: 2,
+      }),
+    );
     await selectUser('202');
     expect(screen.queryByText('user-101')).toBeNull();
-    fireEvent.click(queryButton());
     await screen.findByText('user-202');
     expect(h.detail.mock.calls.at(-1)![0]).toMatchObject({
       userId: '202',
@@ -473,6 +509,7 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('未匹配的搜索文字不视为已选用户，不发全量或猜测 ID 的统计查询', async () => {
     await openUserView();
+    fireEvent.click(screen.getByRole('button', { name: 'change dates' }));
     fireEvent.mouseDown(userInput());
     fireEvent.change(userInput(), { target: { value: 'missing-account' } });
     await waitFor(() =>
@@ -487,9 +524,48 @@ describe('下一版本用户 Token 消耗查询', () => {
     expect(h.detail).toHaveBeenCalledTimes(1);
   });
 
+  it('中文组词期间不搜索，确认并停止输入 300ms 后才匹配用户并自动查询', async () => {
+    await openUserView();
+    h.users.mockResolvedValueOnce(
+      userPage([{ id: '101', userName: '张三', nickName: '' }]),
+    );
+    vi.useFakeTimers();
+    try {
+      const input = userInput();
+      fireEvent.mouseDown(input);
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: 'zhang' } });
+      await act(async () => vi.advanceTimersByTimeAsync(500));
+      fireEvent.change(input, { target: { value: '张' } });
+      await act(async () => vi.advanceTimersByTimeAsync(500));
+      expect(h.users).not.toHaveBeenCalled();
+      expect(h.detail).toHaveBeenCalledTimes(1);
+
+      fireEvent.compositionEnd(input, { data: '张' });
+      await act(async () => vi.advanceTimersByTimeAsync(200));
+      fireEvent.change(input, { target: { value: '张三' } });
+      await act(async () => vi.advanceTimersByTimeAsync(299));
+      expect(h.users).not.toHaveBeenCalled();
+      await act(async () => vi.advanceTimersByTimeAsync(1));
+      expect(h.users).toHaveBeenCalledTimes(1);
+      expect(h.users).toHaveBeenLastCalledWith(
+        {
+          pageNo: 1,
+          pageSize: 20,
+          queryFilter: { userName: '张三' },
+        },
+        expect.anything(),
+      );
+      expect(screen.getByText('user-101')).toBeInTheDocument();
+      expect(h.detail).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('清空选中用户立即清理统计对象和旧数据', async () => {
     await openUserView();
-    await queryUser('101');
+    await selectUser('101');
     await screen.findByText('user-101');
     expect(
       screen.getByText(/PC.Pages.ModelMonitor.activeUserQuery account-101/),
@@ -503,11 +579,12 @@ describe('下一版本用户 Token 消耗查询', () => {
     expect(h.detail).toHaveBeenCalledTimes(2);
   });
 
-  it('唯一命中自动选中；多个命中必须从下拉选择，搜索新用户先清理原选择', async () => {
+  it('唯一命中自动查询一次；多个命中必须从下拉选择，搜索新用户先清理原选择', async () => {
     await openUserView();
     await selectUser('101');
     expect(queryButton()).toBeEnabled();
-    expect(h.detail).toHaveBeenCalledTimes(1);
+    await screen.findByText('user-101');
+    expect(h.detail).toHaveBeenCalledTimes(2);
     h.users.mockResolvedValueOnce(
       userPage([
         { id: '101', userName: 'account-101', nickName: '' },
@@ -530,8 +607,8 @@ describe('下一版本用户 Token 消耗查询', () => {
         selector: '.ant-select-selection-item',
       }),
     ).toBeInTheDocument();
-    fireEvent.click(queryButton());
     await screen.findByText('user-202');
+    expect(h.detail).toHaveBeenCalledTimes(3);
     expect(h.summary.mock.calls.at(-1)![0].userId).toBe('202');
   });
 
@@ -573,7 +650,6 @@ describe('下一版本用户 Token 消耗查询', () => {
       queryFilter: { userName: 'account' },
     });
     fireEvent.click(second);
-    fireEvent.click(queryButton());
     await screen.findByText('user-202');
   });
 
@@ -617,7 +693,6 @@ describe('下一版本用户 Token 消耗查询', () => {
       screen.getByRole('button', { name: 'PC.Pages.ModelMonitor.retry' }),
     );
     await screen.findByTitle('phone-user');
-    fireEvent.click(queryButton());
     await screen.findByText('user-9007199254740993');
     expect(h.summary.mock.calls.at(-1)![0].userId).toBe('9007199254740993');
   });
@@ -636,10 +711,10 @@ describe('下一版本用户 Token 消耗查询', () => {
         resolveDetail = resolve;
       }),
     );
-    await queryUser('101');
+    await selectUser('101');
     await waitFor(() => expect(h.detail).toHaveBeenCalledTimes(2));
     const signal = h.detail.mock.calls.at(-1)![1].signal as AbortSignal;
-    await queryUser('202');
+    await selectUser('202');
     await screen.findByText('user-202');
     expect(signal.aborted).toBe(true);
     await act(async () => {
@@ -652,10 +727,10 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('查询失败清空旧数据并可重试，不把失败展示成零消耗', async () => {
     await openUserView();
-    await queryUser('101');
+    await selectUser('101');
     await screen.findByText('user-101');
     h.summary.mockRejectedValueOnce(new Error('offline'));
-    await queryUser('202');
+    await selectUser('202');
     await screen.findByText('PC.Pages.ModelMonitor.queryFailed');
     expect(screen.queryByText('user-101')).toBeNull();
     expect(
@@ -671,7 +746,7 @@ describe('下一版本用户 Token 消耗查询', () => {
   it('业务失败同样可重试；成功且无消费才展示零和空明细', async () => {
     await openUserView();
     h.detail.mockResolvedValueOnce({ code: '4000', data: null });
-    await queryUser('303');
+    await selectUser('303');
     await screen.findByText('PC.Pages.ModelMonitor.queryFailed');
     h.summary.mockResolvedValueOnce(
       ok({ consumption: null, sales: { totalInputTokens: 900 } }),
@@ -688,7 +763,7 @@ describe('下一版本用户 Token 消耗查询', () => {
 
   it('重置回平台统计并清理用户筛选，卸载取消在途请求', async () => {
     await openUserView();
-    await queryUser('101');
+    await selectUser('101');
     await screen.findByText('user-101');
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.reset' }),

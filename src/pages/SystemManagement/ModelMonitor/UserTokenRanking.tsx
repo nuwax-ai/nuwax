@@ -48,8 +48,19 @@ export default function UserTokenRanking({
           allowClear={false}
           format="YYYYMMDD"
           onChange={(value) => {
-            if (value?.[0] && value[1])
-              setDates([dayjs(value[0].valueOf()), dayjs(value[1].valueOf())]);
+            if (value?.[0] && value[1]) {
+              const nextDates: [Dayjs, Dayjs] = [
+                dayjs(value[0].valueOf()),
+                dayjs(value[1].valueOf()),
+              ];
+              setDates(nextDates);
+              setQuery((current) => ({
+                ...current,
+                dtStart: nextDates[0].format('YYYYMMDD'),
+                dtEnd: nextDates[1].format('YYYYMMDD'),
+                pageNum: 1,
+              }));
+            }
           }}
         />
         <div className="flex-1" />
