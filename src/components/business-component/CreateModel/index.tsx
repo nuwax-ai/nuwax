@@ -326,6 +326,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
       Pick<ModelSaveParams, 'apiInfoList'>;
     const payload = {
       ...formValues,
+      // 编辑接口可能忽略 null 更新，清空时显式写 0 才能解除旧限额。
+      tokenLimit: formValues.tokenLimit ?? 0,
       apiInfoList: normalizeApiInfoUseProxy(formValues.apiInfoList),
     };
     if (mode === CreateUpdateModeEnum.Create) {
@@ -361,13 +363,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
   /** 未匹配到列表内供应商时，禁用名称 / 标识 / 介绍（须先选供应商） */
   const supplierModelFieldsDisabled = !currentProvider;
 
-  /** 可选协议：若有供应商且 apiInfo 可解析，则收窄为支持的协议列表 */
+  /** 供应商目录尚未提供 Responses 地址时，也允许手动配置该协议。 */
   const providerApiProtocolSelectOptions = useMemo(() => {
     const restriction = supplierResolvableProtocols(currentProvider?.apiInfo);
     if (!restriction) return MODEL_API_PROTOCOL_LIST;
 
-    let filtered = MODEL_API_PROTOCOL_LIST.filter((x) =>
-      restriction.has(x.value),
+    let filtered = MODEL_API_PROTOCOL_LIST.filter(
+      (x) =>
+        restriction.has(x.value) || x.value === ModelApiProtocolEnum.Responses,
     );
     const current = apiProtocolWatch as ModelApiProtocolEnum | undefined;
     if (current && !filtered.some((o) => o.value === current)) {
@@ -643,6 +646,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
     runTestConnectivity({
       ...values,
+      tokenLimit: values.tokenLimit ?? 0,
       apiInfoList: normalizeApiInfoUseProxy(values.apiInfoList),
       id,
       spaceId,
