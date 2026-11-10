@@ -94,7 +94,7 @@ git add $SUB micro-frontends/$APP/adapter.json micro-frontends/$APP/adapter.patc
 注意：
 
 - **不要用 `git apply --reject`** 重制：它生成的 `*.rej` 会被 `git add -A` 带进 patch（2026-10-09 曾混入 19 个 `.rej`，patch 体积翻倍）。现在 `sync:micro-apps` 与 `doctor` 都会拒绝含 `*.rej`/`*.orig` 的 patch。
-- 上游改了 overlay 覆盖的同名文件时，`upgrade:micro-apps` 默认中止；审查 overlay 并同步上游改动后再加 `--allow-overlay-changes`。
+- 上游改了 overlay 覆盖的同名文件时，单独跑 `upgrade:micro-apps` 默认中止；审查 overlay 并同步上游改动后再加 `--allow-overlay-changes`。`deploy_test_clean.sh` 会带上该参数，让子模块继续快进到配置分支的远端。
 - 新增文件优先放 `overlay/`（整文件复制，永不冲突），patch 只承载对上游已有文件的修改。
 
 ## 5. 合并分支时的子模块冲突

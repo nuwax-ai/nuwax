@@ -119,7 +119,7 @@ origin/test / gitlab/test → 相同产物 SHA（父提交为最终目标源码�
 本节维护当前规则；初版方案中的未完成后续项见 [快速通道计划](../plans/20261014-deploy-test-fast-lane-plan.md)，已完成的调整过程通过 Git 查询。
 
 1. **质量门默认开启。** 同事直接推到 gitlab/dev 的提交可能尚未验证，快速通道负责检查真正交付的组合源码。终端只打印测试汇总与耗时，详细输出保存在 Git 公共目录的 `nuwax-deploy/gate-last.log`；失败展示日志尾部并保留 `gate-failure.log`。输入未变或同一提交已成功时复用结果。紧急情况用 `GATE=0`，脚本会大字提示本次未经门禁。
-2. **自动更新子模块到最新。** 2026-10-15 按用户要求替代原来的「只提醒不升级」规则。起跑时只要子仓没有文件改动，未暂存的提交指针偏差就自动对齐；汇合到 test 后执行 `npm run upgrade:micro-apps -- all`，通过快进及 patch/overlay 预检后提交 gitlink 与 adapter.pin，再过质量门和构建。实际文件改动、已暂存输入、网络失败或适配冲突仍停止并保留现场，不静默退回旧版本发布。
+2. **自动更新子模块到最新。** 2026-10-15 按用户要求替代原来的「只提醒不升级」规则。起跑时只要子仓没有文件改动，未暂存的提交指针偏差就自动对齐；汇合到 test 后执行 `npm run upgrade:micro-apps -- all`（临时 test 入口为 `deploy_test_clean.sh`，追加 `--allow-overlay-changes`，子模块以 adapter.json 所配分支的远端为准），通过快进及 patch 预检后提交 gitlink 与 adapter.pin，再过质量门和构建。实际文件改动、已暂存输入、网络失败或适配冲突仍停止并保留现场，不静默退回旧版本发布。
 3. **所有提交和合并均双推送。** 2026-11-02 起，origin 固定为 GitHub、gitlab 为内网；个人、版本、dev、test 分支都同步到两端。第二端并发更新触发合并时，必须把合并结果回推第一端，并回读核对相同 HEAD；任一失败不算交付完成。
 
 ### M 端产物源：跟着本地 nuwax-mobile 的 origin 走
