@@ -130,12 +130,22 @@
   }
 
   .segmented {
-    height: 38px;
+    padding: 4px;
 
     :global {
+      .ant-segmented-group {
+        gap: 8px;
+      }
+
+      // 按文案长度分配空间，避免较长的验证码入口挤到相邻标签。
+      .ant-segmented-item {
+        flex: 1 1 auto;
+      }
+
       .ant-segmented-item-label {
-        line-height: 36px;
-        padding: 0 4px;
+        min-height: 32px;
+        line-height: 32px;
+        padding: 0 12px;
       }
     }
   }

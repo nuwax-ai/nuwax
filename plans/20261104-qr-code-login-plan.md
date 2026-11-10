@@ -16,6 +16,7 @@
 
 ## 当前依据与实现边界
 
+- 登录入口按“扫码登录、密码登录、验证码登录/注册”排列；保留密码登录为默认选中项。前端预接 `/api/tenant/config.openQrCodeLogin`（数字 `1` 开启、`0` 关闭，字段缺失默认关闭），私有化默认不开启；关闭时隐藏扫码入口且不创建或轮询二维码。后端需补租户配置与管理开关，并在二维码接口落实同一开关，本任务只改前端。
 - [现有接口](https://test-nvwa-api.xspaceagi.com/doc.html#/default/扫码登录/create_7)：`POST /api/user/qrcode/create` 返回 `sceneId/pollToken/qrContent/expireSeconds`；`GET /api/user/qrcode/status` 需要 `sceneId + pollToken`，状态只有 `WAITING / SCANNED / CONFIRMED / EXPIRED`。`POST /api/user/qrcode/scan/{sceneId}` 和 `POST /api/user/qrcode/confirm/{sceneId}` 需要手机登录态，后者须扫码用户本人操作。成功业务码为 `0000`。
 - 测试环境实际返回的二维码是 `https://{业务域}/qrlogin/{sceneId}`。`qrContent` 由后端生成，目标端原样编码；`pollToken` 只保存在发起面板内存，绝不进入二维码、跳转参数、日志或移动端。
 - 本 PR 已实现 `src/services/qrLogin.ts`、登录页扫码面板及回归测试；确认后复用既有登录收尾。普通线上浏览器与商业桌面壳走 Cookie，本地普通浏览器开发模式单独取回调试 Token。

@@ -21,6 +21,7 @@ const h = vi.hoisted(() => ({
   initI18n: vi.fn(),
   navigateAfterLogin: vi.fn(),
   search: '',
+  tenantConfig: {} as { openQrCodeLogin?: number | null },
 }));
 
 vi.mock('umi', () => ({
@@ -28,7 +29,11 @@ vi.mock('umi', () => ({
   useSearchParams: () => [new URLSearchParams(h.search)],
   useModel: (name: string) =>
     name === 'tenantConfigInfo'
-      ? { loadEnd: true, tenantConfigInfo: {}, runTenantConfig: vi.fn() }
+      ? {
+          loadEnd: true,
+          tenantConfigInfo: h.tenantConfig,
+          runTenantConfig: vi.fn(),
+        }
       : { loadMenus: h.loadMenus },
 }));
 vi.mock('@/services/i18nRuntime', () => ({
@@ -93,6 +98,7 @@ beforeEach(() => {
   originalBridge = (window as any).NuwaClawBridge;
   h.configureServerHost.mockReset().mockResolvedValue({ success: true });
   h.search = '';
+  h.tenantConfig = {};
   h.createQrCode.mockReset().mockResolvedValue({
     code: '0000',
     data: {
@@ -130,6 +136,65 @@ afterEach(() => {
 });
 
 describe('扫码登录接入现有登录页', () => {
+  beforeEach(() => {
+    h.tenantConfig = { openQrCodeLogin: 1 };
+  });
+
+  it.each([undefined, null, 0])(
+    '配置为 %s 时隐藏扫码入口，不发起二维码请求',
+    async (openQrCodeLogin) => {
+      h.tenantConfig = { openQrCodeLogin };
+      render(<Login />);
+      await screen.findByText('PC.Pages.Login.passwordLogin');
+      expect(screen.queryByText('PC.Pages.Login.qrLogin')).toBeNull();
+      expect(screen.getAllByRole('radio')).toHaveLength(2);
+      expect(h.createQrCode).not.toHaveBeenCalled();
+      expect(h.qrStatus).not.toHaveBeenCalled();
+    },
+  );
+
+  it('开启后扫码入口排首位，保留密码登录默认选中', async () => {
+    render(<Login />);
+    await screen.findByText('PC.Pages.Login.qrLogin');
+    const options = screen.getAllByRole('radio');
+    expect(options.map((option) => option.parentElement?.textContent)).toEqual([
+      'PC.Pages.Login.qrLogin',
+      'PC.Pages.Login.passwordLogin',
+      'PC.Pages.Login.codeLoginOrRegister',
+    ]);
+    expect(options[1]).toBeChecked();
+    expect(h.createQrCode).not.toHaveBeenCalled();
+  });
+
+  it('扫码中关闭配置会取消请求，回到密码登录且不消费迟到确认', async () => {
+    let resolveStatus!: (value: unknown) => void;
+    h.qrStatus.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveStatus = resolve;
+      }),
+    );
+    const { rerender } = render(<Login />);
+    fireEvent.click(await screen.findByText('PC.Pages.Login.qrLogin'));
+    await waitFor(() => expect(h.qrStatus).toHaveBeenCalledOnce());
+    const signal = h.createQrCode.mock.calls[0][0] as AbortSignal;
+    h.tenantConfig = { openQrCodeLogin: 0 };
+    rerender(<Login />);
+    expect(signal.aborted).toBe(true);
+    expect(screen.queryByText('PC.Pages.Login.qrLogin')).toBeNull();
+    expect(screen.getAllByRole('radio')[0]).toBeChecked();
+    expect(
+      screen.getByPlaceholderText('PC.Pages.Login.inputPasswordPlaceholder'),
+    ).toBeInTheDocument();
+    await act(async () => {
+      resolveStatus({
+        code: '0000',
+        data: { status: 'CONFIRMED', token: '' },
+      });
+    });
+    expect(h.finishLogin).not.toHaveBeenCalled();
+    expect(h.navigateAfterLogin).not.toHaveBeenCalled();
+  });
+
   it('确认后离开页面，迟到的会话同步不再加载菜单或跳转', async () => {
     let resolveSession!: (value: string) => void;
     h.finishLogin.mockReturnValueOnce(
