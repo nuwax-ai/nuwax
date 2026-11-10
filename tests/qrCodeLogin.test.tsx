@@ -111,7 +111,7 @@ describe('扫码登录生命周期', () => {
     await tick(3000);
     expect(oldSignal.aborted).toBe(true);
     expect(screen.getByRole('status')).toHaveTextContent(
-      'PC.Pages.Login.qrExpired',
+      'PC.Pages.Login.qrExpiredTitle',
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Pages.Login.qrRefresh' }),
@@ -180,7 +180,7 @@ describe('扫码登录生命周期', () => {
       await flush();
       expect(screen.getByRole('status')).toHaveTextContent(
         status === 'EXPIRED'
-          ? 'PC.Pages.Login.qrExpired'
+          ? 'PC.Pages.Login.qrExpiredTitle'
           : 'PC.Pages.Login.qrLoadFailed',
       );
       await tick(10000);

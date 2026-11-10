@@ -3515,6 +3515,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Login.qrScanned": "掃碼成功，請在 App 上確認登入",
   "PC.Pages.Login.qrConfirming": "登入中，請稍候…",
   "PC.Pages.Login.qrExpired": "二維碼已過期，請重新整理後再次掃碼",
+  "PC.Pages.Login.qrExpiredTitle": "二維碼已過期",
+  "PC.Pages.Login.qrClickRefresh": "請點擊重新整理",
   "PC.Pages.Login.qrRefresh": "重新整理二維碼",
   "PC.Pages.Login.qrLoadFailed": "掃碼登入暫不可用，請重新整理二維碼後重試",
   "PC.Pages.Login.missingDevToken": "登入介面未傳回本機除錯所需的 Token",

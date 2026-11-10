@@ -3514,6 +3514,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.qrScanned": "スキャンしました。アプリでログインを承認してください",
   "PC.Pages.Login.qrConfirming": "ログイン中です。お待ちください…",
   "PC.Pages.Login.qrExpired": "QRコードの期限が切れました。更新して再度スキャンしてください",
+  "PC.Pages.Login.qrExpiredTitle": "QRコードの期限が切れました",
+  "PC.Pages.Login.qrClickRefresh": "クリックして更新",
   "PC.Pages.Login.qrRefresh": "QRコードを更新",
   "PC.Pages.Login.qrLoadFailed": "QRコードログインを利用できません。更新して再試行してください",
   "PC.Pages.Login.missingDevToken": "ローカル開発に必要なトークンがログイン応答にありません",
