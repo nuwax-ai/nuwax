@@ -7,7 +7,10 @@ export async function apiCreateQrLoginCode(
   signal?: AbortSignal,
 ): Promise<RequestResponse<QrLoginCode>> {
   await hostBridge.auth.beginLogin();
-  signal?.throwIfAborted();
+  // 搜狗等旧内核可能没有 throwIfAborted，仍需阻止已取消的登录请求。
+  if (signal?.aborted) {
+    throw signal.reason ?? new DOMException('扫码登录已取消', 'AbortError');
+  }
   return request('/api/user/qrcode/create', {
     method: 'POST',
     signal,
