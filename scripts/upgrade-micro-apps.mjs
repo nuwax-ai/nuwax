@@ -238,7 +238,16 @@ export function omitUnavailablePatchFiles(patch, existingFiles) {
       kept.push(section);
       continue;
     }
-    const target = section.match(/^diff --git a\/(\S+) b\/(\S+)/)?.[2];
+    const paths = section.match(/^diff --git a\/(\S+) b\/(\S+)/);
+    const target = paths?.[2];
+    // 纯重命名的 b/ 路径在目标树上本来就不存在。只要 a/ 还在，就要留下，
+    // 让 overlay 能盖住原文件名（例如 vite.config.ts → vite.upstream.config.ts）。
+    const renameFrom = section.match(/^rename from (\S+)/m)?.[1];
+    if (renameFrom) {
+      if (!present.has(renameFrom)) dropped.push(renameFrom);
+      else kept.push(section);
+      continue;
+    }
     const isNewFile =
       /^new file mode /m.test(section) || /^--- \/dev\/null$/m.test(section);
     if (target && !isNewFile && !present.has(target)) {
@@ -275,6 +284,84 @@ export function keepRemoteConflictSides(source) {
     throw new Error('补丁冲突标记无法按远端代码取舍');
   }
   return dropUnusedNamedImports(resolved);
+}
+
+/**
+ * 冲突段取远端后，补丁加进来的 import 可能整段被丢掉，而后面能贴上的调用还在。
+ * 这些名字仍被使用时把对应 import 补回去；没人用的不加，避免和「删掉无用导入」对着干。
+ *
+ * @param {string} source 冲突已经按远端取舍后的文件
+ * @param {string} patchSection 该文件在补丁里的那一段
+ * @returns {string}
+ */
+export function restoreUsedPatchImports(source, patchSection) {
+  const added = String(patchSection)
+    .split('\n')
+    .filter((line) => line.startsWith('+import ') || line.startsWith('+import{'))
+    .map((line) => line.slice(1));
+  let text = source.endsWith('\n') || source === '' ? source : `${source}\n`;
+  for (const statement of added) {
+    const names = importBindingNames(statement).filter((name) => {
+      const body = text
+        .split('\n')
+        .filter((line) => !line.startsWith('import ') && !line.startsWith('import{'))
+        .join('\n');
+      if (!new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(body))
+        return false;
+      return !new RegExp(
+        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+      ).test(importLines(text));
+    });
+    if (!names.length || text.includes(statement)) continue;
+    text = insertImport(text, narrowImport(statement, names));
+  }
+  return text;
+}
+
+function importLines(source) {
+  return source
+    .split('\n')
+    .filter((line) => line.startsWith('import ') || line.startsWith('import{'))
+    .join('\n');
+}
+
+function importBindingNames(statement) {
+  const named = statement.match(/\{([^}]+)\}/);
+  if (named) {
+    return named[1]
+      .split(',')
+      .map((part) => part.trim().split(/\s+as\s+/).pop().trim())
+      .filter(Boolean);
+  }
+  const fallback = statement.match(/^import\s+(?!type\b)([A-Za-z_$][\w$]*)\s+from\b/);
+  return fallback ? [fallback[1]] : [];
+}
+
+function narrowImport(statement, names) {
+  if (!statement.includes('{')) return statement;
+  return statement.replace(/\{[^}]+\}/, `{ ${names.join(', ')} }`);
+}
+
+function insertImport(source, statement) {
+  const lines = source.split('\n');
+  let lastImport = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (/^import[\s{]/.test(lines[index])) lastImport = index;
+    else if (lastImport >= 0 && lines[index].trim() !== '') break;
+  }
+  lines.splice(lastImport + 1, 0, statement);
+  return lines.join('\n');
+}
+
+function patchSectionFor(patch, file) {
+  return (
+    String(patch)
+      .split(/(?=^diff --git )/m)
+      .find((section) => {
+        const paths = section.match(/^diff --git a\/(\S+) b\/(\S+)/);
+        return paths?.[1] === file || paths?.[2] === file;
+      }) ?? ''
+  );
 }
 
 /** 冲突段改回远端后，补丁引进但已不再使用的具名导入删掉，避免产物编译报未使用。 */
@@ -359,7 +446,14 @@ async function rebasePatchOnto(
       for (const file of files) {
         const fullPath = path.join(work, file);
         const text = await fs.readFile(fullPath, 'utf8');
-        await fs.writeFile(fullPath, keepRemoteConflictSides(text));
+        // 远端赢了冲突段之后，补丁里仍被调用的导入要补回，否则产物能贴上补丁但编不过。
+        await fs.writeFile(
+          fullPath,
+          restoreUsedPatchImports(
+            keepRemoteConflictSides(text),
+            patchSectionFor(filtered.patch, file),
+          ),
+        );
       }
       log(
         `[upgrade] 补丁与远端冲突，冲突段采用配置分支远端代码：${files.join(

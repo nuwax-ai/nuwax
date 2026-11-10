@@ -12,6 +12,7 @@ import {
 import {
   keepRemoteConflictSides,
   omitUnavailablePatchFiles,
+  restoreUsedPatchImports,
   parseUpgradeArguments,
   upgradeMicroApps as performUpgradeMicroApps,
 } from '../../scripts/upgrade-micro-apps.mjs';
@@ -970,13 +971,46 @@ test('omitUnavailablePatchFiles 只去掉目标上不存在的修改，保留新
     '+++ b/added.txt',
     '@@ -0,0 +1 @@',
     '+added',
+    'diff --git a/vite.config.ts b/vite.upstream.config.ts',
+    'similarity index 100%',
+    'rename from vite.config.ts',
+    'rename to vite.upstream.config.ts',
+    'diff --git a/gone.config.ts b/gone.upstream.config.ts',
+    'similarity index 100%',
+    'rename from gone.config.ts',
+    'rename to gone.upstream.config.ts',
     '',
   ].join('\n');
-  const result = omitUnavailablePatchFiles(patch, ['keep.txt']);
-  assert.deepEqual(result.dropped, ['missing.txt']);
+  const result = omitUnavailablePatchFiles(patch, ['keep.txt', 'vite.config.ts']);
+  assert.deepEqual(result.dropped, ['missing.txt', 'gone.config.ts']);
   assert.match(result.patch, /b\/keep\.txt/);
   assert.match(result.patch, /b\/added\.txt/);
-  assert.doesNotMatch(result.patch, /missing\.txt/);
+  assert.match(result.patch, /rename to vite\.upstream\.config\.ts/);
+  assert.doesNotMatch(result.patch, /missing\.txt|gone\.config\.ts/);
+});
+
+test('冲突丢掉的导入在名字仍被使用时补回', () => {
+  const resolved = [
+    "import { useState } from 'react';",
+    'getMessageInputRoot();',
+    '',
+  ].join('\n');
+  const section = [
+    'diff --git a/src/App.tsx b/src/App.tsx',
+    '--- a/src/App.tsx',
+    '+++ b/src/App.tsx',
+    '@@ -1,3 +1,4 @@',
+    "+import { getMessageInputRoot, unusedHelper } from './hostRuntime';",
+    " import { useState } from 'react';",
+    '',
+  ].join('\n');
+  const restored = restoreUsedPatchImports(resolved, section);
+  assert.match(
+    restored,
+    /import \{ getMessageInputRoot \} from '\.\/hostRuntime';/,
+  );
+  assert.doesNotMatch(restored, /unusedHelper/);
+  assert.equal(restoreUsedPatchImports(restored, section), restored);
 });
 
 test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分支移动 pin 并重算补丁', async (t) => {
@@ -1007,6 +1041,10 @@ test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分�
       '@@ -1 +1 @@',
       '-gone',
       '+host',
+      'diff --git a/nuwax-im-web/marker.txt b/nuwax-im-web/marker.upstream.txt',
+      'similarity index 100%',
+      'rename from nuwax-im-web/marker.txt',
+      'rename to nuwax-im-web/marker.upstream.txt',
       '',
     ].join('\n'),
   );
@@ -1026,6 +1064,7 @@ test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分�
     'utf8',
   );
   assert.match(remade, /\+adapted fixed main/);
+  assert.match(remade, /rename to nuwax-im-web\/marker\.upstream\.txt/);
   assert.doesNotMatch(remade, /missing\.txt/);
   assert.ok(logs.some((line) => /按 stable 切换子模块/.test(line)));
   assert.ok(logs.some((line) => /missing\.txt/.test(line)));

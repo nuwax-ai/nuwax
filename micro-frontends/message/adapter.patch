@@ -1,8 +1,13 @@
 diff --git a/nuwax-im-web/src/App.tsx b/nuwax-im-web/src/App.tsx
-index f5bca2e..4002bab 100644
+index f5bca2e..fdc6a2d 100644
 --- a/nuwax-im-web/src/App.tsx
 +++ b/nuwax-im-web/src/App.tsx
-@@ -139,13 +139,13 @@ function Shell() {
+@@ -1,3 +1,4 @@
++import { getMessageElementById, getMessageInputRoot, getMessagePortalRoot } from './hostRuntime';
+ import { useEffect, useLayoutEffect, useRef } from 'react';
+ import { Alert, App as AntApp } from 'antd';
+ import { isPlatformMode } from './authMode';
+@@ -139,13 +140,13 @@ function Shell() {
      const opts = { capture: true, passive: true } as const;
      window.addEventListener('focus', onLooking);
      document.addEventListener('visibilitychange', onLooking);
@@ -20,7 +25,7 @@ index f5bca2e..4002bab 100644
      };
    }, []);
  
-@@ -266,7 +266,7 @@ function Shell() {
+@@ -266,7 +267,7 @@ function Shell() {
     * （开发态热更新、或将来某次改动删掉了 HTML 里那段），不该为此抛错。
     */
    useLayoutEffect(() => {
@@ -29,7 +34,7 @@ index f5bca2e..4002bab 100644
    }, []);
  
    /**
-@@ -366,7 +366,7 @@ function Shell() {
+@@ -366,7 +367,7 @@ function Shell() {
  
  export default function App() {
    return (
@@ -1203,6 +1208,34 @@ index 0000000..f3365d9
 +    },
 +  };
 +}
+diff --git a/nuwax-im-web/src/lib/clipboard.ts b/nuwax-im-web/src/lib/clipboard.ts
+index 11e5901..880d64c 100644
+--- a/nuwax-im-web/src/lib/clipboard.ts
++++ b/nuwax-im-web/src/lib/clipboard.ts
+@@ -1,3 +1,4 @@
++import { getMessagePortalRoot } from '../hostRuntime';
+ /**
+  * ★把一段文本写进剪贴板（DEV-197 的「复制群号」）。
+  *
+@@ -141,7 +142,9 @@ function domCopy(text: string): boolean {
+   ta.style.top = '-1000px';
+   ta.style.left = '-1000px';
+   ta.style.opacity = '0';
+-  document.body.appendChild(ta);
++  // 嵌入宿主时临时节点必须挂在消息根上，不能挂到外层 document.body。
++  const container = getMessagePortalRoot();
++  container.appendChild(ta);
+   try {
+     ta.select();
+     // ★iOS Safari 只认 setSelectionRange，光 select() 选不中。
+@@ -150,6 +153,6 @@ function domCopy(text: string): boolean {
+   } finally {
+     // ★finally：中间任何一步抛了，临时节点都必须走 —— 否则它会一直挂在 body 上
+     //   （每次点击泄漏一个，且它会跟着页面被截图/被无障碍树读到）。
+-    document.body.removeChild(ta);
++    container.removeChild(ta);
+   }
+ }
 diff --git a/nuwax-im-web/src/lib/conversationTasks.test.ts b/nuwax-im-web/src/lib/conversationTasks.test.ts
 new file mode 100644
 index 0000000..04c32a3
@@ -3258,3 +3291,7 @@ index fcf1148..005e871 100644
      "src/lib/convFiles.test.ts",
      "src/lib/convFilesCache.test.ts",
      "src/lib/redirectUrl.test.ts",
+diff --git a/nuwax-im-web/vite.config.ts b/nuwax-im-web/vite.upstream.config.ts
+similarity index 100%
+rename from nuwax-im-web/vite.config.ts
+rename to nuwax-im-web/vite.upstream.config.ts
