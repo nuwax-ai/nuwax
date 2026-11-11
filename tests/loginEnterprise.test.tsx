@@ -711,6 +711,47 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
     },
   );
 
+  it('滑块完成先收起弹窗、稍后返回参数时，仍自动完成同一次登录', async () => {
+    h.realPasswordRequests = true;
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      h.apiPasswordLogin
+        .mockRejectedValueOnce(new Error('校验参数异常'))
+        .mockResolvedValueOnce({ data: { token: 'slider-login-token' } });
+      await openAccount();
+      await act(() => vi.advanceTimersByTimeAsync(5100));
+      respondToClick = false;
+      await submitPassword();
+      const sdk = instances[0].sdk;
+      const first = sdk.captchaVerifyCallback('risk-token');
+      await act(() => vi.advanceTimersByTimeAsync(800));
+      await expect(first).resolves.toEqual({
+        captchaResult: false,
+        bizResult: false,
+      });
+      sdk.getInstance({ destroyCaptcha: instances[0].destroy });
+      const popup = document.createElement('div');
+      popup.id = 'aliyunCaptcha-window-popup';
+      Object.defineProperty(popup, 'offsetWidth', { value: 360 });
+      document.body.appendChild(popup);
+      await act(() => vi.advanceTimersByTimeAsync(300));
+      // SDK 完成滑动后先收起弹窗，参数回调仍在等待网络返回。
+      popup.remove();
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      const completed = sdk.captchaVerifyCallback('slider-token');
+      await act(() => vi.advanceTimersByTimeAsync(2400));
+      await expect(completed).resolves.toEqual({
+        captchaResult: true,
+        bizResult: true,
+      });
+      expect(instances[0].click).toHaveBeenCalledOnce();
+      expect(h.apiPasswordLogin).toHaveBeenCalledTimes(2);
+      expect(h.finishLogin).toHaveBeenCalledWith('slider-login-token');
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it('关闭二次验证弹窗会取消本次登录，迟到的滑块参数不再发请求', async () => {
     h.realPasswordRequests = true;
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -732,6 +773,10 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
       Object.defineProperty(popup, 'offsetWidth', { value: 360 });
       document.body.appendChild(popup);
       await act(() => vi.advanceTimersByTimeAsync(300));
+      const close = document.createElement('button');
+      close.id = 'aliyunCaptcha-btn-close';
+      popup.appendChild(close);
+      fireEvent.click(close);
       popup.remove();
       await act(() => vi.advanceTimersByTimeAsync(300));
       await sdk.captchaVerifyCallback('late-slider-token');

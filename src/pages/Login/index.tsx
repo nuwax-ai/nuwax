@@ -151,6 +151,7 @@ const Login: React.FC = () => {
    * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
+  const captchaPopupCancelCleanupRef = useRef<(() => void) | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
   /** SDK 已交出实例，且已等待初始化后的安全间隔。 */
   const captchaReadyRef = useRef(false);
@@ -288,6 +289,8 @@ const Login: React.FC = () => {
   );
 
   const clearCaptchaPopupWatcher = () => {
+    captchaPopupCancelCleanupRef.current?.();
+    captchaPopupCancelCleanupRef.current = null;
     if (captchaPopupWatcherTimerRef.current !== null) {
       window.clearInterval(captchaPopupWatcherTimerRef.current);
       captchaPopupWatcherTimerRef.current = null;
@@ -338,6 +341,30 @@ const Login: React.FC = () => {
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
     let hasBeenVisible = false;
+    let cancelTimer: number | undefined;
+    const cancelRound = () => {
+      if (captchaLoginRoundRef.current === round && !isVerifyingRef.current) {
+        resetCaptchaLogin(true);
+        setCaptchaGeneration((value) => value + 1);
+      }
+    };
+    const handleCancelClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.closest('#aliyunCaptcha-btn-close') ||
+          target.id === 'aliyunCaptcha-mask')
+      ) {
+        // 先让 SDK 完成关闭事件，再销毁实例，避免其事件处理访问已移除节点。
+        window.clearTimeout(cancelTimer);
+        cancelTimer = window.setTimeout(cancelRound, 0);
+      }
+    };
+    document.addEventListener('click', handleCancelClick, true);
+    captchaPopupCancelCleanupRef.current = () => {
+      window.clearTimeout(cancelTimer);
+      document.removeEventListener('click', handleCancelClick, true);
+    };
 
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
       const popupEl = document.getElementById('aliyunCaptcha-window-popup');
@@ -351,19 +378,14 @@ const Login: React.FC = () => {
         hasBeenVisible = true;
       }
 
-      // 关闭或超时后释放本次登录；二次验证为 SDK 切换资源预留等待时间。
-      const isClosedAfterOpen = hasBeenVisible && !isVisible;
+      // 弹窗收起也可能是滑动完成，不能据此取消等待中的验证回调。
       const isInitTimeout =
         !hasBeenVisible &&
         Date.now() - startedAt > (round.awaitingSecondary ? 12000 : 3000);
       const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
 
-      if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
-        if (captchaLoginRoundRef.current === round && !isVerifyingRef.current) {
-          resetCaptchaLogin(true);
-          // 放弃一轮后重建实例，下一次点击不能接收上一轮迟到的 SDK 回调。
-          setCaptchaGeneration((value) => value + 1);
-        }
+      if (isInitTimeout || isMaxTimeout) {
+        cancelRound();
         clearCaptchaPopupWatcher();
       }
     }, 300);
