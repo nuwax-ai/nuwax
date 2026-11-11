@@ -51,11 +51,15 @@ const IMChannel: React.FC = () => {
     try {
       const res = await apiIMConfigChannelStatistics({ spaceId });
       if (res?.code === SUCCESS_CODE && res.data) {
-        setPlatformList(res.data);
-        // 默认选中第一个平台
+        // 女娲消息不是外部渠道配置项，统计接口会带回，本页不展示。
+        const channels = res.data?.filter(
+          (item) => item.channel !== 'nuwax_im',
+        );
+        setPlatformList(channels);
+        // 默认选中过滤后的第一个平台
         setPlatform((prev) => {
-          if (!prev && res.data.length > 0) {
-            return res.data[0].channel as IMPlatformEnum;
+          if (!prev && channels.length > 0) {
+            return channels[0].channel as IMPlatformEnum;
           }
           return prev;
         });
