@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="nuwax-build-version" content="3.0.5"><meta name="nuwax-build-at" content="2026-10-30T12:43:41.483Z"><meta name="nuwax-build-git-hash" content="6df09f4c2"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta name="nuwax-build-version" content="3.1.0"><meta name="nuwax-build-at" content="2026-11-11T14:05:31.889Z"><meta name="nuwax-build-git-hash" content="cf7edeb17"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
 <link rel="shortcut icon" href="data:,">
-<link rel="stylesheet" href="/umi.9f78366d.css">
+<link rel="stylesheet" href="/umi.3d39ef2b.css">
 <script type="text/javascript">
         (function () {
           try {
@@ -35,6 +35,128 @@
 				const { protocol, host, href, hash } = window.location;
 				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
 				const baseUrl = protocol + '//' + host;
+        // 手机邀请和旧 Web 登录回跳统一转换到 M 站，并携带原始邀请码。
+        const inviteRedirect = (function getSpaceInviteEntryRedirect(href, mobile) {
+  try {
+    const current = new URL(href);
+    const mobileInvite = "/subpackages/pages/space-invite/space-invite";
+    const mobileLogin = "/subpackages/pages/login/login";
+    const toMobile = (url) => {
+      if (url.origin !== current.origin) return null;
+      const match = url.pathname.match(/^\/invite\/space\/([^/]+)\/?$/);
+      if (match) {
+        const query = new URLSearchParams(url.search);
+        query.set("code", decodeURIComponent(match[1]));
+        return mobileInvite + "?" + query.toString();
+      }
+      if (url.pathname === "/m/" && url.hash.startsWith("#" + mobileInvite + "?"))
+        return url.hash.substring(1);
+      return null;
+    };
+    if (mobile) {
+      const invite = toMobile(current);
+      if (invite && current.pathname !== "/m/")
+        return current.origin + "/m/#" + invite;
+      if (/^\/(?:login|verify-code|set-password)\/?$/.test(current.pathname)) {
+        const redirect = current.searchParams.get("redirect");
+        const target = redirect ? toMobile(new URL(redirect, current.origin)) : null;
+        if (target) {
+          const query = new URLSearchParams(current.search);
+          query.set("redirect", target);
+          return current.origin + "/m/#" + mobileLogin + "?" + query.toString();
+        }
+      }
+    } else if (current.pathname === "/m/" && current.hash.startsWith("#" + mobileInvite + "?")) {
+      const query = new URLSearchParams(
+        current.hash.substring(current.hash.indexOf("?") + 1)
+      );
+      const code = query.get("code");
+      if (code) {
+        query.delete("code");
+        return current.origin + "/invite/space/" + encodeURIComponent(code) + (query.size ? "?" + query.toString() : "");
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+})(href, isMobile);
+        if (inviteRedirect) { window.location.replace(inviteRedirect); return; }
+        // 登录二维码的打开方统一使用 M 站确认；手机 Cookie 属于手机自己的账号。
+        const qrLoginRedirect = (function getQrLoginEntryRedirect(href) {
+  try {
+    const current = new URL(href);
+    if (!/^https?:$/.test(current.protocol) || current.username || current.password)
+      return null;
+    const page = "/subpackages/pages/qr-login/qr-login";
+    if (/^\/m\/?$/.test(current.pathname) && current.hash.split("?")[0] === "#" + page)
+      return current.href;
+    const match = current.pathname.match(/^\/qrlogin\/([^/]+)\/?$/);
+    if (!match) return null;
+    let sceneId = "";
+    try {
+      sceneId = decodeURIComponent(match[1]);
+    } catch {
+    }
+    if (sceneId === "." || sceneId === ".." || !/^[A-Za-z0-9][A-Za-z0-9._~-]{0,255}$/.test(sceneId))
+      sceneId = "";
+    const query = new URLSearchParams({ sceneId, origin: current.origin });
+    return current.origin + "/m/#" + page + "?" + query.toString();
+  } catch {
+    return null;
+  }
+})(href);
+        if (qrLoginRedirect) {
+          if (qrLoginRedirect !== href) window.location.replace(qrLoginRedirect);
+          return;
+        }
+        // IM 直达只搬原始 query。spaceId 换成群会话由 M 站承接页在登录后完成。
+        const imEntryRedirect = (function getImEntryRedirect(href, mobile) {
+  try {
+    const current = new URL(href);
+    if (current.protocol !== "http:" && current.protocol !== "https:")
+      return null;
+    const path = current.pathname;
+    if (mobile) {
+      if (path !== "/instant-message" && path !== "/instant-message/")
+        return null;
+      const incoming = new URLSearchParams(current.search);
+      if (!["invite", "convId", "userId", "agentId", "groupNo", "spaceId"].some(
+        (key) => incoming.has(key)
+      )) {
+        return null;
+      }
+      return current.origin + "/m/#/subpackages/pages/im-invite/im-invite" + current.search + (current.hash ? "&__imEntryHash=" + encodeURIComponent(current.hash) : "");
+    }
+    if (path !== "/m" && path !== "/m/") return null;
+    const body = current.hash.slice(1);
+    const fragmentAt = body.indexOf("#");
+    const fragment = fragmentAt >= 0 ? body.slice(fragmentAt) : "";
+    const route = fragmentAt >= 0 ? body.slice(0, fragmentAt) : body;
+    const queryAt = route.indexOf("?");
+    const hashPath = queryAt >= 0 ? route.slice(0, queryAt) : route;
+    const hashQuery = queryAt >= 0 ? route.slice(queryAt + 1) : "";
+    const query = [hashQuery, current.search.slice(1)].filter(Boolean).join("&");
+    if (hashPath === "/subpackages/pages/im-invite/im-invite") {
+      return current.origin + "/instant-message/" + (query ? "?" + query : "") + fragment;
+    }
+    const params = new URLSearchParams(query);
+    if (hashPath === "/pages/message/chat") {
+      const convId = params.get("convId");
+      if (!convId) return null;
+      return current.origin + "/instant-message/?convId=" + encodeURIComponent(convId);
+    }
+    if (hashPath === "/subpackages/pages/im-join-group/im-join-group") {
+      const groupNo = params.get("groupNo");
+      if (!groupNo) return null;
+      return current.origin + "/instant-message/?invite=" + encodeURIComponent(groupNo);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+})(href, isMobile);
+        if (imEntryRedirect) { window.location.replace(imEntryRedirect); return; }
 				const agentDetailPathMobile = '/pages/agent-detail/agent-detail'; //分包前的页面路径
 				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
 				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径
@@ -169,11 +291,11 @@
 				}
 			})();
       </script>
-<script src="/runtime.98cb6623.js"></script>
-<script src="/preload_helper.31cb9e10.js"></script>
+<script src="/runtime.86e7a21a.js"></script>
+<script src="/preload_helper.7db80617.js"></script>
 </head>
 <body>
 <div id="root"></div>
-<script src="/umi.1ef6b194.js"></script>
+<script src="/umi.70160165.js"></script>
 </body>
 </html>
