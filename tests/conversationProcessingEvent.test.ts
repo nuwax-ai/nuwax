@@ -1,4 +1,5 @@
 import { reduceProcessingEvent } from '@/features/conversation/domain/reduceProcessingEvent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
@@ -83,5 +84,30 @@ describe('reduceProcessingEvent', () => {
 
     expect(incoming.executeId).toBeUndefined();
     expect(result.processing).not.toBe(incoming);
+  });
+
+  it('部分工具更新保留原命令参数及类型', () => {
+    const previous = processing({
+      executeId: 'server-1',
+      type: AgentComponentTypeEnum.ToolCall,
+      name: 'node server.js',
+      status: ProcessingEnum.EXECUTING,
+      result: { executeId: 'server-1', input: { command: 'node server.js' } },
+    });
+    const result = reduceProcessingEvent(
+      { processingList: [previous] } as MessageInfo,
+      processing({
+        result: { executeId: 'server-1', data: '迟到日志' },
+        status: ProcessingEnum.FINISHED,
+      }),
+      (text) => text,
+    );
+    expect(result.processing).toMatchObject({
+      type: 'ToolCall',
+      name: 'node server.js',
+      result: { input: { command: 'node server.js' }, data: '迟到日志' },
+      status: ProcessingEnum.FINISHED,
+    });
+    expect(previous.result).not.toHaveProperty('data');
   });
 });

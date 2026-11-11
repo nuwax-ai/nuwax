@@ -41,6 +41,19 @@ export const getModelMonitorSummaryInputTokens = (
   group?: ModelMonitorGroupFields | null,
 ): NumericInput => group?.totalInputTokens ?? 0;
 
+/** 消耗总量 = 非缓存输入 + 缓存输入 + 输出，不包含销售统计。 */
+export const getModelMonitorSummaryTotalTokens = (
+  group?: Pick<
+    StatGroup,
+    'totalInputTokens' | 'totalCacheInputTokens' | 'totalOutputTokens'
+  > | null,
+): NumericInput =>
+  sumBigNumbers(
+    group?.totalInputTokens,
+    group?.totalCacheInputTokens,
+    group?.totalOutputTokens,
+  ).toString();
+
 /** 明细行：总输入 Token（含缓存）= 输入 + 缓存 */
 export const getModelMonitorRecordTotalInputTokens = (
   record?: ModelMonitorRecordFields | null,

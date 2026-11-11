@@ -66,6 +66,7 @@ import type {
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
+  SystemUserOptionInfo,
   SystemWebappListParams,
   SystemWebappPage,
   SystemWorkflowListParams,
@@ -79,7 +80,12 @@ import type {
   UploadResultDto,
   UserSandBoxSelectDto,
   UserStatsResult,
+  UserTokenRankDTO,
+  UserTokenRankParams,
+  UserTokenTrendDTO,
+  UserTokenTrendParams,
 } from '@/types/interfaces/systemManage';
+import { parseInt64Json } from '@/utils/parseInt64Json';
 import { request } from 'umi';
 
 // 查询用户列表
@@ -89,6 +95,19 @@ export async function apiSystemUserList(
   return request('/api/system/user/list', {
     method: 'POST',
     data,
+  });
+}
+
+/** 用户选择器保留完整 int64 ID，避免查询到舍入后的其他账号。 */
+export async function apiSearchUsageUsers(
+  data: SystemUserListParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<Page<SystemUserOptionInfo>>> {
+  return request('/api/system/user/list', {
+    method: 'POST',
+    data,
+    transformResponse: [parseInt64Json],
+    ...options,
   });
 }
 
@@ -1560,14 +1579,18 @@ export async function apiSystemRevenueDetail(
 /**
  * 获取资源统计汇总
  */
-export async function apiGetResourceStatSummary(params?: {
-  userId?: number;
-  dtStart?: string;
-  dtEnd?: string;
-}): Promise<RequestResponse<ResourceStatSummaryDTO>> {
+export async function apiGetResourceStatSummary(
+  params?: {
+    userId?: number | string;
+    dtStart?: string;
+    dtEnd?: string;
+  },
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<ResourceStatSummaryDTO>> {
   return request('/api/system/bill/resource-stat/summary', {
     method: 'GET',
     params,
+    ...options,
   });
 }
 
@@ -1576,16 +1599,41 @@ export async function apiGetResourceStatSummary(params?: {
  */
 export async function apiGetResourceStatDetail(
   params: ResourceStatDetailParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
 ): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
   return request('/api/system/bill/resource-stat/detail', {
     method: 'GET',
     params,
+    ...options,
   });
 }
 
-/**
- * 获取当前用户资源统计汇总
- */
+/** 用户 Token 消耗排名（服务端排序、分页） */
+export async function apiGetUserTokenRank(
+  params: UserTokenRankParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<PageNum<UserTokenRankDTO>>> {
+  return request('/api/system/bill/resource-stat/user-rank', {
+    method: 'GET',
+    params,
+    transformResponse: [parseInt64Json],
+    ...options,
+  });
+}
+
+export async function apiGetUserTokenTrend(
+  params: UserTokenTrendParams,
+  options?: { signal?: AbortSignal; skipErrorHandler?: boolean },
+): Promise<RequestResponse<UserTokenTrendDTO[]>> {
+  return request('/api/system/bill/resource-stat/user-trend', {
+    method: 'GET',
+    params,
+    transformResponse: [parseInt64Json],
+    ...options,
+  });
+}
+
+/** 获取当前用户资源统计汇总 */
 export async function apiGetMyResourceStatSummary(params?: {
   dtStart?: string;
   dtEnd?: string;

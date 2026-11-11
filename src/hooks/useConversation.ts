@@ -47,6 +47,8 @@ const useConversation = () => {
          * 非 '-1'）时生效，随会话创建记录（sandboxId + workspacePath）。
          */
         workspacePath?: string;
+        /** 项目外选择个人目录时，后端隐式创建常规项目的所属空间 */
+        spaceId?: number;
         // 默认智能体详情
         defaultAgentDetail?: AgentDetailDto;
         // 变量参数
@@ -91,13 +93,8 @@ const useConversation = () => {
         attach?.selectedComputerId && attach.selectedComputerId !== '-1'
           ? attach.selectedComputerId
           : undefined;
-      /**
-       * TODO(契约缺口，2026-09-10)：选个人电脑 + 自定义目录时「隐式创建常规项目 +
-       * 目录占用校验」的接口归属待后端确认。当前按假定形态实现——单次
-       * conversation/create 携带 workspacePath，由后端隐式建项目并校验占用；
-       * 若契约改为前端两步走（先 normal-project/create 再挂会话），仅需在
-       * 此处切换（全仓唯一改动点）。
-       */
+      // 项目外选择个人目录时，由后端隐式创建常规项目并校验目录占用；
+      // 空间随自定义目录透传，已有项目则只按 projectId 绑定。
       const res = await runAsyncConversationCreate({
         agentId,
         devMode: false,
@@ -125,6 +122,9 @@ const useConversation = () => {
                 : {}),
               ...(personalComputerId
                 ? { workspacePath: attach?.workspacePath || undefined }
+                : {}),
+              ...(personalComputerId && attach?.workspacePath && attach.spaceId
+                ? { spaceId: attach.spaceId }
                 : {}),
             }),
       });

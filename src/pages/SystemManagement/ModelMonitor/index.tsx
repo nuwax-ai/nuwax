@@ -1,15 +1,9 @@
 import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetResourceStatDetail,
-  apiGetResourceStatSummary,
-} from '@/services/systemManage';
 import type {
   ResourceStatDTO,
-  ResourceStatSummaryDTO,
   StatGroup,
 } from '@/types/interfaces/systemManage';
 import {
@@ -17,10 +11,10 @@ import {
   formatInteger,
   sumBigNumbersToNumber,
 } from '@/utils/numberFormat';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, message } from 'antd';
+import type { ProColumns } from '@ant-design/pro-components';
+import { Alert, Button, DatePicker, Empty, Segmented } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'umi';
 import styles from './index.less';
 import {
@@ -28,98 +22,92 @@ import {
   getModelMonitorRecordTotalInputTokens,
   getModelMonitorSummaryInputTokens,
   getModelMonitorSummaryTotalInputTokens,
+  getModelMonitorSummaryTotalTokens,
 } from './resourceStatTokenMetrics';
+import useModelMonitorStats, {
+  type ModelMonitorQuery,
+} from './useModelMonitorStats';
+import UserTokenRanking from './UserTokenRanking';
+import UserTokenTrend from './UserTokenTrend';
+import UserUsageSelect, { type UsageUser } from './UserUsageSelect';
 
 const { RangePicker } = DatePicker;
 
 const ModelMonitor: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const actionRef = useRef<ActionType>();
+  const [scope, setScope] = useState<ModelMonitorQuery['scope'] | 'rank'>(
+    'platform',
+  );
+  const [userTab, setUserTab] = useState('detail');
+  const [selectedUser, setSelectedUser] = useState<UsageUser>();
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().startOf('day'),
     dayjs().endOf('day'),
   ]);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryData, setSummaryData] = useState<ResourceStatSummaryDTO | null>(
-    null,
+  const [query, setQuery] = useState<ModelMonitorQuery | null>(() => ({
+    scope: 'platform',
+    userId: '-1',
+    dtStart: dayjs().format('YYYYMMDD'),
+    dtEnd: dayjs().format('YYYYMMDD'),
+  }));
+  const [page, setPage] = useState({ current: 1, pageSize: 15 });
+  const { data, loading, failed } = useModelMonitorStats(
+    scope === 'user' && userTab === 'trend' ? null : query,
+    page.current,
+    page.pageSize,
   );
-
-  const fetchSummary = useCallback(
-    async (start?: string, end?: string) => {
-      setSummaryLoading(true);
-      try {
-        const res = await apiGetResourceStatSummary({
-          userId: -1,
-          // type: 'SALES',
-          dtStart: start || dateRange[0].format('YYYYMMDD'),
-          dtEnd: end || dateRange[1].format('YYYYMMDD'),
-        });
-        if (res.code === SUCCESS_CODE && res.data) {
-          setSummaryData(res.data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setSummaryLoading(false);
-      }
-    },
-    [dateRange],
-  );
-
-  useEffect(() => {
-    fetchSummary();
-  }, []);
-
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      fetchSummary();
-      actionRef.current?.reload();
-    }
-  }, [location.state, fetchSummary]);
-
-  const handleSearch = useCallback(() => {
-    const start = dateRange[0].format('YYYYMMDD');
-    const end = dateRange[1].format('YYYYMMDD');
-    fetchSummary(start, end);
-    actionRef.current?.reload();
-  }, [dateRange, fetchSummary]);
-
-  const handleReset = useCallback(() => {
-    const today = dayjs().startOf('day');
-    const todayEnd = dayjs().endOf('day');
-    setDateRange([today, todayEnd]);
-    fetchSummary(today.format('YYYYMMDD'), todayEnd.format('YYYYMMDD'));
-    actionRef.current?.reset?.();
-    actionRef.current?.reload();
-  }, [fetchSummary]);
-
-  const request = async (params: any) => {
-    const { current, pageSize } = params;
-    const res = await apiGetResourceStatDetail({
-      userId: -1,
-      type: 'SALES',
-      dtStart: dateRange[0].format('YYYYMMDD'),
-      dtEnd: dateRange[1].format('YYYYMMDD'),
-      pageNum: current,
-      pageSize,
-    });
-
-    if (res.code !== SUCCESS_CODE) {
-      message.error(
-        res.message || dict('PC.Pages.GlobalModelManage.fetchDataFailed'),
+  const isUserScope = scope === 'user';
+  const applyFilters = useCallback(
+    (
+      nextScope: typeof scope,
+      user: UsageUser | undefined,
+      dates: [Dayjs, Dayjs],
+    ) => {
+      const userId = nextScope === 'user' ? user?.value : '-1';
+      setPage((previous) => ({ ...previous, current: 1 }));
+      setQuery(
+        nextScope === 'rank' || !userId
+          ? null
+          : {
+              scope: nextScope,
+              userId,
+              dtStart: dates[0].format('YYYYMMDD'),
+              dtEnd: dates[1].format('YYYYMMDD'),
+            },
       );
-      return { data: [], total: 0, success: false };
-    }
+    },
+    [],
+  );
+  const handleUserChange = useCallback(
+    (user?: UsageUser) => {
+      setSelectedUser(user);
+      applyFilters('user', user, dateRange);
+    },
+    [applyFilters, dateRange],
+  );
 
-    const data = res.data;
-    return {
-      data: data?.records || [],
-      total: data?.total || 0,
-      success: true,
-    };
+  const handleSearch = () => applyFilters(scope, selectedUser, dateRange);
+
+  const handleReset = () => {
+    const today = dayjs();
+    setScope('platform');
+    setUserTab('detail');
+    setSelectedUser(undefined);
+    setDateRange([today.startOf('day'), today.endOf('day')]);
+    setPage((previous) => ({ ...previous, current: 1 }));
+    setQuery({
+      scope: 'platform',
+      userId: '-1',
+      dtStart: today.format('YYYYMMDD'),
+      dtEnd: today.format('YYYYMMDD'),
+    });
   };
+
+  const retry = () => setQuery((current) => (current ? { ...current } : null));
+  useEffect(() => {
+    if ((location.state as { _t?: unknown } | null)?._t) retry();
+  }, [location.state]);
 
   const getSummaryMetrics = useCallback((group: StatGroup | undefined) => {
     const g =
@@ -174,8 +162,8 @@ const ModelMonitor: React.FC = () => {
   }, []);
 
   const mergedGroup: StatGroup | undefined = React.useMemo(() => {
-    const c = summaryData?.consumption;
-    const s = summaryData?.sales;
+    const c = data?.summary.consumption;
+    const s = data?.summary.sales;
     if (!c && !s) return undefined;
     const keys: (keyof StatGroup)[] = [
       'totalInputTokens',
@@ -198,11 +186,28 @@ const ModelMonitor: React.FC = () => {
       result[k] = sumBigNumbersToNumber(c?.[k], s?.[k]);
     }
     return result;
-  }, [summaryData]);
+  }, [data?.summary]);
 
-  const overviewMetrics = getSummaryMetrics(mergedGroup);
+  const currentGroup = isUserScope ? data?.summary.consumption : mergedGroup;
+  const overviewMetrics = getSummaryMetrics(currentGroup);
+  if (isUserScope)
+    overviewMetrics.unshift({
+      label: dict('PC.Pages.ModelMonitor.totalTokens'),
+      value: formatInteger(getModelMonitorSummaryTotalTokens(currentGroup)),
+    });
 
   const columns: ProColumns<ResourceStatDTO>[] = [
+    ...(isUserScope
+      ? [
+          {
+            title: dict('PC.Pages.ModelMonitor.user'),
+            dataIndex: 'userName',
+            width: 180,
+            render: (_: unknown, record: ResourceStatDTO) =>
+              record.nickName || record.userName || query?.userId || '-',
+          },
+        ]
+      : []),
     {
       title: dict('PC.Pages.ModelMonitor.colModelName'),
       dataIndex: 'targetName',
@@ -287,45 +292,174 @@ const ModelMonitor: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.ModelMonitor.pageTitle')} hideScroll>
+    <WorkspaceLayout
+      title={dict(
+        scope === 'rank'
+          ? 'PC.Pages.ModelMonitor.rankingTitle'
+          : isUserScope
+          ? 'PC.Pages.ModelMonitor.userStatsTitle'
+          : 'PC.Pages.ModelMonitor.pageTitle',
+      )}
+      hideScroll
+    >
       <div className={styles['model-monitor-container']}>
-        {/* 筛选栏 */}
-        <div className={styles['filter-bar']}>
-          <span className={styles['filter-label']}>
-            {dict('PC.Pages.ModelMonitor.timeRange')}
-          </span>
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => {
-              if (dates && dates[0] && dates[1]) {
-                setDateRange([dates[0], dates[1]]);
-              }
+        <Segmented
+          className={styles['scope-switch']}
+          options={[
+            {
+              label: dict('PC.Pages.ModelMonitor.platformScope'),
+              value: 'platform',
+            },
+            {
+              label: dict('PC.Pages.ModelMonitor.userStatsTitle'),
+              value: 'user',
+            },
+            {
+              label: dict('PC.Pages.ModelMonitor.rankingTitle'),
+              value: 'rank',
+            },
+          ]}
+          value={scope}
+          onChange={(value) => {
+            const next = value as typeof scope;
+            setScope(next);
+            setUserTab('detail');
+            applyFilters(next, selectedUser, dateRange);
+          }}
+        />
+        {scope === 'rank' ? (
+          <UserTokenRanking
+            onViewTrend={(next, user) => {
+              setScope('user');
+              setUserTab('trend');
+              setSelectedUser(user);
+              setDateRange([dayjs(next.dtStart), dayjs(next.dtEnd)]);
+              setPage((previous) => ({ ...previous, current: 1 }));
+              setQuery({ scope: 'user', ...next });
             }}
-            format="YYYYMMDD"
           />
-          <div className="flex-1" />
-          <Button type="primary" onClick={handleSearch}>
-            {dict('PC.Common.Global.query')}
-          </Button>
-        </div>
+        ) : (
+          <>
+            <div className={styles['filter-bar']}>
+              {isUserScope && (
+                <UserUsageSelect
+                  value={selectedUser}
+                  onChange={handleUserChange}
+                />
+              )}
+              <span className={styles['filter-label']}>
+                {dict('PC.Pages.ModelMonitor.timeRange')}
+              </span>
+              <RangePicker
+                value={dateRange}
+                allowClear={false}
+                onChange={(dates) => {
+                  if (dates && dates[0] && dates[1]) {
+                    const nextDates: [Dayjs, Dayjs] = [
+                      dayjs(dates[0].valueOf()),
+                      dayjs(dates[1].valueOf()),
+                    ];
+                    setDateRange(nextDates);
+                    applyFilters(scope, selectedUser, nextDates);
+                  }
+                }}
+                format="YYYYMMDD"
+              />
+              <div className="flex-1" />
+              <Button onClick={handleReset}>
+                {dict('PC.Common.Global.reset')}
+              </Button>
+              <Button
+                type="primary"
+                disabled={isUserScope && !selectedUser}
+                onClick={handleSearch}
+              >
+                {dict('PC.Common.Global.query')}
+              </Button>
+            </div>
 
-        {/* 统计卡片 */}
-        <StatMetricCardList items={overviewMetrics} loading={summaryLoading} />
-
-        {/* 明细表格 */}
-        <div className={styles['detail-section']}>
-          <XProTable<ResourceStatDTO>
-            actionRef={actionRef}
-            rowKey="id"
-            columns={columns}
-            request={request}
-            search={false}
-            onReset={handleReset}
-            fullHeight={true}
-            showQueryButtons={false}
-            scrollYOffset={30}
-          />
-        </div>
+            {isUserScope && query && (
+              <div className={styles['query-context']}>
+                {dict(
+                  'PC.Pages.ModelMonitor.activeUserQuery',
+                  `${selectedUser?.label || query.userId} (ID: ${
+                    query.userId
+                  })`,
+                  query.dtStart,
+                  query.dtEnd,
+                )}
+              </div>
+            )}
+            {isUserScope && query && (
+              <Segmented
+                className={styles['scope-switch']}
+                value={userTab}
+                onChange={(value) => setUserTab(String(value))}
+                options={[
+                  {
+                    value: 'detail',
+                    label: dict('PC.Pages.ModelMonitor.modelDetailTitle'),
+                  },
+                  {
+                    value: 'trend',
+                    label: dict('PC.Pages.ModelMonitor.trendTitle'),
+                  },
+                ]}
+              />
+            )}
+            {isUserScope && query && userTab === 'trend' ? (
+              <UserTokenTrend query={query} />
+            ) : !query ? (
+              <Empty
+                description={dict('PC.Pages.ModelMonitor.selectUserHint')}
+              />
+            ) : failed ? (
+              <Alert
+                type="error"
+                showIcon
+                message={dict('PC.Pages.ModelMonitor.queryFailed')}
+                action={
+                  <Button onClick={retry}>
+                    {dict('PC.Pages.ModelMonitor.retry')}
+                  </Button>
+                }
+              />
+            ) : (
+              <>
+                <StatMetricCardList
+                  items={overviewMetrics}
+                  loading={loading}
+                  className={isUserScope ? styles['user-metrics'] : undefined}
+                />
+                <div className={styles['detail-section']}>
+                  <XProTable<ResourceStatDTO>
+                    rowKey="id"
+                    columns={columns}
+                    dataSource={data?.records ?? []}
+                    loading={loading}
+                    pagination={{
+                      current: page.current,
+                      pageSize: page.pageSize,
+                      total: data?.total ?? 0,
+                      onChange: (current, pageSize) =>
+                        setPage({
+                          current: pageSize === page.pageSize ? current : 1,
+                          pageSize,
+                        }),
+                    }}
+                    locale={{
+                      emptyText: dict('PC.Pages.ModelMonitor.noConsumption'),
+                    }}
+                    search={false}
+                    fullHeight={true}
+                    showQueryButtons={false}
+                    scrollYOffset={30}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
     </WorkspaceLayout>
   );

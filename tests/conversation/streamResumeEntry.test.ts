@@ -3,6 +3,10 @@ import {
   useConversationStreamResume,
   type UseConversationStreamResumeOptions,
 } from '@/features/conversation/react/useConversationStreamResume';
+import {
+  __resetForTest,
+  handleHostActivityPayload,
+} from '@/services/hostVisibility';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -75,6 +79,7 @@ async function flush() {
 
 describe('实际恢复 hook 的首次进入', () => {
   beforeEach(() => {
+    __resetForTest();
     vi.useFakeTimers();
     vi.clearAllMocks();
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
@@ -88,6 +93,7 @@ describe('实际恢复 hook 的首次进入', () => {
 
   afterEach(() => {
     cleanup();
+    __resetForTest();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -112,6 +118,135 @@ describe('实际恢复 hook 的首次进入', () => {
       expect.any(Function),
       'unified-chat-session',
     );
+  });
+
+  it('锁屏断网保留半成品，网络恢复只续订一次；再次断流继续退避恢复', async () => {
+    handleHostActivityPayload({ visible: false });
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    const partial = {
+      id: 'assistant-partial',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: '已收到的输出',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const deps = options({
+      taskStatus: TaskStatus.COMPLETE,
+      messageList: [user(), partial],
+    });
+    vi.mocked(fetchConversationSnapshot).mockRejectedValue(
+      new TypeError('offline'),
+    );
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+    expect(deps.resumeStream).not.toHaveBeenCalled();
+
+    const pending = deferred<ConversationInfo>();
+    vi.mocked(fetchConversationSnapshot).mockReturnValue(pending.promise);
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(2);
+    const executing = {
+      ...snapshot(101, TaskStatus.EXECUTING),
+      messageList: [user(), partial],
+    };
+    await act(async () => pending.resolve(executing));
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+
+    vi.mocked(fetchConversationSnapshot).mockResolvedValue(executing);
+    vi.mocked(fetchConversationTaskStatus).mockResolvedValue(
+      TaskStatus.EXECUTING,
+    );
+    await act(async () => vi.mocked(deps.resumeStream).mock.calls[0][2]?.());
+    await act(async () => vi.advanceTimersByTimeAsync(2_000));
+    expect(deps.resumeStream).toHaveBeenCalledTimes(2);
+  });
+
+  it('网络恢复时原任务已经完成则同步终态，不再打开订阅', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    renderHook(() =>
+      useConversationStreamResume({
+        ...deps,
+        onConversationSnapshot,
+        onTerminalTaskStatus,
+      }),
+    );
+    await flush();
+    onConversationSnapshot.mockClear();
+    const complete = {
+      ...snapshot(101),
+      messageList: [
+        user(),
+        {
+          id: 'completed-assistant',
+          role: AssistantRoleEnum.ASSISTANT,
+          text: '任务已在断线期间完成',
+          status: MessageStatusEnum.Complete,
+        } as MessageInfo,
+      ],
+    };
+    vi.mocked(fetchConversationSnapshot).mockResolvedValue(complete);
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(onConversationSnapshot).toHaveBeenCalledWith(complete);
+    expect(deps.resumeStream).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalledWith(TaskStatus.FAILED);
+  });
+
+  it('网络恢复查询在途时切走再返回原会话，旧响应不得将当前任务标为失败', async () => {
+    const deps = options({ taskStatus: TaskStatus.COMPLETE });
+    const onTerminalTaskStatus = vi.fn();
+    const { rerender } = renderHook(
+      ({ id }) =>
+        useConversationStreamResume({
+          ...deps,
+          conversationId: id,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { id: 101 } },
+    );
+    await flush();
+    const pending = deferred<ConversationInfo>();
+    vi.mocked(fetchConversationSnapshot).mockReturnValueOnce(pending.promise);
+    act(() => window.dispatchEvent(new Event('online')));
+    rerender({ id: 202 });
+    await flush();
+    rerender({ id: 101 });
+    await flush();
+    await act(async () => pending.resolve(snapshot(101, TaskStatus.FAILED)));
+    expect(onTerminalTaskStatus).not.toHaveBeenCalledWith(TaskStatus.FAILED);
+  });
+
+  it('切走再返回原会话后，旧 sub 的关闭回调不得清除新订阅', async () => {
+    const deps = options();
+    const onTerminalTaskStatus = vi.fn();
+    const { rerender } = renderHook(
+      ({ id }) =>
+        useConversationStreamResume({
+          ...deps,
+          conversationId: id,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { id: 101 } },
+    );
+    await flush();
+    const oldClose = vi.mocked(deps.resumeStream).mock.calls[0][2]!;
+    rerender({ id: 202 });
+    await flush();
+    rerender({ id: 101 });
+    await flush();
+    expect(deps.resumeStream).toHaveBeenCalledTimes(3);
+    onTerminalTaskStatus.mockClear();
+    vi.mocked(fetchConversationSnapshot).mockClear();
+    await act(async () => oldClose());
+    act(() => window.dispatchEvent(new Event('online')));
+    await flush();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+    expect(fetchConversationSnapshot).not.toHaveBeenCalled();
+    expect(deps.resumeStream).toHaveBeenCalledTimes(3);
   });
 
   it('连续侧栏通知共用在途校验，其他会话不触发，详情终态不打开 sub', async () => {

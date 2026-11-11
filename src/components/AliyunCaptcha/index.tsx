@@ -1,18 +1,15 @@
 import {
   forwardRef,
   memo,
-  useCallback,
-  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
-  useState,
 } from 'react';
 
 interface AliyunCaptchaConfig {
   captchaSceneId: string;
   captchaPrefix: string;
-  openCaptcha?: boolean;
+  openCaptcha?: boolean | number;
 }
 
 export interface CaptchaVerifyResult {
@@ -20,10 +17,50 @@ export interface CaptchaVerifyResult {
   bizResult: boolean;
 }
 
+export interface CaptchaVerificationContext {
+  /** 配置变化或组件卸载后，等待中的业务回调也必须停止消费旧参数。 */
+  isCurrent: () => boolean;
+}
+
+interface CaptchaInstance {
+  refresh?: () => void;
+  show?: () => void;
+  destroyCaptcha?: () => void;
+}
+
+const IGNORED_RESULT: CaptchaVerifyResult = {
+  captchaResult: true,
+  bizResult: true,
+};
+
+export const CAPTCHA_SAFETY_INTERVAL_MS = 2100;
+// 首轮设备指纹采集晚于实例交付；慢网实测需要额外的首轮采集窗口。
+const CAPTCHA_INITIAL_READY_DELAY_MS = 5000;
+let initializing = false;
+const initializationQueue: Array<() => void> = [];
+
+// SDK 初始化期间会共享内部回调入口，必须等上一轮结束才能开始下一轮。
+function scheduleInitialization(start: (finished: () => void) => void) {
+  const run = () => {
+    initializing = true;
+    let finished = false;
+    start(() => {
+      if (finished) return;
+      finished = true;
+      void Promise.resolve().then(() => {
+        initializing = false;
+        initializationQueue.shift()?.();
+      });
+    });
+  };
+  if (initializing) initializationQueue.push(run);
+  else run();
+}
+
 declare global {
   interface Window {
     initAliyunCaptcha: (options: any) => void;
-    /** 验证码 initAliyunCaptcha 调用时间戳，用于保障 init 与验证 ≥2s */
+    /** SDK 交出实例的时间戳，用于保障实例就绪到验证 >2s。 */
     __captchaInitAt?: number;
   }
 }
@@ -40,13 +77,20 @@ interface AliyunCaptchaProps {
    * 验证码通过后由 SDK 调用，在此处发起业务请求。
    * 返回 captchaResult（验证码是否有效）和 bizResult（业务是否成功）给 SDK。
    */
-  onVerify: (captchaVerifyParam: string) => Promise<CaptchaVerifyResult>;
+  onVerify: (
+    captchaVerifyParam: string,
+    context: CaptchaVerificationContext,
+  ) => Promise<CaptchaVerifyResult>;
   /**
    * SDK 根据 captchaVerifyCallback 的 bizResult 回调。
    * 可用于处理业务失败时的 UI 重置，通常不需要实现。
    */
   onBizResult?: (bizResult: boolean) => void;
   onReady?: () => void;
+  onInitError?: () => void;
+  onReadyChange?: (ready: boolean) => void;
+  /** 扫码面板暂停消费验证码，重新进入账号面板时复用已初始化的实例。 */
+  active?: boolean;
 }
 
 /**
@@ -93,223 +137,215 @@ function normalizeCaptchaVerifyParam(captchaVerifyParam: any): string {
 }
 
 const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
-  ({ config, elementId, onVerify, onBizResult, onReady }, ref) => {
-    const captchaInstanceRef = useRef<any>(null);
-    const captchaReadyRef = useRef(false);
-    const readyFallbackTimerRef = useRef<number | null>(null);
-    const [captchaReady, setCaptchaReady] = useState(false);
+  (
+    {
+      config,
+      elementId,
+      onVerify,
+      onBizResult,
+      onReady,
+      onInitError,
+      onReadyChange,
+      active = true,
+    },
+    ref,
+  ) => {
+    const captchaInstanceRef = useRef<CaptchaInstance | null>(null);
+    const activeRef = useRef(active);
+    activeRef.current = active;
+    const activationRef = useRef(0);
+    const notifyReadyRef = useRef<() => void>(() => {});
+    const { captchaSceneId, captchaPrefix, openCaptcha } = config || {};
+
+    const callbacksRef = useRef({
+      onVerify,
+      onBizResult,
+      onReady,
+      onInitError,
+      onReadyChange,
+    });
+    callbacksRef.current = {
+      onVerify,
+      onBizResult,
+      onReady,
+      onReadyChange,
+      onInitError,
+    };
 
     useImperativeHandle(
       ref,
       () => ({
-        refresh: () => {
-          captchaInstanceRef.current?.refresh?.();
-        },
-        show: () => {
-          captchaInstanceRef.current?.show?.();
-        },
+        refresh: () => captchaInstanceRef.current?.refresh?.(),
+        show: () => captchaInstanceRef.current?.show?.(),
       }),
       [],
     );
 
-    // 解构 primitive 值，避免 config 对象引用变化触发 effect 重新初始化
-    const { captchaSceneId, captchaPrefix, openCaptcha } = config || {};
+    // 回调归属于这次初始化，不能因新实例已存在而重新接纳旧实例的迟到回调。
+    useLayoutEffect(() => {
+      let disposed = false;
+      let instance: CaptchaInstance | null = null;
+      let ready = false;
+      let failed = false;
+      let readyTimer: number | undefined;
+      let initAt: number | undefined;
+      const clearReadyTimer = () => window.clearTimeout(readyTimer);
+      const updateReady = (value: boolean) => {
+        ready = value;
+        callbacksRef.current.onReadyChange?.(value && activeRef.current);
+      };
+      notifyReadyRef.current = () => {
+        if (!disposed) updateReady(ready);
+      };
+      const markReady = () => {
+        if (disposed || failed || !instance || ready) return;
+        clearReadyTimer();
+        updateReady(true);
+        if (activeRef.current) callbacksRef.current.onReady?.();
+      };
+      const cleanup = () => {
+        disposed = true;
+        clearReadyTimer();
+        captchaInstanceRef.current = null;
+        if (initAt !== undefined && window.__captchaInitAt === initAt) {
+          delete window.__captchaInitAt;
+        }
+        updateReady(false);
+        // SDK 必须先销毁自己创建的节点，再由 React 移除容器。
+        instance?.destroyCaptcha?.();
+      };
 
-    // 使用 ref 持有最新回调，避免 SDK init 时捕获过期闭包
-    const onVerifyRef = useRef(onVerify);
-    onVerifyRef.current = onVerify;
-    const onBizResultRef = useRef(onBizResult);
-    onBizResultRef.current = onBizResult;
-    const onReadyRef = useRef(onReady);
-    onReadyRef.current = onReady;
-
-    /**
-     * 资源就绪后才通知业务方可点击验证。
-     * getInstance 只说明拿到了实例，滑块脚本和 captcha-open 资源可能还在加载。
-     */
-    const markCaptchaReady = useCallback(() => {
-      if (captchaReadyRef.current) return;
-      captchaReadyRef.current = true;
-      if (readyFallbackTimerRef.current !== null) {
-        window.clearTimeout(readyFallbackTimerRef.current);
-        readyFallbackTimerRef.current = null;
+      updateReady(false);
+      if (!openCaptcha) return cleanup;
+      if (!captchaSceneId || !captchaPrefix) {
+        callbacksRef.current.onInitError?.();
+        return cleanup;
       }
-      setCaptchaReady(true);
-    }, []);
 
-    const getInstance = useCallback(
-      (instance: any) => {
-        captchaInstanceRef.current = instance;
-        if (!instance || captchaReadyRef.current) return;
-        // 部分 SDK 版本不回调 success。实例拿到后再等 2s，与官方「init 到验证 ≥2s」对齐
-        if (readyFallbackTimerRef.current !== null) {
-          window.clearTimeout(readyFallbackTimerRef.current);
-        }
-        readyFallbackTimerRef.current = window.setTimeout(() => {
-          readyFallbackTimerRef.current = null;
-          markCaptchaReady();
-        }, 2000);
-      },
-      [markCaptchaReady],
-    );
-
-    const onCaptchaSuccess = useCallback(() => {
-      console.log('[AliyunCaptcha] success: captcha resources ready');
-      markCaptchaReady();
-    }, [markCaptchaReady]);
-
-    const onCaptchaFail = useCallback((error: unknown) => {
-      console.warn('[AliyunCaptcha] init failed', error);
-    }, []);
-
-    /**
-     * SDK 验证通过后调用此函数。
-     *
-     * SDK 支持两种调用模式：
-     * - ES6 Promise 模式：captchaVerifyCallback(param) → 返回值作为验证结果
-     * - ES5 回调模式：captchaVerifyCallback(param, callback) → 调用 callback(result)
-     *
-     * 在无痕验证（TRACELESS）等场景下 SDK 可能使用 ES5 回调模式，
-     * 如果忽略 callback 参数会导致 SDK 收不到结果、超时后重新生成验证码。
-     */
-    const captchaVerifyCallback = useCallback(
-      (
-        captchaVerifyParam: any,
-        callback?: (result: CaptchaVerifyResult) => void,
-      ): Promise<CaptchaVerifyResult> | void => {
-        // 组件已卸载（cleanup 已将 instanceRef 置空），跳过回调避免触发无效请求
-        if (!captchaInstanceRef.current) {
-          console.log('[Captcha CB] instance destroyed, skip');
-          const result = { captchaResult: true, bizResult: true };
-          if (typeof callback === 'function') {
-            callback(result);
-            return;
-          }
-          return Promise.resolve(result);
-        }
-        console.log('[Captcha CB] typeof:', typeof captchaVerifyParam);
-        if (typeof captchaVerifyParam === 'string') {
-          console.log(
-            '[Captcha CB] string preview:',
-            captchaVerifyParam.substring(0, 200),
-          );
-        } else {
-          console.log(
-            '[Captcha CB] object keys:',
-            Object.keys(captchaVerifyParam || {}),
-          );
-          console.log(
-            '[Captcha CB] object preview:',
-            JSON.stringify(captchaVerifyParam).substring(0, 500),
-          );
-        }
-        const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
-        console.log(
-          '[Captcha CB] normalized length:',
-          param.length,
-          'preview:',
-          param.substring(0, 200),
-        );
-        const resultPromise = onVerifyRef.current(param);
-
-        if (typeof callback === 'function') {
-          // ES5 回调模式：通过 callback 传递验证结果给 SDK
-          // catch 确保业务异常时 SDK 也能收到反馈，避免 SDK 超时重试
-          resultPromise
-            .then((result) => callback(result))
-            .catch(() => callback({ captchaResult: true, bizResult: true }));
+      scheduleInitialization((finished) => {
+        if (disposed) {
+          finished();
           return;
         }
-
-        // ES6 Promise 模式：通过返回值传递验证结果给 SDK
-        return resultPromise;
-      },
-      [],
-    );
-
-    const onBizResultCallback = useCallback((bizParam?: any) => {
-      if (!captchaInstanceRef.current) {
-        return;
-      }
-      onBizResultRef.current?.(bizParam === true);
-    }, []);
-
-    const cleanupCaptchaElements = useCallback(() => {
-      // 由 SDK 销毁自己创建的节点。若先手动移除弹窗/遮罩，SDK 的销毁
-      // 或成功回调收尾仍会访问这些节点，登录跳转时会出现 innerHTML 空引用。
-      const instance = captchaInstanceRef.current;
-      captchaInstanceRef.current = null;
-      captchaReadyRef.current = false;
-      if (readyFallbackTimerRef.current !== null) {
-        window.clearTimeout(readyFallbackTimerRef.current);
-        readyFallbackTimerRef.current = null;
-      }
-      instance?.destroyCaptcha?.();
-    }, []);
-
-    // 确保卸载时 SDK destroy 发生在 React 移除验证码容器之前。
-    useLayoutEffect(() => {
-      if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
-      if (captchaInstanceRef.current) return;
-
-      console.log('[AliyunCaptcha] initAliyunCaptcha called at', Date.now(), {
-        captchaSceneId,
-        captchaPrefix,
-        elementId,
-      });
-
-      window.initAliyunCaptcha({
-        SceneId: captchaSceneId,
-        prefix: captchaPrefix,
-        mode: 'popup',
-        element: '#captcha-element',
-        button: `#${elementId}`,
-        captchaVerifyCallback,
-        onBizResultCallback,
-        getInstance,
-        success: onCaptchaSuccess,
-        fail: onCaptchaFail,
-        slideStyle: { width: 360, height: 40 },
-        language: 'cn',
-      });
-
-      // 记录初始化时间戳，用于保障 init 与验证请求之间 ≥2s
-      window.__captchaInitAt = Date.now();
-
-      // 初始化超时探测：getInstance 未回调说明 SDK 初始化失败
-      // （域名白名单、SceneId 配置或 captcha-open 接口异常），弹窗无从弹出
-      const initProbeTimer = window.setTimeout(() => {
-        if (!captchaInstanceRef.current) {
-          console.warn(
-            '[AliyunCaptcha] init timeout: 8s 内 getInstance 未回调，' +
-              '请检查阿里云验证码控制台的域名白名单与 SceneId 配置',
-          );
+        // V2 使用 captchaVerifyCallback。传 success 会让 SDK 切到 V3，不能用它通知就绪。
+        let timeout: number;
+        const failInitialization = (error: unknown) => {
+          window.clearTimeout(timeout);
+          if (!disposed && !failed) {
+            failed = true;
+            clearReadyTimer();
+            updateReady(false);
+            callbacksRef.current.onInitError?.();
+            console.warn('[AliyunCaptcha] init failed', error);
+          }
+          finished();
+        };
+        // 即使已卸载也要释放队列，否则没有返回实例的初始化会阻塞后续页面。
+        timeout = window.setTimeout(
+          () => failInitialization('getInstance timeout'),
+          12000,
+        );
+        try {
+          window.initAliyunCaptcha({
+            SceneId: captchaSceneId,
+            prefix: captchaPrefix,
+            mode: 'popup',
+            element: '#captcha-element',
+            button: `#${elementId}`,
+            getInstance: (value: CaptchaInstance | null) => {
+              if (!value) return;
+              window.clearTimeout(timeout);
+              if (disposed) {
+                // 上次初始化在卸载后才完成，先销毁，再允许队列中的新初始化。
+                if (!instance) {
+                  instance = value;
+                  value.destroyCaptcha?.();
+                }
+                finished();
+                return;
+              }
+              const firstInstance = !instance;
+              instance = value;
+              captchaInstanceRef.current = value;
+              initAt = Date.now();
+              window.__captchaInitAt = initAt;
+              // SDK 内部从无痕升级到滑块属于同一次登录，不能清掉正在等待的业务回调。
+              if (firstInstance) {
+                clearReadyTimer();
+                readyTimer = window.setTimeout(
+                  markReady,
+                  CAPTCHA_INITIAL_READY_DELAY_MS,
+                );
+              }
+              finished();
+            },
+            onError: failInitialization,
+            captchaVerifyCallback: (
+              value: unknown,
+              callback?: (result: CaptchaVerifyResult) => void,
+            ): Promise<CaptchaVerifyResult> | void => {
+              // 销毁后的 ES5 回调也不能再执行 SDK 收尾，否则会访问已移除的 DOM。
+              if (disposed) {
+                if (typeof callback !== 'function') {
+                  return Promise.resolve(IGNORED_RESULT);
+                }
+                return;
+              }
+              const activation = activationRef.current;
+              const isCurrent = () =>
+                !disposed &&
+                activeRef.current &&
+                activationRef.current === activation;
+              const resultPromise =
+                instance && ready && activeRef.current
+                  ? Promise.resolve().then(() => {
+                      if (!isCurrent()) return IGNORED_RESULT;
+                      return callbacksRef.current.onVerify(
+                        normalizeCaptchaVerifyParam(value),
+                        { isCurrent },
+                      );
+                    })
+                  : Promise.resolve(IGNORED_RESULT);
+              if (typeof callback === 'function') {
+                void resultPromise
+                  .then(
+                    (result) => {
+                      if (isCurrent()) callback(result);
+                    },
+                    () => {
+                      if (isCurrent()) callback(IGNORED_RESULT);
+                    },
+                  )
+                  .catch((error: unknown) => {
+                    if (!disposed)
+                      console.warn('[AliyunCaptcha] callback failed', error);
+                  });
+                return;
+              }
+              return resultPromise;
+            },
+            onBizResultCallback: (value: unknown) => {
+              if (!disposed && activeRef.current && instance) {
+                callbacksRef.current.onBizResult?.(value === true);
+              }
+            },
+            slideStyle: { width: 360, height: 40 },
+            language: 'cn',
+          });
+        } catch (error) {
+          failInitialization(error);
         }
-      }, 8000);
+      });
+      return cleanup;
+    }, [captchaSceneId, captchaPrefix, openCaptcha, elementId]);
 
-      return () => {
-        window.clearTimeout(initProbeTimer);
-        cleanupCaptchaElements();
-      };
-    }, [
-      captchaSceneId,
-      captchaPrefix,
-      openCaptcha,
-      elementId,
-      captchaVerifyCallback,
-      onBizResultCallback,
-      getInstance,
-      onCaptchaSuccess,
-      onCaptchaFail,
-      cleanupCaptchaElements,
-    ]);
-
-    useEffect(() => {
-      if (captchaReady) onReadyRef.current?.();
-    }, [captchaReady]);
+    useLayoutEffect(() => {
+      activationRef.current += 1;
+      notifyReadyRef.current();
+    }, [active]);
 
     return (
-      <div className="captcha-a">
+      <div className="captcha-a" hidden={!active}>
         <div id="captcha-element"></div>
       </div>
     );

@@ -17,6 +17,47 @@
   align-items: center;
   gap: @marginSm;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  margin-bottom: @marginSm;
+}
+
+.scope-switch {
+  align-self: flex-start;
+  margin-bottom: @marginSm;
+}
+
+.user-input {
+  width: 240px;
+  max-width: 100%;
+}
+
+.query-context {
+  color: @colorTextSecondary;
+  margin-bottom: @marginSm;
+}
+
+.rank-content,
+.trend-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.user-id {
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+}
+
+.user-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .filter-label {

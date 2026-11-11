@@ -129,6 +129,7 @@ const CREATE_MODEL_DEFAULT_VALUES = {
   types: [],
   maxTokens: 4096,
   maxContextTokens: 128000,
+  tokenLimit: 0,
   dimension: 1536,
   enabled: ModelComponentStatusEnum.Enabled,
   usageScenarios: MODEL_USAGE_SCENARIO_LIST.map((v) => v.value),
@@ -207,6 +208,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
       // 避免 ColorPicker/Input 受控值异常(未开启 showTagFields 时无表单项,无副作用)
       form.setFieldsValue({
         ...result,
+        tokenLimit: result?.tokenLimit ?? 0,
         tag: result?.tag ?? undefined,
         tagColor: result?.tagColor ?? undefined,
         cost: result?.cost ?? undefined,
@@ -324,6 +326,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
       Pick<ModelSaveParams, 'apiInfoList'>;
     const payload = {
       ...formValues,
+      // 编辑接口可能忽略 null 更新，清空时显式写 0 才能解除旧限额。
+      tokenLimit: formValues.tokenLimit ?? 0,
       apiInfoList: normalizeApiInfoUseProxy(formValues.apiInfoList),
     };
     if (mode === CreateUpdateModeEnum.Create) {
@@ -349,6 +353,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const pidWatch = Form.useWatch('pid', form);
   // 监听API协议
   const apiProtocolWatch = Form.useWatch('apiProtocol', form);
+  // Responses 暂不支持连通性测试，支持后可恢复该入口。
+  const testConnectionUnsupported =
+    apiProtocolWatch === ModelApiProtocolEnum.Responses;
 
   /** 选中供应商 PID 时应的供应商详情 */
   const currentProvider = useMemo(
@@ -359,13 +366,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
   /** 未匹配到列表内供应商时，禁用名称 / 标识 / 介绍（须先选供应商） */
   const supplierModelFieldsDisabled = !currentProvider;
 
-  /** 可选协议：若有供应商且 apiInfo 可解析，则收窄为支持的协议列表 */
+  /** 供应商目录尚未提供 Responses 地址时，也允许手动配置该协议。 */
   const providerApiProtocolSelectOptions = useMemo(() => {
     const restriction = supplierResolvableProtocols(currentProvider?.apiInfo);
     if (!restriction) return MODEL_API_PROTOCOL_LIST;
 
-    let filtered = MODEL_API_PROTOCOL_LIST.filter((x) =>
-      restriction.has(x.value),
+    let filtered = MODEL_API_PROTOCOL_LIST.filter(
+      (x) =>
+        restriction.has(x.value) || x.value === ModelApiProtocolEnum.Responses,
     );
     const current = apiProtocolWatch as ModelApiProtocolEnum | undefined;
     if (current && !filtered.some((o) => o.value === current)) {
@@ -635,12 +643,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
   // 检测模型连通性
   const handlerCheckConnection = () => {
-    setLoadingTestConnection(true);
     const values = form.getFieldsValue() as ModelFormData &
       Pick<ModelSaveParams, 'apiInfoList'>;
+    if (values.apiProtocol === ModelApiProtocolEnum.Responses) {
+      return;
+    }
+    setLoadingTestConnection(true);
 
     runTestConnectivity({
       ...values,
+      tokenLimit: values.tokenLimit ?? 0,
       apiInfoList: normalizeApiInfoUseProxy(values.apiInfoList),
       id,
       spaceId,
@@ -665,18 +677,20 @@ const CreateModel: React.FC<CreateModelProps> = ({
       onCancel={onCancel}
       footer={
         <>
-          <Button
-            type="default"
-            loading={loadingTestConnection}
-            onClick={handlerCheckConnection}
-            className={cx(
-              !submittable && styles['confirm-btn'],
-              styles['connection-btn'],
-            )}
-            disabled={!submittable}
-          >
-            {dict('PC.Pages.SpaceLibrary.CreateModel.testConnection')}
-          </Button>
+          <ConditionRender condition={!testConnectionUnsupported}>
+            <Button
+              type="default"
+              loading={loadingTestConnection}
+              onClick={handlerCheckConnection}
+              className={cx(
+                !submittable && styles['confirm-btn'],
+                styles['connection-btn'],
+              )}
+              disabled={!submittable}
+            >
+              {dict('PC.Pages.SpaceLibrary.CreateModel.testConnection')}
+            </Button>
+          </ConditionRender>
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
             {dict('PC.Common.Global.cancel')}
           </Button>
@@ -976,6 +990,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
             />
           </Form.Item>
         </ConditionRender>
+
+        <Form.Item
+          name="tokenLimit"
+          label={dict('PC.Pages.SpaceLibrary.CreateModel.tokenLimit')}
+          extra={dict('PC.Pages.SpaceLibrary.CreateModel.tokenLimitHelp')}
+        >
+          <InputNumber className={cx('w-full')} min={0} precision={0} />
+        </Form.Item>
 
         {/* 启用模型开关 */}
         <Form.Item

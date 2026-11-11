@@ -131,6 +131,12 @@ export interface SystemUserListInfo {
   // 加入时间
   created: string;
 }
+
+export type SystemUserOptionInfo = Pick<
+  SystemUserListInfo,
+  'nickName' | 'userName'
+> & { id: number | string };
+
 export interface SystemUserConfig {
   /** 租户ID */
   tenantId: number;
@@ -216,7 +222,9 @@ export interface ModelConfigDto {
   maxTokens: number;
   /** 最大上下文长度 */
   maxContextTokens?: number;
-  /** 模型接口协议（可用值: OpenAI, Ollama, Zhipu, Anthropic） */
+  /** 每位用户每天的 token 消耗上限，null 或 0 表示不限制 */
+  tokenLimit?: number | null;
+  /** 模型接口协议 */
   apiProtocol: ModelApiProtocolEnum;
   /** API列表 */
   apiInfoList: ApiInfo[];
@@ -970,7 +978,7 @@ export interface ResourceStatSummaryDTO {
 
 /** 资源统计明细查询参数 */
 export interface ResourceStatDetailParams {
-  userId?: number;
+  userId?: number | string;
   type?: 'CONSUMPTION' | 'SALES';
   targetType?: string;
   targetId?: number;
@@ -978,6 +986,48 @@ export interface ResourceStatDetailParams {
   dtEnd?: string;
   pageNum?: number;
   pageSize?: number;
+}
+
+/** Token 排名和趋势中的 int64 可由服务端以十进制字符串返回。 */
+export interface UserTokenMetrics {
+  inputTokens: number | string;
+  cacheInputTokens: number | string;
+  outputTokens: number | string;
+  totalTokens: number | string;
+  creditAmount: number | string;
+  callCount: number | string;
+}
+
+export interface UserTokenRankDTO extends UserTokenMetrics {
+  rank: number;
+  userId: number | string;
+  userName?: string;
+  nickName?: string;
+  phone?: string;
+  email?: string;
+  /** 1 启用，-1 禁用或已删除；历史消耗仍可查询。 */
+  status?: number;
+}
+
+export interface UserTokenRankParams {
+  targetType?: string;
+  targetId?: string;
+  dtStart?: string;
+  dtEnd?: string;
+  sortField?: 'totalTokens';
+  pageNum: number;
+  pageSize: number;
+}
+
+export interface UserTokenTrendParams {
+  userId: string;
+  dtStart: string;
+  dtEnd: string;
+}
+
+export interface UserTokenTrendDTO extends UserTokenMetrics {
+  /** yyyyMMdd */
+  dt: string;
 }
 
 /** 资源统计明细记录 */

@@ -7,6 +7,7 @@ import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type {
   FileContentSaveOptions,
+  FilePreviewReadingPosition,
   FileSaveState,
 } from '@/types/interfaces/fileTree';
 import type React from 'react';
@@ -26,6 +27,17 @@ export type {
  * 供 FileTreePreviewPanel / FileTreeViewPanel / Chat / ConversationAgent 使用
  */
 export interface FileTreePreviewViewProps {
+  active?: boolean;
+  getReadingPosition?: (
+    fileId: string,
+    mode: string,
+  ) => FilePreviewReadingPosition | undefined;
+  onReadingPositionChange?: (
+    fileId: string,
+    mode: string,
+    position: FilePreviewReadingPosition,
+  ) => void;
+  onViewFileTypeChange?: (mode: 'preview' | 'code') => void;
   className?: string;
   /** 文件树头部样式 */
   headerClassName?: string;

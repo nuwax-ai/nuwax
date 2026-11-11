@@ -1,0 +1,89 @@
+@import '@/styles/token';
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  text-align: center;
+}
+
+.code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+  margin: 8px 0 20px;
+}
+
+.scanned {
+  font-size: 64px;
+  color: @colorSuccess;
+}
+
+.qr-image {
+  position: relative;
+
+  :global(.ant-qrcode-mask) {
+    background: rgba(255, 255, 255, 84%);
+  }
+}
+
+.expired-refresh {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: @colorTextSecondary;
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid @colorPrimary;
+    outline-offset: -3px;
+  }
+}
+
+.expired-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  color: @colorPrimary;
+  font-size: 36px;
+}
+
+.expired-message {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 6px;
+  background: #fff;
+  object-fit: contain;
+  pointer-events: none;
+}

@@ -15,6 +15,7 @@ import {
   apiUserProjectConversations,
   apiUserProjectPageQuery,
 } from '@/services/userProjectApp';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type {
   RepoPageSearchItem,
@@ -23,7 +24,6 @@ import type {
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import { formatModifiedTime } from '../NewHomeSection/utils';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 
 /** 搜索分类 tab key */
 export type SearchTab =
@@ -148,7 +148,10 @@ export const mapRepoRecentItem = (
 
 /* ---------------- 各分类分页取数（导出供单测） ---------------- */
 
-/** 任务：conversation/list 的 lastId 游标分页（无关键词首屏即「最近」数据） */
+/**
+ * 任务：conversation/list 的 lastId 游标分页（无关键词首屏即「最近」数据）。
+ * 当前接口仅按标题搜索；正文命中与消息定位须由服务端提供同一权限范围的检索结果。
+ */
 export async function fetchTaskPage({
   keyword,
   size,
@@ -186,8 +189,11 @@ export async function fetchProjectPage({
   const res = await apiUserProjectPageQuery({
     queryFilter: {
       name: keyword || undefined,
-      projectTypes: [AgentComponentTypeEnum.NormalProject, AgentComponentTypeEnum.UserApp],
-     },
+      projectTypes: [
+        AgentComponentTypeEnum.NormalProject,
+        AgentComponentTypeEnum.UserApp,
+      ],
+    },
     current,
     pageSize: size,
     orders: [],

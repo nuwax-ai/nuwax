@@ -9,6 +9,7 @@ import {
   type ThinkBlockAdapter,
 } from './reduceMessageEvent';
 import {
+  findProcessingOwnerIndex,
   reduceProcessingEvent,
   type ProcessingBlockRenderer,
 } from './reduceProcessingEvent';
@@ -64,9 +65,18 @@ export function reduceConversationEvent(
   }
 
   if (event.eventType === ConversationEventTypeEnum.PROCESSING) {
-    const currentIndex = projection.messages.findIndex(
-      (message) => message.id === currentMessageId,
+    const processing = event.data as ProcessingInfo;
+    // 后台进程可在下一轮继续输出；先认工具归属，再回退到当前助手占位。
+    const ownerIndex = findProcessingOwnerIndex(
+      projection.messages,
+      processing,
     );
+    const currentIndex =
+      ownerIndex >= 0
+        ? ownerIndex
+        : projection.messages.findIndex(
+            (message) => message.id === currentMessageId,
+          );
     if (currentIndex < 0) {
       return { ...projection, applied: false };
     }
@@ -74,10 +84,21 @@ export function reduceConversationEvent(
       projection.messages[currentIndex],
       event.data,
       adapters.renderProcessingBlock,
-      adapters.thinkBlock?.finalizeThinkBlock,
+      ownerIndex >= 0 ? undefined : adapters.thinkBlock?.finalizeThinkBlock,
     );
     const messages = [...projection.messages];
-    messages.splice(currentIndex, 1, reduction.message);
+    const current = projection.messages[currentIndex];
+    messages.splice(
+      currentIndex,
+      1,
+      ownerIndex >= 0
+        ? {
+            ...reduction.message,
+            status: current.status,
+            thinkingFinished: current.thinkingFinished,
+          }
+        : reduction.message,
+    );
     return {
       messages,
       activeOutputMessageId: projection.activeOutputMessageId,

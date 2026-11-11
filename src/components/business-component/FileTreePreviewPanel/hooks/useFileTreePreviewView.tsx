@@ -89,6 +89,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import FilePreviewViewport from '../FilePreviewViewport';
 import type {
   FileTreePreviewViewProps,
   FileTreePreviewViewValue,
@@ -166,6 +167,10 @@ export function useFileTreePreviewView(
   props: FileTreePreviewViewProps,
 ): FileTreePreviewViewValue {
   const {
+    active = true,
+    getReadingPosition,
+    onReadingPositionChange,
+    onViewFileTypeChange,
     className,
     headerClassName,
     taskAgentSelectedFileId,
@@ -392,7 +397,7 @@ export function useFileTreePreviewView(
   // 文件树是否可见（默认隐藏，但如果已固定则显示）
   const [internalFileTreeVisible, setInternalFileTreeVisible] =
     useState<boolean>(isFileTreePinned || false);
-  const isFileTreeVisible = isFileTreeSidebarVisible || internalFileTreeVisible;
+  const isFileTreeVisible = isFileTreeSidebarVisible ?? internalFileTreeVisible;
 
   // 文件树容器 ref
   const fileTreeContainerRef = useRef<HTMLDivElement>(null);
@@ -606,6 +611,8 @@ export function useFileTreePreviewView(
     selectedFileIdRef.current = '';
     setSelectedFileId('');
     setSelectedFileNode(null);
+    // 授权/目录暂时清空后，同一待选文件必须能重新搜索，不能命中旧的 found 标记。
+    autoSelectSearchRef.current = null;
     setWorkspaceFileNotFound(false);
   }, []);
 
@@ -1325,6 +1332,7 @@ export function useFileTreePreviewView(
    */
   useEffect(() => {
     // 重新导入项目后触发 taskAgentSelectTrigger 时，用最新 filesRef 判断是否可自动选中
+    if (!active) return;
     const isFileInTreeForAutoSelect = (fileId: string) => {
       if (!fileId || !filesRef.current?.length) {
         return false;
@@ -1491,6 +1499,7 @@ export function useFileTreePreviewView(
       isTriggerUpdate ||
       hasSelectionChanged ||
       isPendingRetry ||
+      !selectedFileIdRef.current ||
       (taskAgentSelectedFileId && !prevTaskAgentSelectedFileIdRef.current) ||
       filesRef.current?.length !== files.length;
 
@@ -1561,6 +1570,12 @@ export function useFileTreePreviewView(
         resolveMissingFileFromSearch();
         return;
       }
+      // 搜索可能先于目录回包选中文件，随后空列表同步又清掉了选中态。
+      // 目录已经到达且包含目标时，必须重新绑定，不能只等搜索链再次触发。
+      if (openedNode) {
+        applyAutoSelect(openedNode.id);
+        return;
+      }
       if (resolveMissingFileFromSearch()) {
         return;
       }
@@ -1586,6 +1601,7 @@ export function useFileTreePreviewView(
     }
     requestFileTreeRefreshIfNeeded();
   }, [
+    active,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     handleFileSelectInternal,
@@ -2612,12 +2628,13 @@ export function useFileTreePreviewView(
 
   const handleViewFileTypeChange = useCallback(
     async (type: 'preview' | 'code') => {
+      onViewFileTypeChange?.(type);
       setViewFileType(type);
       if (type === 'code' && selectedFileNode) {
         await handleRefreshFileContent();
       }
     },
-    [selectedFileNode, handleRefreshFileContent],
+    [selectedFileNode, handleRefreshFileContent, onViewFileTypeChange],
   );
 
   // 处理导出 PDF 操作
@@ -3123,7 +3140,21 @@ export function useFileTreePreviewView(
   );
 
   const renderPreviewContent = useCallback(
-    () => renderContent(),
+    () => (
+      <FilePreviewViewport
+        identity={`${targetId}:${selectedFileId}:${viewFileType}`}
+        active={active}
+        position={getReadingPosition?.(selectedFileId, viewFileType)}
+        onPositionChange={
+          onReadingPositionChange && selectedFileId
+            ? (position) =>
+                onReadingPositionChange(selectedFileId, viewFileType, position)
+            : undefined
+        }
+      >
+        {renderContent()}
+      </FilePreviewViewport>
+    ),
     [
       isFullscreen,
       targetId,
@@ -3151,6 +3182,9 @@ export function useFileTreePreviewView(
       mutatingPath,
       viewFileType,
       staticFileBasePath,
+      active,
+      getReadingPosition,
+      onReadingPositionChange,
     ],
   );
 

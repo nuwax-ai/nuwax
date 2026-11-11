@@ -10,6 +10,9 @@ import {
   runCommand,
 } from '../../scripts/sync-micro-apps.mjs';
 import {
+  keepRemoteConflictSides,
+  omitUnavailablePatchFiles,
+  restoreUsedPatchImports,
   parseUpgradeArguments,
   upgradeMicroApps as performUpgradeMicroApps,
 } from '../../scripts/upgrade-micro-apps.mjs';
@@ -948,6 +951,165 @@ test('单个 ref 接收 commitish，可选择 main 上经过旧 pin 的较早提
   await assertPinned(f, 'repo', selected);
 });
 
+test('omitUnavailablePatchFiles 只去掉目标上不存在的修改，保留新增文件', () => {
+  const patch = [
+    'diff --git a/keep.txt b/keep.txt',
+    '--- a/keep.txt',
+    '+++ b/keep.txt',
+    '@@ -1 +1 @@',
+    '-old',
+    '+host',
+    'diff --git a/missing.txt b/missing.txt',
+    '--- a/missing.txt',
+    '+++ b/missing.txt',
+    '@@ -1 +1 @@',
+    '-gone',
+    '+host',
+    'diff --git a/added.txt b/added.txt',
+    'new file mode 100644',
+    '--- /dev/null',
+    '+++ b/added.txt',
+    '@@ -0,0 +1 @@',
+    '+added',
+    'diff --git a/vite.config.ts b/vite.upstream.config.ts',
+    'similarity index 100%',
+    'rename from vite.config.ts',
+    'rename to vite.upstream.config.ts',
+    'diff --git a/gone.config.ts b/gone.upstream.config.ts',
+    'similarity index 100%',
+    'rename from gone.config.ts',
+    'rename to gone.upstream.config.ts',
+    '',
+  ].join('\n');
+  const result = omitUnavailablePatchFiles(patch, ['keep.txt', 'vite.config.ts']);
+  assert.deepEqual(result.dropped, ['missing.txt', 'gone.config.ts']);
+  assert.match(result.patch, /b\/keep\.txt/);
+  assert.match(result.patch, /b\/added\.txt/);
+  assert.match(result.patch, /rename to vite\.upstream\.config\.ts/);
+  assert.doesNotMatch(result.patch, /missing\.txt|gone\.config\.ts/);
+});
+
+test('冲突丢掉的导入在名字仍被使用时补回', () => {
+  const resolved = [
+    "import { useState } from 'react';",
+    'getMessageInputRoot();',
+    '',
+  ].join('\n');
+  const section = [
+    'diff --git a/src/App.tsx b/src/App.tsx',
+    '--- a/src/App.tsx',
+    '+++ b/src/App.tsx',
+    '@@ -1,3 +1,4 @@',
+    "+import { getMessageInputRoot, unusedHelper } from './hostRuntime';",
+    " import { useState } from 'react';",
+    '',
+  ].join('\n');
+  const restored = restoreUsedPatchImports(resolved, section);
+  assert.match(
+    restored,
+    /import \{ getMessageInputRoot \} from '\.\/hostRuntime';/,
+  );
+  assert.doesNotMatch(restored, /unusedHelper/);
+  assert.equal(restoreUsedPatchImports(restored, section), restored);
+});
+
+test('adapter.branch 与 .gitmodules 不一致时按 adapter 改跟踪分支', async (t) => {
+  const f = await fixture(t, { advance: false });
+  const app = f.apps.message;
+  await git(app.upstream, ['branch', 'stable', app.oldPin]);
+  const adapterFile = path.join(f.root, app.adapterRelative);
+  const adapter = JSON.parse(await fs.readFile(adapterFile, 'utf8'));
+  adapter.branch = 'stable';
+  await fs.writeFile(adapterFile, `${JSON.stringify(adapter, null, 4)}\n`);
+  await commit(f.root, 'fixture point message adapter at stable');
+  const branchKey = 'submodule.submodules/nuwax-im.branch';
+  const logs = [];
+  const dry = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    dryRun: true,
+    log: (line) => logs.push(line),
+  });
+  assert.equal(dry.status, 'dry-run');
+  assert.equal(
+    await git(f.root, ['config', '-f', '.gitmodules', '--get', branchKey]),
+    'main',
+  );
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    log: (line) => logs.push(line),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].newPin, app.oldPin);
+  assert.equal(
+    await git(f.root, ['config', '-f', '.gitmodules', '--get', branchKey]),
+    'stable',
+  );
+  assert.match(
+    await git(f.root, ['diff', '--cached', '--', '.gitmodules']),
+    /branch = stable/,
+  );
+  assert.ok(logs.some((line) => /按 adapter 改为 stable/.test(line)));
+});
+
+test('adapter 分支尖端不是当前 pin 的快进时，按切换子模块分支移动 pin 并重算补丁', async (t) => {
+  const f = await fixture(t);
+  const app = f.apps.message;
+  await git(app.upstream, ['branch', 'stable', app.ancestor]);
+  const adapter = JSON.parse(
+    await fs.readFile(path.join(f.root, app.adapterRelative), 'utf8'),
+  );
+  adapter.branch = 'stable';
+  await fs.writeFile(
+    path.join(f.root, app.adapterRelative),
+    `${JSON.stringify(adapter, null, 4)}\n`,
+  );
+  await git(f.root, [
+    'config',
+    '-f',
+    '.gitmodules',
+    'submodule.submodules/nuwax-im.branch',
+    'stable',
+  ]);
+  await fs.appendFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    [
+      'diff --git a/nuwax-im-web/missing.txt b/nuwax-im-web/missing.txt',
+      '--- a/nuwax-im-web/missing.txt',
+      '+++ b/nuwax-im-web/missing.txt',
+      '@@ -1 +1 @@',
+      '-gone',
+      '+host',
+      'diff --git a/nuwax-im-web/marker.txt b/nuwax-im-web/marker.upstream.txt',
+      'similarity index 100%',
+      'rename from nuwax-im-web/marker.txt',
+      'rename to nuwax-im-web/marker.upstream.txt',
+      '',
+    ].join('\n'),
+  );
+  await commit(f.root, 'fixture switch message to stable');
+  const logs = [];
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'message',
+    log: (line) => logs.push(line),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps[0].newPin, app.ancestor);
+  assert.equal(result.apps[0].patchRebased, true);
+  await assertPinned(f, 'message', app.ancestor);
+  const remade = await fs.readFile(
+    path.join(app.adapterRoot, 'adapter.patch'),
+    'utf8',
+  );
+  assert.match(remade, /\+adapted fixed main/);
+  assert.match(remade, /rename to nuwax-im-web\/marker\.upstream\.txt/);
+  assert.doesNotMatch(remade, /missing\.txt/);
+  assert.ok(logs.some((line) => /按 stable 切换子模块/.test(line)));
+  assert.ok(logs.some((line) => /missing\.txt/.test(line)));
+});
+
 test('ref 拒绝旧 pin 之前的提交、非 main 旁支和 all，dry-run 同样守边界', async (t) => {
   for (const [name, options] of [
     ['ancestor', (f) => ({ target: 'repo', ref: f.apps.repo.ancestor })],
@@ -1400,4 +1562,28 @@ test('dry-run 遇到可重算补丁时不写回 adapter.patch', async (t) => {
   assert.equal(result.status, 'dry-run');
   assert.equal(result.apps[0].patchRebased, true);
   assert.deepEqual(await snapshot(f), before);
+});
+
+test('三方冲突段采用远端代码，并去掉因此不再使用的导入', () => {
+  const conflicted = [
+    "import { getMessagePortalRoot, redirectMessageAuth } from './hostRuntime';",
+    '<<<<<<< ours',
+    'window.location.replace(authRedirectTarget);',
+    '=======',
+    'redirectMessageAuth(authRedirectTarget);',
+    '>>>>>>> theirs',
+    'getMessagePortalRoot();',
+    '',
+  ].join('\n');
+  const resolved = keepRemoteConflictSides(conflicted);
+  assert.match(resolved, /window\.location\.replace\(authRedirectTarget\)/);
+  assert.doesNotMatch(resolved, /redirectMessageAuth|<<<<<<<|>>>>>>>/);
+  assert.match(resolved, /import \{ getMessagePortalRoot \} from '\.\/hostRuntime';/);
+});
+
+test('无法识别的冲突标记不会被当成远端代码', () => {
+  assert.throws(
+    () => keepRemoteConflictSides('<<<<<<< theirs\nremote\n=======\npatch\n>>>>>>> ours\n'),
+    /无法按远端代码取舍/,
+  );
 });

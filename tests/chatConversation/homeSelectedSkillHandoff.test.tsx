@@ -6,18 +6,38 @@
  * 技能 chip 回填（skillIds 由 MentionEditor selectedMentions 派生，Home 不再手动并入）。
  * 桩法对齐 homeSummonedExpertHandoff.test.tsx（home 全依赖 mock）。
  */
+import useHomeInputContext from '@/models/homeInputContext';
 import Home from '@/pages/Home';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, render as renderView, waitFor } from '@testing-library/react';
+import {
+  createContext,
+  useContext,
+  type PropsWithChildren,
+  type ReactElement,
+} from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // 透传上下文底层数据（与真实 pageHandoffContext model 同构：读清一次性）；
 // 经 hoisted 暴露给 umi mock 与用例断言共享
 const handoffMap = vi.hoisted(() => ({} as Record<string, unknown>));
 
+const HomeInputContext = createContext<ReturnType<
+  typeof useHomeInputContext
+> | null>(null);
+const HomeInputProvider = ({ children }: PropsWithChildren) => (
+  <HomeInputContext.Provider value={useHomeInputContext()}>
+    {children}
+  </HomeInputContext.Provider>
+);
+const render = (ui: ReactElement) =>
+  renderView(ui, { wrapper: HomeInputProvider });
+
 vi.mock('umi', () => ({
   // Home 消费 effect 依赖 location.key（同路由 push 重新消费），测试固定一个 key
   useLocation: () => ({ key: 'test-home-key' }),
   useModel: (name: string) => {
+    const homeInput = useContext(HomeInputContext);
+    if (name === 'homeInputContext') return homeInput;
     if (name === 'pageHandoffContext') {
       return {
         contextMap: handoffMap,
@@ -105,6 +125,7 @@ vi.mock('@/hooks/useConversation', () => ({
 vi.mock('@/hooks/useSelectedComponent', () => ({
   default: () => ({
     selectedComponentList: [],
+    selectedComponentDetails: [],
     handleSelectComponent: vi.fn(),
     initSelectedComponentList: vi.fn(),
   }),

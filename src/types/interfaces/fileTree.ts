@@ -6,6 +6,19 @@ export interface FileContentSaveOptions {
 }
 export type FileSaveState = 'dirty' | 'saving' | 'saved' | 'error';
 
+/** 只保存阅读位置，不保存正文、代理 URL 或本机文件授权。 */
+export type FilePreviewReadingPosition = Record<
+  string,
+  { top: number; left: number }
+>;
+
+export interface ConversationFilePreviewState {
+  selectedFileId?: string;
+  treeVisible?: boolean;
+  viewFileType?: 'preview' | 'code';
+  readingPositions?: Record<string, FilePreviewReadingPosition>;
+}
+
 /**
  * 更新文件信息（用于提交文件修改）
  */

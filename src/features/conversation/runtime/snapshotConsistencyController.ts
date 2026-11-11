@@ -4,7 +4,11 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 
-export type SnapshotTrigger = 'scheduled' | 'visibility' | 'status-observed';
+export type SnapshotTrigger =
+  | 'scheduled'
+  | 'visibility'
+  | 'status-observed'
+  | 'network-restored';
 
 export interface SnapshotRequestToken {
   requestId: number;
@@ -86,8 +90,9 @@ export function createSnapshotConsistencyController(): SnapshotConsistencyContro
       if (trigger !== 'scheduled' && eventRequestId !== undefined) {
         return undefined;
       }
-      // 侧栏发现新执行后，之前在途的终态轮询不能再结束刚恢复的 sub。
-      if (trigger === 'status-observed') generation += 1;
+      // 新执行或网络恢复后，之前在途的终态轮询不能结束刚恢复的 sub。
+      if (trigger === 'status-observed' || trigger === 'network-restored')
+        generation += 1;
       nextRequestId += 1;
       const token: SnapshotRequestToken = {
         requestId: nextRequestId,
@@ -103,6 +108,8 @@ export function createSnapshotConsistencyController(): SnapshotConsistencyContro
 
     invalidateGeneration() {
       generation += 1;
+      // 旧代请求已失效，不能继续占住新会话/新轮次的事件查询锁。
+      eventRequestId = undefined;
       return generation;
     },
 

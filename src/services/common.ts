@@ -19,7 +19,10 @@ import {
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
-import { humanizeLoginError } from '@/utils/loginErrorHumanize';
+import {
+  humanizeLoginError,
+  isLoginCodeInvalidError,
+} from '@/utils/loginErrorHumanize';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -192,6 +195,16 @@ const errorHandler = (error: any, opts: any) => {
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
 
+      // 阿里云无痕拒绝交给 SDK 升级为滑块，同一轮登录不提前弹出失败提示。
+      if (
+        (error?.config?.captchaErrorHandled === true ||
+          opts?.config?.captchaErrorHandled === true ||
+          opts?.captchaErrorHandled === true) &&
+        ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(code) &&
+        url?.includes('/api/user/passwordLogin') &&
+        isLoginCodeInvalidError(errorMessage)
+      )
+        throw error;
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
         throw error;
@@ -211,7 +224,14 @@ const errorHandler = (error: any, opts: any) => {
           // （含导航风格显式选择）与语言偏好（显式选过的语言）
           clearStoragePreservingUserPrefs();
           // Clear the host's cookie mirror and running services as well.
-          void hostBridge.auth.clear();
+          void hostBridge.auth.clear({
+            source: 'web-request',
+            reason: 'business-code',
+            requestUrl: url,
+            method: error?.config?.method ?? opts?.config?.method,
+            status: error?.response?.status ?? opts?.responseStatus,
+            code,
+          });
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
@@ -225,7 +245,14 @@ const errorHandler = (error: any, opts: any) => {
           clearMicroAppDevSession();
           eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
           clearLoginStatusCache();
-          void hostBridge.auth.clear();
+          void hostBridge.auth.clear({
+            source: 'web-request',
+            reason: 'business-code',
+            requestUrl: url,
+            method: error?.config?.method ?? opts?.config?.method,
+            status: error?.response?.status ?? opts?.responseStatus,
+            code,
+          });
           void navigateToAuthUrl(errorMessage);
           break;
 
@@ -274,7 +301,14 @@ const errorHandler = (error: any, opts: any) => {
     ) {
       if (isAnonymousLoginStep()) throw error;
       clearStoragePreservingUserPrefs();
-      void hostBridge.auth.clear();
+      void hostBridge.auth.clear({
+        source: 'web-request',
+        reason: 'http-401',
+        requestUrl: url,
+        method: error?.config?.method ?? opts?.config?.method,
+        status: error.response.status,
+        code: error.response.data?.code,
+      });
       clearLoginStatusCache();
       redirectToLogin(-1);
       throw error;
@@ -382,8 +416,12 @@ const responseInterceptors = [
       const error = errorThrower?.(data);
 
       if (error) {
+        if (config?.captchaErrorHandled) error.config = config;
         // 如果errorThrower返回了错误对象，使用errorHandler处理它
-        return errorHandler?.(error, { config }) || response;
+        return (
+          errorHandler?.(error, { config, responseStatus: response.status }) ||
+          response
+        );
       }
     }
 

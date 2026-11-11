@@ -79,10 +79,10 @@ describe('runtime onClose 真实终态查询写回（bug2528）', () => {
 
       onClose();
       await vi.waitFor(() =>
-        expect(session.getState().isAwaitingChatTerminal).toBe(false),
+        expect(applyTaskStatus).toHaveBeenCalledWith(1001, status),
       );
 
-      expect(applyTaskStatus).toHaveBeenCalledWith(1001, status);
+      expect(session.getState().isAwaitingChatTerminal).toBe(false);
       expect(getInfo().taskStatus).toBe(status);
       expect(
         session.getState().isConversationActive ||
@@ -120,7 +120,9 @@ describe('runtime onClose 真实终态查询写回（bug2528）', () => {
     session.send({ conversationId: 1001, message: '新一轮' });
     pending.resolve(result(TaskStatus.FAILED));
     await pending.promise;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
 
     expect(applyTaskStatus).not.toHaveBeenCalled();
     expect(session.getState().isConversationActive).toBe(true);
@@ -131,21 +133,66 @@ describe('runtime onClose 真实终态查询写回（bug2528）', () => {
     );
   });
 
-  it('切换会话后旧查询不写回旧终态', async () => {
+  it.each([false, true])(
+    '切换会话后旧查询失效，即使已返回原会话（返回=%s）',
+    async (returnToOriginal) => {
+      const pending =
+        deferred<Awaited<ReturnType<typeof apiAgentConversation>>>();
+      vi.mocked(apiAgentConversation).mockReturnValue(pending.promise);
+      const { session, onClose, applyTaskStatus } = createSession();
+
+      onClose();
+      session.resetForConversationSwitch();
+      await session.load(202);
+      if (returnToOriginal) {
+        session.resetForConversationSwitch();
+        await session.load(1001);
+      }
+      pending.resolve(result(TaskStatus.FAILED));
+      await pending.promise;
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(applyTaskStatus).not.toHaveBeenCalled();
+      expect(session.getState().currentConversationId).toBe(
+        returnToOriginal ? 1001 : 202,
+      );
+      expect(eventBus.emit).not.toHaveBeenCalledWith(
+        EVENT_TYPE.UpdateConversationListTaskStatus,
+        expect.objectContaining({ taskStatus: TaskStatus.FAILED }),
+      );
+    },
+  );
+
+  it('切走再返回原会话后，旧连接迟到的 close 不再查询或收尾', async () => {
+    vi.mocked(apiAgentConversation).mockResolvedValue(
+      result(TaskStatus.FAILED),
+    );
+    const { session, onClose, applyTaskStatus } = createSession();
+    session.resetForConversationSwitch();
+    await session.load(202);
+    session.resetForConversationSwitch();
+    await session.load(1001);
+    onClose();
+    await Promise.resolve();
+    expect(apiAgentConversation).not.toHaveBeenCalled();
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+  });
+
+  it('sub 已接管原任务后，旧 live 断流查询的迟到终态不能覆盖恢复状态', async () => {
     const pending =
       deferred<Awaited<ReturnType<typeof apiAgentConversation>>>();
     vi.mocked(apiAgentConversation).mockReturnValue(pending.promise);
     const { session, onClose, applyTaskStatus } = createSession();
-
     onClose();
-    session.resetForConversationSwitch();
-    await session.load(202);
+    session.resumeConversationStream(1001, session.store.getSnapshot());
     pending.resolve(result(TaskStatus.FAILED));
     await pending.promise;
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(applyTaskStatus).not.toHaveBeenCalled();
-    expect(session.getState().currentConversationId).toBe(202);
     expect(eventBus.emit).not.toHaveBeenCalledWith(
       EVENT_TYPE.UpdateConversationListTaskStatus,
       expect.objectContaining({ taskStatus: TaskStatus.FAILED }),

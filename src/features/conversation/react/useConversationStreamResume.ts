@@ -14,6 +14,7 @@ import {
 } from '@/services/hostVisibility';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   ConversationInfo,
   MessageInfo,
@@ -39,8 +40,8 @@ import { useEffect, useRef, useState } from 'react';
  * 的会话生命周期 hooks 聚合于此。各会话页从自身所属 model（conversationInfo 或 conversationAgent）
  * 注入状态与 action 即可复用；未注入 action 的页面不启用恢复。
  *
- * 轮询时机：仅在【未订阅 sub】时轮询会话状态——一旦续上 sub（执行中），立即停止状态轮询，
- * 由 sub 流接管输出；sub 关闭后才恢复轮询，继续检测会话再次变为 EXECUTING。
+ * 未订阅 sub 时查询原任务状态；执行中的断流任务允许后台恢复，空闲会话仅在可见时轮询。
+ * 续上 sub 后停止轮询，由 sub 接管输出；关闭后再确认终态或继续恢复。
  */
 export interface UseConversationStreamResumeOptions {
   /** 当前会话 ID */
@@ -187,6 +188,11 @@ export function useConversationStreamResume(
     }),
   );
   const scheduledRequestTokenRef = useRef<SnapshotRequestToken | undefined>();
+  const previousConversationIdRef = useRef(conversationId);
+  if (previousConversationIdRef.current !== conversationId) {
+    consistencyControllerRef.current.invalidateGeneration();
+    previousConversationIdRef.current = conversationId;
+  }
   const prevLocallyStreamingForPollRef = useRef(!!isLocallyStreaming);
   if (isLocallyStreaming && !prevLocallyStreamingForPollRef.current) {
     consistencyControllerRef.current.invalidateGeneration();
@@ -538,9 +544,18 @@ export function useConversationStreamResume(
   };
 
   // 休眠控制（客户端宿主）：webview 的 document.visibilityState 不随宿主窗口
-  // 最小化/托盘隐藏/锁屏变化（实测 2026-09-17），轮询可见性改由壳 host-activity
-  // 事件驱动；浏览器端恒 visible，pollingWhenHidden 的 tab 级行为不变
+  // 最小化/托盘隐藏/锁屏变化（实测 2026-09-17），空闲轮询由壳 host-activity 暂停。
   const [hostVisible, setHostVisible] = useState(getHostVisibility);
+
+  // 锁屏只暂停空闲会话的轮询；未结束的任务必须能在后台恢复断掉的订阅。
+  // 本地发送时 taskStatus 可能还是上一轮终态，因此也保留半成品作为恢复依据。
+  const tail = messageList?.[messageList.length - 1];
+  const needsStreamRecovery =
+    taskStatus === TaskStatus.EXECUTING ||
+    hasObservedExternalExecution ||
+    (tail?.role === AssistantRoleEnum.ASSISTANT &&
+      (tail.status === MessageStatusEnum.Loading ||
+        tail.status === MessageStatusEnum.Incomplete));
 
   const isPollingReady =
     !!conversationId &&
@@ -549,10 +564,9 @@ export function useConversationStreamResume(
     !isAwaitingChatTerminal &&
     !isResumeSubscribed &&
     !!resumeStream &&
-    hostVisible;
+    (hostVisible || needsStreamRecovery);
 
-  // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。
-  // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
+  // 续上 sub 后不再轮询；未完成任务的断流恢复不受标签或宿主隐藏影响。
   const { run, cancel } = useRequest(
     () => {
       const requestToken = conversationId
@@ -570,11 +584,11 @@ export function useConversationStreamResume(
       // 终态退避（bug 2477）：终态会话轮询周期 5s → 30s；EXECUTING / 未知状态
       // 维持原 5s（执行检测灵敏度不变）。pollingInterval 每轮重排时读取最新值。
       pollingInterval:
-        isTerminalTaskStatus(taskStatus) && !hasObservedExternalExecution
+        isTerminalTaskStatus(taskStatus) && !needsStreamRecovery
           ? TERMINAL_POLLING_INTERVAL_MS
           : GLOBAL_POLLING_INTERVAL,
-      // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
-      pollingWhenHidden: false,
+      // 空闲会话隐藏时暂停；断流任务持续确认状态，避免锁屏挂机后无法续订。
+      pollingWhenHidden: needsStreamRecovery,
       pollingErrorRetryCount: -1,
       // resumeStream 未注入则整体不启用：不轮询、不订阅
       ready: isPollingReady,
@@ -611,15 +625,14 @@ export function useConversationStreamResume(
     },
   );
 
-  // 休眠控制：不可见沿立即停轮询（ready 翻转只阻后续轮询，同上 stopPolling 兜底
-  // 范式）；恢复可见时 setHostVisible 触发 ready 重算，ahooks 自动补拉一轮快照
+  // 空闲会话不可见时立即停轮询；恢复可见后由 ready 补拉快照。
   useEffect(
     () =>
       subscribeHostVisibility((nextVisible) => {
         setHostVisible(nextVisible);
-        if (!nextVisible) cancel();
+        if (!nextVisible && !needsStreamRecovery) cancel();
       }),
-    [cancel],
+    [cancel, needsStreamRecovery],
   );
 
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
@@ -685,14 +698,14 @@ export function useConversationStreamResume(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
 
-  // 可见性恢复或侧栏观察到执行态时立即校验详情；不等终态的 30 秒轮询。
+  // 网络恢复、可见性恢复或侧栏观察到执行态时立即校验原任务；从不重发 chat POST。
   useEffect(() => {
     const checkExternalExecution = (
-      trigger: 'visibility' | 'status-observed',
+      trigger: 'visibility' | 'status-observed' | 'network-restored',
     ) => {
       if (
-        document.visibilityState === 'visible' &&
-        getHostVisibility() &&
+        ((document.visibilityState === 'visible' && getHostVisibility()) ||
+          (trigger === 'network-restored' && needsStreamRecovery)) &&
         conversationId &&
         !isLocallyStreaming &&
         !isAwaitingChatTerminal &&
@@ -739,6 +752,7 @@ export function useConversationStreamResume(
       }
     };
     const handleVisibilityChange = () => checkExternalExecution('visibility');
+    const handleOnline = () => checkExternalExecution('network-restored');
     const handleObservedStatus = (event: {
       conversationId?: number | string;
       taskStatus?: TaskStatus;
@@ -763,8 +777,10 @@ export function useConversationStreamResume(
     );
     eventBus.on(EVENT_TYPE.ConversationChanged, handleConversationChanged);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
       eventBus.off(
         EVENT_TYPE.ConversationTaskStatusObserved,
         handleObservedStatus,
@@ -775,6 +791,7 @@ export function useConversationStreamResume(
     conversationId,
     isAwaitingChatTerminal,
     isLocallyStreaming,
+    needsStreamRecovery,
     resumeStream,
   ]);
 

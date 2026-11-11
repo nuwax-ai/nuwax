@@ -147,6 +147,55 @@ afterEach(() => {
 });
 
 describe('Markdown 文件树刷新', () => {
+  it('受控收起优先于固定状态，只有手动操作才通知展开或收起', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <Harness
+        isFileTreePinned
+        isFileTreeSidebarVisible={false}
+        onFileTreeSidebarVisibleChange={onChange}
+      />,
+    );
+    expect(view.tree.isFileTreeVisible).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    act(() => view.preview.handleFileTreeToggle());
+    expect(onChange).toHaveBeenLastCalledWith(true);
+    rerender(
+      <Harness
+        isFileTreePinned
+        isFileTreeSidebarVisible
+        onFileTreeSidebarVisibleChange={onChange}
+      />,
+    );
+    act(() => view.preview.handleFileTreeToggle());
+    expect(onChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('目录暂时清空再到达，同一文件目标重新绑定，不残留没有匹配文件空态', async () => {
+    const props = {
+      isAutoSelectDirectoryLoaded: () => true,
+      taskAgentSelectedFileId: 'first.md',
+      taskAgentSelectTrigger: 383,
+      resolveAutoSelectFile: vi.fn(async () => ({
+        id: 'first.md',
+        name: 'first.md',
+        path: 'first.md',
+        type: 'file' as const,
+        fileProxyUrl: '/static/first.md',
+      })),
+    };
+    const { rerender } = render(<Harness {...props} />);
+    await waitFor(() => expect(view.preview.selectedFileId).toBe('first.md'));
+    rerender(<Harness {...props} originalFiles={[]} fileTreeDataLoading />);
+    await waitFor(() => expect(view.preview.selectedFileId).toBe(''));
+    rerender(
+      <Harness {...props} originalFiles={files} fileTreeDataLoading={false} />,
+    );
+    await waitFor(() => expect(view.preview.selectedFileId).toBe('first.md'));
+    expect(
+      screen.queryByText('PC.Components.FileTreeView.noMatchingFile'),
+    ).toBeNull();
+  });
   const localRows = (contextId: string) => [
     {
       name: 'first.md',

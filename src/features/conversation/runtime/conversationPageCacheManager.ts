@@ -1,12 +1,14 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { TaskStatus } from '@/types/enums/agent';
+import type { ConversationFilePreviewState } from '@/types/interfaces/fileTree';
 import eventBus from '@/utils/eventBus';
 import {
   DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
   EMPTY_DRAFT_SUMMARY,
   EMPTY_RESOURCE_STATE,
   createConversationPageCacheKey,
+  normalizeDraftContent,
   selectConversationPageCacheEvictionKey,
   type ConversationDraftAttachment,
   type ConversationDraftData,
@@ -124,6 +126,23 @@ const normalizeDraftFiles = (value: unknown): ConversationDraftAttachment[] => {
 };
 
 class ConversationPageCacheManager {
+  // 轻量阅读意图独立于 DOM/LRU 生命周期，重新挂载时重新解析文件与授权。
+  private filePreviewStates = new Map<string, ConversationFilePreviewState>();
+
+  getFilePreviewState(key: string): ConversationFilePreviewState {
+    return this.filePreviewStates.get(key) ?? {};
+  }
+
+  updateFilePreviewState(
+    key: string,
+    patch: Partial<ConversationFilePreviewState>,
+  ) {
+    this.filePreviewStates.set(key, {
+      ...this.getFilePreviewState(key),
+      ...patch,
+    });
+  }
+
   private entries = new Map<string, ConversationPageCacheEntry>();
   private listeners = new Set<Listener>();
   private disposeListeners = new Set<DisposeListener>();
@@ -448,10 +467,14 @@ class ConversationPageCacheManager {
 
   invalidateAll(reason = 'manual') {
     [...this.entries.keys()].forEach((key) => this.invalidate(key, reason));
+    this.filePreviewStates.clear();
   }
 
   invalidateConversation(conversationId: number | string, reason = 'manual') {
     const normalizedId = String(conversationId);
+    for (const key of this.filePreviewStates.keys()) {
+      if (key.endsWith(`:${normalizedId}`)) this.filePreviewStates.delete(key);
+    }
     this.executingConversations.delete(normalizedId);
     [...this.entries.values()]
       .filter((entry) => entry.conversationId === normalizedId)
@@ -511,11 +534,21 @@ class ConversationPageCacheManager {
         return null;
       }
       const files = normalizeDraftFiles(parsed.files);
-      if (!parsed.text.trim() && !parsed.skillIds?.length && !files.length) {
+      const content = normalizeDraftContent(parsed.content);
+      if (
+        !parsed.text.trim() &&
+        !parsed.skillIds?.length &&
+        !files.length &&
+        !content.some((part) => typeof part !== 'string')
+      ) {
         localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${key}`);
         return null;
       }
-      return { ...parsed, files: files.length ? files : undefined };
+      return {
+        ...parsed,
+        files: files.length ? files : undefined,
+        content: content.length ? content : undefined,
+      };
     } catch {
       return null;
     }
@@ -528,8 +561,12 @@ class ConversationPageCacheManager {
     if (key === null || key === undefined) return;
     const cacheKey = String(key);
     const files = normalizeDraftFiles(draft.files);
+    const content = normalizeDraftContent(draft.content);
     const hasContent =
-      !!draft.text.trim() || !!draft.skillIds?.length || !!files.length;
+      !!draft.text.trim() ||
+      !!draft.skillIds?.length ||
+      !!files.length ||
+      content.some((part) => typeof part !== 'string');
     const savedAt = Date.now();
     if (canUseStorage()) {
       try {
@@ -540,6 +577,7 @@ class ConversationPageCacheManager {
             JSON.stringify({
               ...draft,
               files: files.length ? files : undefined,
+              content: content.length ? content : undefined,
               savedAt,
             } satisfies ConversationDraftData),
           );

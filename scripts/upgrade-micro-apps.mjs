@@ -21,11 +21,11 @@ const repoRelative = (root, file) =>
 
 export const upgradeUsage = `用法：npm run upgrade:micro-apps -- <message|repo|all> [选项]
 
-  message / repo             升级单个应用到远程 main
+  message / repo             升级单个应用到登记分支的远程最新提交
   all / --all                升级全部已登记应用
   --app <id>                 与位置参数选择应用等价
   --dry-run                  fetch 和预检，不改变 HEAD、pin 或 index
-  --ref <SHA或ref>            单应用选择 main 历史中的快进提交
+  --ref <SHA或ref>            单应用选择登记分支历史中的快进提交
   --allow-overlay-changes    人工审查后允许上游 overlay 同名文件变化
   --no-rebase-patch          补丁贴不上时不要三方重算（默认会重算）
   -h / --help                查看帮助
@@ -220,8 +220,183 @@ async function overlayChanges(git, state, snapshot) {
   return files.split('\0').filter((file) => file && !preserved.has(file));
 }
 
+/**
+ * 从补丁里去掉目标树上不存在、且不是新增文件的 diff。
+ * 切换子模块分支时，旧分支独有文件不能再打到新分支上。
+ * 新增文件（--- /dev/null）保留，它们是宿主补丁自己带进来的。
+ *
+ * @param {string} patch 完整 adapter.patch
+ * @param {Iterable<string>} existingFiles 目标提交里的路径
+ * @returns {{ patch: string, dropped: string[] }}
+ */
+export function omitUnavailablePatchFiles(patch, existingFiles) {
+  const present = new Set(existingFiles);
+  const dropped = [];
+  const kept = [];
+  for (const section of String(patch).split(/(?=^diff --git )/m)) {
+    if (!section.startsWith('diff --git ')) {
+      kept.push(section);
+      continue;
+    }
+    const paths = section.match(/^diff --git a\/(\S+) b\/(\S+)/);
+    const target = paths?.[2];
+    // 纯重命名的 b/ 路径在目标树上本来就不存在。只要 a/ 还在，就要留下，
+    // 让 overlay 能盖住原文件名（例如 vite.config.ts → vite.upstream.config.ts）。
+    const renameFrom = section.match(/^rename from (\S+)/m)?.[1];
+    if (renameFrom) {
+      if (!present.has(renameFrom)) dropped.push(renameFrom);
+      else kept.push(section);
+      continue;
+    }
+    const isNewFile =
+      /^new file mode /m.test(section) || /^--- \/dev\/null$/m.test(section);
+    if (target && !isNewFile && !present.has(target)) {
+      dropped.push(target);
+      continue;
+    }
+    kept.push(section);
+  }
+  let text = kept.join('');
+  if (text && !text.endsWith('\n')) text += '\n';
+  return { patch: text, dropped };
+}
+
+/**
+ * 三方冲突时保留远端一侧。
+ * worktree 检出的是 adapter.json 所配分支的远端提交，git apply --3way
+ * 的第一段（ours / HEAD）就是这份远端代码。只替换冲突段，已经贴上的宿主适配保留。
+ *
+ * @param {string} source 带冲突标记的文件文本
+ * @returns {string} 冲突段改为远端代码后的文本
+ */
+export function keepRemoteConflictSides(source) {
+  const markerCount = source.match(/^<<<<<<< /gm)?.length ?? 0;
+  if (markerCount === 0) return source;
+  let resolvedCount = 0;
+  const resolved = source.replace(
+    /^<<<<<<< (?:ours|HEAD)\r?\n([\s\S]*?)^=======\r?\n[\s\S]*?^>>>>>>> [^\n]+\r?\n/gm,
+    (_match, remoteSide) => {
+      resolvedCount += 1;
+      return remoteSide;
+    },
+  );
+  if (resolvedCount !== markerCount || /^<<<<<<< |^>>>>>>> /m.test(resolved)) {
+    throw new Error('补丁冲突标记无法按远端代码取舍');
+  }
+  return dropUnusedNamedImports(resolved);
+}
+
+/**
+ * 冲突段取远端后，补丁加进来的 import 可能整段被丢掉，而后面能贴上的调用还在。
+ * 这些名字仍被使用时把对应 import 补回去；没人用的不加，避免和「删掉无用导入」对着干。
+ *
+ * @param {string} source 冲突已经按远端取舍后的文件
+ * @param {string} patchSection 该文件在补丁里的那一段
+ * @returns {string}
+ */
+export function restoreUsedPatchImports(source, patchSection) {
+  const added = String(patchSection)
+    .split('\n')
+    .filter((line) => line.startsWith('+import ') || line.startsWith('+import{'))
+    .map((line) => line.slice(1));
+  let text = source.endsWith('\n') || source === '' ? source : `${source}\n`;
+  for (const statement of added) {
+    const names = importBindingNames(statement).filter((name) => {
+      const body = text
+        .split('\n')
+        .filter((line) => !line.startsWith('import ') && !line.startsWith('import{'))
+        .join('\n');
+      if (!new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(body))
+        return false;
+      return !new RegExp(
+        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+      ).test(importLines(text));
+    });
+    if (!names.length || text.includes(statement)) continue;
+    text = insertImport(text, narrowImport(statement, names));
+  }
+  return text;
+}
+
+function importLines(source) {
+  return source
+    .split('\n')
+    .filter((line) => line.startsWith('import ') || line.startsWith('import{'))
+    .join('\n');
+}
+
+function importBindingNames(statement) {
+  const named = statement.match(/\{([^}]+)\}/);
+  if (named) {
+    return named[1]
+      .split(',')
+      .map((part) => part.trim().split(/\s+as\s+/).pop().trim())
+      .filter(Boolean);
+  }
+  const fallback = statement.match(/^import\s+(?!type\b)([A-Za-z_$][\w$]*)\s+from\b/);
+  return fallback ? [fallback[1]] : [];
+}
+
+function narrowImport(statement, names) {
+  if (!statement.includes('{')) return statement;
+  return statement.replace(/\{[^}]+\}/, `{ ${names.join(', ')} }`);
+}
+
+function insertImport(source, statement) {
+  const lines = source.split('\n');
+  let lastImport = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (/^import[\s{]/.test(lines[index])) lastImport = index;
+    else if (lastImport >= 0 && lines[index].trim() !== '') break;
+  }
+  lines.splice(lastImport + 1, 0, statement);
+  return lines.join('\n');
+}
+
+function patchSectionFor(patch, file) {
+  return (
+    String(patch)
+      .split(/(?=^diff --git )/m)
+      .find((section) => {
+        const paths = section.match(/^diff --git a\/(\S+) b\/(\S+)/);
+        return paths?.[1] === file || paths?.[2] === file;
+      }) ?? ''
+  );
+}
+
+/** 冲突段改回远端后，补丁引进但已不再使用的具名导入删掉，避免产物编译报未使用。 */
+function dropUnusedNamedImports(source) {
+  return source.replace(
+    /^import\s+(type\s+)?\{([^}]+)\}\s+from\s+(['"][^'"]+['"]);?[ \t]*\r?\n/gm,
+    (line, typeKeyword, names, specifier) => {
+      const parts = names
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const elsewhere = source.replace(line, '\n');
+      const used = parts.filter((part) => {
+        const name = part.split(/\s+as\s+/).pop().trim();
+        return new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(
+          elsewhere,
+        );
+      });
+      if (used.length === parts.length) return line;
+      if (used.length === 0) return '';
+      const typePrefix = typeKeyword || '';
+      return `import ${typePrefix}{ ${used.join(', ')} } from ${specifier};\n`;
+    },
+  );
+}
+
 /** 子仓有旧 blob，空归档没有，贴不上时只能在 worktree 里三方重算。 */
-async function rebasePatchOnto(execute, source, commit, patchFile, workParent) {
+async function rebasePatchOnto(
+  execute,
+  source,
+  commit,
+  patchFile,
+  workParent,
+  log = () => {},
+) {
   await fs.mkdir(workParent, { recursive: true });
   const parent = await fs.mkdtemp(path.join(workParent, 'rebase-'));
   const work = path.join(parent, 'work');
@@ -231,10 +406,61 @@ async function rebasePatchOnto(execute, source, commit, patchFile, workParent) {
       ['worktree', 'add', '--detach', '--quiet', work, commit],
       { cwd: source, capture: true },
     );
-    await execute('git', ['apply', '--3way', patchFile], {
-      cwd: work,
-      capture: true,
-    });
+    const listed = await execute(
+      'git',
+      ['ls-tree', '-r', '--name-only', commit],
+      { cwd: source, capture: true },
+    );
+    const filtered = omitUnavailablePatchFiles(
+      await fs.readFile(patchFile, 'utf8'),
+      listed.split('\n').filter(Boolean),
+    );
+    if (filtered.dropped.length) {
+      log(
+        `[upgrade] 目标提交没有这些文件，已从补丁去掉：${filtered.dropped.join(
+          ', ',
+        )}`,
+      );
+    }
+    const filteredPatch = path.join(parent, 'filtered.patch');
+    await fs.writeFile(filteredPatch, filtered.patch);
+    if (!/^diff --git /m.test(filtered.patch)) {
+      return Buffer.from('');
+    }
+    try {
+      await execute('git', ['apply', '--3way', filteredPatch], {
+        cwd: work,
+        capture: true,
+      });
+    } catch (applyError) {
+      const unmerged = await execute(
+        'git',
+        ['diff', '--name-only', '--diff-filter=U'],
+        { cwd: work, capture: true },
+      );
+      const files = unmerged
+        .split('\n')
+        .map((file) => file.trim())
+        .filter(Boolean);
+      if (!files.length) throw applyError;
+      for (const file of files) {
+        const fullPath = path.join(work, file);
+        const text = await fs.readFile(fullPath, 'utf8');
+        // 远端赢了冲突段之后，补丁里仍被调用的导入要补回，否则产物能贴上补丁但编不过。
+        await fs.writeFile(
+          fullPath,
+          restoreUsedPatchImports(
+            keepRemoteConflictSides(text),
+            patchSectionFor(filtered.patch, file),
+          ),
+        );
+      }
+      log(
+        `[upgrade] 补丁与远端冲突，冲突段采用配置分支远端代码：${files.join(
+          ', ',
+        )}`,
+      );
+    }
     await execute(
       'git',
       ['add', '-A', '--', '.', ':(exclude)*.rej', ':(exclude)*.orig'],
@@ -268,6 +494,20 @@ async function rollback(states, git, root) {
       errors.push(`${label}: ${error.message}`);
     }
   };
+  const gitmodulesState = states.find((state) => state.gitmodulesTouched);
+  if (gitmodulesState) {
+    await attempt('.gitmodules', async () => {
+      const file = path.join(root, '.gitmodules');
+      const contents = await fs.readFile(file);
+      if (
+        !contents.equals(gitmodulesState.oldGitmodules) &&
+        !contents.equals(gitmodulesState.newGitmodules)
+      )
+        throw new Error('文件已被另外修改，保留当前内容');
+      await fs.writeFile(file, gitmodulesState.oldGitmodules);
+      await git(root, ['add', '--', '.gitmodules']);
+    });
+  }
   for (const state of [...states].reverse()) {
     if (!state.touched) continue;
     await attempt(`${state.app.id} adapter`, async () => {
@@ -314,8 +554,8 @@ async function rollback(states, git, root) {
           entry.path === state.app.adapter.sourceDir
             ? state.newPin
             : entry.path === repoRelative(root, state.app.adapterPath)
-              ? state.newAdapterOid
-              : state.newPatchOid;
+            ? state.newAdapterOid
+            : state.newPatchOid;
         if (
           current.mode !== entry.mode ||
           (current.oid !== entry.oid && current.oid !== owned)
@@ -422,10 +662,16 @@ export async function upgradeMicroApps({
         )
           throw new Error(`${app.id} 有进行中的 Git 操作：${marker}`);
       }
-      // main ref 可由下面的 fetch 补齐；这里先验证 index/pin、提交和来源。
+      // 登记分支的 ref 可由下面的 fetch 补齐；这里先验证 index/pin、提交和来源。
       const source = await getPinnedSource(root, app, execute, {
-        checkMainHistory: false,
+        checkBranchHistory: false,
+        // adapter.json 是登记的目标分支。.gitmodules 只是跟踪提示，名字不同就改过来，不在这里中止。
+        followAdapterBranch: true,
       });
+      if (source.recordedBranch !== app.adapter.branch)
+        log(
+          `[upgrade] ${app.id} .gitmodules 分支 ${source.recordedBranch} 与 adapter.branch ${app.adapter.branch} 不一致，按 adapter 改为 ${app.adapter.branch}`,
+        );
       const head = await git(app.source, ['rev-parse', 'HEAD']);
       if (head !== source.commit)
         throw new Error(`${app.id} 子仓 HEAD 偏离固定 gitlink，请先保留并处理`);
@@ -442,6 +688,8 @@ export async function upgradeMicroApps({
         branch: await branchOf(git, app.source),
         oldAdapter: await fs.readFile(app.adapterPath, 'utf8'),
         oldPatch: await fs.readFile(app.patch),
+        recordedBranch: source.recordedBranch,
+        moduleKey: source.moduleKey,
         fingerprint: (await adapterFingerprint(app)).sha256,
         index: await Promise.all(
           [
@@ -455,18 +703,20 @@ export async function upgradeMicroApps({
     scratch = await fs.mkdtemp(path.join(cache, 'upgrade-check-'));
     for (const state of states) {
       const { app } = state;
+      const branch = app.adapter.branch;
+      const remoteRef = `refs/remotes/origin/${branch}`;
       await checked(app.source, [
         'fetch',
         '--no-tags',
         '--recurse-submodules=no',
         'origin',
-        '+refs/heads/main:refs/remotes/origin/main',
+        `+refs/heads/${branch}:${remoteRef}`,
       ]);
       state.newPin = await checked(app.source, [
         'rev-parse',
         '--verify',
         '--end-of-options',
-        `${ref || 'refs/remotes/origin/main'}^{commit}`,
+        `${ref || remoteRef}^{commit}`,
       ]);
       try {
         await checked(app.source, [
@@ -479,12 +729,27 @@ export async function upgradeMicroApps({
           'merge-base',
           '--is-ancestor',
           state.newPin,
-          'refs/remotes/origin/main',
+          remoteRef,
         ]);
       } catch (cause) {
-        throw new Error(
-          `${app.id} 候选必须在 main 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
-          { cause },
+        const tip = await checked(app.source, [
+          'rev-parse',
+          '--verify',
+          '--end-of-options',
+          `${remoteRef}^{commit}`,
+        ]);
+        // --ref 可以指向分支上的旧提交或旁支。那种选择仍必须是快进，不能借分支切换绕过。
+        // 没指定 ref、候选就是 adapter.branch 的远端尖端时，pin 不在这条历史上就是切换子模块分支：
+        // 移到尖端并重算补丁，而不是把回退当成升级失败。
+        if (ref || state.newPin !== tip) {
+          throw new Error(
+            `${app.id} 候选必须在 ${branch} 历史中且相对原 pin 为快进；不自动回退或接收分叉提交`,
+            { cause },
+          );
+        }
+        state.branchSwitch = true;
+        log(
+          `[upgrade] ${app.id} 按 ${branch} 切换子模块：当前 pin 不是 origin/${branch} 的快进，改到该分支尖端并重算适配补丁`,
         );
       }
       state.newAdapter = updatedAdapter(
@@ -515,10 +780,7 @@ export async function upgradeMicroApps({
       } catch (cause) {
         const conflicted = [];
         try {
-          const patchText = await fs.readFile(
-            snapshot.snapshot.patch,
-            'utf8',
-          );
+          const patchText = await fs.readFile(snapshot.snapshot.patch, 'utf8');
           const files = [
             ...patchText.matchAll(/^diff --git a\/(\S+) b\/(\S+)$/gm),
           ].map((m) => m[2]);
@@ -539,11 +801,20 @@ export async function upgradeMicroApps({
         }
         const fail = (extra = '') =>
           new Error(
-            `${app.id} adapter patch 与候选 main 冲突，请先调整适配` +
+            `${app.id} adapter patch 与候选 ${branch} 冲突，请先调整适配` +
               (conflicted.length
-                ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join('\n')}`
+                ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join(
+                    '\n',
+                  )}`
                 : '') +
-              `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(0, 9)}${state.oldPin === state.newPin ? '（本次为本地适配未重制，非上游前进）' : ''}` +
+              `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(
+                0,
+                9,
+              )}${
+                state.oldPin === state.newPin
+                  ? '（本次为本地适配未重制，非上游前进）'
+                  : ''
+              }` +
               extra +
               `\n处置：微应用适配负责人基于新候选重制 adapter.patch 并随构建提交；` +
               `其他同事无需本地处理，拉取最新分支（dev/版本分支）后重跑构建即可。` +
@@ -560,10 +831,13 @@ export async function upgradeMicroApps({
             state.newPin,
             snapshot.snapshot.patch,
             path.join(cache, 'patch-rebase'),
+            log,
           );
           const remadePath = path.join(scratch, `${app.id}-rebased.patch`);
           await fs.writeFile(remadePath, remade);
-          await checked(working, ['apply', '--check', remadePath]);
+          if (/^diff --git /m.test(remade.toString())) {
+            await checked(working, ['apply', '--check', remadePath]);
+          }
           state.rebasedPatch = remade;
         } catch (rebaseCause) {
           throw fail(
@@ -582,11 +856,21 @@ export async function upgradeMicroApps({
         );
       log(
         `[upgrade] ${app.id}: ${state.oldPin} -> ${state.newPin}${
+          state.branchSwitch
+            ? '（分支切换'
+            : ''
+        }${
           state.rebasedPatch
-            ? '（适配补丁已自动重算）'
+            ? `${state.branchSwitch ? '，' : '（'}适配补丁已自动重算）`
+            : state.branchSwitch
+            ? '）'
             : state.oldPin === state.newPin
-              ? '（无变化）'
-              : ''
+            ? '（无变化）'
+            : ''
+        }${
+          state.recordedBranch !== app.adapter.branch
+            ? `（.gitmodules 分支 ${state.recordedBranch} -> ${app.adapter.branch}）`
+            : ''
         }`,
       );
       if (state.overlayChanged.length)
@@ -606,7 +890,10 @@ export async function upgradeMicroApps({
     }));
     if (dryRun) return { status: 'dry-run', apps: summaries };
     const changed = states.filter(
-      (state) => state.oldPin !== state.newPin || state.rebasedPatch,
+      (state) =>
+        state.oldPin !== state.newPin ||
+        state.rebasedPatch ||
+        state.recordedBranch !== state.app.adapter.branch,
     );
     if (!changed.length) return { status: 'unchanged', apps: summaries };
     // 锁不能阻止手工编辑；写入前复核完整适配指纹、HEAD/分支与 index。
@@ -658,6 +945,28 @@ export async function upgradeMicroApps({
       });
     }
     await writeReceipt(receiptDir, receipt);
+    const branchRecords = changed.filter(
+      (state) => state.recordedBranch !== state.app.adapter.branch,
+    );
+    if (branchRecords.length) {
+      const gitmodulesPath = path.join(root, '.gitmodules');
+      const oldGitmodules = await fs.readFile(gitmodulesPath);
+      for (const state of branchRecords) {
+        await checked(root, [
+          'config',
+          '-f',
+          '.gitmodules',
+          `${state.moduleKey}.branch`,
+          state.app.adapter.branch,
+        ]);
+      }
+      const newGitmodules = await fs.readFile(gitmodulesPath);
+      for (const state of branchRecords) {
+        state.gitmodulesTouched = true;
+        state.oldGitmodules = oldGitmodules;
+        state.newGitmodules = newGitmodules;
+      }
+    }
     for (const state of changed) {
       signal?.throwIfAborted();
       state.touched = true;
@@ -697,6 +1006,9 @@ export async function upgradeMicroApps({
         repoRelative(root, state.app.adapterPath),
         ...(state.rebasedPatch ? [repoRelative(root, state.app.patch)] : []),
       ]),
+      ...(changed.some((state) => state.gitmodulesTouched)
+        ? ['.gitmodules']
+        : []),
     ]);
     for (const state of changed) {
       const entry = await indexEntry(git, root, state.app.adapter.sourceDir);

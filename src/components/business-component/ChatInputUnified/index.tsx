@@ -88,7 +88,12 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { clearDraft, loadDraft, saveDraft } from './draftStorage';
+import {
+  clearDraft,
+  loadDraft,
+  saveDraft,
+  type ChatDraftData,
+} from './draftStorage';
 import { useConversationDraftScope } from './useConversationDraftScope';
 
 const cx = classNames.bind(styles);
@@ -186,7 +191,7 @@ export interface ChatInputUnifiedProps {
   onWorkspaceDirChange?: (dir: string) => void;
   /** 禁用个人电脑（如网站应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
   disablePersonalComputer?: boolean;
-  /** 是否展示空间选择器（首页创建项目类推荐时使用） */
+  /** 是否展示空间选择器（首页创建项目或项目外选择个人目录时使用） */
   showSpaceSelector?: boolean;
   selectedSpaceId?: number;
   onSpaceSelect?: (spaceId: number) => void;
@@ -720,7 +725,7 @@ const ChatInputUnifiedImpl: React.FC<
       onEnter(
         value,
         files,
-        supportsAgentCapabilities ? skillIds : [],
+        supportsAgentCapabilities && enableMention ? skillIds : [],
         selectedModelId,
         agentMode,
         supportsAgentCapabilities ? selectedDocs : [],
@@ -1070,17 +1075,37 @@ const ChatInputUnifiedImpl: React.FC<
   }, []);
 
   // ===== 输入草稿缓存（按「会话页面地址 × 会话 id」持久化，切回/刷新后恢复） =====
+  // 仅恢复 effect 建立新作用域时更新，防止过渡渲染把旧内容写进新桶。
+  const draftStateScopeRef = useRef<string | null>(null);
   // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
   const draftStateRef = useRef({ text: messageInfo, files });
   draftStateRef.current = { text: messageInfo, files };
-  // 草稿落盘文本镜像：mention chip 剥离后的纯文本（编辑器挂载后 DOM 直读）。
-  // chip 无法跨刷新/切换还原成 chip，序列化残留的 @/ 名称字面量会污染
-  // 恢复后的输入框——技能 chip 一并不再随草稿持久化
-  const draftTextRef = useRef(messageInfo);
+  // 文本摘要与结构化引用同时保存，回显后再由 chip 派生发送参数。
+  const draftEditorRef = useRef<Pick<ChatDraftData, 'text' | 'content'>>({
+    text: messageInfo,
+  });
   useEffect(() => {
-    draftTextRef.current =
-      mentionEditorRef.current?.getPlainText?.() ?? messageInfo;
-  }, [messageInfo]);
+    const previous = draftEditorRef.current;
+    const next = {
+      text: mentionEditorRef.current?.getPlainText?.() ?? messageInfo,
+      content: mentionEditorRef.current?.getDraftContent?.(),
+    };
+    draftEditorRef.current = next;
+    const mentionCount = (content: ChatDraftData['content']) =>
+      content?.filter((part) => typeof part !== 'string').length ?? 0;
+    // 主动删除引用立即写回，避免删除最后一个 chip 后立刻离开又恢复旧引用。
+    if (
+      draftScope &&
+      draftStateScopeRef.current === draftScope &&
+      mentionCount(next.content) < mentionCount(previous.content)
+    ) {
+      saveDraft(draftScope, {
+        version: 1,
+        ...next,
+        files: draftStateRef.current.files,
+      });
+    }
+  }, [messageInfo, skillIds, selectedDocs]);
 
   const handleDelFile = (uid: string) => {
     setUploadFiles(uploadFiles.filter((item) => item.uid !== uid));
@@ -1088,15 +1113,12 @@ const ChatInputUnifiedImpl: React.FC<
     if (draftScope) {
       saveDraft(draftScope, {
         version: 1,
-        text: draftTextRef.current,
+        ...draftEditorRef.current,
         files: files.filter((item) => item.uid !== uid),
       });
     }
   };
 
-  // 状态文本当前归属的作用域：仅恢复 effect 建立新作用域时更新——节流落盘前
-  // 校验，防「作用域已切换、文本仍旧会话」的过渡渲染把旧内容写进新桶
-  const draftStateScopeRef = useRef<string | null>(null);
   // 上一个作用域标记：区分「首挂恢复」（输入为空才回填，不覆盖队列编辑回填）
   // 与「同实例切换会话」（旧内容属于旧会话，无条件切到新草稿）
   const lastDraftScopeRef = useRef<string | null>(null);
@@ -1119,17 +1141,16 @@ const ChatInputUnifiedImpl: React.FC<
       percent: 100,
     }));
     if (isScopeSwitch) {
-      // 技能 chip 不随草稿持久化（无法还原成 chip）：切换会话直接清空，
-      // 避免上一会话技能作为不可见附件带入新会话
       setSkillIds([]);
+      setSelectedDocs([]);
       setUploadFiles(restoredFiles);
       setMessageInfo(text);
-      mentionEditorRef.current?.setEditorText?.(text);
+      mentionEditorRef.current?.setEditorText?.(text, draft?.content);
       return;
     }
     // 首挂：输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
-    if (!draftStateRef.current.text && text) {
-      mentionEditorRef.current?.setEditorText?.(text);
+    if (!draftStateRef.current.text && (text || draft?.content?.length)) {
+      mentionEditorRef.current?.setEditorText?.(text, draft?.content);
     }
     if (!draftStateRef.current.files.length && restoredFiles.length) {
       setUploadFiles(restoredFiles);
@@ -1150,7 +1171,7 @@ const ChatInputUnifiedImpl: React.FC<
       if (draftStateScopeRef.current !== draftScope) return;
       saveDraft(draftScope, {
         version: 1,
-        text: draftTextRef.current,
+        ...draftEditorRef.current,
         files: draftStateRef.current.files,
       });
     }, 1000);
@@ -1168,14 +1189,19 @@ const ChatInputUnifiedImpl: React.FC<
     const scope = draftScope;
     return () => {
       if (draftConsumedRef.current) return;
-      const text = draftTextRef.current;
+      const editorDraft = draftEditorRef.current;
       // 卸载兜底只补写、不删除：teardown 阶段镜像可能已被次生效应清空
       // （过渡期 model 复位/二次 teardown 等），空值落盘会误删已持久化的
       // 草稿（2026-09-15 实测切会话 100% 复现丢失）；用户真正清空输入由
       // 1s 节流的空值落盘负责删键
       const draftFiles = draftStateRef.current.files;
-      if (!text.trim() && !draftFiles.length) return;
-      saveDraft(scope, { version: 1, text, files: draftFiles });
+      if (
+        !editorDraft.text.trim() &&
+        !editorDraft.content?.some((part) => typeof part !== 'string') &&
+        !draftFiles.length
+      )
+        return;
+      saveDraft(scope, { version: 1, ...editorDraft, files: draftFiles });
     };
   }, [draftScope]);
 

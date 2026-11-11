@@ -1,4 +1,8 @@
-import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import AliyunCaptcha, {
+  CAPTCHA_SAFETY_INTERVAL_MS,
+  type AliyunCaptchaRef,
+  type CaptchaVerificationContext,
+} from '@/components/AliyunCaptcha';
 import AppStartup from '@/components/business-component/AppStartup';
 import ImageCaptcha, {
   imageCaptchaRules,
@@ -8,7 +12,6 @@ import ImageCaptcha, {
 import SiteFooter from '@/components/SiteFooter';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
-import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { apiAuthIdpLoginList } from '@/services/authIdp';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
@@ -16,7 +19,8 @@ import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
-import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import type { LoginFieldType } from '@/types/interfaces/login';
+import type { QrLoginResult } from '@/types/interfaces/qrLogin';
 import {
   filterIdpByUa,
   IDP_RETURN_PATH_KEY,
@@ -31,8 +35,15 @@ import {
   completeDesktopIdpReturn,
   startIdpNavigation,
 } from '@/utils/idpNavigation';
+import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
-import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import {
+  DesktopOutlined,
+  DownOutlined,
+  ExclamationCircleFilled,
+  QrcodeOutlined,
+} from '@ant-design/icons';
+import { useRequest } from 'ahooks';
 import {
   Alert,
   Button,
@@ -56,11 +67,23 @@ import BasicLayout from './BasicLayout';
 import IdpLoginButtons from './IdpLoginButtons';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
+import QrCodeLogin from './QrCodeLogin';
 import SiteProtocol from './SiteProtocol';
 
 const { Title } = Typography;
 
 type SegmentedItemType = { label: React.ReactNode; value: string };
+
+interface CaptchaLoginRound {
+  loginType: LoginTypeEnum;
+  armedAt: number;
+  claimed: boolean;
+  awaitingSecondary: boolean;
+  lastParam?: string;
+}
+
+const loginWithPassword = async (params: LoginFieldType) =>
+  (await apiLogin(params)).data;
 
 const cx = classNames.bind(styles);
 
@@ -109,9 +132,10 @@ const EllipsisTooltip: React.FC<{ title: string; children: string }> = ({
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [loginType, setLoginType] = useState<LoginTypeEnum>(
+  const [accountLoginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
+  const [showAccountLogin, setShowAccountLogin] = useState(false);
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
   /**
    * 防止快速重复点击导致重复触发验证码弹窗。
@@ -123,34 +147,42 @@ const Login: React.FC = () => {
    * 防止 SDK 多次调用 captchaVerifyCallback 导致并发登录请求。
    */
   const isVerifyingRef = useRef<boolean>(false);
-  /** 检测到 SDK 自动验证（deviceToken 格式）时跳过验证码校验 */
-  const captchaFallbackRef = useRef<boolean>(false);
   /**
    * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
-  const captchaDelayTimerRef = useRef<number | null>(null);
+  const captchaPopupCancelCleanupRef = useRef<(() => void) | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
-  /** SDK success（或实例就绪后的兜底）已到，验证码资源可以开始验证 */
+  /** SDK 已交出实例，且已等待初始化后的安全间隔。 */
   const captchaReadyRef = useRef(false);
-  /** 用户已点登录，正在等资源就绪和 init 满 2 秒 */
+  const [captchaInitFailed, setCaptchaInitFailed] = useState(false);
   const captchaLoginPendingRef = useRef(false);
-  /** 只消费这次点击触发的验证回调，忽略初始化时的自动回调 */
-  const captchaLoginArmedRef = useRef(false);
-  /** 本轮点击隐藏按钮的时间：回调可能早于本轮 captcha-open 落稳 */
-  const captchaRoundArmedAtRef = useRef(0);
-  const captchaWaitStartedRef = useRef(0);
-  /** 点开本轮验证后，至少再等这么久才把参数交给登录接口 */
+  const [captchaWaiting, setCaptchaWaiting] = useState(false);
+  const captchaLoginRoundRef = useRef<CaptchaLoginRound | null>(null);
   const CAPTCHA_ROUND_SETTLE_MS = 500;
   /** 已点登录、正在等验证码。请求自己的 loading 要等接口发出才为 true */
   const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
+  const [captchaGeneration, setCaptchaGeneration] = useState(0);
+  const [captchaRequested, setCaptchaRequested] = useState(false);
   const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
+  const [qrConfirming, setQrConfirming] = useState(false);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
   const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+  const qrLoginEnabled = tenantConfigInfo?.openQrLogin === 1;
+  const loginType =
+    qrLoginEnabled && !showAccountLogin
+      ? LoginTypeEnum.QrCode
+      : accountLoginType;
+
+  useEffect(() => {
+    loginTypeRef.current = loginType;
+    // 配置关闭时扫码面板已卸载，释放确认态，恢复账号登录操作。
+    if (!qrLoginEnabled) setQrConfirming(false);
+  }, [loginType, qrLoginEnabled]);
 
   // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
   const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
@@ -200,35 +232,53 @@ const Login: React.FC = () => {
     }, 0);
   };
 
-  const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
-    apiLogin,
+  const completeLogin = async (
+    result: Pick<QrLoginResult, 'token' | 'expireDate'> & {
+      redirect?: string | null;
+    },
+    account?: string,
+    isCurrent: () => boolean = () => true,
+  ) => {
+    const authResult = await finishBusinessLogin(result.token);
+    if (!isCurrent()) return;
+    if (authResult !== 'ready') {
+      throw new Error(
+        dict(
+          authResult === 'missing-dev-token'
+            ? 'PC.Pages.Login.missingDevToken'
+            : 'PC.Pages.Login.hostSessionSyncFailed',
+        ),
+      );
+    }
+    if (result.expireDate) localStorage.setItem(EXPIRE_DATE, result.expireDate);
+    if (account) localStorage.setItem(PHONE, account);
+    else localStorage.removeItem(PHONE);
+    try {
+      const latestUserInfo = await UserService.refreshUserInfo();
+      if (!isCurrent()) return;
+      if (!account && (latestUserInfo?.phone || latestUserInfo?.email)) {
+        localStorage.setItem(
+          PHONE,
+          latestUserInfo.phone || latestUserInfo.email,
+        );
+      }
+      await syncLangFromUserInfo(latestUserInfo);
+    } catch (error) {
+      console.error('[Login] Sync language after login failed:', error);
+    }
+    if (!isCurrent()) return;
+    await loadMenus(true);
+    if (!isCurrent()) return;
+    await initI18n(true);
+    if (!isCurrent()) return;
+    redirectAfterCaptchaCallback(result.redirect);
+  };
+
+  const { runAsync: runPasswordLogin, loading } = useRequest(
+    loginWithPassword,
     {
       manual: true,
-      normalizeUnknownError: true,
-      debounceInterval: 300,
-      onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        const { expireDate, token, redirect: responseRedirectUrl } = result;
-        const authResult = await finishBusinessLogin(token);
-        if (authResult !== 'ready') {
-          message.error(
-            authResult === 'missing-dev-token'
-              ? '登录接口未返回本地调试所需的 Token'
-              : '客户端登录会话同步失败，请升级客户端后重试',
-          );
-          return;
-        }
-        localStorage.setItem(EXPIRE_DATE, expireDate);
-        localStorage.setItem(PHONE, params[0].phoneOrEmail);
-        try {
-          const latestUserInfo = await UserService.refreshUserInfo();
-          await syncLangFromUserInfo(latestUserInfo);
-        } catch (error) {
-          console.error('[Login] Sync language after login failed:', error);
-        }
-        await loadMenus(true);
-        await initI18n(true);
-        redirectAfterCaptchaCallback(responseRedirectUrl);
-      },
+      debounceWait: 300,
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
         // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
@@ -239,9 +289,27 @@ const Login: React.FC = () => {
   );
 
   const clearCaptchaPopupWatcher = () => {
+    captchaPopupCancelCleanupRef.current?.();
+    captchaPopupCancelCleanupRef.current = null;
     if (captchaPopupWatcherTimerRef.current !== null) {
       window.clearInterval(captchaPopupWatcherTimerRef.current);
       captchaPopupWatcherTimerRef.current = null;
+    }
+  };
+
+  const resetCaptchaLogin = (resetReady = false, updateUI = true) => {
+    captchaLoginRoundRef.current = null;
+    captchaLoginPendingRef.current = false;
+    isVerifyingRef.current = false;
+    loginTriggerLockRef.current = false;
+    lastLoginTriggerAtRef.current = 0;
+    if (resetReady) {
+      captchaReadyRef.current = false;
+    }
+    clearCaptchaPopupWatcher();
+    if (updateUI) {
+      setCaptchaSubmitting(false);
+      setCaptchaWaiting(false);
     }
   };
 
@@ -269,10 +337,34 @@ const Login: React.FC = () => {
     }
   };
 
-  const startCaptchaPopupWatcher = () => {
+  const startCaptchaPopupWatcher = (round: CaptchaLoginRound) => {
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
     let hasBeenVisible = false;
+    let cancelTimer: number | undefined;
+    const cancelRound = () => {
+      if (captchaLoginRoundRef.current === round && !isVerifyingRef.current) {
+        resetCaptchaLogin(true);
+        setCaptchaGeneration((value) => value + 1);
+      }
+    };
+    const handleCancelClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.closest('#aliyunCaptcha-btn-close') ||
+          target.id === 'aliyunCaptcha-mask')
+      ) {
+        // 先让 SDK 完成关闭事件，再销毁实例，避免其事件处理访问已移除节点。
+        window.clearTimeout(cancelTimer);
+        cancelTimer = window.setTimeout(cancelRound, 0);
+      }
+    };
+    document.addEventListener('click', handleCancelClick, true);
+    captchaPopupCancelCleanupRef.current = () => {
+      window.clearTimeout(cancelTimer);
+      document.removeEventListener('click', handleCancelClick, true);
+    };
 
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
       const popupEl = document.getElementById('aliyunCaptcha-window-popup');
@@ -286,20 +378,14 @@ const Login: React.FC = () => {
         hasBeenVisible = true;
       }
 
-      // 弹窗曾经显示过但现在被关闭/隐藏，或者弹出等待超时（3秒内未弹出），或者极端长驻超时（2分钟）
-      const isClosedAfterOpen = hasBeenVisible && !isVisible;
-      const isInitTimeout = !hasBeenVisible && Date.now() - startedAt > 3000;
+      // 弹窗收起也可能是滑动完成，不能据此取消等待中的验证回调。
+      const isInitTimeout =
+        !hasBeenVisible &&
+        Date.now() - startedAt > (round.awaitingSecondary ? 12000 : 3000);
       const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
 
-      if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
-        loginTriggerLockRef.current = false;
-        if (
-          isClosedAfterOpen ||
-          isMaxTimeout ||
-          (isInitTimeout && !isVerifyingRef.current)
-        ) {
-          setCaptchaSubmitting(false);
-        }
+      if (isInitTimeout || isMaxTimeout) {
+        cancelRound();
         clearCaptchaPopupWatcher();
       }
     }, 300);
@@ -384,6 +470,9 @@ const Login: React.FC = () => {
   const startIdpLogin = (item: AuthIdpLoginItem) => {
     if (idpNavigating) return;
     const go = async () => {
+      setLoginType(LoginTypeEnum.Password);
+      setShowAccountLogin(true);
+      loginTypeRef.current = LoginTypeEnum.Password;
       setIdpNavigating(true);
       const result = await startIdpNavigation({
         providerId: item.id,
@@ -413,11 +502,7 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      clearCaptchaPopupWatcher();
-      if (captchaDelayTimerRef.current !== null) {
-        window.clearTimeout(captchaDelayTimerRef.current);
-        captchaDelayTimerRef.current = null;
-      }
+      resetCaptchaLogin(true, false);
     };
   }, []);
 
@@ -474,58 +559,49 @@ const Login: React.FC = () => {
     },
   ];
 
-  /**
-   * 密码登录：在 captchaVerifyCallback 内调用，直接发起登录请求。
-   *
-   * 参考阿里云官方 demo，captchaVerifyCallback 应始终返回
-   * { captchaResult: true, bizResult: true }，避免 SDK 因 bizResult=false
-   * 而自动刷新验证码（导致登录后仍产生新的校验码请求）。
-   * 业务成功/失败通过 onSuccess/onError 回调中的 UI 反馈（message、导航等）处理。
-   */
+  const needAliyunCaptcha = Boolean(tenantConfigInfo?.openCaptcha);
+
   const handlerPasswordLogin = async (
     captchaVerifyParam: string,
-  ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
-    console.log(
-      '[Login handlerPasswordLogin] raw param length:',
-      captchaVerifyParam?.length,
-      'preview:',
-      captchaVerifyParam?.substring(0, 100),
-    );
-    const { phoneOrEmail, password, imageCaptcha } =
-      form.getFieldsValue() || {};
-    const normalizedCaptchaParam =
-      typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
-
-    const { captchaSceneId, captchaPrefix, openCaptcha } =
-      tenantConfigInfo || {};
-    const needAliyunCaptcha = !!(
-      tenantConfigInfo &&
-      captchaSceneId !== '' &&
-      captchaPrefix !== '' &&
-      openCaptcha &&
-      !captchaFallbackRef.current
-    );
-
-    if (needAliyunCaptcha && !normalizedCaptchaParam) {
-      console.warn('[Login] password-login-blocked-empty-captcha', {
-        account: phoneOrEmail,
-      });
+    isCurrent: () => boolean = () => true,
+  ) => {
+    const { phoneOrEmail, password, imageCaptcha } = form.getFieldsValue();
+    const param = captchaVerifyParam.trim();
+    if (needAliyunCaptcha && !param)
       return { captchaResult: false, bizResult: true };
-    }
-
     try {
-      await runPasswordLogin({
+      const result = await runPasswordLogin({
         phoneOrEmail,
         password,
-        captchaVerifyParam: normalizedCaptchaParam,
+        captchaVerifyParam: param,
         ...pickImageCaptcha(imageCaptcha),
       });
-      // onSuccess 处理导航，登录成功
-      return { captchaResult: true, bizResult: true };
-    } catch {
-      // 登录失败由 onError 回调处理 UI 反馈，不通过 bizResult 通知 SDK
-      return { captchaResult: true, bizResult: true };
+      if (isCurrent()) {
+        try {
+          await completeLogin(result, phoneOrEmail, isCurrent);
+        } catch (error) {
+          if (isCurrent())
+            message.error(
+              error instanceof Error
+                ? error.message
+                : dict('PC.Pages.Login.hostSessionSyncFailed'),
+            );
+        }
+      }
+    } catch (error) {
+      // 验证失败须反馈给 SDK，允许无痕验证进入二次验证流程。
+      const failure = error as {
+        message?: string;
+        info?: { message?: string };
+      };
+      return {
+        captchaResult: !isLoginCodeInvalidError(
+          failure?.info?.message ?? failure?.message,
+        ),
+        bizResult: false,
+      };
     }
+    return { captchaResult: true, bizResult: true };
   };
 
   /**
@@ -576,177 +652,101 @@ const Login: React.FC = () => {
     return { captchaResult: true, bizResult: true };
   };
 
-  /**
-   * 传给 AliyunCaptcha 的 onVerify 回调。
-   * SDK 验证通过后调用此函数，在此处发起业务请求并返回真实结果。
-   * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
-   */
-  const waitForCaptchaRoundSettle = async () => {
-    const armedAt = captchaRoundArmedAtRef.current;
-    if (!armedAt) return;
-    const remain = CAPTCHA_ROUND_SETTLE_MS - (Date.now() - armedAt);
-    if (remain > 0) {
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, remain);
-      });
-    }
-  };
-
-  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
-    if (!captchaLoginArmedRef.current) {
-      return { captchaResult: true, bizResult: true };
-    }
-    captchaLoginArmedRef.current = false;
-    // init 就绪 ≠ 本轮验证会话已落稳。无痕路径常在 click 后立刻交参，
-    // 此时 captcha-open 可能还在飞，直接登录会偶发「校验参数异常」。
-    await waitForCaptchaRoundSettle();
-    // 检测 SDK 自动验证（deviceToken JSON 格式，非用户滑动验证）
-    const isDeviceTokenFallback =
-      captchaVerifyParam?.startsWith('{"sceneId"') &&
-      captchaVerifyParam.length > 500;
-    if (isDeviceTokenFallback) {
-      // deviceToken 格式走正常路径发送给后端（后端支持此格式），
-      // 仅跳过前端 needAliyunCaptcha 的空字符串拦截（captchaFallbackRef）
-      if (isVerifyingRef.current) {
-        console.log(
-          '[Login handleCaptchaVerify] deviceToken path locked, skip',
-        );
-        return { captchaResult: true, bizResult: true };
-      }
-      isVerifyingRef.current = true;
-      captchaFallbackRef.current = true;
-      console.log(
-        '[Login handleCaptchaVerify] deviceToken auto-verify, pass-through to backend',
-      );
-      try {
-        if (loginTypeRef.current === LoginTypeEnum.Password) {
-          return await handlerPasswordLogin(captchaVerifyParam);
-        }
-        return await handlerCodeLogin(captchaVerifyParam);
-      } finally {
-        captchaFallbackRef.current = false;
-        isVerifyingRef.current = false;
-        setCaptchaSubmitting(false);
-        // 释放触发锁并清理 popup watcher，避免登录按钮锁死
-        loginTriggerLockRef.current = false;
-        clearCaptchaPopupWatcher();
-      }
-    }
-
-    if (isVerifyingRef.current) {
-      console.log('[Login handleCaptchaVerify] isVerifyingRef locked, skip');
-      return { captchaResult: true, bizResult: true };
-    }
+  const handleCaptchaVerify = async (
+    param: string,
+    context: CaptchaVerificationContext,
+  ) => {
+    const round = captchaLoginRoundRef.current;
+    const ignored = { captchaResult: true, bizResult: true };
+    if (
+      !round ||
+      round.claimed ||
+      round.lastParam === param ||
+      !context.isCurrent()
+    )
+      return ignored;
+    round.claimed = true;
+    round.lastParam = param;
     isVerifyingRef.current = true;
-
-    // 验证码已通过，立即释放触发锁并清除 popup watcher
-    loginTriggerLockRef.current = false;
-    clearCaptchaPopupWatcher();
-
+    const isCurrent = () =>
+      captchaLoginRoundRef.current === round &&
+      loginTypeRef.current === round.loginType &&
+      context.isCurrent();
+    let awaitingSecondary = false;
     try {
-      if (loginTypeRef.current === LoginTypeEnum.Password) {
-        return await handlerPasswordLogin(captchaVerifyParam);
+      const now = Date.now();
+      const remaining = Math.max(
+        CAPTCHA_ROUND_SETTLE_MS - (now - round.armedAt),
+        CAPTCHA_SAFETY_INTERVAL_MS - (now - (window.__captchaInitAt || 0)),
+      );
+      if (remaining > 0)
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, remaining);
+        });
+      if (!isCurrent()) return ignored;
+      clearCaptchaPopupWatcher();
+      const result =
+        round.loginType === LoginTypeEnum.Password
+          ? await handlerPasswordLogin(param, isCurrent)
+          : await handlerCodeLogin(param);
+      if (isCurrent() && !result.captchaResult) {
+        // 无痕未通过后保留这次登录意图，滑块的新参数仍由同一轮自动提交。
+        awaitingSecondary = true;
+        round.awaitingSecondary = true;
+        round.claimed = false;
+        round.armedAt = Date.now();
+        startCaptchaPopupWatcher(round);
       }
-      return await handlerCodeLogin(captchaVerifyParam);
+      return result;
     } finally {
-      isVerifyingRef.current = false;
-      setCaptchaSubmitting(false);
+      if (captchaLoginRoundRef.current === round) {
+        if (awaitingSecondary) isVerifyingRef.current = false;
+        else resetCaptchaLogin();
+      }
     }
   };
 
-  /**
-   * 触发验证码弹窗。
-   * 官方推荐姿势是触发 initAliyunCaptcha 绑定的隐藏 button 的 click 事件
-   * 来激活验证会话；show() 仅显示已有元素，不能可靠地启动验证流程。
-   */
   const triggerCaptchaPopup = () => {
-    captchaLoginArmedRef.current = true;
-    captchaRoundArmedAtRef.current = Date.now();
-    const captchaBtn = document.getElementById('aliyun-captcha-login');
-    if (captchaBtn) {
-      captchaBtn.click();
-    } else {
-      captchaRef.current?.show?.();
+    if (
+      !captchaReadyRef.current ||
+      loginTypeRef.current === LoginTypeEnum.QrCode
+    ) {
+      resetCaptchaLogin();
+      return;
     }
-    startCaptchaPopupWatcher();
-  };
-
-  /** 资源就绪且距离 init 至少 2 秒再点验证码，避免未加载完的参数被登录接口拒绝 */
-  const scheduleCaptchaLogin = () => {
-    captchaLoginPendingRef.current = true;
-    if (!captchaWaitStartedRef.current) {
-      captchaWaitStartedRef.current = Date.now();
-    }
-    const attempt = () => {
-      captchaDelayTimerRef.current = null;
-      if (!captchaLoginPendingRef.current) return;
-      const initAt = window.__captchaInitAt || 0;
-      const gapOk = initAt > 0 && Date.now() - initAt >= 2000;
-      if (captchaReadyRef.current && gapOk) {
-        captchaLoginPendingRef.current = false;
-        captchaWaitStartedRef.current = 0;
-        triggerCaptchaPopup();
-        return;
-      }
-      if (Date.now() - captchaWaitStartedRef.current > 12000) {
-        captchaLoginPendingRef.current = false;
-        captchaWaitStartedRef.current = 0;
-        loginTriggerLockRef.current = false;
-        setCaptchaSubmitting(false);
-        return;
-      }
-      captchaDelayTimerRef.current = window.setTimeout(attempt, 200);
+    const round: CaptchaLoginRound = {
+      loginType: loginTypeRef.current,
+      armedAt: Date.now(),
+      claimed: false,
+      awaitingSecondary: false,
     };
-    if (captchaDelayTimerRef.current !== null) {
-      window.clearTimeout(captchaDelayTimerRef.current);
-    }
-    attempt();
+    captchaLoginRoundRef.current = round;
+    const button = document.getElementById('aliyun-captcha-login');
+    if (button) button.click();
+    else captchaRef.current?.show?.();
+    startCaptchaPopupWatcher(round);
   };
 
   const doLogin = () => {
-    if (loading || captchaSubmitting) return;
-
+    if (loading || captchaSubmitting || captchaLoginPendingRef.current) return;
     const now = Date.now();
     if (
       loginTriggerLockRef.current ||
       now - lastLoginTriggerAtRef.current < 800
-    ) {
+    )
       return;
-    }
-
-    const { captchaSceneId, captchaPrefix, openCaptcha } =
-      tenantConfigInfo || {};
-    const needAliyunCaptcha = !!(
-      tenantConfigInfo &&
-      captchaSceneId !== '' &&
-      captchaPrefix !== '' &&
-      openCaptcha
-    );
+    if (needAliyunCaptcha && captchaInitFailed) return;
 
     loginTriggerLockRef.current = true;
     lastLoginTriggerAtRef.current = now;
-
-    // 资源未就绪或 init 未满 2 秒时先等，不把未加载完的验证参数交给登录接口
     if (needAliyunCaptcha) {
-      setCaptchaSubmitting(true);
-      const initAt = window.__captchaInitAt || 0;
-      const gapOk = initAt > 0 && now - initAt >= 2000;
-      if (!captchaReadyRef.current || !gapOk) {
-        scheduleCaptchaLogin();
+      if (!captchaReadyRef.current) {
+        // 只等待这次主动提交，就绪后继续；切换、失败和卸载均会取消它。
+        captchaLoginPendingRef.current = true;
+        setCaptchaWaiting(true);
         return;
       }
-    }
-
-    console.log(
-      '[Login doLogin] needAliyunCaptcha:',
-      needAliyunCaptcha,
-      'captchaSceneId:',
-      captchaSceneId,
-      'openCaptcha:',
-      openCaptcha,
-    );
-
-    if (needAliyunCaptcha) {
+      setCaptchaSubmitting(true);
       triggerCaptchaPopup();
     } else {
       const handler =
@@ -777,8 +777,33 @@ const Login: React.FC = () => {
   };
 
   const handleChangeType = (value: string) => {
-    setLoginType(Number(value));
-    loginTypeRef.current = Number(value);
+    if (Number(value) === LoginTypeEnum.QrCode && !qrLoginEnabled) return;
+    const select = () => {
+      const nextType = Number(value);
+      resetCaptchaLogin(
+        nextType === LoginTypeEnum.QrCode ||
+          loginTypeRef.current === LoginTypeEnum.QrCode,
+      );
+      setShowAccountLogin(nextType !== LoginTypeEnum.QrCode);
+      // 单独保留账号登录方式，扫码往返后仍回到用户上次选择的密码/验证码页。
+      if (nextType !== LoginTypeEnum.QrCode) setLoginType(nextType);
+      loginTypeRef.current = nextType;
+    };
+    if (Number(value) === LoginTypeEnum.QrCode && !checked) {
+      confirm({
+        title: dict('PC.Pages.Login.serviceAgreementTitle'),
+        icon: <ExclamationCircleFilled />,
+        content: <SiteProtocol />,
+        okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+        cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
+        onOk() {
+          setChecked(true);
+          select();
+        },
+      });
+      return;
+    }
+    select();
   };
   const { token } = theme.useToken();
   const options: SegmentedItemType[] = [
@@ -799,6 +824,17 @@ const Login: React.FC = () => {
       value: LoginTypeEnum.Code + '',
     },
   ];
+  const switchLoginLabel = dict(
+    loginType === LoginTypeEnum.QrCode
+      ? 'PC.Pages.Login.switchToAccountLogin'
+      : 'PC.Pages.Login.switchToQrLogin',
+  );
+
+  useEffect(() => {
+    if (loadEnd && idpReady && loginType !== LoginTypeEnum.QrCode) {
+      setCaptchaRequested(true);
+    }
+  }, [loadEnd, idpReady, loginType]);
 
   // 配置和登录方式就绪后一次呈现整页，避免先露出左侧介绍、再补表单。
   if (!loadEnd || !idpReady) return <AppStartup />;
@@ -823,7 +859,39 @@ const Login: React.FC = () => {
       <BasicLayout>
         <div>
           {loadEnd && idpReady && (
-            <div className={cx(styles['login-form-box'])}>
+            <div
+              className={cx(styles['login-form-box'], {
+                [styles['with-qr-switch']]: qrLoginEnabled,
+              })}
+            >
+              {qrLoginEnabled && (
+                <Tooltip title={switchLoginLabel} placement="leftTop">
+                  <button
+                    type="button"
+                    className={styles['login-mode-switch']}
+                    aria-label={switchLoginLabel}
+                    disabled={
+                      qrConfirming ||
+                      loading ||
+                      captchaSubmitting ||
+                      idpNavigating
+                    }
+                    onClick={() =>
+                      handleChangeType(
+                        (loginType === LoginTypeEnum.QrCode
+                          ? accountLoginType
+                          : LoginTypeEnum.QrCode) + '',
+                      )
+                    }
+                  >
+                    {loginType === LoginTypeEnum.QrCode ? (
+                      <DesktopOutlined aria-hidden />
+                    ) : (
+                      <QrcodeOutlined aria-hidden />
+                    )}
+                  </button>
+                </Tooltip>
+              )}
               {idpError && (
                 <Alert
                   type="error"
@@ -833,149 +901,191 @@ const Login: React.FC = () => {
                   message={idpError}
                 />
               )}
-              <Segmented
-                className={cx(styles.segmented)}
-                options={options}
-                value={loginType + ''}
-                onChange={handleChangeType}
-                block
-              />
-              <Form
-                form={form}
-                validateTrigger="onBlur"
-                initialValues={{ areaCode: '86' }}
-                rootClassName={cx(styles.form, 'flex', 'flex-col')}
-                name="login"
-                onFinish={onFinish}
-              >
-                <Form.Item>
-                  <Title level={3} style={{ marginTop: 48 }}>
-                    {dict(
-                      'PC.Pages.Login.welcome',
-                      tenantConfigInfo?.siteName || '',
-                    )}
-                  </Title>
-                </Form.Item>
-                <Form.Item>
-                  {loginType === LoginTypeEnum.Password ||
-                  tenantConfigInfo?.authType === 3 ? (
-                    <Form.Item
-                      name="phoneOrEmail"
-                      noStyle
-                      rules={getPhoneOrEmailRules()}
-                    >
-                      <Input
-                        rootClassName={cx(styles.input)}
-                        placeholder={dict(
-                          loginType === LoginTypeEnum.Password
-                            ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
-                            : 'PC.Pages.Login.inputEmailPlaceholder',
-                        )}
-                      />
-                    </Form.Item>
-                  ) : (
-                    <Space.Compact
-                      block
-                      className={cx(styles['phone-input-compact'])}
-                    >
-                      <div
-                        className={cx(
-                          styles.icon,
-                          'flex',
-                          'flex-row',
-                          'items-center',
-                        )}
-                      >
-                        +86
-                        <DownOutlined
-                          style={{ marginLeft: 6, fontSize: '14px' }}
-                        />
-                      </div>
+              {loginType !== LoginTypeEnum.QrCode && (
+                <Segmented
+                  className={cx(styles.segmented)}
+                  options={options}
+                  value={loginType + ''}
+                  onChange={handleChangeType}
+                  disabled={loading || captchaSubmitting || idpNavigating}
+                  block
+                />
+              )}
+              {loginType === LoginTypeEnum.QrCode ? (
+                checked ? (
+                  <QrCodeLogin
+                    logoUrl={tenantConfigInfo?.siteLogo}
+                    onSuccess={(result, isCurrent) =>
+                      completeLogin(result, undefined, isCurrent)
+                    }
+                    onConfirmingChange={setQrConfirming}
+                  />
+                ) : (
+                  <Button
+                    block
+                    className={styles['qr-agreement']}
+                    onClick={() => handleChangeType(LoginTypeEnum.QrCode + '')}
+                  >
+                    {dict('PC.Pages.Login.qrLogin')}
+                  </Button>
+                )
+              ) : (
+                <Form
+                  form={form}
+                  validateTrigger="onBlur"
+                  initialValues={{ areaCode: '86' }}
+                  rootClassName={cx(styles.form, 'flex', 'flex-col')}
+                  name="login"
+                  onFinish={onFinish}
+                >
+                  <Form.Item>
+                    <Title level={3} style={{ marginTop: 48 }}>
+                      {dict(
+                        'PC.Pages.Login.welcome',
+                        tenantConfigInfo?.siteName || '',
+                      )}
+                    </Title>
+                  </Form.Item>
+                  <Form.Item>
+                    {loginType === LoginTypeEnum.Password ||
+                    tenantConfigInfo?.authType === 3 ? (
                       <Form.Item
                         name="phoneOrEmail"
                         noStyle
                         rules={getPhoneOrEmailRules()}
                       >
                         <Input
+                          rootClassName={cx(styles.input)}
                           placeholder={dict(
-                            'PC.Pages.Login.inputPhonePlaceholder',
-                          )}
-                          rootClassName={cx(
-                            styles.input,
-                            styles['current-input'],
+                            loginType === LoginTypeEnum.Password
+                              ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
+                              : 'PC.Pages.Login.inputEmailPlaceholder',
                           )}
                         />
                       </Form.Item>
-                    </Space.Compact>
-                  )}
-                </Form.Item>
-                {loginType === LoginTypeEnum.Password && (
-                  <Form.Item name="password" rules={passwordRules}>
-                    <Input.Password
-                      rootClassName={cx(styles.input)}
-                      autoComplete="off"
-                      placeholder={dict(
-                        'PC.Pages.Login.inputPasswordPlaceholder',
-                      )}
-                    />
-                  </Form.Item>
-                )}
-                {needImageCaptcha && (
-                  <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
-                    <ImageCaptcha
-                      ref={imageCaptchaRef}
-                      inputClassName={cx(styles.input)}
-                    />
-                  </Form.Item>
-                )}
-
-                <Form.Item className={cx(styles.login)}>
-                  <Button
-                    className={cx(styles.btn)}
-                    block
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading || captchaSubmitting}
-                  >
-                    {loginType === LoginTypeEnum.Password
-                      ? dict('PC.Pages.Login.login')
-                      : dict('PC.Pages.Login.nextStep')}
-                  </Button>
-                </Form.Item>
-                <Form.Item
-                  className={cx('mb-16')}
-                  style={{ marginTop: '-10px' }}
-                >
-                  <div
-                    className={cx(
-                      'flex',
-                      'flex-row',
-                      'items-start',
-                      styles['protocol-wrapper'],
+                    ) : (
+                      <Space.Compact
+                        block
+                        className={cx(styles['phone-input-compact'])}
+                      >
+                        <div
+                          className={cx(
+                            styles.icon,
+                            'flex',
+                            'flex-row',
+                            'items-center',
+                          )}
+                        >
+                          +86
+                          <DownOutlined
+                            style={{ marginLeft: 6, fontSize: '14px' }}
+                          />
+                        </div>
+                        <Form.Item
+                          name="phoneOrEmail"
+                          noStyle
+                          rules={getPhoneOrEmailRules()}
+                        >
+                          <Input
+                            placeholder={dict(
+                              'PC.Pages.Login.inputPhonePlaceholder',
+                            )}
+                            rootClassName={cx(
+                              styles.input,
+                              styles['current-input'],
+                            )}
+                          />
+                        </Form.Item>
+                      </Space.Compact>
                     )}
-                  >
-                    <Checkbox
-                      checked={checked}
-                      style={{ marginRight: 5 }}
-                      onChange={(e) => setChecked(e.target.checked)}
+                  </Form.Item>
+                  {loginType === LoginTypeEnum.Password && (
+                    <Form.Item name="password" rules={passwordRules}>
+                      <Input.Password
+                        rootClassName={cx(styles.input)}
+                        autoComplete="off"
+                        placeholder={dict(
+                          'PC.Pages.Login.inputPasswordPlaceholder',
+                        )}
+                      />
+                    </Form.Item>
+                  )}
+                  {needImageCaptcha && (
+                    <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
+                      <ImageCaptcha
+                        ref={imageCaptchaRef}
+                        inputClassName={cx(styles.input)}
+                      />
+                    </Form.Item>
+                  )}
+
+                  {needAliyunCaptcha && captchaInitFailed && (
+                    <Alert
+                      type="error"
+                      showIcon
+                      message={dict('PC.Pages.Login.captchaError')}
+                      action={
+                        <Button
+                          type="link"
+                          onClick={() => window.location.reload()}
+                        >
+                          {dict('PC.Common.Global.refresh')}
+                        </Button>
+                      }
                     />
-                    <SiteProtocol onToggle={() => setChecked(!checked)} />
-                  </div>
-                </Form.Item>
-              </Form>
+                  )}
+                  <Form.Item className={cx(styles.login)}>
+                    <Button
+                      className={cx(styles.btn)}
+                      block
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading || captchaSubmitting || captchaWaiting}
+                    >
+                      {loginType === LoginTypeEnum.Password
+                        ? dict('PC.Pages.Login.login')
+                        : dict('PC.Pages.Login.nextStep')}
+                    </Button>
+                  </Form.Item>
+                </Form>
+              )}
+              <div
+                className={cx(
+                  'flex',
+                  'flex-row',
+                  'items-start',
+                  styles['protocol-wrapper'],
+                )}
+              >
+                <Checkbox
+                  checked={checked}
+                  disabled={qrConfirming}
+                  style={{ marginRight: 5 }}
+                  onChange={(e) => setChecked(e.target.checked)}
+                />
+                <SiteProtocol
+                  onToggle={() => {
+                    if (!qrConfirming) setChecked(!checked);
+                  }}
+                />
+              </div>
 
               <IdpLoginButtons
                 items={idpItems}
                 onSelect={startIdpLogin}
-                disabled={idpNavigating}
+                disabled={idpNavigating || qrConfirming}
                 trailingAction={
                   // 仅商业桌面宿主可见；保留无第三方登录时的企业入口。
                   isDesktopHost() && (
                     <Button
                       type="link"
                       size="small"
+                      disabled={qrConfirming}
                       style={{ padding: 0, height: 'auto' }}
                       onClick={() => {
+                        setLoginType(LoginTypeEnum.Password);
+                        setShowAccountLogin(true);
+                        loginTypeRef.current = LoginTypeEnum.Password;
                         setEnterpriseError('');
                         setEnterpriseOpen(true);
                       }}
@@ -1025,16 +1135,38 @@ const Login: React.FC = () => {
                 <SiteFooter
                   text={tenantConfigInfo?.pageFooterText}
                 ></SiteFooter>
-                <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
-                <AliyunCaptcha
-                  config={tenantConfigInfo}
-                  onVerify={handleCaptchaVerify}
-                  onReady={() => {
-                    captchaReadyRef.current = true;
-                  }}
-                  elementId="aliyun-captcha-login"
-                  ref={captchaRef}
-                />
+                {(captchaRequested || loginType !== LoginTypeEnum.QrCode) && (
+                  <>
+                    <Button
+                      id="aliyun-captcha-login"
+                      style={{ display: 'none' }}
+                    />
+                    <AliyunCaptcha
+                      key={captchaGeneration}
+                      active={loginType !== LoginTypeEnum.QrCode}
+                      config={tenantConfigInfo}
+                      onVerify={handleCaptchaVerify}
+                      onInitError={() => {
+                        resetCaptchaLogin(true);
+                        setCaptchaInitFailed(true);
+                      }}
+                      onReadyChange={(ready) => {
+                        if (ready) {
+                          captchaReadyRef.current = true;
+                          setCaptchaInitFailed(false);
+                          if (captchaLoginPendingRef.current) {
+                            captchaLoginPendingRef.current = false;
+                            setCaptchaWaiting(false);
+                            setCaptchaSubmitting(true);
+                            triggerCaptchaPopup();
+                          }
+                        } else resetCaptchaLogin(true);
+                      }}
+                      elementId="aliyun-captcha-login"
+                      ref={captchaRef}
+                    />
+                  </>
+                )}
               </div>
             </div>
           )}

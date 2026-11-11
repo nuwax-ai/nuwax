@@ -43,6 +43,7 @@ export type MockScenarioId =
   | 'TOOL_RENDERING_TYPED'
   | 'TRACE_HAIRLINE'
   | 'SESSION_RESUME'
+  | 'LATE_TOOL_UPDATE'
   | 'ASK_DUPLICATE'
   | 'INTERVENTION_STACK'
   | 'MESSAGE_QUEUE_HOLDING'
@@ -1549,6 +1550,75 @@ export const MOCK_SCENARIOS: MockScenario[] = [
       chat('第一批完成，正在处理第二批……'),
       { ...heartbeat(), delayMs: 1500 },
       { ...heartbeat(), delayMs: 1500 },
+    ],
+  },
+  {
+    id: 'LATE_TOOL_UPDATE',
+    label: '跨轮迟到工具输出',
+    description:
+      '上一轮已回答，后台命令的完成输出在下一轮到达，仍更新原工具位置',
+    verifies: '按 executeId 保留工具归属、原消息完成态和下一轮正文',
+    transport: 'sub-only',
+    entry: 'resume',
+    initialMessages: [
+      {
+        id: 'late-user-old',
+        role: 'USER',
+        messageType: 'USER',
+        text: '启动后台服务',
+        requestId: 'mock-req-old',
+        status: 'complete',
+        time: Date.now() - 60_000,
+      },
+      {
+        id: 'late-assistant-old',
+        role: 'ASSISTANT',
+        messageType: 'ASSISTANT',
+        status: 'complete',
+        requestId: 'mock-req-old',
+        text: '<div><markdown-custom-process executeId="late-server" type="ToolCall" name="node%20server.js" status="FINISHED"></markdown-custom-process></div>\n\n上一轮最终回答：服务已启动。',
+        thinkingFinished: true,
+        processingList: [
+          {
+            executeId: 'late-server',
+            type: 'ToolCall',
+            name: 'node server.js',
+            status: 'FINISHED',
+            result: {
+              executeId: 'late-server',
+              input: { command: 'node server.js' },
+            },
+          },
+        ],
+        time: Date.now() - 50_000,
+      },
+      {
+        id: 'late-user-new',
+        role: 'USER',
+        messageType: 'USER',
+        text: '继续检查新任务',
+        requestId: req('1'),
+        status: 'complete',
+        time: Date.now() - 10_000,
+      },
+      {
+        id: 'late-assistant-new',
+        role: 'ASSISTANT',
+        messageType: 'ASSISTANT',
+        text: '本轮开始。',
+        requestId: req('1'),
+        status: 'loading',
+        time: Date.now() - 5_000,
+      },
+    ],
+    events: [
+      processing('node server.js', 'FINISHED', 'late-server', undefined, {
+        input: { command: 'node server.js' },
+        data: '迟到的服务输出',
+      }),
+      processing('检查新任务', 'FINISHED', 'late-current'),
+      chat('本轮最终回答：检查完成。', true),
+      finalResult(true, '本轮最终回答：检查完成。'),
     ],
   },
   {

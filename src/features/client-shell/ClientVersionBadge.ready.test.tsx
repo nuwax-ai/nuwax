@@ -175,6 +175,24 @@ describe('更新就绪日志入口与主进程一键策略', () => {
     ).toBeInTheDocument();
   });
 
+  it('canceling a version switch keeps the downloaded action available without a failure dialog', async () => {
+    state({ installAfterDownload: true });
+    h.download.mockImplementation(async () => {
+      state({ status: 'downloaded', installAfterDownload: true });
+      h.listeners.forEach((listener) => listener(h.state));
+      return false;
+    });
+    render(<ClientVersionBadge />);
+    const card = await openLog();
+    await userEvent.click(
+      within(card).getByRole('button', { name: key('install') }),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: key('installing') }),
+    ).not.toBeInTheDocument();
+    expect(h.download).toHaveBeenCalledTimes(1);
+  });
   it('一键任务失败后可以从日志重试，不触发安装', async () => {
     state({ installAfterDownload: true });
     h.download.mockResolvedValue(false);

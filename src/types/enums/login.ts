@@ -3,6 +3,8 @@ export enum LoginTypeEnum {
   Password,
   // 手机验证码登录、注册
   Code,
+  // App 扫码登录
+  QrCode,
 }
 
 export enum LoginMethodEnum {

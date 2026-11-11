@@ -1,5 +1,5 @@
+import ConversationAgentFilePreview from '@/components/business-component/ConversationFilePreview';
 import FileTreePreviewPanel from '@/components/business-component/FileTreePreviewPanel';
-import ConversationAgentFilePreview from '@/pages/ConversationAgent/ConversationAgentFilePreview';
 import { render } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -42,19 +42,19 @@ vi.mock(
   }),
 );
 vi.mock(
-  '@/pages/ConversationAgent/ConversationAgentFilePreview/index.less',
+  '@/components/business-component/ConversationFilePreview/index.less',
   () => ({ default: {} }),
 );
 vi.mock(
-  '@/pages/ConversationAgent/ConversationAgentFilePreview/FilePathHeader',
+  '@/components/business-component/ConversationFilePreview/FilePathHeader',
   () => ({ default: () => null }),
 );
 vi.mock(
-  '@/pages/ConversationAgent/ConversationAgentFilePreview/ToolTabContent',
+  '@/components/business-component/ConversationFilePreview/ToolTabContent',
   () => ({ default: () => null }),
 );
 vi.mock(
-  '@/pages/ConversationAgent/ConversationAgentFilePreview/hooks/usePreviewTabs',
+  '@/components/business-component/ConversationFilePreview/hooks/usePreviewTabs',
   () => ({ WORKSPACE_PREVIEW_TOOL_IDS: [] }),
 );
 

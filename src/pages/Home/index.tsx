@@ -26,13 +26,11 @@ import useHomePinnedProjectHandoff, {
   type PinnedProjectInfo,
 } from '@/hooks/useHomePinnedProjectHandoff';
 import usePinnedAgentHandoff from '@/hooks/usePinnedAgentHandoff';
-import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSelectSkillHandoff, {
   type SelectedSkillInfo,
 } from '@/hooks/useSelectSkillHandoff';
-import useSummonExpertHandoff, {
-  type SummonedExpertInfo,
-} from '@/hooks/useSummonExpertHandoff';
+import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
+import type useHomeInputContext from '@/models/homeInputContext';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
@@ -52,6 +50,7 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { type DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import {
   buildHomeSendPlan,
   resolvePersonalWorkspacePath,
@@ -87,6 +86,26 @@ const Home: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const { getSpaceId } = useModel('spaceModel');
   const { setContext, contextMap } = useModel('pageHandoffContext');
+  const {
+    pinnedProject,
+    setPinnedProject,
+    selectedComputerId,
+    setSelectedComputerId,
+    workspacePath,
+    setWorkspaceDir,
+    selectedRecommend,
+    setSelectedRecommend,
+    summonedExpert,
+    setSummonedExpert,
+    userPickedCategory,
+    setUserPickedCategory,
+    selectedComponentList,
+    selectedComponentDetails,
+    handleSelectComponent,
+    initSelectedComponentList,
+    componentAgentKey,
+    setComponentAgentKey,
+  } = useModel('homeInputContext') as ReturnType<typeof useHomeInputContext>;
   const { handleCreateConversation } = useConversation();
   const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
   const chatInputRef = useRef<ChatInputUnifiedRef>(null);
@@ -97,17 +116,8 @@ const Home: React.FC = () => {
   // 导航键：同路由 push（如侧栏搜索弹窗在 /home 内发起召唤/选择）也会生成新 key，
   // 供下方消费 effect 依赖触发重读（handoff 写入方不重挂 Home）
   const location = useLocation();
-  const {
-    selectedComponentList,
-    selectedComponentDetails,
-    handleSelectComponent,
-    initSelectedComponentList,
-  } = useSelectedComponent();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
-  /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
-  const [workspacePath, setWorkspaceDir] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -121,29 +131,25 @@ const Home: React.FC = () => {
   const [chatboxCategories, setChatboxCategories] = useState<
     SquareCategoryInfo[]
   >([]);
-  const [selectedRecommend, setSelectedRecommend] =
-    useState<DisplayRecommendInfo>();
-  /** 项目上框（项目列表「+ 新建会话」透传；存在期间约束智能体可选范围并直接建会话绑定项目） */
-  const [pinnedProject, setPinnedProject] = useState<PinnedProjectInfo>();
   const [pinnedProjectConfigLoading, setPinnedProjectConfigLoading] =
     useState(false);
   const pinnedProjectConfigSequence = useRef(0);
   const homeMounted = useRef(true);
   useEffect(() => {
     homeMounted.current = true;
+    const invalidateProjectConfig = () => {
+      ++pinnedProjectConfigSequence.current;
+      setPinnedProjectConfigLoading(false);
+    };
+    eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, invalidateProjectConfig);
     return () => {
       homeMounted.current = false;
+      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, invalidateProjectConfig);
     };
   }, []);
   // 上框命中失败提示去重（同一项目只提示一次）
   const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
-  // 输入区上方内容分类:用户手动选择(null=未选过,自动取第一个有内容的分类)
-  const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
-    null,
-  );
-  // 专家召唤回执（专家页「召唤」经 pageHandoffContext 一次性透传，刷新即失效）
-  const [summonedExpert, setSummonedExpert] = useState<SummonedExpertInfo>();
   // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
   const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
     summonedExpert?.icon,
@@ -245,12 +251,14 @@ const Home: React.FC = () => {
       agentDetail?.type === AgentTypeEnum.TaskAgent) &&
     (!pinnedProject || pinnedProjectSandboxSelectable) &&
     (pinnedProjectSandboxSelectable || !!agentDetail?.allowPrivateSandbox);
-  // 上框项目自带空间（会话绑定项目），不再展示空间选择器
-  const showSpaceSelector = pinnedProject
-    ? false
-    : selectedRecommend
-    ? showSpaceSelectorForFunctionType(selectedFunctionType)
-    : false;
+  // 已有项目沿用绑定空间；项目外选个人目录时，允许指定隐式创建项目的空间。
+  const showSpaceSelector =
+    !pinnedProject &&
+    (showSpaceSelectorForFunctionType(selectedFunctionType) ||
+      !!resolvePersonalWorkspacePath(
+        showComputerSelector ? selectedComputerId : undefined,
+        workspacePath,
+      ));
 
   const runRecommendNavList = useCallback(async () => {
     try {
@@ -330,8 +338,35 @@ const Home: React.FC = () => {
   }, [agentDetail, currentAgentId]);
 
   useEffect(() => {
-    initSelectedComponentList(agentDetail?.manualComponents);
-  }, [agentDetail?.manualComponents]);
+    if (!agentDetail || agentDetail.agentId !== currentAgentId) return;
+    const key = `${currentAgentId}:${currentRecId ?? ''}`;
+    // 返回首页重拉详情时保留手动选择；显式换智能体才重新应用默认工具。
+    if (componentAgentKey === key) return;
+    initSelectedComponentList(agentDetail.manualComponents);
+    setComponentAgentKey(key);
+  }, [agentDetail, currentAgentId, currentRecId, componentAgentKey]);
+
+  const inputManualComponents = useMemo<AgentManualComponentInfo[]>(() => {
+    const manual = agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS;
+    return [
+      ...manual,
+      ...selectedComponentDetails
+        .filter(
+          (item) =>
+            !manual.some(
+              (component) =>
+                component.id === item.id && component.type === item.type,
+            ),
+        )
+        .map((item) => ({
+          ...item,
+          name: item.name || String(item.id),
+          icon: item.icon || '',
+          description: item.description || '',
+          defaultSelected: DefaultSelectedEnum.No,
+        })),
+    ];
+  }, [agentDetail?.manualComponents, selectedComponentDetails]);
 
   useEffect(() => {
     // 项目内保留当前电脑；项目外由选择器解析新智能体的绑定与记忆。
@@ -597,7 +632,7 @@ const Home: React.FC = () => {
     // 上框全栈:已选中项再点不取消,避免回落到出范围的租户默认智能体
     const isDeselectBlocked =
       isUserAppPinned && selectedRecommend?.id === item.id;
-    setSelectedRecommend((prev) =>
+    setSelectedRecommend((prev: DisplayRecommendInfo | undefined) =>
       prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
     );
     if (!isDeselectBlocked) {
@@ -691,9 +726,7 @@ const Home: React.FC = () => {
           // 首页 @：未受项目限制时显示专家与资料库，受限时只显示资料库。
           atHomePanel
           placeholder={selectedRecommend?.placeholder || undefined}
-          manualComponents={
-            agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
-          }
+          manualComponents={inputManualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           isTaskAgentActive={
