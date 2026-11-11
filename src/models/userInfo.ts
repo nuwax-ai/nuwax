@@ -1,3 +1,4 @@
+import { conversationPageCacheManager } from '@/features/conversation/react/useConversationPageCache';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { dict } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
@@ -77,6 +78,7 @@ export default () => {
    */
   const logout = useCallback(() => {
     fullPageInstanceCacheManager.invalidateAll('logout');
+    conversationPageCacheManager.invalidateAll('logout');
     UserService.logout();
     setUserInfo(null);
     setError(null);

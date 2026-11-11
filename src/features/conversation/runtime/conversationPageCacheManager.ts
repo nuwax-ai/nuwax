@@ -1,6 +1,7 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { TaskStatus } from '@/types/enums/agent';
+import type { ConversationFilePreviewState } from '@/types/interfaces/fileTree';
 import eventBus from '@/utils/eventBus';
 import {
   DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
@@ -125,6 +126,23 @@ const normalizeDraftFiles = (value: unknown): ConversationDraftAttachment[] => {
 };
 
 class ConversationPageCacheManager {
+  // 轻量阅读意图独立于 DOM/LRU 生命周期，重新挂载时重新解析文件与授权。
+  private filePreviewStates = new Map<string, ConversationFilePreviewState>();
+
+  getFilePreviewState(key: string): ConversationFilePreviewState {
+    return this.filePreviewStates.get(key) ?? {};
+  }
+
+  updateFilePreviewState(
+    key: string,
+    patch: Partial<ConversationFilePreviewState>,
+  ) {
+    this.filePreviewStates.set(key, {
+      ...this.getFilePreviewState(key),
+      ...patch,
+    });
+  }
+
   private entries = new Map<string, ConversationPageCacheEntry>();
   private listeners = new Set<Listener>();
   private disposeListeners = new Set<DisposeListener>();
@@ -449,10 +467,14 @@ class ConversationPageCacheManager {
 
   invalidateAll(reason = 'manual') {
     [...this.entries.keys()].forEach((key) => this.invalidate(key, reason));
+    this.filePreviewStates.clear();
   }
 
   invalidateConversation(conversationId: number | string, reason = 'manual') {
     const normalizedId = String(conversationId);
+    for (const key of this.filePreviewStates.keys()) {
+      if (key.endsWith(`:${normalizedId}`)) this.filePreviewStates.delete(key);
+    }
     this.executingConversations.delete(normalizedId);
     [...this.entries.values()]
       .filter((entry) => entry.conversationId === normalizedId)
