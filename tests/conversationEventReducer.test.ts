@@ -2,6 +2,7 @@ import {
   reduceConversationEvent,
   type ConversationEventReducerAdapters,
 } from '@/features/conversation/domain/reduceConversationEvent';
+import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -41,6 +42,72 @@ const adapters: ConversationEventReducerAdapters = {
 };
 
 describe('reduceConversationEvent', () => {
+  it.each(['live', 'history'])(
+    '迟到工具更新归回 %s 原消息，保留完成态与下一轮正文',
+    (source) => {
+      const tool = {
+        executeId: 'server-1',
+        type: 'ToolCall',
+        name: 'node server.js',
+        status: ProcessingEnum.EXECUTING,
+      } as ProcessingInfo;
+      const original = {
+        ...owner(),
+        status: MessageStatusEnum.Complete,
+        text: getCustomBlock('', tool) + '最终回答',
+        processingList: source === 'live' ? [tool] : [],
+        componentExecutedList:
+          source === 'history'
+            ? [{ ...tool, status: ProcessingEnum.EXECUTING }]
+            : [],
+      } as MessageInfo;
+      const next = { ...owner(), id: 'next-assistant', text: '下一轮正在回答' };
+      const result = reduceConversationEvent(
+        { messages: [original, next], activeOutputMessageId: 'next-output' },
+        next.id,
+        event(ConversationEventTypeEnum.PROCESSING, {
+          ...tool,
+          status: ProcessingEnum.FINISHED,
+        }),
+        { ...adapters, renderProcessingBlock: getCustomBlock },
+      );
+      expect(result.messages[0].text).toContain('status="FINISHED"');
+      expect(
+        result.messages[0].text?.match(/<markdown-custom-process /g),
+      ).toHaveLength(1);
+      expect(result.messages[0].text?.endsWith('最终回答')).toBe(true);
+      expect(result.messages[0].status).toBe(MessageStatusEnum.Complete);
+      expect(result.messages[1]).toBe(next);
+      expect(result.activeOutputMessageId).toBe('next-output');
+      expect(original.text).toContain('status="EXECUTING"');
+    },
+  );
+
+  it('其他工具已经完成时，同 id 状态和标题仍在原位更新', () => {
+    const tool = {
+      executeId: 'server-1',
+      type: 'ToolCall',
+      name: 'server',
+      status: ProcessingEnum.EXECUTING,
+    } as ProcessingInfo;
+    const text =
+      getCustomBlock(getCustomBlock('', tool), {
+        ...tool,
+        executeId: 'other',
+        status: ProcessingEnum.FINISHED,
+      }) + '\n\n  原文缩进';
+    const updated = getCustomBlock(text, {
+      ...tool,
+      name: 'node server.js',
+      status: ProcessingEnum.FINISHED,
+    });
+    expect(updated).toContain(
+      'executeId="server-1" type="ToolCall" status="FINISHED" name="node%20server.js"',
+    );
+    expect(updated.endsWith('\n\n  原文缩进')).toBe(true);
+    expect(updated.indexOf('server-1')).toBeLessThan(updated.indexOf('other'));
+  });
+
   it('T04：PROCESSING → MESSAGE → FINAL_RESULT 保持统一投影与终态', () => {
     let projection = {
       messages: [owner()],

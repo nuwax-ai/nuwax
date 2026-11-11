@@ -15,10 +15,52 @@ import {
   type ToolCallInfo,
 } from '@/types/interfaces/appDev';
 import {
+  hasToolCallBlock,
   insertPlanBlock,
   insertToolCallBlock,
   insertToolCallUpdateBlock,
 } from '@/utils/markdownProcess';
+
+/** 当前项目消息列表即工具归属索引，避免全局映射跨会话残留或加载历史后失效。 */
+export const updateToolCallInMessages = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+  toolCallId: string,
+  update: Partial<ToolCallInfo>,
+): AppDevChatMessage[] => {
+  if (!toolCallId) return messages;
+  const currentSessionId = messages.find(
+    (message) =>
+      message.role === 'ASSISTANT' && message.requestId === requestId,
+  )?.sessionId;
+  let index = messages.findIndex(
+    (message) =>
+      message.role === 'ASSISTANT' &&
+      (currentSessionId
+        ? message.sessionId === currentSessionId
+        : message.requestId === requestId) &&
+      hasToolCallBlock(message.text || '', toolCallId),
+  );
+  if (index < 0) {
+    index = messages.findIndex(
+      (message) =>
+        message.role === 'ASSISTANT' && message.requestId === requestId,
+    );
+  }
+  if (index < 0) return messages;
+  return messages.map((message, i) =>
+    i === index
+      ? {
+          ...message,
+          text: insertToolCallUpdateBlock(
+            message.text || '',
+            toolCallId,
+            update,
+          ),
+        }
+      : message,
+  );
+};
 
 /**
  * 检测是否为依赖操作（安装、删除、升级依赖）
@@ -557,9 +599,9 @@ const buildAssistantMessageFromPersistedEvents = (
       if (toolCallId) {
         const toolPayload: ToolCallInfo = {
           toolCallId,
-          title: data?.title || dict('PC.Pages.AppDevChat.toolCallUpdate'),
-          kind: data?.kind || 'execute',
-          status: data?.status || 'pending',
+          title: data?.title,
+          kind: data?.kind,
+          status: data?.status,
           content: data?.content,
           locations: data?.locations,
           rawInput: data?.rawInput,

@@ -233,4 +233,82 @@ describe('AppDev 两阶段真实 HTTP SSE 生命周期', () => {
       expect(responses.get(sessionPath)!.destroyed).toBe(true);
     });
   });
+
+  it('下一轮 SSE 中的旧工具更新回到已完成原消息，不追加到当前回答', async () => {
+    const { result } = mount();
+    const { completion } = await start(result);
+    await act(async () => {
+      send(fluxPath, { type: 'success', data: { session_id: 's1' } });
+      responses.get(fluxPath)!.end();
+      await completion;
+    });
+    await waitFor(() => expect(responses.has(sessionPath)).toBe(true));
+    await act(async () => {
+      send(sessionPath, {
+        messageType: SessionMessageType.AGENT_SESSION_UPDATE,
+        subType: AgentSessionUpdateSubType.TOOL_CALL,
+        data: {
+          toolCallId: 'server-1',
+          title: 'node server.js',
+          kind: 'execute',
+          status: 'in_progress',
+          rawInput: { command: 'node server.js' },
+        },
+      });
+      send(sessionPath, {
+        messageType: SessionMessageType.AGENT_SESSION_UPDATE,
+        subType: AgentSessionUpdateSubType.AGENT_MESSAGE_CHUNK,
+        data: { text: '最终回答', is_final: true },
+      });
+      send(sessionPath, { messageType: SessionMessageType.SESSION_PROMPT_END });
+    });
+    await waitFor(() =>
+      expect(responses.get(sessionPath)!.destroyed).toBe(true),
+    );
+    responses.delete(fluxPath);
+    responses.delete(sessionPath);
+    let second!: Promise<void>;
+    act(() => {
+      second = result.current.sendMessageWithPrompt({
+        prompt: '继续',
+        requestId: 'r2',
+      });
+    });
+    await waitFor(() => expect(responses.has(fluxPath)).toBe(true));
+    await act(async () => {
+      send(fluxPath, { type: 'success', data: { session_id: 's1' } });
+      responses.get(fluxPath)!.end();
+      await second;
+    });
+    await waitFor(() => expect(responses.has(sessionPath)).toBe(true));
+    await act(async () => {
+      send(sessionPath, {
+        messageType: SessionMessageType.AGENT_SESSION_UPDATE,
+        subType: AgentSessionUpdateSubType.TOOL_CALL_UPDATE,
+        data: {
+          toolCallId: 'server-1',
+          status: 'completed',
+          content: '迟到输出',
+        },
+      });
+    });
+    await waitFor(() =>
+      expect(
+        result.current.chatMessages.find(
+          (m) => m.requestId === 'r1' && m.role === 'ASSISTANT',
+        )?.text,
+      ).toContain(encodeURIComponent('迟到输出')),
+    );
+    const original = result.current.chatMessages.find(
+      (m) => m.requestId === 'r1' && m.role === 'ASSISTANT',
+    )!;
+    expect(original.text.match(/<appdev-toolcall /g)).toHaveLength(1);
+    expect(original.text.endsWith('最终回答')).toBe(true);
+    expect(original.isStreaming).toBe(false);
+    expect(
+      result.current.chatMessages.find(
+        (m) => m.requestId === 'r2' && m.role === 'ASSISTANT',
+      )?.text,
+    ).not.toContain('appdev-toolcall');
+  });
 });

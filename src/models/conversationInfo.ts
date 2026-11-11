@@ -1,3 +1,7 @@
+import {
+  findProcessingOwnerIndex,
+  reduceProcessingEvent,
+} from '@/features/conversation/domain/reduceProcessingEvent';
 import { useConversationStopRequest } from '@/hooks/useConversationStopRequest';
 import {
   PageModelScopeContext,
@@ -1189,11 +1193,11 @@ export default () => {
       }
       // 深拷贝消息列表
       let list: any[] = [...messageList];
-      const index = list.findIndex((item) => item.id === currentMessageId);
+      let index = list.findIndex((item) => item.id === currentMessageId);
       // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
       let arraySpliceAction = 1;
       // 当前消息
-      const currentMessage = list.find(
+      let currentMessage = list.find(
         (item) => item.id === currentMessageId,
       ) as MessageInfo;
       // 消息不存在时
@@ -1234,28 +1238,21 @@ export default () => {
         if (!data.executeId && processingResult.executeId) {
           data.executeId = processingResult.executeId;
         }
-        const processingList = [
-          ...(currentMessage?.processingList || []),
-        ] as ProcessingInfo[];
-        const existingIndex = processingList.findIndex(
-          (item) => item.executeId === data.executeId,
-        );
-        if (existingIndex > -1) {
-          processingList[existingIndex] = data;
-        } else {
-          processingList.push(data);
+        const ownerIndex = findProcessingOwnerIndex(list, data);
+        if (ownerIndex >= 0) {
+          index = ownerIndex;
+          currentMessage = list[index];
         }
-
-        newMessage = {
-          ...currentMessage,
-          // 工具调用出现即超越当前思考轮：先收口思考标签，再追加工具调用标签
-          text: getCustomBlock(closeOpenThinkBlock(), data),
-          // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
-          // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
-          thinkingFinished: true,
-          status: MessageStatusEnum.Loading,
-          processingList,
-        };
+        newMessage = reduceProcessingEvent(
+          currentMessage,
+          data,
+          getCustomBlock,
+          ownerIndex >= 0 ? undefined : finalizeThinkBlock,
+        ).message;
+        if (ownerIndex >= 0) {
+          newMessage.status = currentMessage.status;
+          newMessage.thinkingFinished = currentMessage.thinkingFinished;
+        }
 
         // 添加处理扩展页面逻辑
         if (data.status === ProcessingEnum.EXECUTING) {
