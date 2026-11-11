@@ -265,22 +265,18 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
                 return;
               }
               const firstInstance = !instance;
-              if (instance) {
-                activationRef.current += 1;
-                updateReady(false);
-              }
               instance = value;
               captchaInstanceRef.current = value;
               initAt = Date.now();
               window.__captchaInitAt = initAt;
-              clearReadyTimer();
-              // 从 SDK 实际交出实例后计时，满足官方初始化到验证请求 >2s。
-              readyTimer = window.setTimeout(
-                markReady,
-                firstInstance
-                  ? CAPTCHA_INITIAL_READY_DELAY_MS
-                  : CAPTCHA_SAFETY_INTERVAL_MS,
-              );
+              // SDK 内部从无痕升级到滑块属于同一次登录，不能清掉正在等待的业务回调。
+              if (firstInstance) {
+                clearReadyTimer();
+                readyTimer = window.setTimeout(
+                  markReady,
+                  CAPTCHA_INITIAL_READY_DELAY_MS,
+                );
+              }
               finished();
             },
             onError: failInitialization,

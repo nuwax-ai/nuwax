@@ -1,4 +1,5 @@
 import AliyunCaptcha, {
+  CAPTCHA_SAFETY_INTERVAL_MS,
   type AliyunCaptchaRef,
   type CaptchaVerificationContext,
 } from '@/components/AliyunCaptcha';
@@ -77,6 +78,8 @@ interface CaptchaLoginRound {
   loginType: LoginTypeEnum;
   armedAt: number;
   claimed: boolean;
+  awaitingSecondary: boolean;
+  lastParam?: string;
 }
 
 const loginWithPassword = async (params: LoginFieldType) =>
@@ -348,9 +351,11 @@ const Login: React.FC = () => {
         hasBeenVisible = true;
       }
 
-      // 弹窗曾经显示过但现在被关闭/隐藏，或者弹出等待超时（3秒内未弹出），或者极端长驻超时（2分钟）
+      // 关闭或超时后释放本次登录；二次验证为 SDK 切换资源预留等待时间。
       const isClosedAfterOpen = hasBeenVisible && !isVisible;
-      const isInitTimeout = !hasBeenVisible && Date.now() - startedAt > 3000;
+      const isInitTimeout =
+        !hasBeenVisible &&
+        Date.now() - startedAt > (round.awaitingSecondary ? 12000 : 3000);
       const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
 
       if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
@@ -631,26 +636,51 @@ const Login: React.FC = () => {
   ) => {
     const round = captchaLoginRoundRef.current;
     const ignored = { captchaResult: true, bizResult: true };
-    if (!round || round.claimed || !context.isCurrent()) return ignored;
+    if (
+      !round ||
+      round.claimed ||
+      round.lastParam === param ||
+      !context.isCurrent()
+    )
+      return ignored;
     round.claimed = true;
+    round.lastParam = param;
     isVerifyingRef.current = true;
     const isCurrent = () =>
       captchaLoginRoundRef.current === round &&
       loginTypeRef.current === round.loginType &&
       context.isCurrent();
+    let awaitingSecondary = false;
     try {
-      const remaining = CAPTCHA_ROUND_SETTLE_MS - (Date.now() - round.armedAt);
+      const now = Date.now();
+      const remaining = Math.max(
+        CAPTCHA_ROUND_SETTLE_MS - (now - round.armedAt),
+        CAPTCHA_SAFETY_INTERVAL_MS - (now - (window.__captchaInitAt || 0)),
+      );
       if (remaining > 0)
         await new Promise<void>((resolve) => {
           window.setTimeout(resolve, remaining);
         });
       if (!isCurrent()) return ignored;
       clearCaptchaPopupWatcher();
-      return round.loginType === LoginTypeEnum.Password
-        ? await handlerPasswordLogin(param, isCurrent)
-        : await handlerCodeLogin(param);
+      const result =
+        round.loginType === LoginTypeEnum.Password
+          ? await handlerPasswordLogin(param, isCurrent)
+          : await handlerCodeLogin(param);
+      if (isCurrent() && !result.captchaResult) {
+        // 无痕未通过后保留这次登录意图，滑块的新参数仍由同一轮自动提交。
+        awaitingSecondary = true;
+        round.awaitingSecondary = true;
+        round.claimed = false;
+        round.armedAt = Date.now();
+        startCaptchaPopupWatcher(round);
+      }
+      return result;
     } finally {
-      if (captchaLoginRoundRef.current === round) resetCaptchaLogin();
+      if (captchaLoginRoundRef.current === round) {
+        if (awaitingSecondary) isVerifyingRef.current = false;
+        else resetCaptchaLogin();
+      }
     }
   };
 
@@ -666,6 +696,7 @@ const Login: React.FC = () => {
       loginType: loginTypeRef.current,
       armedAt: Date.now(),
       claimed: false,
+      awaitingSecondary: false,
     };
     captchaLoginRoundRef.current = round;
     const button = document.getElementById('aliyun-captcha-login');

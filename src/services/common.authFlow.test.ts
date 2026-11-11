@@ -524,6 +524,24 @@ describe('匿名登录步骤的全局认证错误处理', () => {
     );
   });
 
+  describe('阿里云登录校验由 SDK 接管', () => {
+    it.each([
+      ['校验参数异常', false],
+      ['用户不存在或密码错误', true],
+    ])('实际 Axios 链路对%s保留拒绝且按需提示', async (message, shouldWarn) => {
+      await expect(
+        runAxiosRequest(
+          { code: '0001', message, success: false, data: null },
+          undefined,
+          { url: '/api/user/passwordLogin', captchaErrorHandled: true },
+        ),
+      ).rejects.toMatchObject({ info: { message } });
+      expect(mocks.warning).toHaveBeenCalledTimes(shouldWarn ? 1 : 0);
+      expect(mocks.error).not.toHaveBeenCalled();
+      expectNoLogout();
+    });
+  });
+
   describe('失败请求向调用方保留原始错误', () => {
     it('业务权限拒绝保留 code、message、tid 和原错误对象', () => {
       const error = requestConfig.errorConfig!.errorThrower!({
