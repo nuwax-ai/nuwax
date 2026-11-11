@@ -1,4 +1,8 @@
-import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import AliyunCaptcha, {
+  AliyunCaptchaRef,
+  CAPTCHA_SAFETY_INTERVAL_MS,
+  type CaptchaVerificationContext,
+} from '@/components/AliyunCaptcha';
 import SvgIcon from '@/components/base/SvgIcon';
 import ImageCaptcha, {
   useImageCaptcha,
@@ -329,7 +333,10 @@ const VerifyCode: React.FC = () => {
     void handleSendCode(value).catch(() => {});
   };
 
-  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+  const handleCaptchaVerify = async (
+    captchaVerifyParam: string,
+    { isCurrent }: CaptchaVerificationContext,
+  ) => {
     // SDK 初始化时会自动回调一次（无痕令牌）。那时资源还没好，直接拿去 send 会报校验参数异常。
     // 只有页面自己点了隐藏按钮之后的那一次，才是可以发短信的验证结果。
     const armedAt = captchaRoundAtRef.current;
@@ -337,13 +344,14 @@ const VerifyCode: React.FC = () => {
       return { captchaResult: true, bizResult: true };
     }
     captchaRoundAtRef.current = 0;
-    // 本轮 click 后参数可能立刻交出来，再等一小段让 captcha-open 落稳
+    // 初始化安全间隔由组件保障，本轮交参后再留短暂的请求收尾时间。
     const settleRemain = 500 - (performance.now() - armedAt);
     if (settleRemain > 0) {
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, settleRemain);
       });
     }
+    if (!isCurrent()) return { captchaResult: true, bizResult: true };
     if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) {
       const remainSec = Math.ceil(
         getVerifyCodeCooldownRemaining(phoneOrEmail || '') / 1000,
@@ -388,14 +396,13 @@ const VerifyCode: React.FC = () => {
 
   /**
    * 点隐藏按钮启动一轮阿里云验证。
-   * onReady 已经等到 SDK success（资源加载完）。这里再保证距离 init 至少 2 秒：
-   * 阿里云会把过短间隔的验证参数判为脚本请求，后端表现为校验参数异常。
+   * onReady 已经过实例初始化后的安全等待，再检查时间戳，避免过早提交参数。
    */
   const triggerCaptchaPopup = () => {
     const now = Date.now();
     const initAt = window.__captchaInitAt || 0;
     const gap = now - initAt;
-    if (initAt > 0 && gap < 2000) {
+    if (initAt > 0 && gap < CAPTCHA_SAFETY_INTERVAL_MS) {
       if (captchaDelayTimerRef.current !== null) {
         window.clearTimeout(captchaDelayTimerRef.current);
       }
@@ -408,7 +415,7 @@ const VerifyCode: React.FC = () => {
         } else {
           captchaRef.current?.show?.();
         }
-      }, 2000 - gap);
+      }, CAPTCHA_SAFETY_INTERVAL_MS - gap);
       return;
     }
     captchaRoundAtRef.current = performance.now();
@@ -454,7 +461,7 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleReady = () => {
-    // 只处理刷新：等 SDK success（资源加载完）之后再开新的一轮验证。
+    // 只处理刷新：等实例初始化后的安全等待结束，再开新的一轮验证。
     // 从登录页进入的发码在 mount 时已经用上一页的参数完成。
     if (!isNeedAliyunCaptcha() || !isVerifyCodePageReload()) return;
     if (getVerifyCodeCooldownRemaining(phoneOrEmail || '') > 0) return;
