@@ -31,6 +31,39 @@ const entry = (
 });
 
 describe('conversationPageCache', () => {
+  it('文件阅读意图跨实例淘汰保留，删除会话和登出后清除', () => {
+    const state = {
+      selectedFileId: 'workspace:docs/readme.md',
+      treeVisible: false,
+      readingPositions: {
+        'workspace:docs/readme.md:preview': { 'root:0': { top: 640, left: 0 } },
+      },
+    };
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 383,
+    });
+    conversationPageCacheManager.updateFilePreviewState('chat:383', state);
+    conversationPageCacheManager.invalidate('chat:383', 'lru');
+    expect(
+      conversationPageCacheManager.getFilePreviewState('chat:383'),
+    ).toEqual(state);
+    expect(
+      conversationPageCacheManager.getFilePreviewState('chat:384'),
+    ).toEqual({});
+    conversationPageCacheManager.invalidateConversation(
+      383,
+      'conversation-deleted',
+    );
+    expect(
+      conversationPageCacheManager.getFilePreviewState('chat:383'),
+    ).toEqual({});
+    conversationPageCacheManager.updateFilePreviewState('chat:383', state);
+    conversationPageCacheManager.invalidateAll('logout');
+    expect(
+      conversationPageCacheManager.getFilePreviewState('chat:383'),
+    ).toEqual({});
+  });
   afterEach(() => {
     fullPageInstanceCacheManager.invalidateAll('test-cleanup');
     conversationPageCacheManager.invalidateAll('test-cleanup');

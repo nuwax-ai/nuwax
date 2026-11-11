@@ -36,6 +36,7 @@ import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import { useConversationFilePreviewState } from '@/features/conversation/react/useConversationFilePreviewState';
 import {
   conversationPageCacheManager,
   createConversationPageCacheKey,
@@ -191,6 +192,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     () => createConversationPageCacheKey('chat', id),
     [id],
   );
+  const filePreviewState = useConversationFilePreviewState(pageCacheKey);
   const location = useLocation();
   const initialRouteRef = useRef({
     location: routeLocationSnapshot
@@ -927,7 +929,13 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         // 会话消息列表
         const list = data?.messageList || [];
         // 自动预览文件
-        handleAutoPreviewLastFile(list, id);
+        // 重建会话优先恢复用户正在读的文件，不能被最后一张任务卡覆盖。
+        if (
+          !conversationPageCacheManager.getFilePreviewState(pageCacheKey)
+            .selectedFileId
+        ) {
+          handleAutoPreviewLastFile(list, id);
+        }
 
         const len = list?.length || 0;
         // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
@@ -1266,13 +1274,33 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   }, [id, refreshFileListImmediately]);
 
   // 文件视图 props
+  const handlePreviewFileIdChange = useCallback(
+    (fileId: string) => {
+      setPreviewFileId(fileId);
+      filePreviewState.onSelectedFileChange(fileId);
+      if (fileId) rememberWorkspaceView('filePreview');
+    },
+    [
+      setPreviewFileId,
+      filePreviewState.onSelectedFileChange,
+      rememberWorkspaceView,
+    ],
+  );
   const fileView = useFileTreePreviewView({
+    active,
+    isFileTreeSidebarVisible: filePreviewState.treeVisible,
+    onFileTreeSidebarVisibleChange: filePreviewState.onTreeVisibleChange,
+    getReadingPosition: filePreviewState.getReadingPosition,
+    onReadingPositionChange: filePreviewState.onReadingPositionChange,
+    initViewFileType: filePreviewState.initial.viewFileType,
+    onViewFileTypeChange: (viewFileType) =>
+      filePreviewState.remember({ viewFileType }),
     taskAgentSelectedFileId: workspaceTaskSelectedFileId,
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
     previewFileContentRefreshTrigger,
-    onPreviewFileIdChange: setPreviewFileId,
+    onPreviewFileIdChange: handlePreviewFileIdChange,
     originalFiles: workspaceDirectoryFiles.files,
     fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
@@ -1320,6 +1348,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     enableVersionControl: effectiveAgent?.enableVersionControl,
     onSelectedFileMissing: (fileId?: string) => {
+      filePreviewState.remember({ selectedFileId: '' });
       // V2 工具详情点击打开的文件在文件树中找不到：按定调提示用户即可
       // （hook 回传的 id 带 workspace: 前缀，归一后再与点击目标比对）
       const relativeFileId = workspaceRelativePath(fileId || '');
@@ -1424,19 +1453,12 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       return;
     }
 
-    const hasSelectedPreviewFile = Boolean(
-      fileView.tree.selectedFileId || taskAgentSelectedFileId,
-    );
-
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
       setTerminalConsoleVisible(false);
       setTerminalConsoleLayoutMode('collapsed');
       if (!isFileTreeVisible) {
         openPreviewView(id);
-      }
-      if (!hasSelectedPreviewFile) {
-        setIsFileTreePinned(true);
       }
       if (
         !isGitStatusRefreshDisabled &&
@@ -1459,9 +1481,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
     if (openingFileTree || switchingToPreview) {
       setTerminalConsoleVisible(false);
-      if (!hasSelectedPreviewFile) {
-        setIsFileTreePinned(true);
-      }
       if (
         !isGitStatusRefreshDisabled &&
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
@@ -1801,7 +1820,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     pendingWorkspaceRestoreRef.current = null;
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
-      workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
+      const saved =
+        conversationPageCacheManager.getFilePreviewState(pageCacheKey);
+      if (
+        saved.selectedFileId &&
+        saved.selectedFileId !== fileView.preview.selectedFileId
+      ) {
+        setTaskAgentSelectedFileId(workspaceRelativePath(saved.selectedFileId));
+        setTaskAgentSelectTrigger(Date.now());
+      }
       return deactivate;
     }
     if (
