@@ -959,7 +959,12 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
           'aria-expanded',
           'true',
         );
-      expectOuterExpanded();
+      if (hasRunningHistory) {
+        expectOuterExpanded();
+      } else {
+        // 未收到恢复数据前不创建空助手气泡；首个工具事件才重建轨迹。
+        expect(screen.queryByTestId('v2-trace-toggle')).toBeNull();
+      }
       const receive = (event: ConversationChatResponse) => {
         subscription.onMessage(event);
         rerender();

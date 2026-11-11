@@ -101,7 +101,7 @@ export interface RuntimeSessionConfig {
   ) => Promise<{ data?: ConversationInfo } | undefined>;
   /**
    * 终态 taskStatus 写回通道（绑定层注入：写 conversationInfo）。
-   * ERROR 事件 / onError / onClose 兜底查询统一经此写回，与旧线一致。
+   * 仅协议终态与 onClose 查询确认的终态经此写回；传输断线不能判定任务失败。
    */
   applyTaskStatus?: (
     conversationId: number | string,
@@ -197,6 +197,8 @@ export function createConversationRuntimeSession(
   let settledTerminalStatus: TaskStatus | null = null;
   // 停止接口跨异步边界：同会话新一轮或切页后，旧停止成功不得取消当前轮。
   let stopRequestGeneration = 0;
+  // 切走再返回同一 ID 也属于新生命周期，旧连接及其查询不得重新获得写入权。
+  let streamGeneration = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
   const notifyState = () => {
@@ -466,12 +468,48 @@ export function createConversationRuntimeSession(
     }
   };
 
+  // sub 恢复编排（resumeController）：消息写入经 store.update（setState 形状兼容），
+  // 事件投影与 live 共用 applyStreamEvent；滚动 refs 由绑定层经 setViewRefs 注入。
+  let resumeMessageViewRef: { current: HTMLDivElement | null } = {
+    current: null,
+  };
+  let resumeAllowAutoScrollRef: { current: boolean } = { current: true };
+  const resumeController: ResumeController = createResumeController({
+    runtime,
+    setMessageList: (action) => {
+      if (typeof action === 'function') {
+        store.update(action as (prev: MessageInfo[]) => MessageInfo[]);
+      }
+    },
+    handleChangeMessageList: (_params, res, ownerMessageId) => {
+      applyStreamEvent(res, ownerMessageId);
+    },
+    messageViewRef: (() => ({
+      get current() {
+        return resumeMessageViewRef.current;
+      },
+      set current(value) {
+        resumeMessageViewRef.current = value;
+      },
+    }))(),
+    allowAutoScrollRef: (() => ({
+      get current() {
+        return resumeAllowAutoScrollRef.current;
+      },
+      set current(value) {
+        resumeAllowAutoScrollRef.current = value;
+      },
+    }))(),
+  });
+
   const send = (input: RuntimeSessionSendInput) => {
     if (isStopping) return;
     stopRequestGeneration += 1;
+    const liveGeneration = ++streamGeneration;
     const { conversationId, message } = input;
     // 取代上一轮连接：中断、重置投影
     runtime.liveConnection.abortCurrent();
+    resumeController.abortResumeStream();
     runtime.resetStreamProjection();
     currentConversationId = conversationId;
     // 新一轮发送：清上一轮终态记忆（终态自愈只对本轮快照生效）
@@ -606,14 +644,20 @@ export function createConversationRuntimeSession(
       },
       onClose: () => {
         const ownsClose = () =>
+          liveGeneration === streamGeneration &&
           currentConversationId === conversationId &&
           !runtime.liveConnection.isSuperseded(liveRunId);
-        // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
+        // 新 live 取代旧连接才清理旧消息；sub 承接原任务时仍需保留同一份正文。
         if (!ownsClose()) {
-          store.finalizeOwnedOnStaleClose(currentMessageId);
+          if (runtime.liveConnection.isSuperseded(liveRunId)) {
+            store.finalizeOwnedOnStaleClose(currentMessageId);
+          }
           return;
         }
-        store.finalizeOnClose();
+        // EOF、静默超时和网络错误都可能发生在任务继续执行时。
+        // 保留半成品与工具状态，供状态查询和 sub 接管；只有已确认的终态才收尾。
+        if (hasResolvedTerminalStatus) store.finalizeOnClose();
+        isAwaitingChatTerminal = false;
         disableConversationActive();
 
         // FINAL 已解析出明确终态时不重复查询；否则异步兜底（与旧线一致）
@@ -653,22 +697,16 @@ export function createConversationRuntimeSession(
         }
       },
       onError: () => {
-        if (runtime.liveConnection.isSuperseded(liveRunId)) {
-          store.markStreamError(currentMessageId);
+        if (
+          liveGeneration !== streamGeneration ||
+          currentConversationId !== conversationId ||
+          runtime.liveConnection.isSuperseded(liveRunId)
+        ) {
           return;
         }
-        store.markStreamError(currentMessageId);
-        isStopping = false;
-        stopPromise = null;
+        // 请求可能已被服务端接收，重试 POST 会重复启动任务。
+        // 工具层随后必调 onClose，由查询/sub 续接原任务，失败仅认协议或查询终态。
         isAwaitingChatTerminal = false;
-        if (conversationId) {
-          config.applyTaskStatus?.(conversationId, TaskStatus.FAILED);
-          runtime.effects.dispatch({
-            type: 'recent.status.patch',
-            conversationId,
-            status: TaskStatus.FAILED,
-          });
-        }
         disableConversationActive();
       },
     });
@@ -676,42 +714,9 @@ export function createConversationRuntimeSession(
     runtime.liveConnection.attach(liveRunId, abortConnection);
   };
 
-  // sub 恢复编排（resumeController）：消息写入经 store.update（setState 形状兼容），
-  // 事件投影与 live 共用 applyStreamEvent；滚动 refs 由绑定层经 setViewRefs 注入。
-  let resumeMessageViewRef: { current: HTMLDivElement | null } = {
-    current: null,
-  };
-  let resumeAllowAutoScrollRef: { current: boolean } = { current: true };
-  const resumeController: ResumeController = createResumeController({
-    runtime,
-    setMessageList: (action) => {
-      if (typeof action === 'function') {
-        store.update(action as (prev: MessageInfo[]) => MessageInfo[]);
-      }
-    },
-    handleChangeMessageList: (_params, res, ownerMessageId) => {
-      applyStreamEvent(res, ownerMessageId);
-    },
-    messageViewRef: (() => ({
-      get current() {
-        return resumeMessageViewRef.current;
-      },
-      set current(value) {
-        resumeMessageViewRef.current = value;
-      },
-    }))(),
-    allowAutoScrollRef: (() => ({
-      get current() {
-        return resumeAllowAutoScrollRef.current;
-      },
-      set current(value) {
-        resumeAllowAutoScrollRef.current = value;
-      },
-    }))(),
-  });
-
   const resetForConversationSwitch = () => {
     stopRequestGeneration += 1;
+    streamGeneration += 1;
     isStopping = false;
     stopPromise = null;
     runtime.liveConnection.abortCurrent();
@@ -743,7 +748,17 @@ export function createConversationRuntimeSession(
       onClose,
       debugSource,
     ) => {
+      // sub 接管后旧 live 的回调及查询失效；恢复仍属于原任务，不重发 chat。
+      streamGeneration += 1;
+      runtime.liveConnection.abortCurrent();
+      isConversationActive = false;
+      isAwaitingChatTerminal = false;
       currentConversationId = conversationId;
+      // 独立恢复入口可能只传入历史快照，尚未调用 load；先展示历史，
+      // 已有正文则保留，不能用恢复查询中的短快照擦掉断流前的输出。
+      if (!store.getSnapshot().length && currentList.length) {
+        store.replaceFromHistory(currentList);
+      }
       notifyState();
       resumeController.resumeConversationStream(
         conversationId,

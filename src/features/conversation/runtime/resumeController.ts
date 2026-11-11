@@ -304,12 +304,9 @@ export function createResumeController(
       onClose?.();
       return;
     }
-    // 开流前重置 Runtime 的流式投影（activeOutputMessageId 等），保证重放从头正确，不受上次残留影响
-    runtime.resetStreamProjection();
-    const currentMessageId = ensureResumeAssistantPlaceholder(
-      currentList,
-      debugSource,
-    );
+    // 重连可能只收到心跳或立即 EOF。收到有效事件后才重建投影与占位，
+    // 避免连接刚建立就擦掉已显示的正文，任务在断线期间结束时尤其如此。
+    let currentMessageId: string | null = null;
     const runController = runtime.resumeConnection;
     const runId = runController.startRun();
     const rejectPreviousTurn = createResumeEventGuard(currentList);
@@ -328,6 +325,11 @@ export function createResumeController(
           });
           return;
         }
+        if (
+          !res?.eventType ||
+          res.eventType === ConversationEventTypeEnum.HEART_BEAT
+        )
+          return;
         const rejectionReason = rejectPreviousTurn(res);
         if (rejectionReason) {
           resumeStreamLogger.info('ignore previous turn replay', {
@@ -337,6 +339,13 @@ export function createResumeController(
             reason: rejectionReason,
           });
           return;
+        }
+        if (currentMessageId === null) {
+          runtime.resetStreamProjection();
+          currentMessageId = ensureResumeAssistantPlaceholder(
+            currentList,
+            debugSource,
+          );
         }
         if (isResumeUserMessageEvent(res)) {
           upsertResumeUserMessage(res, currentMessageId, debugSource);
@@ -374,6 +383,7 @@ export function createResumeController(
         }
       },
       onClose: () => {
+        const ownsProjection = runController.isCurrent(runId);
         if (!runController.complete(runId)) {
           resumeStreamLogger.info('ignore stale resume close', {
             source: debugSource,
@@ -384,8 +394,8 @@ export function createResumeController(
         }
         resumeAbort = null;
         resumeConversationId = null;
-        // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
-        runtime.resetStreamProjection();
+        // 显式 abort 后的延迟 close 仍通知订阅者，但不能清掉新 live 的输出归属。
+        if (ownsProjection) runtime.resetStreamProjection();
         onClose?.();
       },
     });

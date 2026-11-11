@@ -132,7 +132,7 @@ describe('resumeController', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('订阅 sub 时追加新的 assistant 占位，不复用历史残留 Incomplete 消息', () => {
+  it('首个有效恢复事件才追加占位，不复用历史残留 Incomplete 消息', () => {
     let list: MessageInfo[] = [
       {
         id: 'old-incomplete',
@@ -149,6 +149,12 @@ describe('resumeController', () => {
     });
 
     controller.resumeConversationStream(1001, list);
+
+    expect(setMessageList).not.toHaveBeenCalled();
+    mockCreateSSEConnection.mock.calls[0][0].onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: '恢复的输出' },
+    });
 
     expect(resetProjectionSpy).toHaveBeenCalledTimes(1);
     expect(list).toHaveLength(2);
@@ -170,6 +176,10 @@ describe('resumeController', () => {
     const { controller } = createTestController({ setMessageList });
 
     controller.resumeConversationStream(1001, reloaded);
+    mockCreateSSEConnection.mock.calls[0][0].onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: '恢复的输出' },
+    });
 
     expect(list).toHaveLength(3);
     expect(list[0].id).toBe(1);
@@ -198,6 +208,10 @@ describe('resumeController', () => {
     const { controller } = createTestController({ setMessageList });
 
     controller.resumeConversationStream(1001, reloaded);
+    mockCreateSSEConnection.mock.calls[0][0].onMessage({
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: '恢复的输出' },
+    });
 
     expect(list).toHaveLength(3);
     expect(list[0].id).toBe(1);
@@ -252,7 +266,6 @@ describe('resumeController', () => {
     });
 
     controller.resumeConversationStream(1002, list);
-    const placeholderId = list[0].id;
 
     controller.setHandler(latestHandle);
 
@@ -262,6 +275,7 @@ describe('resumeController', () => {
       data: { text: 'hello' },
     };
     sseOptions.onMessage(chunk);
+    const placeholderId = list[0].id;
 
     expect(firstHandle).not.toHaveBeenCalled();
     expect(latestHandle).toHaveBeenCalledWith(
@@ -284,7 +298,6 @@ describe('resumeController', () => {
     });
 
     controller.resumeConversationStream(1002, list);
-    const placeholderId = list[0].id;
 
     const sseOptions = mockCreateSSEConnection.mock.calls[0][0];
     sseOptions.onMessage({
@@ -306,7 +319,10 @@ describe('resumeController', () => {
       role: AssistantRoleEnum.USER,
       text: '使用 flow-debugger 再测试一轮',
     });
-    expect(list[1].id).toBe(placeholderId);
+    expect(list[1]).toMatchObject({
+      role: AssistantRoleEnum.ASSISTANT,
+      status: MessageStatusEnum.Loading,
+    });
   });
 
   it('sub 收到 ERROR 时主动中断连接，关闭时重置恢复状态并回调 onClose', () => {
@@ -329,7 +345,7 @@ describe('resumeController', () => {
 
     sseOptions.onClose();
 
-    expect(resetProjectionSpy).toHaveBeenCalledTimes(2);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -423,11 +439,35 @@ describe('resumeController', () => {
     expect(firstOnClose).not.toHaveBeenCalled();
     expect(secondOnClose).not.toHaveBeenCalled();
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(2);
-    expect(resetProjectionSpy).toHaveBeenCalledTimes(2);
+    expect(resetProjectionSpy).not.toHaveBeenCalled();
 
     secondOptions.onClose();
 
     expect(secondOnClose).toHaveBeenCalledTimes(1);
-    expect(resetProjectionSpy).toHaveBeenCalledTimes(3);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('重连只有心跳便关闭时保留已显示正文，不用空占位替换半成品', () => {
+    let list = [
+      {
+        id: 'partial',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Incomplete,
+        text: '已经收到的正文',
+      },
+    ] as MessageInfo[];
+    const setMessageList = vi.fn((updater) => {
+      list = typeof updater === 'function' ? updater(list) : updater;
+    });
+    const { controller } = createTestController({ setMessageList });
+    controller.resumeConversationStream(1001, [
+      { id: 'user', role: AssistantRoleEnum.USER },
+    ] as MessageInfo[]);
+    const options = mockCreateSSEConnection.mock.calls[0][0];
+    options.onMessage(null);
+    options.onMessage({ eventType: ConversationEventTypeEnum.HEART_BEAT });
+    options.onClose();
+    expect(setMessageList).not.toHaveBeenCalled();
+    expect(list[0].text).toBe('已经收到的正文');
   });
 });
