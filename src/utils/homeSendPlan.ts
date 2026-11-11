@@ -113,6 +113,8 @@ export interface HomeConversationAttach {
   selectedComputerId?: string;
   /** 仅个人电脑生效（resolvePersonalWorkspacePath 产物） */
   workspacePath?: string;
+  /** 项目外选择个人目录时，后端隐式创建常规项目的所属空间 */
+  spaceId?: number;
   skillIds?: number[];
   modelId?: number;
   agentMode?: AgentMode;
@@ -155,7 +157,7 @@ export interface HomeSendPlanInput {
   selectedDocs?: SelectedDocInfo[];
   selectedComputerId?: string;
   workspacePath?: string;
-  /** 项目类推荐展示空间选择器时的选中空间 */
+  /** 项目类推荐或项目外选择个人目录时的选中空间 */
   selectedSpaceId?: number;
   /** 当前空间（getSpaceId 解析产物） */
   fallbackSpaceId?: number;
@@ -277,6 +279,10 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
   }
 
   // 分支 3：纯对话 → 建会话
+  const personalWorkspacePath = resolvePersonalWorkspacePath(
+    selectedComputerId,
+    workspacePath,
+  );
   return {
     kind: 'createConversation',
     agentId: currentAgentId,
@@ -286,10 +292,8 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
       infos,
       messageSourceType: 'home' as MessageSourceType,
       selectedComputerId,
-      workspacePath: resolvePersonalWorkspacePath(
-        selectedComputerId,
-        workspacePath,
-      ),
+      workspacePath: personalWorkspacePath,
+      ...(personalWorkspacePath ? { spaceId: selectedSpaceId } : {}),
       skillIds,
       modelId,
       agentMode,

@@ -95,6 +95,43 @@ describe('useConversation.handleCreateConversation sandboxId 归一（bug2443）
     expect(payload.workspacePath).toBe('/tmp/proj');
   });
 
+  it('项目外选个人目录时，所选团队空间随创建请求透传给后端', async () => {
+    const plan = buildHomeSendPlan({
+      currentAgentId: 3091,
+      message: '团队任务',
+      selectedComputerId: '377',
+      workspacePath: '/tmp/team-project',
+      selectedSpaceId: 28,
+    });
+    expect(plan.kind).toBe('createConversation');
+    if (plan.kind !== 'createConversation') return;
+    expect(await create({ ...plan.attach })).toMatchObject({
+      sandboxId: 377,
+      workspacePath: '/tmp/team-project',
+      spaceId: 28,
+    });
+  });
+
+  it.each([
+    { selectedComputerId: '-1', workspacePath: '/tmp/stale' },
+    { selectedComputerId: '377', workspacePath: '' },
+    { workspacePath: '/tmp/stale' },
+    {
+      projectId: 100,
+      projectType: AgentComponentTypeEnum.NormalProject,
+      selectedComputerId: '377',
+      sandboxId: 377,
+      workspacePath: '/tmp/project',
+    },
+  ])('无个人目录或绑定已有项目时不发送残留空间：%j', async (attach) => {
+    const payload = await create({ ...attach, spaceId: 28 });
+    expect(payload).not.toHaveProperty('spaceId');
+    if ('projectId' in attach) {
+      expect(payload.projectId).toBe(100);
+      expect(payload.workspacePath).toBe('/tmp/project');
+    }
+  });
+
   it('项目上框链路：attach.sandboxId（含字符串形态）原样透传', async () => {
     const payload = await create({
       message: 'hi',

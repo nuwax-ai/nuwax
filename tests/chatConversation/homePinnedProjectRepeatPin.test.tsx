@@ -346,6 +346,51 @@ describe('首页隐藏运行容器选择器时的发送参数', () => {
   );
 });
 
+describe('项目外选择个人目录的空间', () => {
+  it('选目录后可选团队空间，改回默认目录或云电脑后不再携带空间', async () => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValue({
+      data: { recChatBoxNav: { Agent: [] } },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValue([]);
+    vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+      data: { agentId: 7, type: 'TaskAgent', allowPrivateSandbox: 1 },
+    } as any);
+    render(<Home />);
+    await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+    expect(input.props.showSpaceSelector).toBe(false);
+
+    act(() => input.props.onComputerSelect('377'));
+    expect(input.props.showSpaceSelector).toBe(false);
+    act(() => input.props.onWorkspaceDirChange('/work/new-project'));
+    expect(input.props.showSpaceSelector).toBe(true);
+    act(() => input.props.onSpaceSelect(28));
+    await act(async () => input.props.onEnter('团队目录任务'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        selectedComputerId: '377',
+        workspacePath: '/work/new-project',
+        spaceId: 28,
+      }),
+    );
+
+    act(() => input.props.onWorkspaceDirChange(''));
+    expect(input.props.showSpaceSelector).toBe(false);
+    await act(async () => input.props.onEnter('默认目录任务'));
+    expect(handleCreateConversation.mock.lastCall?.[1]).not.toHaveProperty(
+      'spaceId',
+    );
+
+    act(() => input.props.onWorkspaceDirChange('/work/new-project'));
+    act(() => input.props.onComputerSelect('-1'));
+    expect(input.props.showSpaceSelector).toBe(false);
+    await act(async () => input.props.onEnter('云电脑任务'));
+    expect(handleCreateConversation.mock.lastCall?.[1]).not.toHaveProperty(
+      'spaceId',
+    );
+  });
+});
+
 describe('项目新建任务的电脑与工作目录', () => {
   beforeEach(() => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValue({
@@ -377,6 +422,30 @@ describe('项目新建任务的电脑与工作目录', () => {
       ...overrides,
     });
   };
+
+  it.each(['', '/work/edited'])(
+    '项目内工作目录为 "%s" 时不可选空间，发送仍绑定原项目',
+    async (workspacePath) => {
+      pinNormalProject({ spaceId: 8 });
+      render(<Home />);
+      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+      act(() => input.props.onWorkspaceDirChange(workspacePath));
+      // 即使残留其他空间选择，也不得覆盖项目已绑定的空间。
+      act(() => input.props.onSpaceSelect(28));
+      expect(input.props.showSpaceSelector).toBe(false);
+      await act(async () => input.props.onEnter('项目任务'));
+      expect(handleCreateConversation.mock.lastCall?.[1]).toMatchObject({
+        projectId: 6,
+        projectType: 'NormalProject',
+        workspacePath: workspacePath || undefined,
+      });
+      expect(handleCreateConversation.mock.lastCall?.[1]).not.toHaveProperty(
+        'spaceId',
+      );
+      act(() => input.props.onComputerSelect('-1'));
+      expect(input.props.showSpaceSelector).toBe(false);
+    },
+  );
 
   it('切走再返回保留项目和用户修改的电脑目录，发送仍绑定原项目', async () => {
     pinNormalProject();
