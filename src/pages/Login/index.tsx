@@ -151,7 +151,8 @@ const Login: React.FC = () => {
   /** SDK 已交出实例，且已等待初始化后的安全间隔。 */
   const captchaReadyRef = useRef(false);
   const [captchaInitFailed, setCaptchaInitFailed] = useState(false);
-  const [captchaReady, setCaptchaReady] = useState(false);
+  const captchaLoginPendingRef = useRef(false);
+  const [captchaWaiting, setCaptchaWaiting] = useState(false);
   const captchaLoginRoundRef = useRef<CaptchaLoginRound | null>(null);
   const CAPTCHA_ROUND_SETTLE_MS = 500;
   /** 已点登录、正在等验证码。请求自己的 loading 要等接口发出才为 true */
@@ -291,15 +292,18 @@ const Login: React.FC = () => {
 
   const resetCaptchaLogin = (resetReady = false, updateUI = true) => {
     captchaLoginRoundRef.current = null;
+    captchaLoginPendingRef.current = false;
     isVerifyingRef.current = false;
     loginTriggerLockRef.current = false;
     lastLoginTriggerAtRef.current = 0;
     if (resetReady) {
       captchaReadyRef.current = false;
-      if (updateUI) setCaptchaReady(false);
     }
     clearCaptchaPopupWatcher();
-    if (updateUI) setCaptchaSubmitting(false);
+    if (updateUI) {
+      setCaptchaSubmitting(false);
+      setCaptchaWaiting(false);
+    }
   };
 
   /**
@@ -528,7 +532,6 @@ const Login: React.FC = () => {
   ];
 
   const needAliyunCaptcha = Boolean(tenantConfigInfo?.openCaptcha);
-  const captchaInitializing = needAliyunCaptcha && !captchaReady;
 
   const handlerPasswordLogin = async (
     captchaVerifyParam: string,
@@ -661,18 +664,24 @@ const Login: React.FC = () => {
   };
 
   const doLogin = () => {
-    if (loading || captchaSubmitting) return;
+    if (loading || captchaSubmitting || captchaLoginPendingRef.current) return;
     const now = Date.now();
     if (
       loginTriggerLockRef.current ||
       now - lastLoginTriggerAtRef.current < 800
     )
       return;
-    if (needAliyunCaptcha && !captchaReadyRef.current) return;
+    if (needAliyunCaptcha && captchaInitFailed) return;
 
     loginTriggerLockRef.current = true;
     lastLoginTriggerAtRef.current = now;
     if (needAliyunCaptcha) {
+      if (!captchaReadyRef.current) {
+        // 只等待这次主动提交，就绪后继续；切换、失败和卸载均会取消它。
+        captchaLoginPendingRef.current = true;
+        setCaptchaWaiting(true);
+        return;
+      }
       setCaptchaSubmitting(true);
       triggerCaptchaPopup();
     } else {
@@ -967,10 +976,7 @@ const Login: React.FC = () => {
                       block
                       type="primary"
                       htmlType="submit"
-                      disabled={captchaInitializing}
-                      loading={
-                        loading || captchaSubmitting || captchaInitializing
-                      }
+                      loading={loading || captchaSubmitting || captchaWaiting}
                     >
                       {loginType === LoginTypeEnum.Password
                         ? dict('PC.Pages.Login.login')
@@ -1076,12 +1082,20 @@ const Login: React.FC = () => {
                       active={loginType !== LoginTypeEnum.QrCode}
                       config={tenantConfigInfo}
                       onVerify={handleCaptchaVerify}
-                      onInitError={() => setCaptchaInitFailed(true)}
+                      onInitError={() => {
+                        resetCaptchaLogin(true);
+                        setCaptchaInitFailed(true);
+                      }}
                       onReadyChange={(ready) => {
                         if (ready) {
                           captchaReadyRef.current = true;
-                          setCaptchaReady(true);
                           setCaptchaInitFailed(false);
+                          if (captchaLoginPendingRef.current) {
+                            captchaLoginPendingRef.current = false;
+                            setCaptchaWaiting(false);
+                            setCaptchaSubmitting(true);
+                            triggerCaptchaPopup();
+                          }
                         } else resetCaptchaLogin(true);
                       }}
                       elementId="aliyun-captcha-login"
