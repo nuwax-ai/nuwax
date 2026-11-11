@@ -353,6 +353,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const pidWatch = Form.useWatch('pid', form);
   // 监听API协议
   const apiProtocolWatch = Form.useWatch('apiProtocol', form);
+  // Responses 暂不支持连通性测试，支持后可恢复该入口。
+  const testConnectionUnsupported =
+    apiProtocolWatch === ModelApiProtocolEnum.Responses;
 
   /** 选中供应商 PID 时应的供应商详情 */
   const currentProvider = useMemo(
@@ -640,9 +643,12 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
   // 检测模型连通性
   const handlerCheckConnection = () => {
-    setLoadingTestConnection(true);
     const values = form.getFieldsValue() as ModelFormData &
       Pick<ModelSaveParams, 'apiInfoList'>;
+    if (values.apiProtocol === ModelApiProtocolEnum.Responses) {
+      return;
+    }
+    setLoadingTestConnection(true);
 
     runTestConnectivity({
       ...values,
@@ -671,18 +677,20 @@ const CreateModel: React.FC<CreateModelProps> = ({
       onCancel={onCancel}
       footer={
         <>
-          <Button
-            type="default"
-            loading={loadingTestConnection}
-            onClick={handlerCheckConnection}
-            className={cx(
-              !submittable && styles['confirm-btn'],
-              styles['connection-btn'],
-            )}
-            disabled={!submittable}
-          >
-            {dict('PC.Pages.SpaceLibrary.CreateModel.testConnection')}
-          </Button>
+          <ConditionRender condition={!testConnectionUnsupported}>
+            <Button
+              type="default"
+              loading={loadingTestConnection}
+              onClick={handlerCheckConnection}
+              className={cx(
+                !submittable && styles['confirm-btn'],
+                styles['connection-btn'],
+              )}
+              disabled={!submittable}
+            >
+              {dict('PC.Pages.SpaceLibrary.CreateModel.testConnection')}
+            </Button>
+          </ConditionRender>
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
             {dict('PC.Common.Global.cancel')}
           </Button>
