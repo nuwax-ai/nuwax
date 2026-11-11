@@ -231,6 +231,8 @@ export interface ConversationCreateParams {
    * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
    */
   workspacePath?: string;
+  /** 项目外选择个人目录时，后端隐式创建常规项目的所属空间 */
+  spaceId?: number;
   /**
    * 关联项目 ID（首页项目上框：已有项目下直接新建会话时携带，
    * 后端按此把会话绑定到项目，不再隐式建项目）。

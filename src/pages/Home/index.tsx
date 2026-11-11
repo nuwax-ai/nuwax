@@ -251,12 +251,14 @@ const Home: React.FC = () => {
       agentDetail?.type === AgentTypeEnum.TaskAgent) &&
     (!pinnedProject || pinnedProjectSandboxSelectable) &&
     (pinnedProjectSandboxSelectable || !!agentDetail?.allowPrivateSandbox);
-  // 上框项目自带空间（会话绑定项目），不再展示空间选择器
-  const showSpaceSelector = pinnedProject
-    ? false
-    : selectedRecommend
-    ? showSpaceSelectorForFunctionType(selectedFunctionType)
-    : false;
+  // 已有项目沿用绑定空间；项目外选个人目录时，允许指定隐式创建项目的空间。
+  const showSpaceSelector =
+    !pinnedProject &&
+    (showSpaceSelectorForFunctionType(selectedFunctionType) ||
+      !!resolvePersonalWorkspacePath(
+        showComputerSelector ? selectedComputerId : undefined,
+        workspacePath,
+      ));
 
   const runRecommendNavList = useCallback(async () => {
     try {
