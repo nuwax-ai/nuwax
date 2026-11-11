@@ -537,19 +537,61 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
     expect(window.__captchaInitAt).toBeUndefined();
   });
 
-  it('初始化前提交不会在就绪后自动重放，必须重新点击登录', async () => {
+  it('初始化静默进行，用户点击后只等待剩余时间且重复提交只触发一次', async () => {
     await openAccount();
     const button = document.querySelector<HTMLButtonElement>(
       'form button[type="submit"]',
     )!;
-    expect(button.disabled).toBe(true);
-    await submitPassword();
-    await act(() => vi.advanceTimersByTimeAsync(5100));
     expect(button.disabled).toBe(false);
+    expect(button).not.toHaveClass('ant-btn-loading');
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+    expect(button).not.toHaveClass('ant-btn-loading');
+    await submitPassword();
+    await submitPassword();
+    expect(button).toHaveClass('ant-btn-loading');
+    expect(instances[0].click).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1900));
+    expect(instances[0].click).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(instances[0].click).toHaveBeenCalledOnce();
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(h.passwordLogin).toHaveBeenCalledOnce();
+  });
+
+  it('等待就绪时允许切回扫码，回来后不会继续上次提交', async () => {
+    await openAccount();
+    await submitPassword();
+    const switchButton = screen.getByRole('button', {
+      name: 'PC.Pages.Login.switchToQrLogin',
+    });
+    expect(switchButton).toBeEnabled();
+    fireEvent.click(switchButton);
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
     expect(instances[0].click).not.toHaveBeenCalled();
     expect(h.passwordLogin).not.toHaveBeenCalled();
+    expect(
+      document.querySelector('form button[type="submit"]'),
+    ).not.toHaveClass('ant-btn-loading');
     await submitPassword();
     expect(instances[0].click).toHaveBeenCalledOnce();
+  });
+
+  it('等待初始化期间离页或配置变化会取消提交', async () => {
+    const view = await openAccount();
+    await submitPassword();
+    h.tenantConfig = { ...h.tenantConfig, captchaSceneId: 'scene-B' };
+    view.rerender(<Login />);
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    expect(instances[0].click).not.toHaveBeenCalled();
+    expect(instances[1].click).not.toHaveBeenCalled();
+    view.unmount();
+    await act(() => vi.advanceTimersByTimeAsync(10000));
+    expect(h.passwordLogin).not.toHaveBeenCalled();
   });
 
   it('取参后配置变化取消旧的验证等待，新一轮仍能正常提交且防重复点击', async () => {
@@ -617,6 +659,56 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
       error.mockRestore();
     }
   });
+
+  it.each([
+    ['校验参数异常', false],
+    ['用户不存在或密码错误', true],
+  ])(
+    '登录返回%s时向 SDK 反馈实际验证码结果和业务失败',
+    async (message, captchaResult) => {
+      h.realPasswordRequests = true;
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        h.apiPasswordLogin.mockRejectedValueOnce(
+          Object.assign(new Error('BizError'), { info: { message } }),
+        );
+        await openAccount();
+        await act(() => vi.advanceTimersByTimeAsync(5100));
+        respondToClick = false;
+        await submitPassword();
+        const result = instances[0].sdk.captchaVerifyCallback('current-token');
+        await act(() => vi.advanceTimersByTimeAsync(800));
+        await expect(result).resolves.toEqual({
+          captchaResult,
+          bizResult: false,
+        });
+        expect(h.apiPasswordLogin).toHaveBeenCalledOnce();
+        expect(h.finishLogin).not.toHaveBeenCalled();
+        expect(
+          screen.getByRole('button', {
+            name: 'PC.Pages.Login.switchToQrLogin',
+          }),
+        ).toBeEnabled();
+        // SDK 刷新验证周期后，用户可用新参数完成下一次业务请求。
+        instances[0].sdk.getInstance({ destroyCaptcha: instances[0].destroy });
+        await act(() => vi.advanceTimersByTimeAsync(2100));
+        h.apiPasswordLogin.mockResolvedValueOnce({
+          data: { token: 'new-token' },
+        });
+        await submitPassword();
+        const retried = instances[0].sdk.captchaVerifyCallback('new-token');
+        await act(() => vi.advanceTimersByTimeAsync(800));
+        await expect(retried).resolves.toEqual({
+          captchaResult: true,
+          bizResult: true,
+        });
+        expect(h.apiPasswordLogin).toHaveBeenCalledTimes(2);
+        expect(h.finishLogin).toHaveBeenCalledWith('new-token');
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
 
   it('登录请求期间离页，迟到成功不能再同步会话或导航', async () => {
     h.realPasswordRequests = true;
