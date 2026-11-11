@@ -5,6 +5,7 @@
  * - 验证码失效类登录失败：清空已输入码、展示引导文案、放开重发冷却
  * - 重发流程进行中连点不重复触发发码
  */
+import { CAPTCHA_SAFETY_INTERVAL_MS } from '@/components/AliyunCaptcha';
 import { PHONE } from '@/constants/home.constants';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { message } from 'antd';
@@ -121,14 +122,19 @@ vi.mock('@/utils/hostBridge', () => ({
   hostBridge: { layout: { setSecondMenuAvailable: vi.fn() } },
 }));
 
-vi.mock('@/components/AliyunCaptcha', () => ({
-  default: React.forwardRef((props: { onReady?: () => void }) => {
-    React.useEffect(() => {
-      props.onReady?.();
-    }, []);
-    return null;
-  }),
-}));
+vi.mock('@/components/AliyunCaptcha', async (importOriginal) => {
+  const { forwardRef, useEffect } = await import('react');
+  return {
+    ...(await importOriginal<typeof import('@/components/AliyunCaptcha')>()),
+    default: forwardRef((props: { onReady?: () => void }, _ref) => {
+      void _ref;
+      useEffect(() => {
+        props.onReady?.();
+      }, []);
+      return null;
+    }),
+  };
+});
 
 vi.mock('@/components/base/SvgIcon', () => ({
   default: () => <span data-testid="svg-icon" />,
@@ -497,7 +503,7 @@ describe('验证码登录页提交与重发加固', () => {
       render(<VerifyCode />);
       expect(clicks).not.toContain('aliyun-captcha-sms');
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
+        await vi.advanceTimersByTimeAsync(CAPTCHA_SAFETY_INTERVAL_MS);
       });
     } finally {
       HTMLElement.prototype.click = originalClick;

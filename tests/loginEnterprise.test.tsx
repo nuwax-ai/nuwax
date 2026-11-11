@@ -20,8 +20,17 @@ const h = vi.hoisted(() => ({
   loadMenus: vi.fn(),
   initI18n: vi.fn(),
   navigateAfterLogin: vi.fn(),
+  passwordLogin: vi.fn(),
+  apiPasswordLogin: vi.fn(),
+  realPasswordRequests: false,
+  validatePassword: vi.fn(),
   search: '',
-  tenantConfig: {} as { openQrLogin?: number | null },
+  tenantConfig: {} as {
+    openQrLogin?: number | null;
+    openCaptcha?: number;
+    captchaSceneId?: string;
+    captchaPrefix?: string;
+  },
   loadEnd: true,
 }));
 
@@ -42,10 +51,17 @@ vi.mock('@/services/i18nRuntime', () => ({
   initI18n: h.initI18n,
   syncLangFromUserInfo: vi.fn(),
 }));
-vi.mock('@/hooks/useRequestPromiseBridge', () => ({
-  default: () => ({ runWithPromise: vi.fn(), loading: false }),
-}));
-vi.mock('@/services/account', () => ({ apiLogin: vi.fn() }));
+vi.mock('ahooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ahooks')>();
+  return {
+    ...actual,
+    useRequest: (...args: Parameters<typeof actual.useRequest>) =>
+      h.realPasswordRequests
+        ? actual.useRequest(...args)
+        : { runAsync: h.passwordLogin, loading: false },
+  };
+});
+vi.mock('@/services/account', () => ({ apiLogin: h.apiPasswordLogin }));
 vi.mock('@/services/qrLogin', () => ({
   apiCreateQrLoginCode: h.createQrCode,
   apiGetQrLoginStatus: h.qrStatus,
@@ -72,9 +88,8 @@ vi.mock('@/utils/loginNavigation', () => ({
 vi.mock('@/utils/common', () => ({
   isValidEmail: vi.fn(),
   isValidPhone: vi.fn(),
-  validatePassword: vi.fn(),
+  validatePassword: h.validatePassword,
 }));
-vi.mock('@/components/AliyunCaptcha', () => ({ default: () => null }));
 vi.mock('@/components/business-component/ImageCaptcha', () => ({
   default: () => null,
   imageCaptchaRules: () => [],
@@ -120,6 +135,10 @@ beforeEach(() => {
   h.loadMenus.mockReset().mockResolvedValue(undefined);
   h.initI18n.mockReset().mockResolvedValue(undefined);
   h.navigateAfterLogin.mockReset();
+  h.passwordLogin.mockReset().mockResolvedValue({});
+  h.apiPasswordLogin.mockReset();
+  h.realPasswordRequests = false;
+  h.validatePassword.mockReset().mockReturnValue(true);
   // 模拟 HTTPS 登录页访问 HTTP 企业地址时的浏览器拦截。
   h.fetch.mockReset().mockRejectedValue(new TypeError('Failed to fetch'));
   vi.stubGlobal('fetch', h.fetch);
@@ -130,7 +149,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
+  delete window.__captchaInitAt;
   localStorage.removeItem('PHONE');
   localStorage.removeItem('EXPIRE_DATE');
   if (originalBridge === undefined) delete (window as any).NuwaClawBridge;
@@ -422,5 +443,200 @@ describe('客户端企业登录', () => {
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     await within(dialog).findByText('PC.Pages.Login.enterpriseDomainRequired');
     expect(h.configureServerHost).not.toHaveBeenCalled();
+  });
+});
+
+interface LoginCaptchaSdk {
+  button: string;
+  getInstance: (instance: { destroyCaptcha: () => void }) => void;
+  captchaVerifyCallback: (param: string) => Promise<unknown>;
+}
+
+describe('扫码与账号登录往返时的阿里云验证码', () => {
+  let instances: Array<{
+    sdk: LoginCaptchaSdk;
+    destroy: ReturnType<typeof vi.fn>;
+    click: ReturnType<typeof vi.fn>;
+  }>;
+  let respondToClick: boolean;
+
+  beforeEach(() => {
+    instances = [];
+    respondToClick = true;
+    h.tenantConfig = {
+      openQrLogin: 1,
+      openCaptcha: 1,
+      captchaSceneId: 'scene-A',
+      captchaPrefix: 'prefix',
+    };
+    vi.stubGlobal('initAliyunCaptcha', (sdk: LoginCaptchaSdk) => {
+      const button = document.querySelector(sdk.button)!;
+      const click = vi.fn(() => {
+        if (respondToClick) void sdk.captchaVerifyCallback('current-token');
+      });
+      button.addEventListener('click', click);
+      const destroy = vi.fn(() => button.removeEventListener('click', click));
+      instances.push({ sdk, destroy, click });
+      sdk.getInstance({ destroyCaptcha: destroy });
+    });
+  });
+
+  async function openAccount() {
+    const view = render(<Login />);
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    vi.useFakeTimers();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Pages.Login.switchToAccountLogin',
+      }),
+    );
+    return view;
+  }
+
+  async function submitPassword() {
+    fireEvent.change(
+      screen.getByPlaceholderText(
+        'PC.Pages.Login.inputUnifiedAccountPlaceholder',
+      ),
+      { target: { value: 'test-account' } },
+    );
+    fireEvent.change(
+      screen.getByPlaceholderText('PC.Pages.Login.inputPasswordPlaceholder'),
+      { target: { value: 'test-password' } },
+    );
+    await act(async () => {
+      fireEvent.submit(document.querySelector('form')!);
+    });
+  }
+
+  it('初始扫码页不初始化，快速往返与密码短信标签共用首次创建的实例', async () => {
+    const view = render(<Login />);
+    await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+    expect(instances).toHaveLength(0);
+    expect(document.getElementById('captcha-element')).toBeNull();
+    for (let round = 0; round < 4; round++) {
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'PC.Pages.Login.switchToAccountLogin',
+        }),
+      );
+      expect(instances).toHaveLength(1);
+      fireEvent.click(screen.getByText('PC.Pages.Login.codeLoginOrRegister'));
+      fireEvent.click(screen.getByText('PC.Pages.Login.passwordLogin'));
+      expect(instances).toHaveLength(1);
+      fireEvent.click(
+        screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+      );
+      await screen.findByRole('img', { name: 'PC.Pages.Login.qrCodeLabel' });
+      expect(instances[0].destroy).not.toHaveBeenCalled();
+      await instances[0].sdk.captchaVerifyCallback('late-token');
+    }
+    expect(h.passwordLogin).not.toHaveBeenCalled();
+    view.unmount();
+    expect(instances[0].destroy).toHaveBeenCalledOnce();
+    expect(window.__captchaInitAt).toBeUndefined();
+  });
+
+  it('初始化前提交不会在就绪后自动重放，必须重新点击登录', async () => {
+    await openAccount();
+    const button = document.querySelector<HTMLButtonElement>(
+      'form button[type="submit"]',
+    )!;
+    expect(button.disabled).toBe(true);
+    await submitPassword();
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    expect(button.disabled).toBe(false);
+    expect(instances[0].click).not.toHaveBeenCalled();
+    expect(h.passwordLogin).not.toHaveBeenCalled();
+    await submitPassword();
+    expect(instances[0].click).toHaveBeenCalledOnce();
+  });
+
+  it('取参后配置变化取消旧的验证等待，新一轮仍能正常提交且防重复点击', async () => {
+    const view = await openAccount();
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    await submitPassword();
+    expect(instances[0].click).toHaveBeenCalledOnce();
+    expect(h.passwordLogin).not.toHaveBeenCalled();
+    h.tenantConfig = { ...h.tenantConfig, captchaSceneId: 'scene-B' };
+    view.rerender(<Login />);
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    expect(instances).toHaveLength(2);
+    expect(h.passwordLogin).not.toHaveBeenCalled();
+    await instances[0].sdk.captchaVerifyCallback('old-token');
+    await submitPassword();
+    await submitPassword();
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(h.passwordLogin).toHaveBeenCalledOnce();
+    expect(h.passwordLogin).toHaveBeenCalledWith({
+      phoneOrEmail: 'test-account',
+      password: 'test-password',
+      captchaVerifyParam: 'current-token',
+    });
+  });
+
+  it('无弹窗超时会销毁旧验证轮次，迟到回调不能污染重试', async () => {
+    await openAccount();
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    respondToClick = false;
+    await submitPassword();
+    await act(() => vi.advanceTimersByTimeAsync(3300));
+    expect(instances).toHaveLength(2);
+    expect(instances[0].destroy).toHaveBeenCalledOnce();
+    await instances[0].sdk.captchaVerifyCallback('late-token');
+    expect(h.passwordLogin).not.toHaveBeenCalled();
+    respondToClick = true;
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    await submitPassword();
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(h.passwordLogin).toHaveBeenCalledOnce();
+  });
+
+  it('实际请求失败会消费拒绝并解锁，下一次请求成功后完成登录收尾', async () => {
+    h.realPasswordRequests = true;
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      h.apiPasswordLogin
+        .mockRejectedValueOnce(new Error('用户不存在或密码错误'))
+        .mockResolvedValueOnce({ data: { token: 'current-token' } });
+      await openAccount();
+      await act(() => vi.advanceTimersByTimeAsync(5100));
+      await submitPassword();
+      await act(() => vi.advanceTimersByTimeAsync(800));
+      expect(h.apiPasswordLogin).toHaveBeenCalledOnce();
+      expect(h.finishLogin).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+      ).toBeEnabled();
+      await submitPassword();
+      await act(() => vi.advanceTimersByTimeAsync(800));
+      expect(h.apiPasswordLogin).toHaveBeenCalledTimes(2);
+      expect(h.finishLogin).toHaveBeenCalledOnce();
+      expect(h.finishLogin).toHaveBeenCalledWith('current-token');
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it('登录请求期间离页，迟到成功不能再同步会话或导航', async () => {
+    h.realPasswordRequests = true;
+    let finish!: (value: unknown) => void;
+    h.apiPasswordLogin.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const view = await openAccount();
+    await act(() => vi.advanceTimersByTimeAsync(5100));
+    await submitPassword();
+    await act(() => vi.advanceTimersByTimeAsync(800));
+    expect(h.apiPasswordLogin).toHaveBeenCalledOnce();
+    view.unmount();
+    await act(async () => {
+      finish({ data: { token: 'old-token' } });
+    });
+    expect(h.finishLogin).not.toHaveBeenCalled();
+    expect(h.loadMenus).not.toHaveBeenCalled();
+    expect(h.navigateAfterLogin).not.toHaveBeenCalled();
   });
 });
