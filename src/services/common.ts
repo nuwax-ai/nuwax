@@ -19,7 +19,10 @@ import {
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
-import { humanizeLoginError } from '@/utils/loginErrorHumanize';
+import {
+  humanizeLoginError,
+  isLoginCodeInvalidError,
+} from '@/utils/loginErrorHumanize';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -192,6 +195,16 @@ const errorHandler = (error: any, opts: any) => {
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
 
+      // 阿里云无痕拒绝交给 SDK 升级为滑块，同一轮登录不提前弹出失败提示。
+      if (
+        (error?.config?.captchaErrorHandled === true ||
+          opts?.config?.captchaErrorHandled === true ||
+          opts?.captchaErrorHandled === true) &&
+        ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(code) &&
+        url?.includes('/api/user/passwordLogin') &&
+        isLoginCodeInvalidError(errorMessage)
+      )
+        throw error;
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
         throw error;
@@ -403,6 +416,7 @@ const responseInterceptors = [
       const error = errorThrower?.(data);
 
       if (error) {
+        if (config?.captchaErrorHandled) error.config = config;
         // 如果errorThrower返回了错误对象，使用errorHandler处理它
         return (
           errorHandler?.(error, { config, responseStatus: response.status }) ||

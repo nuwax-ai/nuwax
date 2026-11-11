@@ -688,20 +688,21 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
           screen.getByRole('button', {
             name: 'PC.Pages.Login.switchToQrLogin',
           }),
-        ).toBeEnabled();
+        ).toHaveProperty('disabled', !captchaResult);
         // SDK 刷新验证周期后，用户可用新参数完成下一次业务请求。
         instances[0].sdk.getInstance({ destroyCaptcha: instances[0].destroy });
         await act(() => vi.advanceTimersByTimeAsync(2100));
         h.apiPasswordLogin.mockResolvedValueOnce({
           data: { token: 'new-token' },
         });
-        await submitPassword();
+        if (captchaResult) await submitPassword();
         const retried = instances[0].sdk.captchaVerifyCallback('new-token');
         await act(() => vi.advanceTimersByTimeAsync(800));
         await expect(retried).resolves.toEqual({
           captchaResult: true,
           bizResult: true,
         });
+        expect(instances[0].click).toHaveBeenCalledTimes(captchaResult ? 2 : 1);
         expect(h.apiPasswordLogin).toHaveBeenCalledTimes(2);
         expect(h.finishLogin).toHaveBeenCalledWith('new-token');
       } finally {
@@ -709,6 +710,40 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
       }
     },
   );
+
+  it('关闭二次验证弹窗会取消本次登录，迟到的滑块参数不再发请求', async () => {
+    h.realPasswordRequests = true;
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      h.apiPasswordLogin.mockRejectedValueOnce(new Error('校验参数异常'));
+      await openAccount();
+      await act(() => vi.advanceTimersByTimeAsync(5100));
+      respondToClick = false;
+      await submitPassword();
+      const sdk = instances[0].sdk;
+      const first = sdk.captchaVerifyCallback('risk-token');
+      await act(() => vi.advanceTimersByTimeAsync(800));
+      await expect(first).resolves.toEqual({
+        captchaResult: false,
+        bizResult: false,
+      });
+      const popup = document.createElement('div');
+      popup.id = 'aliyunCaptcha-window-popup';
+      Object.defineProperty(popup, 'offsetWidth', { value: 360 });
+      document.body.appendChild(popup);
+      await act(() => vi.advanceTimersByTimeAsync(300));
+      popup.remove();
+      await act(() => vi.advanceTimersByTimeAsync(300));
+      await sdk.captchaVerifyCallback('late-slider-token');
+      expect(h.apiPasswordLogin).toHaveBeenCalledOnce();
+      expect(h.finishLogin).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'PC.Pages.Login.switchToQrLogin' }),
+      ).toBeEnabled();
+    } finally {
+      log.mockRestore();
+    }
+  });
 
   it('登录请求期间离页，迟到成功不能再同步会话或导航', async () => {
     h.realPasswordRequests = true;

@@ -28,6 +28,7 @@ export async function apiLogin(
 ): Promise<RequestResponse<ILoginResult>> {
   await hostBridge.auth.beginLogin();
   return request('/api/user/passwordLogin', {
+    captchaErrorHandled: !!data.captchaVerifyParam,
     method: 'POST',
     data,
   });
