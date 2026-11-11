@@ -34,6 +34,7 @@ import {
   completeDesktopIdpReturn,
   startIdpNavigation,
 } from '@/utils/idpNavigation';
+import { isLoginCodeInvalidError } from '@/utils/loginErrorHumanize';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import {
   DesktopOutlined,
@@ -560,8 +561,18 @@ const Login: React.FC = () => {
             );
         }
       }
-    } catch {
-      // 请求层已提示业务错误，允许用户再次登录。
+    } catch (error) {
+      // 验证失败须反馈给 SDK，允许无痕验证进入二次验证流程。
+      const failure = error as {
+        message?: string;
+        info?: { message?: string };
+      };
+      return {
+        captchaResult: !isLoginCodeInvalidError(
+          failure?.info?.message ?? failure?.message,
+        ),
+        bizResult: false,
+      };
     }
     return { captchaResult: true, bizResult: true };
   };

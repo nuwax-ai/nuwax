@@ -660,6 +660,56 @@ describe('扫码与账号登录往返时的阿里云验证码', () => {
     }
   });
 
+  it.each([
+    ['校验参数异常', false],
+    ['用户不存在或密码错误', true],
+  ])(
+    '登录返回%s时向 SDK 反馈实际验证码结果和业务失败',
+    async (message, captchaResult) => {
+      h.realPasswordRequests = true;
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        h.apiPasswordLogin.mockRejectedValueOnce(
+          Object.assign(new Error('BizError'), { info: { message } }),
+        );
+        await openAccount();
+        await act(() => vi.advanceTimersByTimeAsync(5100));
+        respondToClick = false;
+        await submitPassword();
+        const result = instances[0].sdk.captchaVerifyCallback('current-token');
+        await act(() => vi.advanceTimersByTimeAsync(800));
+        await expect(result).resolves.toEqual({
+          captchaResult,
+          bizResult: false,
+        });
+        expect(h.apiPasswordLogin).toHaveBeenCalledOnce();
+        expect(h.finishLogin).not.toHaveBeenCalled();
+        expect(
+          screen.getByRole('button', {
+            name: 'PC.Pages.Login.switchToQrLogin',
+          }),
+        ).toBeEnabled();
+        // SDK 刷新验证周期后，用户可用新参数完成下一次业务请求。
+        instances[0].sdk.getInstance({ destroyCaptcha: instances[0].destroy });
+        await act(() => vi.advanceTimersByTimeAsync(2100));
+        h.apiPasswordLogin.mockResolvedValueOnce({
+          data: { token: 'new-token' },
+        });
+        await submitPassword();
+        const retried = instances[0].sdk.captchaVerifyCallback('new-token');
+        await act(() => vi.advanceTimersByTimeAsync(800));
+        await expect(retried).resolves.toEqual({
+          captchaResult: true,
+          bizResult: true,
+        });
+        expect(h.apiPasswordLogin).toHaveBeenCalledTimes(2);
+        expect(h.finishLogin).toHaveBeenCalledWith('new-token');
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+
   it('登录请求期间离页，迟到成功不能再同步会话或导航', async () => {
     h.realPasswordRequests = true;
     let finish!: (value: unknown) => void;
