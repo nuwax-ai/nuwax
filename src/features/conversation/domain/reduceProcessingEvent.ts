@@ -1,3 +1,4 @@
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
@@ -16,6 +17,28 @@ export type ThinkBlockFinalizer = (
 ) => string;
 
 const silentThinkFinalizer: ThinkBlockFinalizer = (text) => text;
+
+/** 工具归属随当前会话消息保存，兼容实时 processing 与历史执行结果。 */
+export const findProcessingOwnerIndex = (
+  messages: MessageInfo[],
+  processing: ProcessingInfo,
+): number => {
+  const executeId = processing.executeId || processing.result?.executeId;
+  return executeId
+    ? messages.findIndex(
+        (message) =>
+          message.role === AssistantRoleEnum.ASSISTANT &&
+          (message.processingList?.some(
+            (item) =>
+              item.executeId === executeId ||
+              item.result?.executeId === executeId,
+          ) ||
+            message.componentExecutedList?.some(
+              (item) => item.executeId === executeId,
+            )),
+      )
+    : -1;
+};
 
 export interface ProcessingEventReduction {
   message: MessageInfo;
@@ -37,15 +60,27 @@ export function reduceProcessingEvent(
   const nestedExecuteId = (
     incomingProcessing.result as { executeId?: string } | null
   )?.executeId;
-  const processing =
+  const normalized =
     !incomingProcessing.executeId && nestedExecuteId
       ? { ...incomingProcessing, executeId: nestedExecuteId }
       : incomingProcessing;
 
   const processingList = [...(currentMessage.processingList || [])];
   const existingIndex = processingList.findIndex(
-    (item) => item.executeId === processing.executeId,
+    (item) => item.executeId === normalized.executeId,
   );
+  const previous = processingList[existingIndex];
+  const processing = previous
+    ? ({
+        ...previous,
+        ...Object.fromEntries(
+          Object.entries(normalized).filter(([, value]) => value !== undefined),
+        ),
+        result: normalized.result
+          ? { ...previous.result, ...normalized.result }
+          : previous.result,
+      } as ProcessingInfo)
+    : normalized;
   if (existingIndex > -1) {
     processingList[existingIndex] = processing;
   } else {

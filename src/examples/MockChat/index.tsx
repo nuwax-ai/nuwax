@@ -15,7 +15,7 @@ import { useConversationRendererPreference } from '@/hooks/useConversationRender
 import { apiAgentConversation } from '@/services/agentConfig';
 import { fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
-import { ProcessingEnum } from '@/types/enums/common';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
@@ -53,6 +53,7 @@ const MOCK_CONVERSATION_ID = 999999;
 type MockChatAssertionSnapshot = {
   scenarioId: string;
   line: 'legacy' | 'runtime';
+  renderer: 'v1' | 'v2';
   assertions: Array<{ label: string; passed: boolean }>;
   updatedAt: number;
   /** 已触发播放（autoplay 或手动点击）——E2E 开流门控前置条件 */
@@ -563,6 +564,24 @@ const MockChat: React.FC = () => {
   const terminalExpected = scenario?.hasFinalResult ?? false;
   const hangingExpected = scenario?.transport === 'keep-open';
   const assertions = [
+    ...(scenario?.id === 'LATE_TOOL_UPDATE'
+      ? [
+          {
+            label: '迟到工具只更新上一轮原消息，当前回答不重复追加',
+            passed:
+              !hasFinalResult ||
+              (messageList.find(
+                (message) => message.id === 'late-assistant-old',
+              )?.status === MessageStatusEnum.Complete &&
+                messageList.filter((message) =>
+                  message.text?.includes('executeId="late-server"'),
+                ).length === 1 &&
+                !!messageList
+                  .find((message) => message.id === 'late-assistant-old')
+                  ?.text?.includes('executeId="late-server"')),
+          },
+        ]
+      : []),
     {
       label: `当前轨（${
         isRuntimeLine ? 'runtime' : 'legacy'

@@ -47,10 +47,10 @@ import {
   markStreamingMessageComplete,
   markStreamingMessageError,
   sortMessagesByTimestamp,
+  updateToolCallInMessages,
 } from '@/utils/chatUtils';
 import {
   insertToolCallBlock,
-  insertToolCallUpdateBlock,
   removePlanBlocks,
   upsertPlanBlock,
 } from '@/utils/markdownProcess';
@@ -391,32 +391,20 @@ export const useAppDevChat = ({
             // 更新 ToolCall 前先刷新文本缓冲区，确保顺序正确
             flushTextBuffer(false);
             setChatMessages((prev) =>
-              prev.map((msg) => {
-                if (
-                  msg.requestId === activeRequestId &&
-                  msg.role === AssistantRoleEnum.ASSISTANT
-                ) {
-                  return {
-                    ...msg,
-                    text: insertToolCallUpdateBlock(
-                      msg.text || '',
-                      data.toolCallId,
-                      {
-                        toolCallId: data.toolCallId,
-                        title:
-                          data.title || t('PC.Pages.AppDevChat.toolCallUpdate'),
-                        kind: data.kind || 'execute',
-                        status: data.status,
-                        content: data.content,
-                        locations: data.locations,
-                        rawInput: data.rawInput,
-                        timestamp: message.timestamp,
-                      },
-                    ),
-                  };
-                }
-                return msg;
-              }),
+              updateToolCallInMessages(
+                prev,
+                activeRequestId,
+                data.toolCallId || data.tool_call_id,
+                {
+                  title: data.title,
+                  kind: data.kind,
+                  status: data.status,
+                  content: data.content,
+                  locations: data.locations,
+                  rawInput: data.rawInput,
+                  timestamp: message.timestamp,
+                },
+              ),
             );
             // 检查对应的 toolCallId 是否为文件操作或依赖操作
             if (
@@ -546,6 +534,13 @@ export const useAppDevChat = ({
       const effectiveProjectId = fluxProjectId || projectId;
       const sseUrl = generateSSEUrl(sessionId, effectiveProjectId);
       const headers = getAuthHeaders();
+      setChatMessages((messages) =>
+        messages.map((message) =>
+          message.requestId === requestId && message.role === 'ASSISTANT'
+            ? { ...message, sessionId }
+            : message,
+        ),
+      );
 
       // 连接到SSE
       abortConnectionRef.current?.abort();
