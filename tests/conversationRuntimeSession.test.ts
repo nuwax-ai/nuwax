@@ -298,7 +298,7 @@ describe('conversationRuntimeSession', () => {
     expect(session.getState().currentRequestId).toBe('req-perm');
   });
 
-  it('onClose 正常收尾：finalize + 释放活跃/等终态 + 终态兜底查询（FINAL 未解析时）', async () => {
+  it('没有终态的 EOF 保留半成品，释放连接状态并查询原任务', async () => {
     const { session } = createSession();
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({ conversationId: 1001, message: '你好' });
@@ -310,7 +310,7 @@ describe('conversationRuntimeSession', () => {
     });
 
     expect(session.store.getSnapshot()[1].status).toBe(
-      MessageStatusEnum.Stopped,
+      MessageStatusEnum.Loading,
     );
     expect(session.getState().isConversationActive).toBe(false);
     // FINAL 未带明确终态 → 兜底查询发生
@@ -357,7 +357,7 @@ describe('conversationRuntimeSession', () => {
     });
   });
 
-  it('onError：owner 消息置 Error 并释放活跃态', () => {
+  it('onError 保留半成品供续接，释放连接状态但不判任务失败', () => {
     const { session } = createSession();
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({ conversationId: 1001, message: '你好' });
@@ -365,7 +365,9 @@ describe('conversationRuntimeSession', () => {
 
     callbacks.onError();
 
-    expect(session.store.getSnapshot()[1].status).toBe(MessageStatusEnum.Error);
+    expect(session.store.getSnapshot()[1].status).toBe(
+      MessageStatusEnum.Loading,
+    );
     expect(session.getState().isConversationActive).toBe(false);
     expect(session.getState().isAwaitingChatTerminal).toBe(false);
   });
@@ -388,11 +390,11 @@ describe('conversationRuntimeSession', () => {
     expect(messages[3].status).toBe(MessageStatusEnum.Loading);
     expect(session.getState().isConversationActive).toBe(true);
 
-    // 第二轮正常关闭后全部收尾
+    // 第二轮未收到终态即断开，继续保留它的半成品等待恢复。
     secondCallbacks.onClose();
     expect(messages[3].status).toBe(MessageStatusEnum.Loading); // 引用旧快照
     expect(session.store.getSnapshot()[3].status).toBe(
-      MessageStatusEnum.Stopped,
+      MessageStatusEnum.Loading,
     );
   });
 
@@ -460,6 +462,42 @@ describe('conversationRuntimeSession', () => {
     expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.CANCEL);
   });
 
+  it('sub 恢复后发起新一轮时，旧 sub 的迟到 ERROR 不能终结新一轮', () => {
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ applyTaskStatus });
+    const abortSub = vi.fn();
+    mockCreateSSE.mockReturnValue(abortSub);
+    session.resumeConversationStream(1001, []);
+    const oldSub = mockCreateSSE.mock.calls[0][0];
+    session.send({ conversationId: 1001, message: '新一轮任务' });
+    const live = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+    live.onMessage(messageEvent('新任务的第一段', true, 'new-output'));
+    const activeOutputId = session.runtime.getActiveOutputMessageId();
+    expect(activeOutputId).not.toBe('');
+    oldSub.onClose();
+    expect(session.runtime.getActiveOutputMessageId()).toBe(activeOutputId);
+    oldSub.onMessage({ eventType: ConversationEventTypeEnum.ERROR });
+    expect(abortSub).toHaveBeenCalledTimes(1);
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().isConversationActive).toBe(true);
+    expect(session.store.getSnapshot().at(-1)?.status).toBe(
+      MessageStatusEnum.Complete,
+    );
+  });
+
+  it('sub 接管后的旧 live 延迟关闭不清算仍在恢复的正文', () => {
+    const { session } = createSession();
+    session.send({ conversationId: 1001, message: '继续执行' });
+    const live = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+    live.onMessage(messageEvent('断线前的正文'));
+    const before = session.store.getSnapshot();
+    session.resumeConversationStream(1001, before);
+    live.onClose();
+    expect(session.store.getSnapshot()).toEqual(before);
+    expect(mockSyncTerminal).not.toHaveBeenCalled();
+    expect(session.store.getSnapshot()[1].text).toContain('断线前的正文');
+  });
+
   it('stop：无 FINAL 自然关闭后查询终态解除等待，查询迟到不能影响新轮次', async () => {
     const { session } = createSession({
       stopRequest: vi.fn().mockResolvedValue(undefined),
@@ -468,6 +506,8 @@ describe('conversationRuntimeSession', () => {
     mockSyncTerminal.mockResolvedValueOnce(TaskStatus.CANCEL);
     session.send({ conversationId: 1001, message: '提问' });
     await session.stop(1001);
+    (mockOpenLive.mock.calls[0][1] as LiveCallbacks).onError();
+    expect(session.getState().isStopping).toBe(true);
     (mockOpenLive.mock.calls[0][1] as LiveCallbacks).onClose();
     await Promise.resolve();
     await Promise.resolve();
@@ -692,10 +732,9 @@ describe('conversationRuntimeSession', () => {
     // resumeController 直用 createSSEConnection 建立 sub 流
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
     expect(mockCreateSSE.mock.calls[0][0].url).toContain('/sub/1001');
-    // 占位已追加
+    // 开流不清空现有显示；首个有效 chunk 才创建占位并投影。
     const messages = session.store.getSnapshot();
-    expect(messages).toHaveLength(1);
-    expect(messages[0].status).toBe(MessageStatusEnum.Loading);
+    expect(messages).toHaveLength(0);
 
     // sub chunk 投影进占位（与 live 共用 applyStreamEvent）
     const resumeCallbacks = mockCreateSSE.mock.calls[0][0];
@@ -743,8 +782,7 @@ describe('conversationRuntimeSession', () => {
         endTime: Date.parse('2026-10-08T13:35:02Z'),
       },
     });
-    expect(session.store.getSnapshot()[3].finalResult).toBeUndefined();
-    expect(session.store.getSnapshot()[3].text).toBe('');
+    expect(session.store.getSnapshot()).toEqual(history);
     expect(applyTaskStatus).not.toHaveBeenCalled();
     expect(session.getState().currentRequestId).not.toBe('old-run');
     onMessage({ ...messageEvent('本轮新回答'), requestId: 'new-run' });
@@ -779,6 +817,7 @@ describe('conversationRuntimeSession', () => {
     ] as MessageInfo[];
     session.resumeConversationStream(1001, history, undefined, 'test-terminal');
     const resumeCallbacks = mockCreateSSE.mock.calls[0][0];
+    resumeCallbacks.onMessage(messageEvent('恢复中的正文'));
     const assistant = session.store.getSnapshot()[2];
     session.store.patchMessage(String(assistant.id), {
       processingList: [
@@ -924,13 +963,13 @@ describe('conversationRuntimeSession R6 收口', () => {
     expect(appliedStatuses.length).toBeGreaterThan(0);
   });
 
-  it('onError：taskStatus 写回 FAILED', () => {
+  it('onError 不写 FAILED，失败只认协议事件或查询终态', () => {
     const { session, appliedStatuses } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({ conversationId: 1001, message: 'x' });
     const callbacks = mockOpenLive.mock.calls[0][1];
     callbacks.onError();
-    expect(appliedStatuses).toContainEqual([1001, 'FAILED']);
+    expect(appliedStatuses).toEqual([]);
   });
 
   it('参数面：modelId/agentMode/skillIds 透传请求体', () => {
@@ -1129,19 +1168,47 @@ describe('conversationRuntimeSession 关键业务场景（T03/T04/T06）', () =>
     expect(assistant.processingList?.[0].status).toBe('FINISHED');
   });
 
-  it('T06 网络 reject：onError 后迟到的 onClose 不重复收尾（exactly-once）', async () => {
+  it('T06 网络 reject 后 onClose 保留消息，恢复只打开 GET 订阅而不重发任务', async () => {
     const { session } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({ conversationId: 1001, message: 'x' });
     const callbacks = getCallbacks();
+    callbacks.onMessage({
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'ToolCall',
+        executeId: 'running-tool',
+        status: 'EXECUTING',
+        result: { executeId: 'running-tool' },
+      },
+    } as ConversationChatResponse);
+    callbacks.onMessage(messageEvent('已经收到的正文'));
+    const before = session.store.getSnapshot();
 
     callbacks.onError();
-    const statusAfterError = session.store.getSnapshot()[1].status;
-    // 迟到的 close：不应把已 Error 的消息再改 Stopped
     callbacks.onClose();
+    await Promise.resolve();
 
-    expect(session.store.getSnapshot()[1].status).toBe(statusAfterError);
+    expect(session.store.getSnapshot()).toEqual(before);
+    expect(session.store.getSnapshot()[1].processingList?.[0].status).toBe(
+      'EXECUTING',
+    );
+    expect(session.store.getSnapshot()[1].text).toContain('已经收到的正文');
     expect(session.getState().isAwaitingChatTerminal).toBe(false);
+    session.resumeConversationStream(1001, session.store.getSnapshot());
+    expect(mockCreateSSE).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: '/api/agent/conversation/chat/sub/1001',
+      }),
+    );
+    expect(mockOpenLive).toHaveBeenCalledTimes(1);
+    const resumed = mockCreateSSE.mock.calls[0][0];
+    resumed.onMessage({ eventType: ConversationEventTypeEnum.HEART_BEAT });
+    resumed.onClose();
+    expect(session.store.getSnapshot()).toEqual(before);
+    session.finalizeConversationTerminal(1001, TaskStatus.COMPLETE);
+    expect(session.store.getSnapshot()[1].text).toContain('已经收到的正文');
   });
 
   it('T04 页面组件：PROCESSING Page dispatch preview.page.open（资源路由）', () => {
