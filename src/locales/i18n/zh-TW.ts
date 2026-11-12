@@ -1560,7 +1560,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.ready": "新版本就緒",
   "PC.Components.ClientUpdate.download": "下載更新",
-  "PC.Components.ClientUpdate.install": "更新並重新啟動升級",
+  "PC.Components.ClientUpdate.install": "下載並更新用戶端",
   "PC.Components.ClientUpdate.downloading": "下載中",
   "PC.Components.ClientUpdate.retry": "重試下載",
   "PC.Components.ClientUpdate.releaseDate": "發布日期",
