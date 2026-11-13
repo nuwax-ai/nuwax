@@ -45,8 +45,10 @@ import {
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
 
+/** 2s */
 const DEPLOYABLE_POLL_INTERVAL_MS = 2000;
-const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+/** 30 分钟 */
+const DEPLOYABLE_POLL_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
  * 跳过 prod/start、等待他处部署完成时的就绪探测次数。
