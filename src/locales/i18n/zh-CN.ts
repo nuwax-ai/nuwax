@@ -1718,7 +1718,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.ready": "新版本就绪",
   "PC.Components.ClientUpdate.download": "下载更新",
-  "PC.Components.ClientUpdate.install": "更新并重启升级",
+  "PC.Components.ClientUpdate.install": "下载并更新客户端",
   "PC.Components.ClientUpdate.downloading": "下载中",
   "PC.Components.ClientUpdate.retry": "重试下载",
   "PC.Components.ClientUpdate.releaseDate": "发布日期",
