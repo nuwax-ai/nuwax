@@ -312,6 +312,8 @@ export interface AgentComponentWorkflowUpdateParams
     defaultSelected: DefaultSelectedEnum;
     // 技能展示别名
     alias?: string;
+    // 技能额外提示词
+    extendPrompt?: string;
     // 卡片参数绑定信息
     cardArgsBindConfigs: CardArgsBindConfigInfo[];
   };

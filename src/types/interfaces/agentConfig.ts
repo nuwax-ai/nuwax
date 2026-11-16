@@ -194,6 +194,17 @@ export interface InvokeTypeProps {
   tooltip?: React.ReactNode;
 }
 
+// 额外提示词保存形参
+export interface ExtendPromptSaveParams {
+  extendPrompt: string;
+}
+
+// 额外提示词组件属性
+export interface ExtendPromptProps {
+  extendPrompt?: string;
+  onSaveSet: (data: ExtendPromptSaveParams) => void;
+}
+
 // 输出方式保存形参
 export interface OutputDirectlyParams {
   directOutput: OutputDirectlyEnum;

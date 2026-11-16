@@ -36,6 +36,7 @@ import type {
   CardBindSaveParams,
   ComponentSettingModalProps,
   ExceptionHandingSaveParams,
+  ExtendPromptSaveParams,
   InvokeTypeSaveParams,
   OutputDirectlyParams,
   ParamsSaveParams,
@@ -53,6 +54,7 @@ import AsyncRun from './AsyncRun';
 import CallApproval from './CallApproval';
 import CardBind from './CardBind';
 import ExceptionHanding from './ExceptionHanding';
+import ExtendPrompt from './ExtendPrompt';
 import styles from './index.less';
 import InvokeType from './InvokeType';
 import OutputWay from './OutputWay';
@@ -166,7 +168,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         | CardArgsBindConfigInfo[]
         | InvokeTypeEnum
         | DefaultSelectedEnum
-        | OutputDirectlyEnum;
+        | OutputDirectlyEnum
+        | string;
     };
     exceptionOut?: DefaultSelectedEnum;
     fallbackMsg?: string;
@@ -199,10 +202,11 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     return result;
   };
 
-  // 保存方法调用方式、输出方式或异步运行配置
+  // 保存方法调用方式、额外提示词、输出方式或异步运行配置
   const handleSaveSetting = async (
     data:
       | InvokeTypeSaveParams
+      | ExtendPromptSaveParams
       | AsyncRunSaveParams
       | OutputDirectlyParams
       | CallApprovalParams
@@ -320,6 +324,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );
+      // 额外提示词（技能）
+      case ComponentSettingEnum.Extend_Prompt:
+        return (
+          <ExtendPrompt
+            extendPrompt={componentInfo?.bindConfig?.extendPrompt}
+            onSaveSet={(data) => handleSaveSetting(data, null, action)}
+          />
+        );
       // 调用审批
       case ComponentSettingEnum.Call_Approval:
         if (!isCallApprovalSupportedAgent) {
@@ -414,6 +426,13 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                   currentComponentInfo?.type !==
                     AgentComponentTypeEnum.Workflow &&
                   item.type === ComponentSettingEnum.Output_Way
+                ) {
+                  return null;
+                }
+                // 额外提示词仅技能组件可见
+                if (
+                  currentComponentInfo?.type !== AgentComponentTypeEnum.Skill &&
+                  item.type === ComponentSettingEnum.Extend_Prompt
                 ) {
                   return null;
                 }
