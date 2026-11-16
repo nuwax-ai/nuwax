@@ -372,10 +372,6 @@ export const COMPONENT_SETTING_ACTIONS = [
     label: dict('PC.Constants.Space.callMethod'),
   },
   {
-    type: ComponentSettingEnum.Extend_Prompt,
-    label: dict('PC.Constants.Space.extendPrompt'),
-  },
-  {
     type: ComponentSettingEnum.Call_Approval,
     label: dict('PC.Constants.Space.callApproval'),
   },

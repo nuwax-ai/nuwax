@@ -178,6 +178,8 @@ export interface InvokeTypeSaveParams {
   defaultSelected: DefaultSelectedEnum;
   // 展示别名
   alias?: string;
+  // 技能额外提示词
+  extendPrompt?: string;
 }
 
 // 调用方式组件属性
@@ -186,23 +188,14 @@ export interface InvokeTypeProps {
   defaultSelected?: DefaultSelectedEnum;
   // 展示别名
   defaultAlias?: string;
+  // 技能额外提示词
+  defaultExtendPrompt?: string;
   // 是否为技能组件
   isSkill?: boolean;
   options?: { value: InvokeTypeEnum; label: string }[];
   onSaveSet: (data: InvokeTypeSaveParams) => void;
   // 调用方式 提示信息
   tooltip?: React.ReactNode;
-}
-
-// 额外提示词保存形参
-export interface ExtendPromptSaveParams {
-  extendPrompt: string;
-}
-
-// 额外提示词组件属性
-export interface ExtendPromptProps {
-  extendPrompt?: string;
-  onSaveSet: (data: ExtendPromptSaveParams) => void;
 }
 
 // 输出方式保存形参

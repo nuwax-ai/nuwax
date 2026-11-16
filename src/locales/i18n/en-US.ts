@@ -1503,7 +1503,6 @@ export const EN_US: SystemLangMap = {
   "PC.Constants.Space.analyze": "Analyze",
   "PC.Constants.Space.asyncRun": "Async Run",
   "PC.Constants.Space.callMethod": "Call Method",
-  "PC.Constants.Space.extendPrompt": "Additional Prompt",
   "PC.Constants.Space.callApproval": "Call Approval",
   "PC.Constants.Space.cardBind": "Card Binding",
   "PC.Constants.Space.chatBotType": "Chatbot",

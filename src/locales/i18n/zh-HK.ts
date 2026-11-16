@@ -1339,7 +1339,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Constants.Space.analyze": "分析",
   "PC.Constants.Space.asyncRun": "異步運行",
   "PC.Constants.Space.callMethod": "調用方式",
-  "PC.Constants.Space.extendPrompt": "額外提示詞",
   "PC.Constants.Space.callApproval": "調用審批",
   "PC.Constants.Space.cardBind": "卡片綁定",
   "PC.Constants.Space.chatBotType": "問答型",

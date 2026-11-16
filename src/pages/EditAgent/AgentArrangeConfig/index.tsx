@@ -1531,17 +1531,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
     if (type === AgentComponentTypeEnum.Skill) {
       return COMPONENT_SETTING_ACTIONS.filter((item) =>
-        // 调用方式、额外提示词
-        [
-          ComponentSettingEnum.Method_Call,
-          ComponentSettingEnum.Extend_Prompt,
-        ].includes(item.type),
+        // 调用方式
+        [ComponentSettingEnum.Method_Call].includes(item.type),
       );
     }
-    // 额外提示词仅技能组件可见
-    return COMPONENT_SETTING_ACTIONS.filter(
-      (item) => item.type !== ComponentSettingEnum.Extend_Prompt,
-    );
+    return COMPONENT_SETTING_ACTIONS;
   }, []);
 
   // 取消页面设置弹窗

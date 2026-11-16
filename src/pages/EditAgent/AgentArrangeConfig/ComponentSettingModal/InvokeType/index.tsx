@@ -20,6 +20,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   onSaveSet,
   defaultSelected,
   defaultAlias,
+  defaultExtendPrompt,
   isSkill,
   tooltip,
 }) => {
@@ -31,13 +32,16 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
 
   // 展示别名
   const [alias, setAlias] = useState<string>('');
+  // 额外提示词（技能）
+  const [extendPrompt, setExtendPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setType(invokeType || InvokeTypeEnum.AUTO);
     setSelected(defaultSelected || DefaultSelectedEnum.No);
     setAlias(defaultAlias || '');
-  }, [invokeType, defaultSelected, defaultAlias]);
+    setExtendPrompt(defaultExtendPrompt || '');
+  }, [invokeType, defaultSelected, defaultAlias, defaultExtendPrompt]);
 
   const invokeTypeOptions = useMemo(() => {
     const sourceOptions =
@@ -111,9 +115,10 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
       defaultSelected: selected,
     };
 
-    // 技能时，展示别名
+    // 技能时一并提交展示别名、额外提示词
     if (isSkill) {
       data.alias = alias;
+      data.extendPrompt = extendPrompt;
     }
     setLoading(true);
     await onSaveSet(data);
@@ -166,6 +171,21 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
             placeholder={t('PC.Pages.AgentArrangeInvokeType.aliasPlaceholder')}
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
+          />
+          <h3 className={cx('mt-16')}>
+            {t('PC.Pages.AgentArrangeExtendPrompt.title')}
+          </h3>
+          <Input.TextArea
+            className={cx('dispose-textarea-count')}
+            classNames={{
+              textarea: cx(styles['extend-prompt-textarea']),
+            }}
+            placeholder={t('PC.Pages.AgentArrangeExtendPrompt.placeholder')}
+            autoSize={{ minRows: 6, maxRows: 12 }}
+            maxLength={2000}
+            showCount
+            value={extendPrompt}
+            onChange={(e) => setExtendPrompt(e.target.value)}
           />
         </ConditionRender>
       </div>

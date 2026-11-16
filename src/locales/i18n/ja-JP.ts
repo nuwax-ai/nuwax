@@ -1339,7 +1339,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Constants.Space.analyze": "分析する",
   "PC.Constants.Space.asyncRun": "非同期実行",
   "PC.Constants.Space.callMethod": "メソッドの呼び出し",
-  "PC.Constants.Space.extendPrompt": "追加プロンプト",
   "PC.Constants.Space.callApproval": "呼び出し承認",
   "PC.Constants.Space.cardBind": "カードバインディング",
   "PC.Constants.Space.chatBotType": "チャットボット",
