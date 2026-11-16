@@ -1718,7 +1718,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ClientUpdate.update": "Update",
   "PC.Components.ClientUpdate.ready": "New version ready",
   "PC.Components.ClientUpdate.download": "Download Update",
-  "PC.Components.ClientUpdate.install": "Update and restart",
+  "PC.Components.ClientUpdate.install": "Download and update client",
   "PC.Components.ClientUpdate.downloading": "Downloading",
   "PC.Components.ClientUpdate.retry": "Retry Download",
   "PC.Components.ClientUpdate.releaseDate": "Release Date",

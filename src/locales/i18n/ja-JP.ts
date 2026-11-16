@@ -1539,7 +1539,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.ready": "新しいバージョンの準備ができました",
   "PC.Components.ClientUpdate.download": "アップデートをダウンロード",
-  "PC.Components.ClientUpdate.install": "更新して再起動",
+  "PC.Components.ClientUpdate.install": "クライアントをダウンロードして更新",
   "PC.Components.ClientUpdate.downloading": "ダウンロード中",
   "PC.Components.ClientUpdate.retry": "再ダウンロード",
   "PC.Components.ClientUpdate.releaseDate": "リリース日",
