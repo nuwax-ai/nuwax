@@ -115,7 +115,7 @@ main() {
     [ -n "$initial" ] || die "本地及双远端均不存在目标分支 ${TARGET_BRANCH}"
     git branch "$TARGET_BRANCH" "$initial"
   fi
-  git checkout "$TARGET_BRANCH"
+  rgit checkout "$TARGET_BRANCH"
   commit_source "chore(deploy): prepare ${TARGET_BRANCH} for test"
   restore_source_dist
   local remote tip
@@ -196,12 +196,12 @@ main() {
     [ "$(git rev-parse refs/heads/test)" = "$LOCAL_OLD_TEST" ] || die "本地 test 在保存恢复文件后发生变化，停止重建"
     git branch -D test
   fi
-  git checkout -b test "$SOURCE_HEAD"
+  rgit checkout -b test "$SOURCE_HEAD"
   rm -rf dist
   tar -xf "$RUN_DIR/built-dist.tar"
-  git add -f -A -- dist
+  rgit add -f -A -- dist
   git diff --cached --quiet -- . ':(top,exclude)dist' || die "产物提交混入非 dist 修改，停止推送"
-  git commit --no-verify --allow-empty -m "chore(deploy): build test from ${TARGET_BRANCH}@${SOURCE_HEAD:0:9}"
+  rgit commit --no-verify --allow-empty -m "chore(deploy): build test from ${TARGET_BRANCH}@${SOURCE_HEAD:0:9}"
   TEST_HEAD="$(git rev-parse HEAD)"
   record test "$TEST_HEAD"
   git diff --quiet "$SOURCE_HEAD" "$TEST_HEAD" -- . ':(top,exclude)dist' || die "test 源码偏离已构建目标，停止推送"
@@ -214,7 +214,7 @@ main() {
     record published "$remote"
     expect_remote "$remote" test "$TEST_HEAD"
   done
-  git checkout "$TARGET_BRANCH"
+  rgit checkout "$TARGET_BRANCH"
   git -c credential.interactive=never submodule update --init --recursive
   if [ "${ROLLBACK_READY:-0}" = "1" ]; then
     # 仅成功时原子替换上一份常规恢复文件；失败运行保留自己的文件和产物。
@@ -243,19 +243,19 @@ assert_submodule_files_clean() {
 }
 
 commit_source() {
-  git reset -q HEAD -- dist
+  rgit reset -q HEAD -- dist
   # 已跟踪源码即使后来被 ignore，修改/删除仍要提交；只对新增文件应用忽略规则。
-  git add -u -- . ':(top,exclude)dist'
+  rgit add -u -- . ':(top,exclude)dist'
   git ls-files --others --exclude-standard -z -- . ':(top,exclude)dist' >"$RUN_DIR/source-paths"
   if [ -s "$RUN_DIR/source-paths" ]; then
-    git --literal-pathspecs add --pathspec-from-file="$RUN_DIR/source-paths" --pathspec-file-nul
+    rgit --literal-pathspecs add --pathspec-from-file="$RUN_DIR/source-paths" --pathspec-file-nul
   fi
-  if ! git diff --cached --quiet; then git commit --no-verify -m "$1"; fi
+  if ! git diff --cached --quiet; then rgit commit --no-verify -m "$1"; fi
 }
 
 restore_source_dist() {
   rm -rf dist
-  if git cat-file -e HEAD:dist 2>/dev/null; then git restore --source=HEAD --staged --worktree -- dist; fi
+  if git cat-file -e HEAD:dist 2>/dev/null; then rgit restore --source=HEAD --staged --worktree -- dist; fi
 }
 
 merge_target() {
@@ -263,19 +263,19 @@ merge_target() {
   git merge-base --is-ancestor "$tip" HEAD && return 0
   before="$(git rev-parse HEAD)"
   # 不快进提交合并，确保同名远端自带的 dist 不成为本次源码变更。
-  if ! git merge --no-ff --no-commit --no-verify "$tip"; then
+  if ! rgit merge --no-ff --no-commit --no-verify "$tip"; then
     conflicts="$(git diff --name-only --diff-filter=U -- . ':(top,exclude)dist')"
     if [ -n "$conflicts" ]; then
-      git merge --abort
+      rgit merge --abort
       die "合并 ${remote}/${TARGET_BRANCH} 存在源码冲突，已回滚，未删除远端 test：
 $conflicts"
     fi
     [ -e "$(git rev-parse --git-path MERGE_HEAD)" ] || die "合并 ${remote}/${TARGET_BRANCH} 失败"
   fi
   if [ -n "$(git ls-files -- dist)" ] || git cat-file -e "$before:dist" 2>/dev/null; then
-    git restore --source="$before" --staged --worktree -- dist
+    rgit restore --source="$before" --staged --worktree -- dist
   fi
-  git commit --no-verify -m "merge: sync ${remote}/${TARGET_BRANCH} before test build"
+  rgit commit --no-verify -m "merge: sync ${remote}/${TARGET_BRANCH} before test build"
 }
 
 seed_previous_dist() {

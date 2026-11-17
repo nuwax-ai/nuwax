@@ -256,6 +256,74 @@ function latestRollback(state) {
   return path.join(state.root, '.git/nuwax-deploy/test-rollback.bundle');
 }
 
+test('retries a transient index lock even after the competing process releases it', async (t) => {
+  const state = await fixture(t);
+  const realGit = (await run(state.root, 'which', ['git'])).stdout.trim();
+  const marker = path.join(state.root, '.git/fixture-index-retry');
+  await fs.writeFile(
+    path.join(state.tools, 'git'),
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+const { spawnSync } = require('node:child_process');
+const args = process.argv.slice(2);
+if (args[0] === 'reset' && !fs.existsSync(${JSON.stringify(marker)})) {
+  fs.writeFileSync(${JSON.stringify(marker)}, 'released');
+  console.error("fatal: Unable to create '/fixture/.git/index.lock': File exists.");
+  process.exit(128);
+}
+process.exit(spawnSync(${JSON.stringify(
+      realGit,
+    )}, args, { stdio: 'inherit' }).status ?? 1);
+`,
+    { mode: 0o755 },
+  );
+  const result = await deploy(state);
+  assert.match(result.stderr, /Git 索引.*重试/);
+  assert.equal(await fs.readFile(marker, 'utf8'), 'released');
+  assert.equal(
+    await head(state, 'origin', target),
+    await head(state, 'gitlab', target),
+  );
+  assert.notEqual(await head(state, 'gitlab'), state.seed);
+});
+
+test('bounds retries without deleting an occupied index lock or retrying other errors', async (t) => {
+  const state = await fixture(t);
+  const lock = path.join(state.root, '.git/index.lock');
+  await fs.writeFile(lock, 'another process owns this');
+  await fs.writeFile(path.join(state.tools, 'sleep'), '#!/bin/sh\nexit 0\n', {
+    mode: 0o755,
+  });
+  const result = await failure(
+    run(
+      state.root,
+      'bash',
+      [
+        '-c',
+        'set -euo pipefail; source scripts/deploy/lib.sh; rgit add source.txt',
+      ],
+      state.env,
+    ),
+  );
+  assert.equal(result.code, 128);
+  assert.equal((result.stderr.match(/Git 索引.*重试/g) ?? []).length, 5);
+  assert.equal(await fs.readFile(lock, 'utf8'), 'another process owns this');
+  assert.equal(await head(state, 'gitlab'), state.seed);
+  await fs.rm(lock);
+  const missing = await failure(
+    run(
+      state.root,
+      'bash',
+      [
+        '-c',
+        'set -euo pipefail; source scripts/deploy/lib.sh; rgit add missing-file',
+      ],
+      state.env,
+    ),
+  );
+  assert.doesNotMatch(missing.stderr, /Git 索引.*重试/);
+});
+
 async function assertRollback(state, file, expected) {
   const restored = await fs.mkdtemp(path.join(state.temporary, 'restore-'));
   await git(state.root, 'init', '--bare', restored);

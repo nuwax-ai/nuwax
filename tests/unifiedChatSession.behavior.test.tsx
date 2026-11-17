@@ -138,7 +138,10 @@ vi.mock('@/components/business-component/ConversationStatus', () => ({
   default: () => <div data-testid="conversation-status" />,
 }));
 
-vi.mock('@/components/business-component/AgentIntervention', () => ({
+vi.mock('@/components/business-component/AgentIntervention', async () => ({
+  ...(await vi.importActual(
+    '@/components/business-component/AgentIntervention/utils/mcpAskHydrateMessage',
+  )),
   AgentInterventionChatLayer: () => <div data-testid="intervention-layer" />,
   useAgentInterventionLayer: (opts: any) => {
     interventionCapture.onSendMessage = opts.onSendMessage;
