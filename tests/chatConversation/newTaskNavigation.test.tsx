@@ -154,7 +154,7 @@ import SidebarNavLayout from '@/layouts/DynamicMenusLayout/SidebarNavLayout';
 const expectHomeWithoutConversation = () => {
   expect(nav.handleCreateConversation).not.toHaveBeenCalled();
   expect(nav.historyPush).toHaveBeenCalledTimes(1);
-  expect(nav.historyPush).toHaveBeenCalledWith('/home');
+  expect(nav.historyPush).toHaveBeenCalledWith('/home', { newTask: true });
   expect(nav.handleCloseMobileMenu).toHaveBeenCalledTimes(1);
 };
 

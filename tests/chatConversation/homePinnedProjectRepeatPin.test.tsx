@@ -61,6 +61,10 @@ const handoffState = vi.hoisted(() => {
 });
 
 const messageMock = vi.hoisted(() => ({ warning: vi.fn() }));
+const navigation = vi.hoisted(() => ({
+  key: 'test-home-key',
+  state: undefined as { newTask: boolean } | undefined,
+}));
 
 // 与 umi 一样让 model 活在路由外，切走再返回时只重挂 Home。
 const HomeInputContext = createContext<ReturnType<
@@ -75,7 +79,7 @@ const render = (ui: React.ReactElement) =>
   renderView(ui, { wrapper: HomeInputProvider });
 
 vi.mock('umi', () => ({
-  useLocation: () => ({ key: 'test-home-key' }),
+  useLocation: () => navigation,
   useModel: (name: string) => {
     const homeInput = useContext(HomeInputContext);
     if (name === 'homeInputContext') return homeInput;
@@ -215,12 +219,20 @@ vi.mock('@/pages/Home/components/HomeCategoryTabs', () => ({
 }));
 
 // 统一输入框桩：捕获 props（selectedTag/manualComponents/pinnedProject）
-const input = vi.hoisted(() => ({ props: {} as Record<string, any> }));
+const input = vi.hoisted(() => ({
+  props: {} as Record<string, any>,
+  hasContent: false,
+}));
 vi.mock('@/components/business-component/ChatInputUnified', async () => {
   const React = await import('react');
   return {
-    default: React.forwardRef((props: any) => {
+    default: React.forwardRef((props: any, ref) => {
       input.props = props;
+      React.useImperativeHandle(ref, () => ({
+        hasContent: () => input.hasContent,
+        clear: vi.fn(),
+        focus: vi.fn(),
+      }));
       return React.createElement('div', { 'data-testid': 'home-input' });
     }),
   };
@@ -277,6 +289,9 @@ const initNeverReceivedDefaultTools = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   handoffState.reset();
+  navigation.key = 'test-home-key';
+  navigation.state = undefined;
+  input.hasContent = false;
   vi.mocked(apiNormalProjectGetById).mockReset();
   vi.mocked(apiNormalProjectGetById).mockResolvedValue({
     code: '0000',
@@ -447,23 +462,30 @@ describe('项目新建任务的电脑与工作目录', () => {
     },
   );
 
-  it('切走再返回保留项目和用户修改的电脑目录，发送仍绑定原项目', async () => {
+  it('有草稿时切走再点新建任务，保留项目和用户选择，发送仍绑定原项目', async () => {
     pinNormalProject();
     const { rerender } = render(<Home />);
     await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
     act(() => input.props.onComputerSelect('777'));
     act(() => input.props.onWorkspaceDirChange('/other/draft'));
+    act(() => input.props.onModelSelect(123));
+    act(() => input.props.onSpaceSelect(456));
     act(() =>
       input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
     );
 
     rerender(<div>其他页面</div>);
+    input.hasContent = true;
+    navigation.key = 'new-task-with-draft';
+    navigation.state = { newTask: true };
     rerender(<Home />);
     await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
 
     expect(input.props.pinnedProject?.name).toBe('常规项目 B');
     expect(input.props.selectedComputerId).toBe('777');
     expect(input.props.workspacePath).toBe('/other/draft');
+    expect(input.props.selectedModelId).toBe(123);
+    expect(input.props.selectedSpaceId).toBe(456);
     expect(input.props.agentId).toBe(67);
     expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
     await act(async () => input.props.onEnter('保留的草稿'));
@@ -475,6 +497,85 @@ describe('项目新建任务的电脑与工作目录', () => {
         workspacePath: '/other/draft',
       }),
     );
+  });
+
+  it.each([false, true])(
+    '输入为空时新建任务恢复默认选择（先切到其他页面：%s）',
+    async (leaveHome) => {
+      pinNormalProject();
+      const { rerender } = render(<Home />);
+      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+      act(() => input.props.onComputerSelect('777'));
+      act(() => input.props.onWorkspaceDirChange('/other/draft'));
+      act(() =>
+        input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
+      );
+      act(() => input.props.onSelectComponent({ id: 73, type: 'MCP' }));
+      if (leaveHome) rerender(<div>其他页面</div>);
+
+      navigation.key = 'new-task-empty';
+      navigation.state = { newTask: true };
+      rerender(<Home />);
+      await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+
+      expect(input.props.pinnedProject).toBeUndefined();
+      expect(input.props.selectedComputerId).toBe('-1');
+      expect(input.props.workspacePath).toBe('');
+      expect(input.props.selectedTag).toBeUndefined();
+      expect(input.props.summonedExpert).toBeUndefined();
+      expect(input.props.selectedComponentList).toEqual([]);
+      expect(input.props.agentId).toBe(7);
+      await act(async () => input.props.onEnter('独立任务'));
+      expect(handleCreateConversation.mock.lastCall?.[1]).not.toHaveProperty(
+        'projectId',
+      );
+    },
+  );
+
+  it('新建任务复位后项目详情晚到，不能恢复旧电脑和目录', async () => {
+    let finish!: (response: any) => void;
+    vi.mocked(apiNormalProjectGetById).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    pinNormalProject();
+    const { rerender } = render(<Home />);
+    expect(input.props.wholeDisabled).toBe(true);
+
+    navigation.key = 'new-task-while-loading';
+    navigation.state = { newTask: true };
+    rerender(<Home />);
+    await act(async () =>
+      finish({
+        code: '0000',
+        data: { sandboxId: 417, fileWorkspacePath: '/old/project' },
+      }),
+    );
+
+    expect(input.props.pinnedProject).toBeUndefined();
+    expect(input.props.selectedComputerId).toBe('-1');
+    expect(input.props.workspacePath).toBe('');
+    expect(input.props.wholeDisabled).toBe(false);
+  });
+
+  it('全栈项目输入为空时新建任务清除自动命中的推荐，不会再次绑定旧项目', async () => {
+    pinUserAppProject();
+    mockHitRecommend();
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (id: number) => ({ data: agentDetailOf(id) } as any),
+    );
+    const { rerender } = render(<Home />);
+    await waitFor(() =>
+      expect(input.props.selectedTag?.label).toBe('全栈应用开发'),
+    );
+    navigation.key = 'new-task-after-user-app';
+    navigation.state = { newTask: true };
+    rerender(<Home />);
+    await waitFor(() => expect(input.props.pinnedProject).toBeUndefined());
+    expect(input.props.selectedTag).toBeUndefined();
+    expect(input.props.onClearPinnedProject).toBeUndefined();
   });
 
   it('主动移除项目后再返回不恢复旧项目', async () => {

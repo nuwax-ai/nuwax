@@ -313,6 +313,8 @@ export interface ChatInputUnifiedRef {
   focus: () => void;
   clear: () => void;
   setText: (text: string) => void;
+  /** 实时判断未发送内容，含引用和附件，不依赖草稿延迟落盘。 */
+  hasContent: () => boolean;
 }
 
 /**
@@ -639,6 +641,13 @@ const ChatInputUnifiedImpl: React.FC<
       mentionEditorRef.current?.clear?.();
     },
     setText: fillPromptText,
+    hasContent: () =>
+      !!(mentionEditorRef.current?.getPlainText?.() ?? messageInfo).trim() ||
+      !!mentionEditorRef.current
+        ?.getDraftContent?.()
+        .some((part) => typeof part !== 'string') ||
+      uploadFiles.length > 0 ||
+      draftStateRef.current.files.length > 0,
   }));
 
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
@@ -1093,11 +1102,14 @@ const ChatInputUnifiedImpl: React.FC<
     draftEditorRef.current = next;
     const mentionCount = (content: ChatDraftData['content']) =>
       content?.filter((part) => typeof part !== 'string').length ?? 0;
-    // 主动删除引用立即写回，避免删除最后一个 chip 后立刻离开又恢复旧引用。
+    // 删除引用或清空最后一段正文立即写回，避免离开时恢复节流窗口内的旧内容。
     if (
       draftScope &&
       draftStateScopeRef.current === draftScope &&
-      mentionCount(next.content) < mentionCount(previous.content)
+      (mentionCount(next.content) < mentionCount(previous.content) ||
+        (previous.text.trim() &&
+          !next.text.trim() &&
+          !mentionCount(next.content)))
     ) {
       saveDraft(draftScope, {
         version: 1,
@@ -1153,6 +1165,8 @@ const ChatInputUnifiedImpl: React.FC<
       mentionEditorRef.current?.setEditorText?.(text, draft?.content);
     }
     if (!draftStateRef.current.files.length && restoredFiles.length) {
+      // 父级导航 effect 在本轮 render 更新前也能读到刚恢复的附件。
+      draftStateRef.current.files = restoredFiles;
       setUploadFiles(restoredFiles);
     }
   }, [draftScope]);
@@ -2304,7 +2318,7 @@ const ChatInputUnifiedImpl: React.FC<
   );
 };
 
-/** 对外组件：forwardRef 暴露 focus/clear（首页切推荐/分类时由页面调用） */
+/** 对外组件：forwardRef 暴露首页输入操作与实时内容查询。 */
 const ChatInputUnified = forwardRef<ChatInputUnifiedRef, ChatInputUnifiedProps>(
   (props, ref) => <ChatInputUnifiedImpl {...props} forwardedRef={ref} />,
 );

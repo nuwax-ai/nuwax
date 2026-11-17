@@ -93,6 +93,10 @@ const Home: React.FC = () => {
     setSelectedComputerId,
     workspacePath,
     setWorkspaceDir,
+    selectedModelId,
+    setSelectedModelId,
+    selectedSpaceId,
+    setSelectedSpaceId,
     selectedRecommend,
     setSelectedRecommend,
     summonedExpert,
@@ -105,6 +109,7 @@ const Home: React.FC = () => {
     initSelectedComponentList,
     componentAgentKey,
     setComponentAgentKey,
+    resetInputContext,
   } = useModel('homeInputContext') as ReturnType<typeof useHomeInputContext>;
   const { handleCreateConversation } = useConversation();
   const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
@@ -118,8 +123,6 @@ const Home: React.FC = () => {
   const location = useLocation();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [selectedModelId, setSelectedModelId] = useState<number>();
-  const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
@@ -368,7 +371,11 @@ const Home: React.FC = () => {
     ];
   }, [agentDetail?.manualComponents, selectedComponentDetails]);
 
+  const previousRecommend = useRef(selectedRecommend);
   useEffect(() => {
+    // 路由返回继续使用草稿选择；只有实际切换推荐项才恢复模型和空间默认值。
+    if (previousRecommend.current === selectedRecommend) return;
+    previousRecommend.current = selectedRecommend;
     // 项目内保留当前电脑；项目外由选择器解析新智能体的绑定与记忆。
     // 此处不清空，避免选择器按旧 agentId 回落。
     setSelectedModelId(undefined);
@@ -662,6 +669,22 @@ const Home: React.FC = () => {
     chatInputRef.current?.clear();
     chatInputRef.current?.focus();
   }, []);
+
+  const handledNewTaskNavigation = useRef<string>();
+  useEffect(() => {
+    if (handledNewTaskNavigation.current === location.key) return;
+    handledNewTaskNavigation.current = location.key;
+    // 仅全局新建任务恢复空白首页；项目 + 和专家等入口继续消费各自的透传。
+    // 有草稿时保留绑定，避免返回首页后把未发送内容归到其他项目。
+    if (!location.state?.newTask || chatInputRef.current?.hasContent()) return;
+    ++pinnedProjectConfigSequence.current;
+    setPinnedProjectConfigLoading(false);
+    agentMissedPromptedRef.current = undefined;
+    resetInputContext();
+    setSelectedSkill(undefined);
+    chatInputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   return (
     <div

@@ -3,13 +3,15 @@ import type { SummonedExpertInfo } from '@/hooks/useSummonExpertHandoff';
 import type { DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-/** 首页输入上下文随 SPA 保留，避免文字草稿恢复后丢失项目绑定；刷新即失效。 */
+/** 首页草稿的选择上下文：随 SPA 保留，刷新即失效；正文/引用/附件由 draftStorage 保存。 */
 export default function useHomeInputContext() {
   const [pinnedProject, setPinnedProject] = useState<PinnedProjectInfo>();
   const [selectedComputerId, setSelectedComputerId] = useState('-1');
   const [workspacePath, setWorkspaceDir] = useState('');
+  const [selectedModelId, setSelectedModelId] = useState<number>();
+  const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [selectedRecommend, setSelectedRecommend] =
     useState<DisplayRecommendInfo>();
   const [summonedExpert, setSummonedExpert] = useState<SummonedExpertInfo>();
@@ -19,23 +21,28 @@ export default function useHomeInputContext() {
   const selectedComponents = useSelectedComponent();
   const [componentAgentKey, setComponentAgentKey] = useState<string>();
 
-  useEffect(() => {
-    const reset = () => {
-      setPinnedProject(undefined);
-      setSelectedComputerId('-1');
-      setWorkspaceDir('');
-      setSelectedRecommend(undefined);
-      setSummonedExpert(undefined);
-      setUserPickedCategory(null);
-      selectedComponents.initSelectedComponentList();
-      setComponentAgentKey(undefined);
-    };
-    eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, reset);
-    return () => eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, reset);
+  const resetInputContext = useCallback(() => {
+    setPinnedProject(undefined);
+    setSelectedComputerId('-1');
+    setWorkspaceDir('');
+    setSelectedModelId(undefined);
+    setSelectedSpaceId(undefined);
+    setSelectedRecommend(undefined);
+    setSummonedExpert(undefined);
+    setUserPickedCategory(null);
+    selectedComponents.initSelectedComponentList();
+    setComponentAgentKey(undefined);
   }, []);
+
+  useEffect(() => {
+    eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, resetInputContext);
+    return () =>
+      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, resetInputContext);
+  }, [resetInputContext]);
 
   return {
     ...selectedComponents,
+    resetInputContext,
     componentAgentKey,
     setComponentAgentKey,
     pinnedProject,
@@ -44,6 +51,10 @@ export default function useHomeInputContext() {
     setSelectedComputerId,
     workspacePath,
     setWorkspaceDir,
+    selectedModelId,
+    setSelectedModelId,
+    selectedSpaceId,
+    setSelectedSpaceId,
     selectedRecommend,
     setSelectedRecommend,
     summonedExpert,

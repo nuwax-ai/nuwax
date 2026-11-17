@@ -82,7 +82,7 @@ export function useMenuNavigation(): UseMenuNavigationResult {
     setActiveTab('homepage');
     setIsClickNewConversation(false);
     handleCloseMobileMenu();
-    history.push('/home');
+    history.push('/home', { newTask: true });
   }, [handleCloseMobileMenu]);
 
   // 新对话菜单仍按租户默认智能体创建会话。

@@ -22,7 +22,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createRef, useState } from 'react';
+import { createRef, useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/ChatInputHome/index.less', () => ({
@@ -683,6 +683,46 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
 });
 
 describe('首页草稿（draftKey=home）', () => {
+  it('实时查询不等待落盘；删除最后一段正文后立即离开不会恢复旧草稿', () => {
+    const ref = createRef<ChatInputUnifiedRef>();
+    const { unmount } = render(
+      <ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />,
+    );
+    act(() => editor.lastProps.onChange('未发送正文'));
+    expect(ref.current?.hasContent()).toBe(true);
+    expect(loadDraft('home')).toBeNull();
+    saveDraft('home', { version: 1, text: '未发送正文' });
+    act(() => editor.lastProps.onChange('   '));
+    expect(ref.current?.hasContent()).toBe(false);
+    unmount();
+    expect(loadDraft('home')).toBeNull();
+  });
+
+  it.each(['引用', '附件'])(
+    '首挂恢复纯%s时，父级导航判断能立即读取内容',
+    (kind) => {
+      saveDraft('home', {
+        version: 1,
+        text: '',
+        ...(kind === '引用'
+          ? {
+              content: [{ kind: 'skill' as const, targetId: 42, name: '写作' }],
+            }
+          : { files: [attachment] }),
+      });
+      const observed = vi.fn();
+      function HomeNavigationProbe() {
+        const ref = createRef<ChatInputUnifiedRef>();
+        useEffect(() => {
+          observed(ref.current?.hasContent());
+        }, []);
+        return <ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />;
+      }
+      render(<HomeNavigationProbe />);
+      expect(observed).toHaveBeenCalledWith(true);
+    },
+  );
+
   it('草稿恢复后仍遵守当前智能体的技能开关', () => {
     saveDraft('home', {
       version: 1,
