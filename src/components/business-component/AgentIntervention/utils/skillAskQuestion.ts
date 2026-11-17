@@ -37,8 +37,9 @@ function parseSkillAsk(raw: unknown): McpAskUserToolInput | null {
     !nonEmptyString(input.requestId) ||
     !nonEmptyString(input.title) ||
     !nonEmptyString(input.sessionId) ||
+    typeof input.revision !== 'number' ||
     !Number.isInteger(input.revision) ||
-    Number(input.revision) < 1 ||
+    input.revision < 1 ||
     ui?.version !== INTERACTION_UI_SCHEMA_VERSION ||
     !['inline', 'modal', 'wizard'].includes(String(ui.presentation)) ||
     !Array.isArray(ui.fields) ||
@@ -166,7 +167,9 @@ export function readSkillAskQuestion(message: MessageInfo): SkillAskMessage {
   // skill 发问后停止本轮；等终态再开放提交，避免把正在生成的内容或思考拿来交互。
   if (
     message.role !== AssistantRoleEnum.ASSISTANT ||
-    [MessageStatusEnum.Loading, MessageStatusEnum.Error, MessageStatusEnum.Stopped].includes(message.status)
+    message.finalResult?.success === false ||
+    (message.status !== undefined &&
+      [MessageStatusEnum.Loading, MessageStatusEnum.Error, MessageStatusEnum.Stopped].includes(message.status))
   ) {
     return unchanged;
   }
