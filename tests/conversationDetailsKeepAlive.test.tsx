@@ -188,10 +188,7 @@ vi.mock(
     }),
   }),
 );
-vi.mock('@/components/business-component/AgentIntervention', async () => ({
-  ...(await vi.importActual(
-    '@/components/business-component/AgentIntervention/utils/mcpAskHydrateMessage',
-  )),
+vi.mock('@/components/business-component/AgentIntervention', () => ({
   AgentInterventionChatLayer: () => null,
   useAgentInterventionLayer: () => ({
     agentMode: 'yolo',

@@ -10,19 +10,19 @@ import {
 } from './mcpAskExecutedComponent';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
 import { reconcileMcpAskHydratedMessageList } from './reconcileMcpAskHydratedStatus';
-import { readSkillAskQuestion } from './skillAskQuestion';
-
-const inputKey = (input: McpAskInteraction['input']) =>
-  JSON.stringify([input.requestId, input.revision ?? 1]);
 
 export function hydrateMcpAskInteractionsFromExecutedComponents(
   message: MessageInfo,
 ): MessageInfo {
   const componentExecutedList = (message.componentExecutedList ||
     []) as McpAskExecutedComponent[];
+  if (!componentExecutedList.length) {
+    return message;
+  }
+
   const existing = message.mcpAskInteractions || [];
   const existingRequestIds = new Set(
-    existing.map((interaction) => inputKey(interaction.input)),
+    existing.map((interaction) => interaction.input.requestId),
   );
   const hydrated: McpAskInteraction[] = [];
 
@@ -33,11 +33,11 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
 
     const input = parseMcpAskToolInput(getMcpAskComponentInput(component));
     const toolCallId = getMcpAskComponentToolCallId(component, input);
-    if (!input || !toolCallId || existingRequestIds.has(inputKey(input))) {
+    if (!input || !toolCallId || existingRequestIds.has(input.requestId)) {
       return;
     }
 
-    existingRequestIds.add(inputKey(input));
+    existingRequestIds.add(input.requestId);
     hydrated.push({
       input,
       toolCallId,
@@ -46,33 +46,12 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
     });
   });
 
-  const skill = readSkillAskQuestion(message);
-  skill.inputs.forEach((input) => {
-    const key = inputKey(input);
-    if (existingRequestIds.has(key)) return;
-    existingRequestIds.add(key);
-    hydrated.push({
-      input,
-      toolCallId: `skill-ask:${encodeURIComponent(input.requestId)}:${input.revision}`,
-      responseStatus: 'pending',
-      triggeredAt: createInterventionTriggeredAt(),
-    });
-  });
-
-  if (!hydrated.length && !skill.inputs.length) {
+  if (!hydrated.length) {
     return message;
   }
 
   return {
     ...message,
-    ...(skill.inputs.length
-      ? {
-          text: skill.text,
-          ...(message.finalResult
-            ? { finalResult: { ...message.finalResult, outputText: skill.outputText } }
-            : {}),
-        }
-      : {}),
     mcpAskInteractions: [...existing, ...hydrated],
   };
 }
