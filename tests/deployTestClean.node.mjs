@@ -256,6 +256,21 @@ function latestRollback(state) {
   return path.join(state.root, '.git/nuwax-deploy/test-rollback.bundle');
 }
 
+test('UTF-8 locale completes publication and recovery logging without unbound variables', async (t) => {
+  const state = await fixture(t);
+  const result = await deploy(state, { LC_ALL: 'en_US.UTF-8' });
+  assert.doesNotMatch(result.stderr, /unbound variable/);
+  assert.match(result.stdout, /内网 test 推送完成/);
+  const record = await fs.readFile(
+    path.join(await runDirectory(state), 'state'),
+    'utf8',
+  );
+  assert.match(
+    record,
+    new RegExp(`complete\\t${await head(state, 'gitlab')}\\n`),
+  );
+});
+
 test('retries a transient index lock even after the competing process releases it', async (t) => {
   const state = await fixture(t);
   const realGit = (await run(state.root, 'which', ['git'])).stdout.trim();

@@ -221,7 +221,7 @@ main() {
     mv -f "$ROLLBACK_BUNDLE" "$COMMON_DIR/nuwax-deploy/test-rollback.bundle"
     ROLLBACK_BUNDLE="$COMMON_DIR/nuwax-deploy/test-rollback.bundle"
     record rollback-latest "$ROLLBACK_BUNDLE"
-    log "本机最近一次恢复文件：$ROLLBACK_BUNDLE（无需切换任何 backup 分支）"
+    log "本机最近一次恢复文件：${ROLLBACK_BUNDLE}（无需切换任何 backup 分支）"
   fi
   rm -f "$RUN_DIR/original-dist.tar" "$RUN_DIR/previous-dist.tar" "$RUN_DIR/built-dist.tar"
   record complete "$TEST_HEAD"
@@ -465,7 +465,7 @@ clean_exit() {
       record failed "${CURRENT_STEP:-预检}"
       echo "运行记录与产物：$RUN_DIR" >&2
       if [ "${ROLLBACK_READY:-0}" = "1" ]; then
-        echo "旧 test 已保存到本机恢复文件：$ROLLBACK_BUNDLE；需要恢复时先在本仓库导入对象：" >&2
+        echo "旧 test 已保存到本机恢复文件：${ROLLBACK_BUNDLE}；需要恢复时先在本仓库导入对象：" >&2
         print_command git bundle unbundle "$ROLLBACK_BUNDLE" >&2
       fi
       if [ -n "${TEST_HEAD:-}" ]; then
