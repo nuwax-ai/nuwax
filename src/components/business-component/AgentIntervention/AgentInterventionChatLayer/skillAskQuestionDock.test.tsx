@@ -146,6 +146,7 @@ function Harness({ send }: { send: (text: string) => Promise<void> }) {
 }
 
 describe('零 MCP skill → 真实 ask-question Dock → 原会话回复', () => {
+  // 真实 Ant Design 表单的样式初始化在 CI 较慢，单独分配集成执行预算。
   it('复用真实必填、单选、多选与提交；回复为 label，交互状态物化，刷新不重开', async () => {
     const send = vi.fn(async (_text: string) => undefined);
     const { container, unmount } = render(<Harness send={send} />);
@@ -208,5 +209,5 @@ describe('零 MCP skill → 真实 ask-question Dock → 原会话回复', () =>
       />,
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
+  }, 20_000);
 });
