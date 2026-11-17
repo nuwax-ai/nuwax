@@ -67,7 +67,10 @@ vi.mock('@/components/RecommendList', () => ({
     <div data-testid="recommend-list">{chatSuggestList?.join(',')}</div>
   ),
 }));
-vi.mock('@/components/business-component/AgentIntervention', () => ({
+vi.mock('@/components/business-component/AgentIntervention', async () => ({
+  ...(await vi.importActual(
+    '@/components/business-component/AgentIntervention/utils/mcpAskHydrateMessage',
+  )),
   AgentInterventionChatLayer: () => null,
   useAgentInterventionLayer: () => ({
     agentMode: 'yolo',

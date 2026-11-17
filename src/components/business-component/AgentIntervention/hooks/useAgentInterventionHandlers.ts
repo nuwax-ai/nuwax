@@ -15,6 +15,7 @@ import type {
 } from '../types/mcpAskIntervention';
 import { hydrateMcpAskInteractionsInMessageList } from '../utils/mcpAskHydrateMessage';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
+import { hydrateMcpAskInteractionsInMessageList } from '../utils/mcpAskHydrateMessage';
 import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPermissionStatus';
 
 /** MCP Ask resume 发送结果：正文 + 可选附件（走 chat attachments） */
