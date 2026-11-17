@@ -1,6 +1,5 @@
 import {
   AgentInterventionChatLayer,
-  hydrateMcpAskInteractionsInMessageList,
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
@@ -610,21 +609,16 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
  */
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
   const outerSession = useConversationSession();
-  // skill 的声明式提问与 MCP 工具结果汇入同一交互队列，所有会话入口共用 Dock。
-  const renderedMessages = useMemo(
-    () => hydrateMcpAskInteractionsInMessageList(props.messageList ?? []),
-    [props.messageList],
-  );
-  const renderedProps = { ...props, messageList: renderedMessages };
   if (outerSession) {
     return (
       <CreditInsufficientScope>
-        <UnifiedChatSessionInner {...renderedProps} />
+        <UnifiedChatSessionInner {...props} />
       </CreditInsufficientScope>
     );
   }
   const {
     conversationId,
+    messageList,
     selectedModelId,
     onSendMessage,
     queueMinConsumeInterval,
@@ -639,7 +633,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
     <CreditInsufficientScope>
       <ConversationSessionProvider
         conversationId={conversationId}
-        messageList={renderedMessages}
+        messageList={messageList ?? []}
         modelStreamActive={isLocallyStreaming ?? isConversationActive}
         awaitingChatTerminal={isAwaitingChatTerminal}
         taskStatus={conversationInfo?.taskStatus}
@@ -649,7 +643,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
         queueContext={queueContext}
         runStopConversation={runStopConversation}
       >
-        <UnifiedChatSessionInner {...renderedProps} />
+        <UnifiedChatSessionInner {...props} />
       </ConversationSessionProvider>
     </CreditInsufficientScope>
   );

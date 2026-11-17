@@ -14,7 +14,6 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
-import { hydrateMcpAskInteractionsInMessageList } from '../utils/mcpAskHydrateMessage';
 import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPermissionStatus';
 
 /** MCP Ask resume 发送结果：正文 + 可选附件（走 chat attachments） */
@@ -68,7 +67,7 @@ export function useAgentInterventionHandlers({
       revision?: number,
     ) => {
       setMessageList((list) =>
-        hydrateMcpAskInteractionsInMessageList(list).map((item) => {
+        list.map((item) => {
           const interactions = item.mcpAskInteractions;
           if (!interactions?.some((x) => x.input.requestId === requestId)) {
             return item;

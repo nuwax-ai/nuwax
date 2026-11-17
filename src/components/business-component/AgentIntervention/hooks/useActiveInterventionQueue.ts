@@ -65,15 +65,6 @@ export function useActiveInterventionQueue(
     let fallbackSeq = 0;
 
     const messages = sortMessagesByConversationIndex(messageList ?? []);
-    const latestAskRevisions = new Map<string, number>();
-    messages.forEach((message) =>
-      message.mcpAskInteractions?.forEach(({ input }) => {
-        latestAskRevisions.set(
-          input.requestId,
-          Math.max(latestAskRevisions.get(input.requestId) ?? 0, input.revision ?? 1),
-        );
-      }),
-    );
 
     messages.forEach((message) => {
       getAcpPermissionInteractions(message).forEach((interaction) => {
@@ -115,12 +106,6 @@ export function useActiveInterventionQueue(
       });
 
       message.mcpAskInteractions?.forEach((interaction) => {
-        if (
-          (interaction.input.revision ?? 1) <
-          (latestAskRevisions.get(interaction.input.requestId) ?? 1)
-        ) {
-          return;
-        }
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
