@@ -28,6 +28,7 @@ const me = vi.fn();
 const unreadTotal = vi.fn();
 const register = vi.fn();
 const unregister = vi.fn();
+const reportRead = vi.fn();
 const originalBridge = (window as any).NuwaClawBridge;
 
 function deferred<T>() {
@@ -91,7 +92,7 @@ beforeAll(async () => {
     convApi: { list: vi.fn().mockResolvedValue({ records: [] }) },
     deviceApi: { register, unregister },
     msgApi: {},
-    readApi: {},
+    readApi: { report: reportRead },
     stickerApi: {},
     syncApi: { unreadTotal },
   }));
@@ -145,6 +146,7 @@ beforeEach(() => {
   localStorage.clear();
   register.mockResolvedValue(undefined);
   unregister.mockResolvedValue(undefined);
+  reportRead.mockResolvedValue({ advanced: true, readSeqAfter: 2 });
   unreadTotal.mockResolvedValue({ total: 0 });
   me.mockResolvedValue({ userId: '101', userName: '用户一' });
   chat.beginImEmbeddedSession();
@@ -360,13 +362,18 @@ describe('消息 main store 的正式适配生命周期', () => {
     chat.useChatStore.getState().reportRead('7');
     vi.advanceTimersByTime(30_000);
     expect(chat.useChatStore.getState().unreadTotal).toBe(2);
+    expect(reportRead).not.toHaveBeenCalled();
     expect(socket.sendReadReport).not.toHaveBeenCalled();
     expect(socket.connected).toBe(true);
     runtime.updateMessageRuntime({ active: true, path: '/instant-message' });
     chat.useChatStore.getState().flushPendingRead();
     expect(chat.useChatStore.getState().unreadTotal).toBe(0);
     vi.advanceTimersByTime(500);
-    expect(socket.sendReadReport).toHaveBeenCalledWith('7', 2);
+    expect(reportRead).toHaveBeenCalledWith(
+      '7',
+      expect.objectContaining({ readSeq: 2 }),
+    );
+    expect(socket.sendReadReport).not.toHaveBeenCalled();
   });
 
   it('IM 隐藏保活时周期对账仍刷新未读总数，未满间隔不请求', async () => {
