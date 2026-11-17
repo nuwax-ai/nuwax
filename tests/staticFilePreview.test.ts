@@ -442,32 +442,26 @@ describe('静态 PPTX 分享页', () => {
     });
   });
 
-  it('Content-Length 超过预算时取消读取，不调用 prepare', async () => {
+  it('Content-Length 很大时仍读取并进入 prepare', async () => {
     const cancel = vi.fn().mockResolvedValue(undefined);
-    const arrayBuffer = vi.fn();
+    const bytes = new Uint8Array([11, 12, 13]).buffer;
+    const arrayBuffer = vi.fn(async () => bytes);
     const page = await createPage({
       fetch: vi
         .fn()
         .mockResolvedValueOnce(response())
         .mockResolvedValueOnce(
           response({
-            headers: {
-              get: () =>
-                `${DEFAULT_PPTX_PACKAGE_LIMITS.maxCompressedBytes + 1}`,
-            },
+            headers: { get: () => `${60 * 1024 * 1024}` },
             body: { cancel },
             arrayBuffer,
           }),
         ),
     });
     await page.win.startPreview();
-    expect(cancel).toHaveBeenCalledOnce();
-    expect(arrayBuffer).not.toHaveBeenCalled();
-    expect(page.prepare).not.toHaveBeenCalled();
-    expect(page.node('errorText').textContent).toContain('size limit');
-    expect(page.notify).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'preview_success' }),
-    );
+    expect(cancel).not.toHaveBeenCalled();
+    expect(arrayBuffer).toHaveBeenCalledOnce();
+    expect(page.prepare).toHaveBeenCalledWith(bytes, expect.any(Object));
   });
 
   it.each([

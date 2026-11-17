@@ -556,15 +556,11 @@ describe('preparePptxForPreview', () => {
     expect(new PptxPackageError('invalid', 'message')).toBeInstanceOf(Error);
   });
 
-  it.each([
-    ['压缩大小', { maxCompressedBytes: 1 }],
-    ['总解压大小', { maxUncompressedBytes: 1 }],
-    ['条目数', { maxEntries: 1 }],
-  ])('在 JSZip 读取或解压前拦截%s超限', async (_, limits) => {
+  it('在 JSZip 读取前拦截条目数超限', async () => {
     const buffer = await createPptx();
     const load = vi.spyOn(JSZip, 'loadAsync');
     await expect(
-      preparePptxForPreview(buffer, { limits }),
+      preparePptxForPreview(buffer, { limits: { maxEntries: 1 } }),
     ).rejects.toMatchObject({ code: 'tooLarge' });
     expect(load).not.toHaveBeenCalled();
   });

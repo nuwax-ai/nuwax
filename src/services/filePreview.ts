@@ -4,26 +4,19 @@ import { getBusinessFileRequestAuth } from '@/utils/businessAuth';
 export interface FilePreviewLoadOptions {
   signal?: AbortSignal;
   refresh?: boolean;
-  maxBytes?: number;
 }
 
 export class FilePreviewLoadError extends Error {
-  readonly code: 'http' | 'tooLarge';
+  readonly code: 'http';
   readonly status?: number;
 
-  constructor(code: 'http' | 'tooLarge', status?: number) {
-    super(
-      code === 'http'
-        ? 'Unable to load file preview.'
-        : 'File preview exceeds the size limit.',
-    );
+  constructor(code: 'http', status?: number) {
+    super('Unable to load file preview.');
     this.name = 'FilePreviewLoadError';
     this.code = code;
     this.status = status;
   }
 }
-
-const DEFAULT_MAX_BYTES = 50 * 1024 * 1024;
 
 function abortError(): DOMException {
   return new DOMException('File preview loading was aborted.', 'AbortError');
@@ -33,11 +26,7 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw abortError();
 }
 
-function checkSize(size: number, maxBytes: number): void {
-  if (size > maxBytes) throw new FilePreviewLoadError('tooLarge');
-}
-
-/** 清理失败不能覆盖原本的 HTTP、超限或取消错误。 */
+/** 清理失败不能覆盖原本的 HTTP 或取消错误。 */
 function cancelRead(
   target: { cancel: () => Promise<unknown> } | null | undefined,
 ): void {
@@ -129,32 +118,23 @@ function readBlobBuffer(
   });
 }
 
-/** 文件预览统一读取入口：鉴权、限额、刷新与取消均在渲染之前处理。 */
+/** 文件预览统一读取入口：鉴权、刷新与取消均在渲染之前处理，不按体积截断。 */
 export async function loadFilePreviewBuffer(
   src: string | Blob | ArrayBuffer,
   options: FilePreviewLoadOptions = {},
 ): Promise<ArrayBuffer> {
-  const { signal, refresh = false, maxBytes = DEFAULT_MAX_BYTES } = options;
+  const { signal, refresh = false } = options;
   throwIfAborted(signal);
-  if (!Number.isFinite(maxBytes) || maxBytes < 0) {
-    throw new RangeError(
-      'File preview size limit must be a finite non-negative number.',
-    );
-  }
 
   if (typeof src !== 'string') {
     // 支持从其他窗口传入的 ArrayBuffer，避免 instanceof 的 realm 差异。
     if (Object.prototype.toString.call(src) === '[object ArrayBuffer]') {
-      const buffer = src as ArrayBuffer;
-      checkSize(buffer.byteLength, maxBytes);
-      return buffer;
+      return src as ArrayBuffer;
     }
     const blob = src as Blob;
-    checkSize(blob.size, maxBytes);
     throwIfAborted(signal);
     const buffer = await waitWithAbort(readBlobBuffer(blob, signal), signal);
     throwIfAborted(signal);
-    checkSize(buffer.byteLength, maxBytes);
     return buffer;
   }
 
@@ -178,16 +158,10 @@ export async function loadFilePreviewBuffer(
     throw new FilePreviewLoadError('http', response.status);
   }
 
-  const contentLength = Number(response.headers.get('content-length'));
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    cancelRead(response.body);
-    throw new FilePreviewLoadError('tooLarge');
-  }
   if (!response.body) {
     throwIfAborted(signal);
     const buffer = await waitWithAbort(response.arrayBuffer(), signal);
     throwIfAborted(signal);
-    checkSize(buffer.byteLength, maxBytes);
     return buffer;
   }
 
@@ -208,7 +182,6 @@ export async function loadFilePreviewBuffer(
       throwIfAborted(signal);
       if (done) break;
       total += value.byteLength;
-      checkSize(total, maxBytes);
       chunks.push(value);
     }
     const buffer = new Uint8Array(total);

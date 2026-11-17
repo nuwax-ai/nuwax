@@ -137,8 +137,6 @@ describe('静态分享页共享 PPTX bundle', () => {
       'validateAndOrderPptxSlides',
     ]);
     expect(api.DEFAULT_PPTX_PACKAGE_LIMITS).toEqual({
-      maxCompressedBytes: 50 * 1024 * 1024,
-      maxUncompressedBytes: 200 * 1024 * 1024,
       maxEntries: 10_000,
     });
     expect(Object.isFrozen(api.DEFAULT_PPTX_PACKAGE_LIMITS)).toBe(true);
@@ -174,7 +172,7 @@ describe('静态分享页共享 PPTX bundle', () => {
 
   it('共享包预算超限与取消保持结构化错误', async () => {
     await expect(
-      api.preparePptxForPreview(fixture, { limits: { maxCompressedBytes: 1 } }),
+      api.preparePptxForPreview(fixture, { limits: { maxEntries: 1 } }),
     ).rejects.toMatchObject({ code: 'tooLarge' });
     const controller = new AbortController();
     controller.abort();
