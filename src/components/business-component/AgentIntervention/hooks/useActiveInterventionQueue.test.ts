@@ -82,6 +82,34 @@ function createAcpPermissionInteraction(
 }
 
 describe('useActiveInterventionQueue', () => {
+  it('只展示同一 requestId 的最新 revision；新版已应答时不复活旧 pending', () => {
+    const first = createAskInteraction();
+    const latest = createAskInteraction({
+      input: { ...first.input, revision: 2 },
+    });
+    const messages = [
+      { id: 'assistant', index: 1, mcpAskInteractions: [first, latest] },
+    ] as MessageInfo[];
+    const { result, rerender } = renderHook(
+      ({ list }) => useActiveInterventionQueue(list),
+      { initialProps: { list: messages } },
+    );
+    expect(result.current).toHaveLength(1);
+    if (result.current[0].kind === 'mcp_ask')
+      expect(result.current[0].interaction.input.revision).toBe(2);
+    rerender({
+      list: [
+        {
+          ...messages[0],
+          mcpAskInteractions: [
+            first,
+            { ...latest, responseStatus: 'submitted' },
+          ],
+        },
+      ],
+    });
+    expect(result.current).toEqual([]);
+  });
   it('does not show an ask/question interaction after its resume message exists', () => {
     const askInteraction = createAskInteraction();
     const messageList = [

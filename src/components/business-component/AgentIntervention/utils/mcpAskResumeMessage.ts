@@ -30,6 +30,12 @@ const RESUME_MESSAGE_KEY_BY_ACTION: Record<
 
 const SUBMITTED_HEADER_KEY = `${I18N_PREFIX}.resumeSubmitted`;
 
+const askIdentity = (interaction: McpAskInteraction): string =>
+  JSON.stringify([
+    interaction.input.requestId,
+    interaction.input.revision ?? 1,
+  ]);
+
 /** resume 消息 JSON 块中的 requestId 键（历史 fenced JSON 格式，仍识别） */
 export const MCP_ASK_REQUEST_ID_MARKER_KEY = 'nuwaxMcpAskRequestId';
 
@@ -400,7 +406,7 @@ function shouldBlockLegacyTitleMatch(
   return sortedMessages.some((message) =>
     (message.mcpAskInteractions ?? []).some(
       (item) =>
-        item.input.requestId !== interaction.input.requestId &&
+        askIdentity(item) !== askIdentity(interaction) &&
         getMcpAskResumeTitle(item) === title,
     ),
   );
@@ -416,7 +422,7 @@ function resolveContainingMessageIndex(
   }
   const autoIndex = sortedMessages.findIndex((message) =>
     message.mcpAskInteractions?.some(
-      (item) => item.input.requestId === interaction.input.requestId,
+      (item) => askIdentity(item) === askIdentity(interaction),
     ),
   );
   return autoIndex >= 0 ? autoIndex : undefined;
@@ -466,12 +472,14 @@ function collectSameTitleAskOrdinals(
   ordinal: number;
   sequence: number;
   requestId: string;
+  key: string;
   resolved: boolean;
 }> {
   const entries: Array<{
     ordinal: number;
     sequence: number;
     requestId: string;
+    key: string;
     resolved: boolean;
   }> = [];
   let sequence = 0;
@@ -487,6 +495,7 @@ function collectSameTitleAskOrdinals(
         ordinal,
         sequence: sequence++,
         requestId: item.input.requestId,
+        key: askIdentity(item),
         resolved:
           responseStatus !== 'pending' && responseStatus !== 'submitting',
       });
@@ -542,17 +551,17 @@ function hasOrdinalPairedResumeMessage(
   const asks = collectSameTitleAskOrdinals(sortedMessages, title);
   const resumes = collectSameTitleResumeOrdinals(sortedMessages, title);
   const targetAsk = asks.find(
-    (entry) => entry.requestId === interaction.input.requestId,
+    (entry) => entry.key === askIdentity(interaction),
   );
   if (!targetAsk) {
     return false;
   }
 
-  const pairedRequestIds = new Set<string>();
+  const pairedAsks = new Set<string>();
   resumes.forEach((resume) => {
     const candidates = asks.filter(
       (ask) =>
-        !pairedRequestIds.has(ask.requestId) &&
+        !pairedAsks.has(ask.key) &&
         (ask.ordinal < resume.ordinal ||
           (ask.ordinal === resume.ordinal && ask.sequence <= resume.sequence)),
     );
@@ -562,10 +571,10 @@ function hasOrdinalPairedResumeMessage(
 
     const resolvedCandidate = candidates.find((ask) => ask.resolved);
     const selectedAsk = resolvedCandidate ?? candidates[candidates.length - 1];
-    pairedRequestIds.add(selectedAsk.requestId);
+    pairedAsks.add(selectedAsk.key);
   });
 
-  if (pairedRequestIds.has(targetAsk.requestId)) {
+  if (pairedAsks.has(targetAsk.key)) {
     return true;
   }
 

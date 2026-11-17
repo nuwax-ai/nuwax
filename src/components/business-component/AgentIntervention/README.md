@@ -92,6 +92,14 @@ const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionL
 
 `interventionHandlers` 类型：`AgentInterventionHandlersOverride`（`respondAcpPermission` / `respondMcpAsk`）。
 
+## Skill 的零 MCP 提问
+
+已完成的助手 CHAT/ANSWER 消息可以通过顶层闭合的 `nuwax-ask-question` 代码围栏声明提问。内容须为完整的 v2 JSON：`toolName: "nuwax_ask_question"`、`schemaVersion: "nuwax.mcp_ask.v2"`、`requestId`、正整数 `revision`、`sessionId`、`title`，以及 `ui.version: "nuwax.interaction.v2"` 与非空 `ui.fields`。
+
+`skillAskQuestion.ts` 校验协议后，`hydrateMcpAskInteractionsInMessageList` 将其映射为现有 `McpAskInteraction`，由统一会话及其 Provider 共用干预队列、DockPanel 和原生表单。该路径不发现或挂载 MCP 服务；普通 JSON、嵌套文档示例、未闭合围栏、用户/工具消息与流式/失败输出均不触发挂载。
+
+有效协议从展示正文中移除，后端原始消息仍保留协议以供历史恢复。提交时先在所属会话的消息状态中物化交互，再复用现有校验、选项 label 转换与原会话回复；失败回滚沿用现有处理。历史按提问标题、版本与消息顺序关联原生回复，同 `requestId` 只展示最高 `revision`，旧版回答不会关闭新版提问。
+
 ## `MessageInfo` 挂载字段
 
 归一化后挂在**当前流式消息**上（与 `processingList` 同级）：

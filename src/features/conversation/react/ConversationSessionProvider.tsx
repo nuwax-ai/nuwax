@@ -1,5 +1,6 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
+import { hydrateMcpAskInteractionsInMessageList } from '@/components/business-component/AgentIntervention/utils/mcpAskHydrateMessage';
 // 从 barrel 引入以与 UnifiedChatSession/测试的 mock 面保持同一模块路径
 import { useUnifiedChatQueue } from '@/components/business-component/MessageQueue';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
@@ -62,7 +63,7 @@ const ConversationSessionContext =
 export function ConversationSessionProvider({
   children,
   conversationId,
-  messageList,
+  messageList: rawMessageList,
   modelStreamActive,
   awaitingChatTerminal,
   taskStatus,
@@ -73,6 +74,10 @@ export function ConversationSessionProvider({
   runStopConversation,
 }: ConversationSessionProviderProps) {
   const agentModeRef = useRef<AgentMode>('yolo');
+  const messageList = useMemo(
+    () => hydrateMcpAskInteractionsInMessageList(rawMessageList),
+    [rawMessageList],
+  );
   const collectedInterventions = useActiveInterventionQueue(messageList);
   // FAILED/CANCEL 后任务已不可能继续回应 Ask/ACP。历史 hydrate 可能因
   // 缺少 resume 回执把旧干预恢复为 pending，不应因此永久禁用输入框。

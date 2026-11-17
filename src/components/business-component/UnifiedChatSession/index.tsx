@@ -1,8 +1,9 @@
 import {
   AgentInterventionChatLayer,
-  type AgentMode,
   useAgentInterventionLayer,
+  type AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { hydrateMcpAskInteractionsInMessageList } from '@/components/business-component/AgentIntervention/utils/mcpAskHydrateMessage';
 import ConversationStatus from '@/components/business-component/ConversationStatus';
 import {
   CreditInsufficientInputBanner,
@@ -609,16 +610,21 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
  */
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
   const outerSession = useConversationSession();
+  // skill 的声明式提问与 MCP 工具结果汇入同一交互队列，所有会话入口共用 Dock。
+  const renderedMessages = useMemo(
+    () => hydrateMcpAskInteractionsInMessageList(props.messageList ?? []),
+    [props.messageList],
+  );
+  const renderedProps = { ...props, messageList: renderedMessages };
   if (outerSession) {
     return (
       <CreditInsufficientScope>
-        <UnifiedChatSessionInner {...props} />
+        <UnifiedChatSessionInner {...renderedProps} />
       </CreditInsufficientScope>
     );
   }
   const {
     conversationId,
-    messageList,
     selectedModelId,
     onSendMessage,
     queueMinConsumeInterval,
@@ -633,7 +639,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
     <CreditInsufficientScope>
       <ConversationSessionProvider
         conversationId={conversationId}
-        messageList={messageList ?? []}
+        messageList={renderedMessages}
         modelStreamActive={isLocallyStreaming ?? isConversationActive}
         awaitingChatTerminal={isAwaitingChatTerminal}
         taskStatus={conversationInfo?.taskStatus}
@@ -643,7 +649,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
         queueContext={queueContext}
         runStopConversation={runStopConversation}
       >
-        <UnifiedChatSessionInner {...props} />
+        <UnifiedChatSessionInner {...renderedProps} />
       </ConversationSessionProvider>
     </CreditInsufficientScope>
   );

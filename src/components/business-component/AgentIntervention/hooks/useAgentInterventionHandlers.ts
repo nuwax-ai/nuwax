@@ -13,6 +13,7 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+import { hydrateMcpAskInteractionsInMessageList } from '../utils/mcpAskHydrateMessage';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
 import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPermissionStatus';
 
@@ -67,7 +68,7 @@ export function useAgentInterventionHandlers({
       revision?: number,
     ) => {
       setMessageList((list) =>
-        list.map((item) => {
+        hydrateMcpAskInteractionsInMessageList(list).map((item) => {
           const interactions = item.mcpAskInteractions;
           if (!interactions?.some((x) => x.input.requestId === requestId)) {
             return item;
