@@ -172,13 +172,7 @@ export type ContentFetchOutcome =
   | { status: 'missing' }
   | { status: 'error' };
 
-/** 预览允许的最大文件体积：50MB。超过则不读取正文 */
-const PREVIEW_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
-
-/** 静态文件响应里的体积头。为空或不存在时不拦截预览 */
-const FILE_SIZE_HEADER = 'X-File-Size';
-
-/** 文件超过预览体积上限 */
+/** 文件超过预览体积上限。预览不再按体积拦截，类型保留给已有调用方判断。 */
 export class PreviewFileTooLargeError extends Error {
   constructor() {
     super('Preview file exceeds size limit');
@@ -191,27 +185,6 @@ export const isPreviewFileTooLargeError = (
   error: unknown,
 ): error is PreviewFileTooLargeError =>
   error instanceof PreviewFileTooLargeError;
-
-/**
- * 读取 X-File-Size。头不存在、为空或不是数字时返回 null，调用方按原逻辑预览。
- */
-export const readPreviewFileSize = (response: Response): number | null => {
-  const raw =
-    response.headers.get(FILE_SIZE_HEADER) ??
-    response.headers.get('Content-Length');
-  if (raw === null || raw.trim() === '') {
-    return null;
-  }
-  const size = Number(raw.trim());
-  if (!Number.isFinite(size) || size < 0) {
-    return null;
-  }
-  return size;
-};
-
-/** 体积头有值且大于 50MB */
-export const isOversizedPreviewFile = (size: number | null): boolean =>
-  size !== null && size > PREVIEW_FILE_SIZE_LIMIT_BYTES;
 
 async function fetchContentResponse(
   url: string,
@@ -250,12 +223,6 @@ export async function fetchContentFromUrl(
     release = fetched.release;
     if (!response.ok) {
       throw new Error(`Failed to get file content: ${response.status}`);
-    }
-
-    // 体积头大于 50MB 时不读取正文
-    if (isOversizedPreviewFile(readPreviewFileSize(response))) {
-      await response.body?.cancel();
-      throw new PreviewFileTooLargeError();
     }
 
     // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number

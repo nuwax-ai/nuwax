@@ -178,6 +178,8 @@ export interface InvokeTypeSaveParams {
   defaultSelected: DefaultSelectedEnum;
   // 展示别名
   alias?: string;
+  // 技能额外提示词
+  extendPrompt?: string;
 }
 
 // 调用方式组件属性
@@ -186,6 +188,8 @@ export interface InvokeTypeProps {
   defaultSelected?: DefaultSelectedEnum;
   // 展示别名
   defaultAlias?: string;
+  // 技能额外提示词
+  defaultExtendPrompt?: string;
   // 是否为技能组件
   isSkill?: boolean;
   options?: { value: InvokeTypeEnum; label: string }[];

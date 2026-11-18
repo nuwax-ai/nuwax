@@ -11,7 +11,35 @@ const MOBILE_DIR_NAME = 'nuwax-mobile';
 const FALLBACK_REPO_URL = 'https://github.com/nuwax-ai/nuwax-mobile.git';
 const DEFAULT_BRANCH = 'feat-2026.11';
 const TARGET_DIR = 'unpackage/dist/build/web';
-const DIST_M_DIR = path.join(__dirname, '../dist/m');
+
+function downloadGit(args, cwd) {
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      LC_ALL: 'C',
+      GIT_TERMINAL_PROMPT: '0',
+      GCM_INTERACTIVE: 'never',
+    },
+  }).trim();
+}
+
+function isTransientDownloadError(error) {
+  const details = `${error.stderr ?? ''}\n${error.message}`;
+  // RPC failed 也可能由鉴权失败引起，不能将这类错误当成网络抖动。
+  if (
+    /(?:HTTP |returned error: )(?:401|403|404)\b|Authentication failed|Permission denied|SSL certificate|certificate verify failed/i.test(
+      details,
+    )
+  ) {
+    return false;
+  }
+  return /RPC failed|curl (?:5|6|7|16|18|28|35|52|55|56|92)\b|SSL_ERROR_SYSCALL|TLS connection was non-properly terminated|(?:Connection|Operation) (?:timed out|timeout|reset|closed|refused)|Could not resolve (?:host|proxy)|Failed to connect|Network is unreachable|unexpected disconnect|early EOF|(?:HTTP |requested URL returned error: )(?:408|429|500|502|503|504)\b/i.test(
+    details,
+  );
+}
 
 function runGit(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' });
@@ -99,29 +127,29 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-function downloadDirectory({ source, branch, repoUrl }) {
+async function downloadDirectory(
+  { source, branch, repoUrl },
+  {
+    root = path.join(__dirname, '..'),
+    git = downloadGit,
+    wait = (ms) =>
+      new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      }),
+  } = {},
+) {
   console.log(
     `📡 Fetching mobile build from ${repoUrl}@${branch}/${TARGET_DIR}（源：${source}）...`,
   );
-  fs.mkdirSync(DIST_M_DIR, { recursive: true });
-
-  try {
-    execFileSync('git', ['--version'], { stdio: 'ignore' });
-  } catch (err) {
-    console.error(
-      '❌ Git is required to download the directory. Please install Git.',
-    );
-    process.exit(1);
-  }
-
-  const TEMP_DIR = path.join(__dirname, '../.tmp_mobile_build');
+  const DIST_M_DIR = path.join(root, 'dist/m');
+  const TEMP_DIR = path.join(root, '.tmp_mobile_build');
   fs.rmSync(TEMP_DIR, { recursive: true, force: true });
 
-  try {
-    console.log('🔄 Cloning repository (sparse checkout)...');
-    execFileSync(
-      'git',
-      [
+  // checkout/sparse-checkout 也会按需从 promisor remote 下载 blob，不能只重试 clone。
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      console.log(`🔄 Cloning repository (sparse checkout, ${attempt}/3)...`);
+      git([
         'clone',
         '--filter=blob:none',
         '--no-checkout',
@@ -131,38 +159,39 @@ function downloadDirectory({ source, branch, repoUrl }) {
         branch,
         repoUrl,
         TEMP_DIR,
-      ],
-      { stdio: 'inherit' },
-    );
-    execFileSync('git', ['sparse-checkout', 'set', TARGET_DIR], {
-      cwd: TEMP_DIR,
-      stdio: 'inherit',
-    });
-    execFileSync('git', ['checkout'], { cwd: TEMP_DIR, stdio: 'inherit' });
-    const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: TEMP_DIR,
-      encoding: 'utf8',
-    }).trim();
+      ]);
+      git(['sparse-checkout', 'set', TARGET_DIR], TEMP_DIR);
+      git(['checkout'], TEMP_DIR);
+      const commit = git(['rev-parse', 'HEAD'], TEMP_DIR);
 
-    const sourcePath = path.join(TEMP_DIR, TARGET_DIR);
-    if (!fs.existsSync(sourcePath)) {
-      throw new Error(
-        `Directory ${TARGET_DIR} not found in the repository branch ${branch}.`,
+      const sourcePath = path.join(TEMP_DIR, TARGET_DIR);
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error(
+          `Directory ${TARGET_DIR} not found in the repository branch ${branch}.`,
+        );
+      }
+      console.log('📦 Moving files to dist/m...');
+      copyRecursiveSync(sourcePath, DIST_M_DIR);
+      console.log(
+        `✅ Mobile build placed in dist/m/（来源 ${source} ${repoUrl}，${branch}@${commit}）`,
       );
+      return;
+    } catch (error) {
+      if (attempt === 3 || !isTransientDownloadError(error)) throw error;
+      console.warn(
+        `⚠️ M 端产物下载遇到网络抖动（${attempt}/3），${
+          attempt * 10
+        }s 后自动重试下载，保留已完成的 PC 构建。\n${
+          error.stderr ?? error.message
+        }`,
+      );
+    } finally {
+      if (fs.existsSync(TEMP_DIR)) {
+        console.log('🧹 Cleaning up temporary files...');
+        fs.rmSync(TEMP_DIR, { recursive: true, force: true });
+      }
     }
-    console.log('📦 Moving files to dist/m...');
-    copyRecursiveSync(sourcePath, DIST_M_DIR);
-    console.log(
-      `✅ Mobile build placed in dist/m/（来源 ${source} ${repoUrl}，${branch}@${commit}）`,
-    );
-  } catch (error) {
-    console.error('❌ Error downloading mobile build:', error.message);
-    process.exit(1);
-  } finally {
-    if (fs.existsSync(TEMP_DIR)) {
-      console.log('🧹 Cleaning up temporary files...');
-      fs.rmSync(TEMP_DIR, { recursive: true, force: true });
-    }
+    await wait(attempt * 10_000);
   }
 }
 
@@ -172,6 +201,7 @@ module.exports = {
   FALLBACK_REPO_URL,
   findLocalMobileOriginUrl,
   resolveMobileBuildOptions,
+  downloadDirectory,
 };
 
 if (require.main === module) {
@@ -182,5 +212,8 @@ if (require.main === module) {
     console.error(`❌ ${error.message}`);
     process.exit(1);
   }
-  downloadDirectory(options);
+  downloadDirectory(options).catch((error) => {
+    console.error('❌ Error downloading mobile build:', error.message);
+    process.exitCode = 1;
+  });
 }

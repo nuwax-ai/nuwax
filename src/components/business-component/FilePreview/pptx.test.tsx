@@ -607,7 +607,6 @@ describe('FilePreview PPTX 请求和生命周期', () => {
       '/original.pptx?version=1',
       expect.objectContaining({
         signal: expect.any(AbortSignal),
-        maxBytes: Number.MAX_SAFE_INTEGER,
       }),
     ]);
     expect(downloadedBlobs).toHaveLength(1);
@@ -655,7 +654,7 @@ describe('FilePreview PPTX 请求和生命周期', () => {
     await flushPromises();
 
     expect(mocks.load.mock.calls[1][1]).toEqual(
-      expect.objectContaining({ maxBytes: Number.MAX_SAFE_INTEGER }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(click).not.toHaveBeenCalled();
     expect(downloadedBlobs).toHaveLength(0);
@@ -667,9 +666,9 @@ describe('FilePreview PPTX 请求和生命周期', () => {
   it('下载中切换到 B，中止 A 下载且丢弃晚到的原件 bytes', async () => {
     const slowDownload = deferred<ArrayBuffer>();
     mocks.load.mockImplementation(
-      (src: string, options: { maxBytes?: number }) => {
+      (src: string, options: { refresh?: boolean }) => {
         if (src === '/A.pptx') {
-          return options.maxBytes === Number.MAX_SAFE_INTEGER
+          return options.refresh === undefined
             ? slowDownload.promise
             : Promise.reject(new Error('A preview failed'));
         }

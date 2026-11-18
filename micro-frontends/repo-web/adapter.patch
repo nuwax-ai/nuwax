@@ -57,15 +57,15 @@ index 97f02d2..9a6a915 100644
    }, [sel])
  
 diff --git a/src/components/CollabEditor.tsx b/src/components/CollabEditor.tsx
-index 64405bb..53d3b6d 100644
+index 6e09c10..fec0057 100644
 --- a/src/components/CollabEditor.tsx
 +++ b/src/components/CollabEditor.tsx
 @@ -1,3 +1,4 @@
 +import { getRepoInputRoot, getRepoPortalRoot } from '../hostRuntime'
  import { useCallback, useEffect, useRef, useState } from 'react'
- import type { CSSProperties } from 'react'
+ import type { ComponentProps, CSSProperties } from 'react'
  import { createPortal } from 'react-dom'
-@@ -1847,12 +1848,12 @@ function EditorSession({
+@@ -1852,12 +1853,12 @@ function EditorSession({
      const onKeyDown = (event: KeyboardEvent) => {
        if (event.key === 'Escape') setLightboxSrc(null)
      }
@@ -544,7 +544,7 @@ index 6cdf94c..fbe27c2 100644
    }, [onPick, onCancel])
  
 diff --git a/src/extensions/mention.tsx b/src/extensions/mention.tsx
-index ef054a1..ec7bf4f 100644
+index 1027e1c..e206c0c 100644
 --- a/src/extensions/mention.tsx
 +++ b/src/extensions/mention.tsx
 @@ -1,3 +1,4 @@
@@ -553,7 +553,7 @@ index ef054a1..ec7bf4f 100644
  import { ReactRenderer } from '@tiptap/react'
  import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 diff --git a/src/lib/api.ts b/src/lib/api.ts
-index c52b7d9..9e7fcaa 100644
+index 4fdd045..cd4b541 100644
 --- a/src/lib/api.ts
 +++ b/src/lib/api.ts
 @@ -1,3 +1,4 @@

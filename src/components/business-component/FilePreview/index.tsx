@@ -867,10 +867,9 @@ const FilePreviewContent: React.FC<
         const { loadFilePreviewBuffer } = await import(
           '@/services/filePreview'
         );
-        // 用户主动下载原件不受预览预算限制；受保护 URL 仍经过业务鉴权。
+        // 受保护 URL 仍经过业务鉴权。
         downloadSource = await loadFilePreviewBuffer(downloadSource, {
           signal: controller.signal,
-          maxBytes: Number.MAX_SAFE_INTEGER,
         });
         if (controller.signal.aborted) return;
         originalPptxRef.current = { src, buffer: downloadSource };
@@ -1197,8 +1196,6 @@ const FilePreviewContent: React.FC<
           previewSrc = await loadFilePreviewBuffer(src, {
             signal: controller.signal,
             refresh: options.refreshPptx || refreshKey !== undefined,
-            // 本机授权沿用已有容量保护，其余来源保留原 PDF 插件的容量口径。
-            ...(localPreview ? {} : { maxBytes: Number.MAX_SAFE_INTEGER }),
           });
           if (!isCurrentRequest() || controller.signal.aborted) return;
           const container = containerRef.current;

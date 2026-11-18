@@ -25,19 +25,28 @@ run() {
   "$@"
 }
 
-# git 命令包装：index.lock 瞬时竞态（并行 git 进程）自动清锁重试一次（2026-09-29 实证故障类）
+# 只对 Git 明确报告的索引锁冲突有限重试；锁可能仍被其它进程使用，不能直接删除。
 rgit() {
-  if run git "$@"; then return 0; fi
-  local lock
-  lock="$(git rev-parse --git-dir 2>/dev/null)/index.lock"
-  if [ -f "$lock" ]; then
-    echo "    ⚠️ 检测到 index.lock 竞态残留，清锁后重试一次" >&2
-    rm -f "$lock"
-    sleep 2
-    run git "$@"
-  else
-    return 1
-  fi
+  if [ "${DRY_RUN:-0}" = "1" ]; then run git "$@"; return; fi
+  local error_file status attempt=0
+  error_file="$(mktemp "${TMPDIR:-/tmp}/nuwax-git.XXXXXX")" || return 1
+  while :; do
+    if LC_ALL=C run git "$@" 2>"$error_file"; then
+      cat "$error_file" >&2
+      rm -f "$error_file"
+      return 0
+    else
+      status=$?
+    fi
+    cat "$error_file" >&2
+    if [ "$attempt" -ge 5 ] || ! grep -Eq 'Unable to create .*/index\.lock.*File exists' "$error_file"; then
+      rm -f "$error_file"
+      return "$status"
+    fi
+    attempt=$((attempt + 1))
+    echo "    ⚠️ Git 索引正被其它进程使用，${attempt}s 后重试（${attempt}/5）；保留 index.lock" >&2
+    sleep "$attempt"
+  done
 }
 
 # 网络抖动自愈：网络类 git 命令失败时退避重试（SSL 瞬断/fetch 中断按次消化，不拖垮全链）

@@ -166,7 +166,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         | CardArgsBindConfigInfo[]
         | InvokeTypeEnum
         | DefaultSelectedEnum
-        | OutputDirectlyEnum;
+        | OutputDirectlyEnum
+        | string;
     };
     exceptionOut?: DefaultSelectedEnum;
     fallbackMsg?: string;
@@ -312,6 +313,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
             // 默认别名
             defaultAlias={componentInfo?.bindConfig?.alias}
+            // 默认额外提示词
+            defaultExtendPrompt={componentInfo?.bindConfig?.extendPrompt}
             // 是否为技能组件
             isSkill={
               currentComponentInfo?.type === AgentComponentTypeEnum.Skill

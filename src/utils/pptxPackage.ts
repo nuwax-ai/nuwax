@@ -17,15 +17,11 @@ export class PptxPackageError extends Error {
 }
 
 export interface PptxPackageLimits {
-  maxCompressedBytes: number;
-  maxUncompressedBytes: number;
   maxEntries: number;
 }
 
 export const DEFAULT_PPTX_PACKAGE_LIMITS: Readonly<PptxPackageLimits> =
   Object.freeze({
-    maxCompressedBytes: 50 * 1024 * 1024,
-    maxUncompressedBytes: 200 * 1024 * 1024,
     maxEntries: 10_000,
   });
 
@@ -166,9 +162,6 @@ function inspectZip(
   ) {
     throw new PptxPackageError('legacy', '旧版 PPT 需要先转换为 PPTX');
   }
-  if (buffer.byteLength > limits.maxCompressedBytes) {
-    throw new PptxPackageError('tooLarge', 'PPTX 文件超过压缩大小预算');
-  }
   const view = new DataView(buffer);
   if (
     bytes.length < 4 ||
@@ -246,7 +239,6 @@ function inspectZip(
   const entries: ZipEntryInfo[] = [];
   const paths = new Set<string>();
   let cursor = directoryOffset;
-  let totalSize = 0;
   while (cursor < endOffset) {
     if (
       cursor + 46 > endOffset ||
@@ -311,10 +303,6 @@ function inspectZip(
     }
     if (paths.has(path)) damaged(`ZIP 存在重复条目：${path}`);
     paths.add(path);
-    totalSize += uncompressedSize;
-    if (totalSize > limits.maxUncompressedBytes) {
-      throw new PptxPackageError('tooLarge', 'PPTX 总解压大小超过预算');
-    }
     if (
       localOffset + 30 > directoryOffset ||
       view.getUint32(localOffset, true) !== 0x04034b50
@@ -461,7 +449,6 @@ function parseXml(bytes: Uint8Array, path: string): Document {
 function readEntry(
   entry: JSZip.JSZipObject,
   info: ZipEntryInfo,
-  remainingBudget: number,
   retainBytes: boolean,
   signal?: AbortSignal,
 ): Promise<{ bytes: Uint8Array; size: number }> {
@@ -495,9 +482,7 @@ function readEntry(
         if (settled) return;
         size += chunk.byteLength;
         crc = updateCrc32(crc, chunk);
-        if (size > remainingBudget) {
-          fail(new PptxPackageError('tooLarge', 'PPTX 实际解压大小超过预算'));
-        } else if (size > info.uncompressedSize) {
+        if (size > info.uncompressedSize) {
           fail(
             new PptxPackageError(
               'damaged',
@@ -654,7 +639,6 @@ export async function preparePptxForPreview(
     unsupported('ZIP 包不是 PPTX 文件');
   }
   const documents = new Map<string, Document>();
-  let actualTotal = 0;
   for (const info of entries) {
     checkAbort(signal);
     if (info.directory) continue;
@@ -663,15 +647,8 @@ export async function preparePptxForPreview(
       damaged(`ZIP 条目名称无法匹配：${info.path}`);
     const isXml = info.path.endsWith('.xml') || info.path.endsWith('.rels');
     checkAbort(signal);
-    const result = await readEntry(
-      entry,
-      info,
-      limits.maxUncompressedBytes - actualTotal,
-      isXml,
-      signal,
-    );
+    const result = await readEntry(entry, info, isXml, signal);
     checkAbort(signal);
-    actualTotal += result.size;
     if (isXml) documents.set(info.path, parseXml(result.bytes, info.path));
   }
 
@@ -820,11 +797,5 @@ export async function preparePptxForPreview(
   );
   checkAbort(signal);
   const repairedBuffer = restoreZipComment(generatedBuffer, inspection.comment);
-  if (repairedBuffer.byteLength > limits.maxCompressedBytes) {
-    throw new PptxPackageError(
-      'tooLarge',
-      '修复后的 PPTX 文件超过压缩大小预算',
-    );
-  }
   return { buffer: repairedBuffer, slidePaths, repairedParts };
 }

@@ -141,21 +141,20 @@ describe('文件预览内容读取', () => {
     },
   );
 
-  it('Content-Length 超限时取消响应且不开始读流', async () => {
+  it('Content-Length 很大时仍完整读取', async () => {
     const { response, body, reader } = streamResponse([[1, 2]], '7');
     mocks.fetch.mockResolvedValue(response);
 
-    await expect(
-      loadFilePreviewBuffer('/api/f/preview.pptx', { maxBytes: 6 }),
-    ).rejects.toMatchObject({ code: 'tooLarge' });
+    const buffer = await loadFilePreviewBuffer('/api/f/preview.pptx');
 
-    expect(body.cancel).toHaveBeenCalledOnce();
-    expect(body.getReader).not.toHaveBeenCalled();
-    expect(reader.read).not.toHaveBeenCalled();
+    expect(Array.from(new Uint8Array(buffer))).toEqual([1, 2]);
+    expect(body.cancel).not.toHaveBeenCalled();
+    expect(body.getReader).toHaveBeenCalledOnce();
+    expect(reader.cancel).not.toHaveBeenCalled();
   });
 
   it.each([undefined, '2', 'invalid'])(
-    '声明长度 %s 时仍累计实际流大小',
+    '声明长度 %s 时仍读完实际流',
     async (contentLength) => {
       const { response, reader } = streamResponse(
         [[1, 2, 3, 4], [5, 6, 7], [8]],
@@ -163,52 +162,48 @@ describe('文件预览内容读取', () => {
       );
       mocks.fetch.mockResolvedValue(response);
 
-      await expect(
-        loadFilePreviewBuffer('/api/f/preview.pptx', { maxBytes: 6 }),
-      ).rejects.toMatchObject({ code: 'tooLarge' });
+      const buffer = await loadFilePreviewBuffer('/api/f/preview.pptx');
 
-      expect(reader.cancel).toHaveBeenCalledOnce();
-      expect(reader.read).toHaveBeenCalledTimes(2);
+      expect(Array.from(new Uint8Array(buffer))).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8,
+      ]);
+      expect(reader.cancel).not.toHaveBeenCalled();
+      expect(reader.read).toHaveBeenCalledTimes(4);
       expect(reader.releaseLock).toHaveBeenCalledOnce();
     },
   );
 
-  it('流大小刚好等于限额时完整返回并释放读取锁', async () => {
+  it('流读取完成后释放读取锁', async () => {
     const { response, reader } = streamResponse([[1, 2], [3]], '3');
     mocks.fetch.mockResolvedValue(response);
 
-    const buffer = await loadFilePreviewBuffer('/api/f/preview.pptx', {
-      maxBytes: 3,
-    });
+    const buffer = await loadFilePreviewBuffer('/api/f/preview.pptx');
 
     expect(Array.from(new Uint8Array(buffer))).toEqual([1, 2, 3]);
     expect(reader.cancel).not.toHaveBeenCalled();
     expect(reader.releaseLock).toHaveBeenCalledOnce();
   });
 
-  it('无响应流时仍检查 arrayBuffer 的实际大小', async () => {
+  it('无响应流时返回 arrayBuffer 的全部内容', async () => {
     const { response, arrayBuffer } = bufferResponse([1, 2, 3]);
     mocks.fetch.mockResolvedValue(response);
 
-    await expect(
-      loadFilePreviewBuffer('/api/f/preview.pptx', { maxBytes: 2 }),
-    ).rejects.toMatchObject({ code: 'tooLarge' });
+    const buffer = await loadFilePreviewBuffer('/api/f/preview.pptx');
+
+    expect(Array.from(new Uint8Array(buffer))).toEqual([1, 2, 3]);
     expect(arrayBuffer).toHaveBeenCalledOnce();
   });
 
-  it('ArrayBuffer 在限额内原样返回且不请求业务鉴权', async () => {
+  it('ArrayBuffer 原样返回且不请求业务鉴权', async () => {
     const buffer = new Uint8Array([1, 2]).buffer;
-    await expect(loadFilePreviewBuffer(buffer, { maxBytes: 2 })).resolves.toBe(
-      buffer,
-    );
+    await expect(loadFilePreviewBuffer(buffer)).resolves.toBe(buffer);
     expect(mocks.fetch).not.toHaveBeenCalled();
     expect(mocks.getBusinessFileRequestAuth).not.toHaveBeenCalled();
   });
 
-  it('默认限额是 50 MiB', async () => {
-    await expect(
-      loadFilePreviewBuffer(new ArrayBuffer(50 * 1024 * 1024 + 1)),
-    ).rejects.toMatchObject({ code: 'tooLarge' });
+  it('超过 50 MiB 仍完整返回', async () => {
+    const source = new ArrayBuffer(50 * 1024 * 1024 + 1);
+    await expect(loadFilePreviewBuffer(source)).resolves.toBe(source);
   });
 
   it.each(['Blob', 'File'])(
@@ -219,7 +214,7 @@ describe('文件预览内容读取', () => {
         kind === 'File' ? new File([bytes], 'preview.pptx') : new Blob([bytes]);
       Object.defineProperty(source, 'arrayBuffer', { value: undefined });
 
-      const buffer = await loadFilePreviewBuffer(source, { maxBytes: 3 });
+      const buffer = await loadFilePreviewBuffer(source);
 
       expect(Array.from(new Uint8Array(buffer))).toEqual([1, 2, 3]);
       expect(mocks.fetch).not.toHaveBeenCalled();
@@ -227,30 +222,25 @@ describe('文件预览内容读取', () => {
     },
   );
 
-  it('Blob 优先使用原生 arrayBuffer 并检查返回内容大小', async () => {
+  it('Blob 优先使用原生 arrayBuffer 并返回全部内容', async () => {
     const source = new Blob([new Uint8Array([1])]);
-    const arrayBuffer = vi
-      .fn()
-      .mockResolvedValue(new Uint8Array([1, 2]).buffer);
+    const bytes = new Uint8Array([1, 2]).buffer;
+    const arrayBuffer = vi.fn().mockResolvedValue(bytes);
     Object.defineProperty(source, 'arrayBuffer', { value: arrayBuffer });
 
-    await expect(
-      loadFilePreviewBuffer(source, { maxBytes: 1 }),
-    ).rejects.toMatchObject({ code: 'tooLarge' });
+    await expect(loadFilePreviewBuffer(source)).resolves.toBe(bytes);
     expect(arrayBuffer).toHaveBeenCalledOnce();
   });
 
-  it.each(['Blob', 'File'])('%s size 超限时不开始读取', async (kind) => {
+  it.each(['Blob', 'File'])('%s 不因声明体积跳过读取', async (kind) => {
     const bytes = new Uint8Array([1, 2, 3]);
     const source =
       kind === 'File' ? new File([bytes], 'preview.pptx') : new Blob([bytes]);
-    const arrayBuffer = vi.fn();
+    const arrayBuffer = vi.fn().mockResolvedValue(bytes.buffer);
     Object.defineProperty(source, 'arrayBuffer', { value: arrayBuffer });
 
-    await expect(
-      loadFilePreviewBuffer(source, { maxBytes: 2 }),
-    ).rejects.toMatchObject({ code: 'tooLarge' });
-    expect(arrayBuffer).not.toHaveBeenCalled();
+    await expect(loadFilePreviewBuffer(source)).resolves.toBe(bytes.buffer);
+    expect(arrayBuffer).toHaveBeenCalledOnce();
   });
 
   it.each(['URL', 'Blob', 'ArrayBuffer'])(

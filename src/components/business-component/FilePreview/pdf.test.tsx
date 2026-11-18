@@ -150,7 +150,6 @@ describe('FilePreview PDF 首次打开与恢复', () => {
     expect(mocks.load).toHaveBeenCalledWith('/old-report.pdf', {
       signal: expect.any(AbortSignal),
       refresh: false,
-      maxBytes: Number.MAX_SAFE_INTEGER,
     });
     expect(mocks.init).toHaveBeenCalledTimes(1);
     expect(mocks.init.mock.calls[0][1].width).toBe(800);
@@ -252,22 +251,17 @@ describe('FilePreview PDF 首次打开与恢复', () => {
     { name: '远程 URL', source: 'https://files.example.com/existing.pdf' },
     { name: 'File', source: new File([buffer], 'existing.pdf') },
     { name: 'ArrayBuffer', source: buffer },
-  ])(
-    '$name PDF 保留原容量口径，不新增读取服务的 50MiB 上限',
-    async ({ source }) => {
-      render(<FilePreview src={source} fileType="pdf" />);
-      await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+  ])('$name PDF 读取不带体积上限', async ({ source }) => {
+    render(<FilePreview src={source} fileType="pdf" />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
 
-      // 只检查选项，小 fixture 即可证明没有给原支持的来源增加默认上限。
-      expect(mocks.load).toHaveBeenCalledWith(source, {
-        signal: expect.any(AbortSignal),
-        refresh: false,
-        maxBytes: Number.MAX_SAFE_INTEGER,
-      });
-    },
-  );
+    expect(mocks.load).toHaveBeenCalledWith(source, {
+      signal: expect.any(AbortSignal),
+      refresh: false,
+    });
+  });
 
-  it('本机授权 PDF 保留原读取服务的容量保护', async () => {
+  it('本机授权 PDF 按授权地址读取，不附加体积上限', async () => {
     const grant = {
       url: 'nuwax-local://grant/existing.pdf',
       baseUrl: 'nuwax-local://grant/',

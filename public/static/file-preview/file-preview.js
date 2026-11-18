@@ -95,7 +95,7 @@ function pptxErrorMessage(error) {
     }
 }
 
-async function readPptxBuffer(url, request, maxBytes) {
+async function readPptxBuffer(url, request) {
     // 同源首跳可用 ticket cookie，重定向到对象存储后不发送跨源凭据。
     const response = await fetch(url, {
         signal: request.controller.signal,
@@ -104,15 +104,9 @@ async function readPptxBuffer(url, request, maxBytes) {
     });
     assertCurrentPreview(request);
     if (!response.ok) throw new Error(`File download failed: ${response.status}`);
-    const tooLarge = () => Object.assign(new Error('Presentation exceeds the preview size limit'), { code: 'tooLarge' });
-    if (Number(response.headers.get('Content-Length')) > maxBytes) {
-        await response.body?.cancel();
-        throw tooLarge();
-    }
     if (!response.body || !response.body.getReader) {
         const buffer = await response.arrayBuffer();
         assertCurrentPreview(request);
-        if (buffer.byteLength > maxBytes) throw tooLarge();
         return buffer;
     }
     const reader = response.body.getReader();
@@ -126,10 +120,6 @@ async function readPptxBuffer(url, request, maxBytes) {
             assertCurrentPreview(request);
             if (done) break;
             size += value.byteLength;
-            if (size > maxBytes) {
-                await reader.cancel();
-                throw tooLarge();
-            }
             chunks.push(value);
         }
         const buffer = new Uint8Array(size);
@@ -235,7 +225,7 @@ async function renderPptx(url, container, request) {
         assertCurrentPreview(request);
         runtime = window.NuwaxPptxPreview;
         if (!runtime) throw new Error('Failed to load PPTX preview library');
-        session.originalBuffer = await readPptxBuffer(url, request, runtime.DEFAULT_PPTX_PACKAGE_LIMITS.maxCompressedBytes);
+        session.originalBuffer = await readPptxBuffer(url, request);
         prepared = await runtime.preparePptxForPreview(session.originalBuffer, { signal: request.controller.signal });
         assertCurrentPreview(request);
         await render(false);

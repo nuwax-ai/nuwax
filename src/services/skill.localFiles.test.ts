@@ -74,7 +74,7 @@ describe('local text preview fetch', () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
     expect(mocks.auth).not.toHaveBeenCalled();
   });
-  it('preserves text size budgets and closes an oversized body', async () => {
+  it('reads text even when the declared size is large', async () => {
     mocks.fetch.mockResolvedValue(
       new Response('huge', {
         headers: { 'content-length': String(60 * 1024 * 1024) },
@@ -82,7 +82,7 @@ describe('local text preview fetch', () => {
     );
     await expect(
       fetchContentFromUrl('/api/computer/static/7/big.txt'),
-    ).rejects.toMatchObject({ name: 'PreviewFileTooLargeError' });
+    ).resolves.toBe('huge');
     expect(mocks.release).toHaveBeenCalledOnce();
   });
   it('releases on missing files and on network failure', async () => {

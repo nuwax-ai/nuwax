@@ -513,7 +513,7 @@ export function useFileTreePreviewView(
     ) => {
       const epoch = saveEpoch.current;
       try {
-        // 获取文件内容。体积头大于 50MB 时不读正文
+        // 获取文件内容。预览不按体积拦截。
         const fileContent = await fetchContentFromUrl(fileProxyUrl, localFile);
         if (saveEpoch.current !== epoch) {
           if (rejectLocalFailure) throw new LocalFileAccessError('expired');
