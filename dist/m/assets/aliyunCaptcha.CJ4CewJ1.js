@@ -1,0 +1,1 @@
+const n="h5_aliyun_captcha_settle";function t(n=null){if("string"==typeof n)return n;if(null==n)return"";const r=n,a=r.captchaVerifyParam;if(null!=a)return"".concat(a);const l=r.data;if(null!=l){const n=t(l);if(n.length>0)return n}const c=r.arg;return null!=c?t(c):""}export{n as H,t as e};

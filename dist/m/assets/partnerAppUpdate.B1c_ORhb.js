@@ -1,0 +1,1 @@
+import{L as t,a$ as n,cf as r}from"./index-CTi3w6pv.js";const s=r;function i(t){const r=(t=>{const n=t.trim();return n.startsWith("v")||n.startsWith("V")?n.substring(1):n})(t);if(0==r.length)return null;n(s,r)}function o(){return t(this,void 0,void 0,(function*(){return Promise.resolve(null)}))}export{o as c,i as r};
