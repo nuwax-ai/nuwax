@@ -16,6 +16,7 @@ import React, {
 import { history } from 'umi';
 import styles from './index.less';
 import { microAppLifecycleQueue } from './lifecycle';
+import { watchMicroAppLoad } from './loadDiagnostics';
 import { microAppHostStore, type MicroAppHostEntry } from './store';
 import useDelegatedScrollbarScrollShow from './useDelegatedScrollbarScrollShow';
 
@@ -41,6 +42,9 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     const config = MICRO_APP_ROUTES.find((item) => item.name === entry.name);
     const container = containerRef.current;
     if (!config || !container) return;
+    const loadLog = watchMicroAppLoad(
+      entry.name === 'nuwax-im-web' ? 'im' : 'repo',
+    );
     let mounted = true;
     let unsubscribeImEvents: (() => void) | undefined;
 
@@ -87,14 +91,17 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     };
 
     const lease = microAppLifecycleQueue.acquire(entry.name, async () => {
+      loadLog.phase('session-sync');
       if (!(await prepareMicroAppAuthSession())) {
         throw new Error('微应用会话同步失败');
       }
       if (!mounted) throw new Error('微应用加载已取消');
+      loadLog.phase('qiankun-import');
       const { loadMicroApp } = await import('qiankun');
       if (!mounted) throw new Error('微应用加载已取消');
       navigationEnabledRef.current = true;
-      return loadMicroApp(
+      loadLog.phase('entry-assets');
+      const handle = loadMicroApp(
         {
           name: entry.name,
           entry: config.entry,
@@ -107,6 +114,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
             ...(entry.name === 'nuwax-im-web' ? { host } : {}),
             onAuthExpired: (target: string) => {
               if (mounted) {
+                loadLog.authExpired();
                 void expireMicroAppSession(target, entry.name).catch((error) =>
                   console.error('[micro-app] 认证跳转失败', error),
                 );
@@ -116,11 +124,14 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
         },
         { sandbox: true },
       );
+      loadLog.trackParcel(() => handle.getStatus());
+      return handle;
     });
     leaseRef.current = lease;
     void lease.ready.then(
       (handle) => {
         if (handle && !lease.isDisposed()) {
+          loadLog.finish('ready');
           if (entry.name === 'nuwax-im-web') {
             unsubscribeImEvents = subscribeImEvents();
           }
@@ -129,6 +140,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
       },
       (error) => {
         if (!lease.isDisposed()) {
+          loadLog.finish('failed');
           console.error('[micro-app] 加载失败', error);
           navigationEnabledRef.current = false;
           setStatus('failed');
@@ -137,6 +149,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     );
     return () => {
       mounted = false;
+      loadLog.dispose();
       navigationEnabledRef.current = false;
       unsubscribeImEvents?.();
       lease.dispose();
