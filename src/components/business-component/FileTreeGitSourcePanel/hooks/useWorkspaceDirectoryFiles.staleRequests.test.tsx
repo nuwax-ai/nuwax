@@ -27,6 +27,64 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+it.each([{ names: ['before.txt'] }, { names: [] }])(
+  '重新启用同一工作区时保留已加载的根目录 $names，并静默更新列表',
+  async ({ names }) => {
+    let finish!: (value: unknown) => void;
+    mocks.list
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: names.map((name) => ({ name, isDir: false })),
+        },
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useWorkspaceDirectoryFiles(7, { enabled }),
+      { initialProps: { enabled: true } },
+    );
+    await waitFor(() => expect(result.current.fileListLoaded).toBe(true));
+
+    rerender({ enabled: false });
+    rerender({ enabled: true });
+
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+    expect(result.current.files.map((file) => file.name)).toEqual(names);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.loadingDirectoryPaths.size).toBe(0);
+    await act(async () => finish(response('after.txt')));
+    expect(result.current.files.map((file) => file.name)).toEqual([
+      'after.txt',
+    ]);
+  },
+);
+
+it('工作区真正切换时清空旧根目录，重新进入首次加载', async () => {
+  let finish!: (value: unknown) => void;
+  mocks.list.mockResolvedValueOnce(response('old.txt')).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { result, rerender } = renderHook(() => useWorkspaceDirectoryFiles(7));
+  await waitFor(() => expect(result.current.fileListLoaded).toBe(true));
+
+  mocks.contextKey = 'host:1:new-context';
+  rerender();
+
+  expect(result.current.files).toEqual([]);
+  expect(result.current.loading).toBe(true);
+  await act(async () => finish(response('new.txt')));
+  expect(result.current.files.map((file) => file.name)).toEqual(['new.txt']);
+});
+
 it('切换会话释放授权后，暂停页面的旧请求失败不再弹 expired', async () => {
   let reject!: (error: unknown) => void;
   mocks.list.mockImplementationOnce(

@@ -82,9 +82,10 @@ export function useWorkspaceDirectoryFiles(
     pendingDirectoryRefreshesRef.current.clear();
     directoryLoadingCountRef.current.clear();
     activeRequestCountRef.current = 0;
+    loadedDirectoryPathsRef.current = new Set();
     setCurrentPath('');
     setFiles([]);
-    setLoadedDirectoryPaths(new Set());
+    setLoadedDirectoryPaths(loadedDirectoryPathsRef.current);
     setLoading(false);
     setFileListLoaded(false);
     setLoadingDirectoryPaths(new Set());
@@ -281,12 +282,12 @@ export function useWorkspaceDirectoryFiles(
 
   /** 首拉只去重；文件变更遇到在途请求时保留一次后续刷新。 */
   const loadDirectoryIfIdle = useCallback(
-    (path: string, refresh = false) => {
+    (path: string, options?: { refresh?: boolean; silent?: boolean }) => {
       if (inflightDirectoryRequestsRef.current.has(path)) {
-        if (refresh) pendingDirectoryRefreshesRef.current.add(path);
+        if (options?.refresh) pendingDirectoryRefreshesRef.current.add(path);
         return;
       }
-      void loadDirectory(path);
+      void loadDirectory(path, options);
     },
     [loadDirectory],
   );
@@ -296,7 +297,10 @@ export function useWorkspaceDirectoryFiles(
   // （openPreviewView → fileTreeRefreshTrigger → refreshAllLoaded）会补拉
   useEffect(() => {
     if (!conversationId || !enabled) return;
-    loadDirectoryIfIdle('');
+    // 切回同一工作区时继续展示已加载的目录，空目录也已完成首次加载。
+    loadDirectoryIfIdle('', {
+      silent: loadedDirectoryPathsRef.current.has(''),
+    });
   }, [conversationId, enabled, loadDirectoryIfIdle]);
 
   /**
@@ -311,7 +315,7 @@ export function useWorkspaceDirectoryFiles(
       // 首次展开尚未返回的目录也可能读到了变更前的快照。
       ...inflightDirectoryRequestsRef.current.keys(),
     ]);
-    paths.forEach((path) => loadDirectoryIfIdle(path, true));
+    paths.forEach((path) => loadDirectoryIfIdle(path, { refresh: true }));
   }, [loadDirectoryIfIdle]);
 
   const navigate = useCallback(
