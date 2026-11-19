@@ -57,6 +57,7 @@ import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAli
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
+import { UserService } from '@/services/userService';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -492,7 +493,12 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     usePageModel('chat');
 
   const { isMobile } = useModel('layout');
-  const accountId = useModel('userInfo')?.userInfo?.id;
+  // 刷新时启动流程已读取账号，用户模型可能尚未同步。
+  const accountId: number | undefined =
+    useModel('userInfo')?.userInfo?.id ??
+    UserService.getUserInfoFromStorage()?.id;
+  const accountIdRef = useRef(accountId);
+  accountIdRef.current = accountId;
 
   // 会话记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -555,15 +561,23 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   });
   runtimeLineRef.current = runtimeLine;
 
-  const taskScopeFor = (info?: ConversationInfo | null) =>
+  const taskScopeFor = (
+    info: ConversationInfo | null | undefined,
+    scopeAccountId: typeof accountId,
+  ) =>
     info?.id === id
-      ? conversationTaskKey(id, accountId, info.tenantId, info.agent?.spaceId)
+      ? conversationTaskKey(
+          id,
+          scopeAccountId,
+          info.tenantId,
+          info.agent?.spaceId,
+        )
       : undefined;
   const runtimeInfo = runtimeLine?.conversationProps.conversationInfo as
     | ConversationInfo
     | undefined;
   const taskInfo = runtimeInfo?.id === id ? runtimeInfo : conversationInfo;
-  const taskScope = taskScopeFor(taskInfo);
+  const taskScope = taskScopeFor(taskInfo, accountId);
   const { state: taskFileTree, update: updateTaskFileTree } =
     useTaskFileTreeState(taskScope);
 
@@ -1044,20 +1058,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         }
         // 会话消息列表
         const list = data?.messageList || [];
-        // 自动预览文件
-        // 重建会话优先恢复用户正在读的文件，不能被最后一张任务卡覆盖。
+        // 历史产物只在没有视图偏好时自动打开，文件探测回来后再检查一次。
+        const shouldAutoPreview = () =>
+          !cancelled &&
+          readTaskFileTree(taskScopeFor(data, accountIdRef.current)).view ===
+            undefined;
         if (
-          readTaskFileTree(taskScopeFor(data)).view === undefined &&
+          shouldAutoPreview() &&
           !conversationPageCacheManager.getFilePreviewState(pageCacheKey)
             .selectedFileId
         ) {
-          handleAutoPreviewLastFile(
-            list,
-            id,
-            () =>
-              !cancelled &&
-              readTaskFileTree(taskScopeFor(data)).view === undefined,
-          );
+          handleAutoPreviewLastFile(list, id, shouldAutoPreview);
         }
 
         const len = list?.length || 0;
