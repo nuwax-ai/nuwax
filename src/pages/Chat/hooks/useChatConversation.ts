@@ -21,6 +21,7 @@ export interface UseChatConversationProps {
   id: number;
   agentId: number;
   isAppSidebarMode: boolean;
+  preservePreviousConversation?: boolean;
   history: any;
   form: FormInstance;
   isChatInputDisabled: boolean;
@@ -57,6 +58,7 @@ export const useChatConversation = ({
   id,
   agentId,
   isAppSidebarMode,
+  preservePreviousConversation = false,
   history,
   form,
   isChatInputDisabled,
@@ -81,21 +83,25 @@ export const useChatConversation = ({
   selectedComponentList,
   selectedModelId,
 }: UseChatConversationProps) => {
-  // 清空会话记录并创建新会话
+  // 创建新会话并切换过去
   const handleClear = async () => {
     setClearLoading(true);
-    handleClearSideEffect();
-    setIsMoreMessage(false);
-    setMessageList([]);
-    clearFilePanelInfo();
-    form.resetFields();
-    setVariableParams(null);
-    setSelectedComputerId(''); // 显式重置选中电脑ID
-    setIsSelectionLocked(false); // 显式解除锁定
-    setHasUserSentMessage(false); // 重置发送状态
     setIsLoadingOtherInterface(true);
 
     try {
+      // 常驻页的新会话使用独立实例，原会话的消息和分页留给侧栏回访。
+      if (!preservePreviousConversation) {
+        handleClearSideEffect();
+        setIsMoreMessage(false);
+        setMessageList([]);
+        clearFilePanelInfo();
+        form.resetFields();
+        setVariableParams(null);
+        setSelectedComputerId('');
+        setIsSelectionLocked(false);
+        setHasUserSentMessage(false);
+      }
+
       const res = await apiAgentConversationCreate({
         agentId,
         devMode: false,
@@ -105,8 +111,6 @@ export const useChatConversation = ({
       });
 
       if (res.code === SUCCESS_CODE && res.data) {
-        // 注意：这里不重置 clearLoading，让它在外部 useEffect([id]) 中重置
-        setIsLoadingOtherInterface(false);
         const { id: newConversationId, agentId: newAgentId } = res.data;
         emitConversationChanged({
           operation: 'created',
@@ -150,6 +154,7 @@ export const useChatConversation = ({
         (typeof error === 'string' ? error : null) ||
         t('PC.Pages.Chat.clearAndCreateFailed');
       message.error(errorMsg);
+    } finally {
       setClearLoading(false);
       setIsLoadingOtherInterface(false);
     }
