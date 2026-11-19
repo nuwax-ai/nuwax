@@ -42,6 +42,7 @@ export function useWorkspaceFileTreeSession(options: {
   refreshEnabled?: boolean;
   taskAgentSelectedFileId?: string;
   taskAgentSelectTrigger?: number | string;
+  onDirectoryLoaded?: (path: string, directories: Set<string>) => void;
 }) {
   const {
     conversationId,
@@ -51,10 +52,12 @@ export function useWorkspaceFileTreeSession(options: {
     refreshEnabled = true,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    onDirectoryLoaded,
   } = options;
 
   const directory = useWorkspaceDirectoryFiles(conversationId, {
     enabled: active && enabled,
+    onDirectoryLoaded,
   });
   const ownerRef = useRef({ conversationId, active, refreshEnabled });
   ownerRef.current = { conversationId, active, refreshEnabled };

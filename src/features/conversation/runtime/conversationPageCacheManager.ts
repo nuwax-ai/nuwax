@@ -2,6 +2,7 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { TaskStatus } from '@/types/enums/agent';
 import type { ConversationFilePreviewState } from '@/types/interfaces/fileTree';
+import { clearTaskRecords } from '@/utils/conversationTaskStorage';
 import eventBus from '@/utils/eventBus';
 import {
   DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
@@ -472,6 +473,7 @@ class ConversationPageCacheManager {
 
   invalidateConversation(conversationId: number | string, reason = 'manual') {
     const normalizedId = String(conversationId);
+    clearTaskRecords(normalizedId);
     for (const key of this.filePreviewStates.keys()) {
       if (key.endsWith(`:${normalizedId}`)) this.filePreviewStates.delete(key);
     }

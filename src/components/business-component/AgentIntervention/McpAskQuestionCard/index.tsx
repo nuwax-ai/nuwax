@@ -1,9 +1,11 @@
+import { TaskUiStateContext } from '@/features/conversation/react/taskUiStateContext';
 import { t } from '@/services/i18nRuntime';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Button, Form, Steps, Tag, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,6 +17,11 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+import {
+  mcpAskDraftKey,
+  readMcpAskDraft,
+  saveMcpAskDraft,
+} from '../utils/mcpAskDraft';
 import {
   extractMcpAskFormAttachments,
   hydrateMcpAskFormValues,
@@ -50,6 +57,15 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const initializedFormKeyRef = useRef<string | undefined>(undefined);
   const { input, toolCallId } = interaction;
   const ui = input.ui;
+  const draftScope = useContext(TaskUiStateContext)?.askDraft;
+  const draftKey =
+    draftScope &&
+    !draftScope.expired &&
+    onRespond &&
+    (interaction.responseStatus === undefined ||
+      interaction.responseStatus === 'pending')
+      ? mcpAskDraftKey(draftScope.key, interaction)
+      : undefined;
   const cardRef = useRef<HTMLDivElement>(null);
 
   const submitLock = useRef(false);
@@ -123,13 +139,13 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   }, [measureDescOverflow]);
 
   useEffect(() => {
-    setCurrentStep(0);
-  }, [input.requestId]);
-
-  useEffect(() => {
     // 会话补偿刷新会用同一条 Ask 的服务端快照替换 interaction。
     // 该快照只包含 schema 默认值，不能覆盖用户尚未提交的本地编辑。
-    const initializationKey = `${input.requestId}:${input.revision ?? ''}`;
+    const initializationKey = JSON.stringify([
+      draftScope?.key,
+      input.requestId,
+      input.revision,
+    ]);
     if (initializedFormKeyRef.current === initializationKey) {
       return;
     }
@@ -141,15 +157,31 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           : acc,
       {},
     );
-    const initial =
-      Object.keys(fieldInitials).length > 0
-        ? { ...fieldInitials, ...(interaction.formData ?? {}) }
-        : interaction.formData;
-    if (initial) {
-      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui) as any);
-    }
+    if (initializedFormKeyRef.current) form.resetFields();
+    const draft = draftKey ? readMcpAskDraft(draftKey, ui) : undefined;
+    const initial = {
+      ...fieldInitials,
+      ...interaction.formData,
+      ...draft?.fields,
+    };
+    form.setFieldsValue(
+      hydrateMcpAskFormValues(initial, ui) as Parameters<
+        typeof form.setFieldsValue
+      >[0],
+    );
+    const restoredStep = steps.findIndex((step) => step.id === draft?.stepId);
+    setCurrentStep(Math.max(restoredStep, 0));
     initializedFormKeyRef.current = initializationKey;
-  }, [form, ui.fields, interaction.formData, input.requestId, input.revision]);
+  }, [
+    form,
+    ui,
+    steps,
+    draftKey,
+    draftScope?.key,
+    interaction.formData,
+    input.requestId,
+    input.revision,
+  ]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],
@@ -176,10 +208,15 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     await form.validateFields(step.fields);
   };
 
+  const changeStep = (next: number) => {
+    setCurrentStep(next);
+    if (draftKey) saveMcpAskDraft(draftKey, ui, {}, steps[next]?.id);
+  };
+
   const handleNext = async () => {
     try {
       await validateStepFields(currentStep);
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+      changeStep(Math.min(currentStep + 1, steps.length - 1));
     } catch (errorInfo: any) {
       if (errorInfo?.errorFields?.length > 0) {
         form.scrollToField(errorInfo.errorFields[0].name, {
@@ -191,7 +228,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handlePrev = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    changeStep(Math.max(currentStep - 1, 0));
   };
 
   const handleSubmit = async () => {
@@ -413,6 +450,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
       <div className={styles.formSurface}>
         <Form
           form={form}
+          onValuesChange={(changed) => {
+            if (draftKey)
+              saveMcpAskDraft(draftKey, ui, changed, activeStep?.id);
+          }}
           layout="vertical"
           className={styles.form}
           disabled={disabled}

@@ -59,6 +59,8 @@ export interface FormField {
   allowCustom?: boolean;
   otherValue?: string;
   otherField?: string;
+  /** 凭据等敏感字段只留在当前表单。 */
+  persistDraft?: boolean;
 }
 
 /** v2 交互 UI 定义;数组顺序即渲染顺序,不再有 schema/uiSchema/ui:order */
@@ -74,6 +76,8 @@ export interface InteractionUiSchema {
   submitLabel?: string;
   cancelLabel?: string;
   allowSkip?: boolean;
+  /** 整张表单含敏感数据时关闭本机草稿。 */
+  persistDraft?: boolean;
   skipLabel?: string;
   fallback?: {
     text: string;

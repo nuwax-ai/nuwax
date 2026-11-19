@@ -10,15 +10,19 @@
  * - 资料库 / Page 预览下发给 LeftContent，在顶部图标下方展开
  * - new_chat 时默认选中 DefaultSelected=Yes 的 manualComponents
  */
+import { USER_INFO } from '@/constants/home.constants';
 import { conversationPageCacheManager } from '@/features/conversation/react/useConversationPageCache';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
+  MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import { CONVERSATION_RENDERER_EVENT } from '@/utils/conversationRendererPreference';
+import { conversationTaskKey } from '@/utils/conversationTaskStorage';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -357,10 +361,6 @@ vi.mock('@/hooks/useSelectedComponent', () => ({
 vi.mock('@/hooks/useTerminalWsUrl', () => ({
   // 同步真实签名：hook 返回 string（原 { terminalWsUrl, refreshTerminalWsUrl } 为陈旧形状）
   default: () => '',
-}));
-
-vi.mock('./hooks/useAutoPreviewFile', () => ({
-  useAutoPreviewFile: () => ({ handleAutoPreviewLastFile: vi.fn() }),
 }));
 
 vi.mock('./hooks/useChatSandbox', () => ({
@@ -1420,6 +1420,73 @@ describe('ChatCore / ChatPage', () => {
     });
     expect(screen.queryByTestId('resizable-split')).toBeNull();
   });
+
+  it.each([true, false])(
+    '刷新时账号模型尚未初始化，按本机关闭偏好决定是否自动打开历史画作（已关闭：%s）',
+    async (closed) => {
+      const openPreviewView = vi.fn();
+      modelOverrides.current = { openPreviewView };
+      localStorage.setItem(USER_INFO, JSON.stringify({ id: 901 }));
+      if (closed) {
+        localStorage.setItem(
+          `${conversationTaskKey(100, 901, 2, 8)}tree`,
+          JSON.stringify({ view: 'closed' }),
+        );
+      }
+      mockRunAsync.mockResolvedValue({
+        data: {
+          id: 100,
+          tenantId: 2,
+          agent: { spaceId: 8 },
+          messageList: [
+            {
+              messageType: MessageTypeEnum.ASSISTANT,
+              text: '<task-result><file>drawings/painting.png</file></task-result>',
+            },
+          ],
+        },
+      });
+      const fileList = vi.mocked(apiGetStaticFileList);
+      await fileList.withImplementation(
+        async () => ({
+          code: '0000',
+          displayCode: '',
+          message: '',
+          debugInfo: {},
+          success: true,
+          tid: '',
+          data: {
+            files: [
+              {
+                name: 'drawings/painting.png',
+                isDir: false,
+                binary: true,
+                sizeExceeded: false,
+                contents: '',
+                fileProxyUrl: 'https://example.test/painting.png',
+              },
+            ],
+          },
+        }),
+        async () => {
+          await act(async () => {
+            render(<ChatCore id={100} agentId={200} />);
+          });
+        },
+      );
+
+      if (closed) {
+        expect(fileList).not.toHaveBeenCalled();
+        expect(openPreviewView).not.toHaveBeenCalled();
+      } else {
+        expect(fileList).toHaveBeenCalledWith(100, {
+          relativePath: 'drawings',
+          recursive: false,
+        });
+        expect(openPreviewView).toHaveBeenCalledWith(100);
+      }
+    },
+  );
 
   it('A→B→A 时按会话恢复各自工作区视图', async () => {
     const openPreviewView = vi.fn();

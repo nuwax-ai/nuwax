@@ -8,6 +8,7 @@ import {
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { mcpAskResolutionKey } from '@/utils/mcpAskResolution';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
@@ -400,7 +401,7 @@ function shouldBlockLegacyTitleMatch(
   return sortedMessages.some((message) =>
     (message.mcpAskInteractions ?? []).some(
       (item) =>
-        item.input.requestId !== interaction.input.requestId &&
+        mcpAskResolutionKey(item) !== mcpAskResolutionKey(interaction) &&
         getMcpAskResumeTitle(item) === title,
     ),
   );
@@ -416,7 +417,7 @@ function resolveContainingMessageIndex(
   }
   const autoIndex = sortedMessages.findIndex((message) =>
     message.mcpAskInteractions?.some(
-      (item) => item.input.requestId === interaction.input.requestId,
+      (item) => mcpAskResolutionKey(item) === mcpAskResolutionKey(interaction),
     ),
   );
   return autoIndex >= 0 ? autoIndex : undefined;
@@ -465,13 +466,13 @@ function collectSameTitleAskOrdinals(
 ): Array<{
   ordinal: number;
   sequence: number;
-  requestId: string;
+  resolutionKey: string;
   resolved: boolean;
 }> {
   const entries: Array<{
     ordinal: number;
     sequence: number;
-    requestId: string;
+    resolutionKey: string;
     resolved: boolean;
   }> = [];
   let sequence = 0;
@@ -486,7 +487,7 @@ function collectSameTitleAskOrdinals(
       entries.push({
         ordinal,
         sequence: sequence++,
-        requestId: item.input.requestId,
+        resolutionKey: mcpAskResolutionKey(item),
         resolved:
           responseStatus !== 'pending' && responseStatus !== 'submitting',
       });
@@ -542,17 +543,17 @@ function hasOrdinalPairedResumeMessage(
   const asks = collectSameTitleAskOrdinals(sortedMessages, title);
   const resumes = collectSameTitleResumeOrdinals(sortedMessages, title);
   const targetAsk = asks.find(
-    (entry) => entry.requestId === interaction.input.requestId,
+    (entry) => entry.resolutionKey === mcpAskResolutionKey(interaction),
   );
   if (!targetAsk) {
     return false;
   }
 
-  const pairedRequestIds = new Set<string>();
+  const pairedRequests = new Set<string>();
   resumes.forEach((resume) => {
     const candidates = asks.filter(
       (ask) =>
-        !pairedRequestIds.has(ask.requestId) &&
+        !pairedRequests.has(ask.resolutionKey) &&
         (ask.ordinal < resume.ordinal ||
           (ask.ordinal === resume.ordinal && ask.sequence <= resume.sequence)),
     );
@@ -562,10 +563,10 @@ function hasOrdinalPairedResumeMessage(
 
     const resolvedCandidate = candidates.find((ask) => ask.resolved);
     const selectedAsk = resolvedCandidate ?? candidates[candidates.length - 1];
-    pairedRequestIds.add(selectedAsk.requestId);
+    pairedRequests.add(selectedAsk.resolutionKey);
   });
 
-  if (pairedRequestIds.has(targetAsk.requestId)) {
+  if (pairedRequests.has(targetAsk.resolutionKey)) {
     return true;
   }
 
@@ -638,12 +639,30 @@ export function hasMcpAskResumeMessage(
     ? readMessageOrdinal(containingMessage, containingMessageIndex ?? 0)
     : undefined;
 
+  const otherVersions = sortedMessages.flatMap((message, index) =>
+    message.mcpAskInteractions?.some(
+      (item) =>
+        item.input.requestId === interaction.input.requestId &&
+        item.input.revision !== interaction.input.revision,
+    )
+      ? [index]
+      : [],
+  );
+  const nextVersion = otherVersions.find(
+    (index) =>
+      containingMessageIndex !== undefined && index > containingMessageIndex,
+  );
   if (
-    sortedMessages.some((message) =>
-      textContainsMcpAskRequestIdMarker(
-        message.text,
-        interaction.input.requestId,
-      ),
+    sortedMessages.some(
+      (message, index) =>
+        (!otherVersions.length ||
+          (containingMessageIndex !== undefined &&
+            index > containingMessageIndex &&
+            (nextVersion === undefined || index < nextVersion))) &&
+        textContainsMcpAskRequestIdMarker(
+          message.text,
+          interaction.input.requestId,
+        ),
     )
   ) {
     return true;
