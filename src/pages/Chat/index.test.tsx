@@ -33,6 +33,7 @@ const {
   mockUseLocation,
   mockHistory,
   mockRunAsync,
+  mockCreateConversation,
   mockLeftContent,
   mockAgentDetailModal,
   mockResizableSplit,
@@ -58,6 +59,7 @@ const {
   mockUseLocation: vi.fn(),
   mockHistory: { replace: vi.fn(), push: vi.fn(), action: 'POP', location: {} },
   mockRunAsync: vi.fn(),
+  mockCreateConversation: vi.fn(),
   mockLeftContent: vi.fn(),
   mockAgentDetailModal: vi.fn(),
   mockResizableSplit: vi.fn(),
@@ -106,6 +108,11 @@ vi.mock('umi', () => ({
 vi.mock('@/services/i18nRuntime', () => ({
   t: (k: string) => k,
   dict: (k: string) => k,
+}));
+
+vi.mock('@/services/agentConfig', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/agentConfig')>()),
+  apiAgentConversationCreate: mockCreateConversation,
 }));
 
 vi.mock('@/features/client-shell/localFileService', async (importOriginal) => ({
@@ -198,7 +205,7 @@ vi.mock('@/services/skill', () => ({
 }));
 
 vi.mock('./index.less', () => ({
-  default: new Proxy({}, { get: () => 'cls' }),
+  default: new Proxy({}, { get: (_target, key) => String(key) }),
 }));
 
 vi.mock('./components/LeftContent', () => ({
@@ -354,13 +361,6 @@ vi.mock('@/hooks/useSelectedComponent', () => ({
 vi.mock('@/hooks/useTerminalWsUrl', () => ({
   // 同步真实签名：hook 返回 string（原 { terminalWsUrl, refreshTerminalWsUrl } 为陈旧形状）
   default: () => '',
-}));
-
-vi.mock('./hooks/useChatConversation', () => ({
-  useChatConversation: () => ({
-    handleClear: vi.fn(),
-    handleMessageSend: vi.fn(),
-  }),
 }));
 
 vi.mock('./hooks/useChatSandbox', () => ({
@@ -1059,6 +1059,56 @@ describe('ChatCore / ChatPage', () => {
     );
     expect(mockScopedResets).toContain(100);
     expect(mockScopedResets).not.toContain(101);
+  });
+
+  it('刷子创建新会话后，返回常驻原会话可继续查看历史消息', async () => {
+    mockUseRealScope.current = true;
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      params: { id: '100', agentId: '200' },
+    };
+    let completeCreation!: () => void;
+    mockCreateConversation.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeCreation = () =>
+            resolve({ code: '0000', data: { id: 101, agentId: 200 } });
+        }),
+    );
+    const view = render(<CachedChatPage route={route} active />);
+    await waitFor(() =>
+      expect(screen.getByTestId('left-content')).toHaveAttribute(
+        'data-message-text',
+        '内容-100',
+      ),
+    );
+    const onClear = mockLeftContent.mock.lastCall?.[0].chatSessionProps.onClear;
+    let creation!: Promise<void>;
+    act(() => {
+      creation = onClear();
+    });
+    const overlay = () => view.container.querySelector('.chat-loading-overlay');
+    expect(overlay()).toBeVisible();
+    await act(async () => {
+      completeCreation();
+      await creation;
+    });
+    expect(mockHistory.replace).toHaveBeenCalledWith(
+      '/home/chat/101/200',
+      expect.objectContaining({ messageSourceType: 'new_chat' }),
+    );
+    view.rerender(<CachedChatPage route={route} active={false} />);
+    view.rerender(<CachedChatPage route={route} active />);
+    expect(overlay()).toBeNull();
+    expect(screen.getByTestId('left-content')).toHaveAttribute(
+      'data-message-text',
+      '内容-100',
+    );
+    expect(mockScopedLoads).toEqual([100]);
   });
 
   it('A/B 固定各自的 URL 渲染偏好，隐藏期间全局 query 变化不串页', async () => {
