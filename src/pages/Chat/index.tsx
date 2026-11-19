@@ -1040,6 +1040,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     id,
     agentId,
     isAppSidebarMode,
+    preservePreviousConversation: freezeRouteLocation,
     history,
     form,
     isChatInputDisabled,
@@ -1079,8 +1080,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 以及用户手动打开。切换会话由 cleanup 先收起，再由上方按新范围重判。
     setHasUserSentMessage(false);
 
-    // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
-    // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
+    // 路由复用页面实例时，新会话由自己的详情加载状态接管。
     setClearLoading(false);
 
     return () => {
