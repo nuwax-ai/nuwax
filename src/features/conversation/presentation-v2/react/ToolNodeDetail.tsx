@@ -63,7 +63,7 @@ const ResourceLink: React.FC<{
   if (kind === 'file') {
     // 卡片头部：会话沙箱路径做「徽标+文件名」展示，其余（如
     // /home/user/Desktop/x.md）完整地址普通文本色展示。
-    // 本机授权路径可点；远端保留原来的普通文本展示。
+    // 本机授权路径也使用文件类型徽标。
     if (!isConversationSandboxPath(target) && !localFile) {
       return (
         <span className={cx(styles['tool-file-plain'])} title={target}>
@@ -71,16 +71,7 @@ const ResourceLink: React.FC<{
         </span>
       );
     }
-    return (
-      <FileResourceLink
-        target={target}
-        onOpen={
-          onOpenResource
-            ? () => onOpenResource({ kind, target, line })
-            : undefined
-        }
-      />
-    );
+    return <FileResourceLink target={target} />;
   }
   if (onOpenResource) {
     return (
