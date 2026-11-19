@@ -25,6 +25,7 @@ export interface WorkspaceStaticFile extends StaticFileInfo {
 export function useWorkspaceDirectoryFiles(
   conversationId: number | undefined,
   options?: {
+    onDirectoryLoaded?: (path: string, directories: Set<string>) => void;
     /**
      * 首拉门控（「打开文件树面板才拉」口径）：false 时挂载/切会话不主动拉
      * 根层，由面板打开链（openPreviewView → fileTreeRefreshTrigger →
@@ -38,6 +39,8 @@ export function useWorkspaceDirectoryFiles(
   const localContextKey = getLocalFilesContextKey(conversationId);
   const contextEpochRef = useRef(0);
   const enabled = options?.enabled !== false;
+  const onDirectoryLoadedRef = useRef(options?.onDirectoryLoaded);
+  onDirectoryLoadedRef.current = options?.onDirectoryLoaded;
   const [currentPath, setCurrentPath] = useState('');
   const [files, setFiles] = useState<WorkspaceStaticFile[]>([]);
   const [loadedDirectoryPaths, setLoadedDirectoryPaths] = useState<Set<string>>(
@@ -160,6 +163,14 @@ export function useWorkspaceDirectoryFiles(
           dataSourceId: WORKSPACE_SOURCE_ID,
           relativePath: file.name,
         }));
+        const directDirectoryPaths = new Set(
+          directoryFiles
+            .filter((file) => file.isDir)
+            .map((file) => file.name.replace(/^\/+|\/+$/g, '')),
+        );
+        if (Array.isArray(result.data?.files)) {
+          onDirectoryLoadedRef.current?.(requestPath, directDirectoryPaths);
+        }
         // 只替换这一层的直接子项，已加载的其它目录和更深层保留
         setFiles((loadedFiles) =>
           mergeDirectoryLevelFiles(loadedFiles, directoryFiles, requestPath),
@@ -169,11 +180,6 @@ export function useWorkspaceDirectoryFiles(
         }
         setLoadedDirectoryPaths((loadedPaths) => {
           // 本次响应里的直接子目录。更深的已加载目录是否保留，看它的第一段还在不在
-          const directDirectoryPaths = new Set(
-            directoryFiles
-              .filter((file) => file.isDir)
-              .map((file) => file.name.replace(/^\/+|\/+$/g, '')),
-          );
           const next = new Set(
             [...loadedPaths].filter((loadedPath) => {
               // 不在本次目录下面的路径（兄弟目录、其它分支）原样保留

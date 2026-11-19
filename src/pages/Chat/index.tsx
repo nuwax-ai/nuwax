@@ -36,6 +36,11 @@ import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import {
+  TaskUiStateContext,
+  type FileTreePanelTab,
+  type UpdateExpandedFolders,
+} from '@/features/conversation/react/taskUiStateContext';
 import { useConversationFilePreviewState } from '@/features/conversation/react/useConversationFilePreviewState';
 import {
   conversationPageCacheManager,
@@ -44,6 +49,10 @@ import {
 } from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import {
+  readTaskFileTree,
+  useTaskFileTreeState,
+} from '@/features/conversation/react/useTaskFileTreeState';
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
@@ -66,6 +75,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
+import { conversationTaskKey } from '@/utils/conversationTaskStorage';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
 import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
@@ -447,17 +457,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [active, allowAutoScrollRef, messageViewRef]);
 
-  // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
-  const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
-    active,
-    conversationId: id,
-    enabled: active && isFileTreeVisible,
-    fileTreeRefreshTrigger,
-    refreshEnabled: active && isFileTreeVisible,
-    taskAgentSelectedFileId,
-    taskAgentSelectTrigger,
-  });
-
   useConversationChanged((event) => {
     if (
       event.operation !== 'updated' ||
@@ -493,6 +492,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     usePageModel('chat');
 
   const { isMobile } = useModel('layout');
+  const accountId = useModel('userInfo')?.userInfo?.id;
 
   // 会话记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -523,6 +523,50 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     ),
   });
 
+  // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
+  // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      getOpenDesktopSandboxId: () =>
+        getEffectiveSandboxId() ||
+        conversationInfo?.sandboxServerId ||
+        effectiveAgent?.sandboxId,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshSelectedFileContentThrottled,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+  runtimeLineRef.current = runtimeLine;
+
+  const taskScopeFor = (info?: ConversationInfo | null) =>
+    info?.id === id
+      ? conversationTaskKey(id, accountId, info.tenantId, info.agent?.spaceId)
+      : undefined;
+  const runtimeInfo = runtimeLine?.conversationProps.conversationInfo as
+    | ConversationInfo
+    | undefined;
+  const taskInfo = runtimeInfo?.id === id ? runtimeInfo : conversationInfo;
+  const taskScope = taskScopeFor(taskInfo);
+  const { state: taskFileTree, update: updateTaskFileTree } =
+    useTaskFileTreeState(taskScope);
+
   useLocalFilesContext(
     active && id && conversationInfo?.id === id
       ? {
@@ -535,6 +579,75 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         }
       : null,
   );
+
+  // 沙箱和工作区路径是稳定归属，临时本机授权代次不能用于重启恢复。
+  const workspaceSource = taskScope
+    ? JSON.stringify([
+        finalSelectedId,
+        taskInfo?.fileWorkspacePath || '',
+        taskInfo?.devTargetId ?? null,
+      ])
+    : undefined;
+  const expandedFolders = useMemo(
+    () =>
+      new Set(
+        workspaceSource && taskFileTree.source === workspaceSource
+          ? taskFileTree.directories?.map(workspaceNodeId)
+          : [],
+      ),
+    [workspaceSource, taskFileTree.source, taskFileTree.directories],
+  );
+  const handleExpandedFoldersChange = useCallback(
+    (change: UpdateExpandedFolders) => {
+      if (!workspaceSource) return;
+      updateTaskFileTree((current) => {
+        const previous = new Set(
+          current.source === workspaceSource
+            ? current.directories?.map(workspaceNodeId)
+            : [],
+        );
+        const next = change(previous);
+        return next === previous
+          ? current
+          : {
+              ...current,
+              source: workspaceSource,
+              directories: [...next].map(workspaceRelativePath),
+            };
+      });
+    },
+    [updateTaskFileTree, workspaceSource],
+  );
+  const handleDirectoryLoaded = (path: string, directories: Set<string>) => {
+    updateTaskFileTree((current) => {
+      if (
+        !workspaceSource ||
+        current.source !== workspaceSource ||
+        !current.directories?.length
+      ) {
+        return current;
+      }
+      const prefix = path ? `${path}/` : '';
+      const remaining = current.directories.filter((directory) => {
+        if (!directory.startsWith(prefix) || directory === path) return true;
+        const directChild = directory.slice(prefix.length).split('/', 1)[0];
+        return directories.has(`${prefix}${directChild}`);
+      });
+      return remaining.length === current.directories.length
+        ? current
+        : { ...current, directories: remaining };
+    });
+  };
+  const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    active,
+    conversationId: id,
+    enabled: active && isFileTreeVisible,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && isFileTreeVisible,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    onDirectoryLoaded: handleDirectoryLoaded,
+  });
 
   /** 文件树预览区底部终端是否显示 */
   const [terminalConsoleVisible, setTerminalConsoleVisible] =
@@ -556,10 +669,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   >('terminal');
 
   const rememberWorkspaceView = useCallback(
-    (view: ConversationWorkspaceView) => {
+    (view: ConversationWorkspaceView, rememberPreference = true) => {
       conversationPageCacheManager.update(pageCacheKey, { view });
+      if (rememberPreference) {
+        updateTaskFileTree((current) =>
+          current.view === view ? current : { ...current, view },
+        );
+      }
     },
-    [pageCacheKey],
+    [pageCacheKey, updateTaskFileTree],
   );
 
   /**
@@ -800,7 +918,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 打开扩展页面；自动初始化可跳过持久化，用户操作与会话事件默认记录。
   const handleOpenPreview = useCallback(
-    (agent: any, persist = true) => {
+    (agent: any, persist = true, rememberPreference = true) => {
       repoDocPreviewRef.current = null;
       if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
         showPagePreview({
@@ -810,20 +928,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           executeId: '',
         });
         if (persist) {
-          conversationPageCacheManager.update(pageCacheKey, {
-            view: 'pagePreview',
-          });
+          rememberWorkspaceView('pagePreview', rememberPreference);
         }
       } else {
         showPagePreview(null);
         if (persist) {
-          conversationPageCacheManager.update(pageCacheKey, {
-            view: 'closed',
-          });
+          rememberWorkspaceView('closed', rememberPreference);
         }
       }
     },
-    [pageCacheKey, showPagePreview],
+    [rememberWorkspaceView, showPagePreview],
   );
 
   useEffect(() => {
@@ -845,9 +959,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       return;
     }
     const preferredView =
+      taskFileTree.view ??
       conversationPageCacheManager.getPanelPreference(pageCacheKey);
     if (!openFileTreeByDefault && preferredView === undefined) {
-      handleOpenPreview(targetAgent, true);
+      handleOpenPreview(targetAgent, true, false);
     } else if (!openFileTreeByDefault && preferredView === 'pagePreview') {
       handleOpenPreview(targetAgent, false);
     } else {
@@ -857,6 +972,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     agentId,
     id,
     pageCacheKey,
+    taskFileTree.view,
     openFileTreeByDefault,
     defaultAgentDetail,
     conversationInfo?.agent,
@@ -931,10 +1047,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         // 自动预览文件
         // 重建会话优先恢复用户正在读的文件，不能被最后一张任务卡覆盖。
         if (
+          readTaskFileTree(taskScopeFor(data)).view === undefined &&
           !conversationPageCacheManager.getFilePreviewState(pageCacheKey)
             .selectedFileId
         ) {
-          handleAutoPreviewLastFile(list, id);
+          handleAutoPreviewLastFile(
+            list,
+            id,
+            () =>
+              !cancelled &&
+              readTaskFileTree(taskScopeFor(data)).view === undefined,
+          );
         }
 
         const len = list?.length || 0;
@@ -1149,38 +1272,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
-  // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
-  // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
-  const runtimeLine = useConversationRuntimeSession({
-    conversationId: id,
-    messageViewRef,
-    allowAutoScrollRef,
-    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
-    effectsResources: {
-      isAppSidebarMode,
-      runHistory,
-      runHistoryItem,
-      showPagePreview,
-      openDesktopView,
-      hideDesktop: effectiveAgent?.hideDesktop,
-      getOpenDesktopSandboxId: () =>
-        getEffectiveSandboxId() ||
-        conversationInfo?.sandboxServerId ||
-        effectiveAgent?.sandboxId,
-      setCardList,
-      setShowType,
-      refreshFileListThrottled: handleRefreshFileList,
-      refreshSelectedFileContentThrottled,
-      refreshFileListImmediately,
-      refreshGitListRef,
-      openPreviewView,
-      setTaskAgentSelectedFileId,
-      setTaskAgentSelectTrigger,
-      setFileTreeRefreshTrigger,
-    },
-  });
-  runtimeLineRef.current = runtimeLine;
-
   /**
    * 当前会话是否已有有效消息。空列表、或只有一条开场白，都不算。
    * V2 看运行时消息列表；旧线看页面模型。详情未对上当前路由时视为还没有有效消息，
@@ -1278,7 +1369,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     (fileId: string) => {
       setPreviewFileId(fileId);
       filePreviewState.onSelectedFileChange(fileId);
-      if (fileId) rememberWorkspaceView('filePreview');
+      if (fileId) rememberWorkspaceView('filePreview', false);
     },
     [
       setPreviewFileId,
@@ -1288,8 +1379,12 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   );
   const fileView = useFileTreePreviewView({
     active,
-    isFileTreeSidebarVisible: filePreviewState.treeVisible,
-    onFileTreeSidebarVisibleChange: filePreviewState.onTreeVisibleChange,
+    isFileTreeSidebarVisible:
+      taskFileTree.visible ?? filePreviewState.treeVisible,
+    onFileTreeSidebarVisibleChange: (visible) => {
+      filePreviewState.onTreeVisibleChange(visible);
+      updateTaskFileTree((current) => ({ ...current, visible }));
+    },
     getReadingPosition: filePreviewState.getReadingPosition,
     onReadingPositionChange: filePreviewState.onReadingPositionChange,
     initViewFileType: filePreviewState.initial.viewFileType,
@@ -1790,8 +1885,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 隐藏页释放连接，打开意图仍归当前任务；返回时重新恢复。
   useLayoutEffect(() => {
-    if (active) return;
     restoredWorkspaceKeyRef.current = null;
+    if (active) return;
     pendingWorkspaceRestoreRef.current = null;
     setTerminalConsoleVisible(false);
     setHasTerminalConsoleRendered(false);
@@ -1810,13 +1905,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     });
     const deactivate = () =>
       conversationPageCacheManager.deactivate(pageCacheKey);
-    if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
-    restoredWorkspaceKeyRef.current = pageCacheKey;
+    if (accountId && taskInfo?.id !== id) return deactivate;
+    const restoreKey = taskScope ?? pageCacheKey;
+    if (restoredWorkspaceKeyRef.current === restoreKey) return deactivate;
+    restoredWorkspaceKeyRef.current = restoreKey;
+    const preferredView = readTaskFileTree(taskScope).view;
     const targetView =
-      openFileTreeByDefault && entry.view === 'closed'
+      preferredView ??
+      (openFileTreeByDefault && entry.view === 'closed'
         ? 'filePreview'
-        : entry.view;
-    if (targetView !== entry.view) rememberWorkspaceView(targetView);
+        : entry.view);
+    if (targetView !== entry.view) rememberWorkspaceView(targetView, false);
     pendingWorkspaceRestoreRef.current = null;
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
@@ -1846,6 +1945,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     active,
     pageCacheKey,
     agentId,
+    accountId,
+    taskInfo?.id,
+    taskScope,
     openFileTreeByDefault,
     rememberWorkspaceView,
   ]);
@@ -1958,6 +2060,11 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [viewMode]);
 
+  const handleFileTreeTabChange = useCallback(
+    (tab: FileTreePanelTab) =>
+      updateTaskFileTree((current) => ({ ...current, tab })),
+    [updateTaskFileTree],
+  );
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
@@ -2525,20 +2632,46 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         {effectiveAgent?.hideChatArea ? (
           pagePreviewCache
         ) : (
-          <LeftContent
-            pageCacheKey={pageCacheKey}
-            isFileTreeVisible={isFileTreeVisible}
-            effectiveAgent={effectiveAgent}
-            isAppSidebarMode={isAppSidebarMode}
-            headerProps={headerProps}
-            chatSessionProps={chatSessionProps}
-            fileSidebarProps={fileSidebarProps}
-            externalFilePreview={externalPreviewFile}
-            onExternalFilePreviewBack={exitExternalPreview}
-            chatPaneCapsule={chatPaneCapsule}
-            pagePreview={pagePreviewData ? pagePreviewCache : null}
-            isPagePreviewVisible={isPagePreviewVisible}
-          />
+          <TaskUiStateContext.Provider
+            value={
+              taskScope
+                ? {
+                    fileTree: workspaceSource
+                      ? {
+                          tab: taskFileTree.tab ?? 'files',
+                          setTab: handleFileTreeTabChange,
+                          expandedFolders,
+                          updateExpandedFolders: handleExpandedFoldersChange,
+                        }
+                      : undefined,
+                    askDraft: {
+                      key: taskScope,
+                      expired:
+                        chatSessionProps.conversationInfo?.taskStatus ===
+                          TaskStatus.FAILED ||
+                        chatSessionProps.conversationInfo?.taskStatus ===
+                          TaskStatus.CANCEL,
+                      history: chatSessionProps.conversationInfo?.messageList,
+                    },
+                  }
+                : null
+            }
+          >
+            <LeftContent
+              pageCacheKey={pageCacheKey}
+              isFileTreeVisible={isFileTreeVisible}
+              effectiveAgent={effectiveAgent}
+              isAppSidebarMode={isAppSidebarMode}
+              headerProps={headerProps}
+              chatSessionProps={chatSessionProps}
+              fileSidebarProps={fileSidebarProps}
+              externalFilePreview={externalPreviewFile}
+              onExternalFilePreviewBack={exitExternalPreview}
+              chatPaneCapsule={chatPaneCapsule}
+              pagePreview={pagePreviewData ? pagePreviewCache : null}
+              isPagePreviewVisible={isPagePreviewVisible}
+            />
+          </TaskUiStateContext.Provider>
         )}
       </div>
       {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}

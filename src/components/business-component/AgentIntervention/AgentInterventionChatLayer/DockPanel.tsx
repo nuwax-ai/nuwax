@@ -1,3 +1,4 @@
+import { mcpAskResolutionKey } from '@/utils/mcpAskResolution';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import AcpPermissionCard from '../AcpPermissionCard';
@@ -34,7 +35,7 @@ function getItemKey(item: InterventionQueueItem): string {
   if (item.kind === 'acp_permission') {
     return `acp-${item.interaction.intervention.id}`;
   }
-  return `ask-${item.interaction.input.requestId}`;
+  return `ask-${mcpAskResolutionKey(item.interaction)}`;
 }
 
 const DockPanel: React.FC<InterventionDockPanelProps> = ({
@@ -60,6 +61,7 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
       }
       return (
         <McpAskQuestionCard
+          key={mcpAskResolutionKey(item.interaction)}
           interaction={item.interaction}
           dockShellClassName={dockShellClassName}
           keyboardShortcutsEnabled={keyboardShortcutsEnabled}

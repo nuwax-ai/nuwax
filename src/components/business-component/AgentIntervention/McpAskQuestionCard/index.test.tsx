@@ -1,6 +1,8 @@
+import { TaskUiStateContext } from '@/features/conversation/react/taskUiStateContext';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
+import { reconcileMcpAskDrafts } from '../utils/mcpAskDraft';
 import McpAskQuestionCard from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -80,6 +82,38 @@ const interaction: McpAskInteraction = {
 };
 
 describe('McpAskQuestionCard', () => {
+  it('仅在同一任务的同版本待处理请求中恢复未提交输入', () => {
+    const key = 'test:ask-draft:';
+    const onRespond = vi.fn();
+    const card = (ask: McpAskInteraction, expired = false) => (
+      <TaskUiStateContext.Provider value={{ askDraft: { key, expired } }}>
+        <McpAskQuestionCard interaction={ask} onRespond={onRespond} />
+      </TaskUiStateContext.Provider>
+    );
+    const first = render(card(interaction));
+    fireEvent.change(screen.getByPlaceholderText('补充说明'), {
+      target: { value: '留待继续' },
+    });
+    first.unmount();
+    const restored = render(card(interaction));
+    expect(screen.getByPlaceholderText('补充说明')).toHaveValue('留待继续');
+    expect(onRespond).not.toHaveBeenCalled();
+    restored.unmount();
+    const revision = {
+      ...interaction,
+      input: { ...interaction.input, revision: 2 },
+    };
+    const updated = render(card(revision));
+    expect(screen.getByPlaceholderText('补充说明')).toHaveValue('');
+    updated.unmount();
+    const finished = render(
+      card({ ...interaction, responseStatus: 'submitted' }),
+    );
+    expect(screen.getByPlaceholderText('补充说明')).toHaveValue('');
+    finished.unmount();
+    reconcileMcpAskDrafts(key, true, []);
+  });
+
   it('keeps an unsubmitted choice when the same ask is refreshed', () => {
     const defaultedInteraction: McpAskInteraction = {
       ...interaction,
@@ -87,7 +121,7 @@ describe('McpAskQuestionCard', () => {
         ...interaction.input,
         ui: {
           ...interaction.input.ui,
-          fields: interaction.input.ui.fields.map((field) =>
+          fields: interaction.input.ui.fields?.map((field) =>
             field.name === 'choice'
               ? { ...field, initialValue: 'deploy' }
               : { ...field },
@@ -118,7 +152,7 @@ describe('McpAskQuestionCard', () => {
             ...defaultedInteraction.input,
             ui: {
               ...defaultedInteraction.input.ui,
-              fields: defaultedInteraction.input.ui.fields.map((field) => ({
+              fields: defaultedInteraction.input.ui.fields?.map((field) => ({
                 ...field,
               })),
             },

@@ -1,8 +1,16 @@
+import { TaskUiStateContext } from '@/features/conversation/react/taskUiStateContext';
 import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { mcpAskResolutionKey } from '@/utils/mcpAskResolution';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
 import { useInterventionDialogFocus } from '../hooks/useInterventionDialogFocus';
 import type {
@@ -14,6 +22,11 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+import {
+  getResolvedMcpAskDraftKeys,
+  mcpAskDraftKey,
+  reconcileMcpAskDrafts,
+} from '../utils/mcpAskDraft';
 import styles from './AgentInterventionChatLayer.less';
 import DockPanel from './DockPanel';
 
@@ -39,6 +52,20 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
   onRespondAcpPermission,
   onRespondMcpAsk,
 }) => {
+  const draftScope = useContext(TaskUiStateContext)?.askDraft;
+  const scopeKey = draftScope?.key;
+  const expired = draftScope?.expired ?? false;
+  const history = draftScope?.history;
+  const resolved = useMemo(
+    () =>
+      scopeKey ? getResolvedMcpAskDraftKeys(scopeKey, history) : undefined,
+    [scopeKey, history],
+  );
+  useEffect(() => {
+    if (scopeKey)
+      reconcileMcpAskDrafts(scopeKey, expired, messageList, resolved);
+  }, [scopeKey, expired, messageList, resolved]);
+
   const [dismissedMcpAskRequestIds, setDismissedMcpAskRequestIds] = useState<
     Set<string>
   >(() => new Set());
@@ -53,12 +80,25 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
   const activeQueueItems = useActiveInterventionQueue(messageList);
   const queueItems = useMemo(
     () =>
-      activeQueueItems.filter(
-        (item) =>
-          item.kind !== 'mcp_ask' ||
-          !dismissedMcpAskRequestIds.has(responseKey(item.interaction)),
-      ),
-    [activeQueueItems, dismissedMcpAskRequestIds, responseKey],
+      activeQueueItems.filter((item) => {
+        if (item.kind !== 'mcp_ask') return true;
+        const key = scopeKey
+          ? mcpAskDraftKey(scopeKey, item.interaction)
+          : undefined;
+        return (
+          !expired &&
+          !(key && resolved?.has(key)) &&
+          !dismissedMcpAskRequestIds.has(responseKey(item.interaction))
+        );
+      }),
+    [
+      activeQueueItems,
+      dismissedMcpAskRequestIds,
+      expired,
+      resolved,
+      responseKey,
+      scopeKey,
+    ],
   );
 
   const handleRespondMcpAsk = useCallback(

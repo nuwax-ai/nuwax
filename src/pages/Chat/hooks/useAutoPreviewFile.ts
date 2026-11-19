@@ -32,7 +32,11 @@ export const useAutoPreviewFile = () => {
     setTaskAgentSelectTrigger,
   } = usePageModel('conversationInfo');
 
-  const handleAutoPreviewLastFile = (list: MessageInfo[], id: number) => {
+  const handleAutoPreviewLastFile = (
+    list: MessageInfo[],
+    id: number,
+    shouldOpen = () => true,
+  ) => {
     if (!list || list.length === 0) return;
 
     const assistantMessages = list.filter(
@@ -62,7 +66,7 @@ export const useAutoPreviewFile = () => {
         const fileExists = fileListRes.data.files.some(
           (file: { name: string }) => file.name === _lastTaskResultFile,
         );
-        if (!fileExists) return;
+        if (!fileExists || !shouldOpen()) return;
         openPreviewView(id);
         setTaskAgentSelectedFileId(_lastTaskResultFile);
         setTaskAgentSelectTrigger(Date.now());

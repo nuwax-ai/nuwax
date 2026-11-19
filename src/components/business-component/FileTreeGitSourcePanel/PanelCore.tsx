@@ -1,18 +1,25 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
+import {
+  TaskUiStateContext,
+  type FileTreePanelTab,
+} from '@/features/conversation/react/taskUiStateContext';
 import { dict } from '@/services/i18nRuntime';
 import { BranchesOutlined, FolderOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import FileTreePanel from './FileTreePanel';
 import styles from './index.less';
 import SourceControlPanel from './SourceControlPanel';
 import type { FileTreeGitSourcePanelProps } from './types/file-tree-git-source';
 
 const cx = classNames.bind(styles);
-
-/** 中间面板视图类型 */
-type PanelView = 'files' | 'sourceControl';
 
 /**
  * FileTreeGitSourcePanel 公共组件
@@ -34,7 +41,10 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   isImportingProject,
   sourceControl,
 }) => {
-  const [activeView, setActiveView] = useState<PanelView>('files');
+  const [internalView, setInternalView] = useState<FileTreePanelTab>('files');
+  const taskFileTree = useContext(TaskUiStateContext)?.fileTree;
+  const preferredView = taskFileTree?.tab ?? internalView;
+  const setActiveView = taskFileTree?.setTab ?? setInternalView;
 
   const mergedTree = useMemo(
     () => ({
@@ -77,12 +87,13 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
     }
     return baseEnabled && isAgentVersionControlEnabled(enableVersionControl);
   }, [showSourceControl, onCommit, enableVersionControl]);
+  const activeView = enableSourceControl ? preferredView : 'files';
 
   useEffect(() => {
-    if (!enableSourceControl && activeView === 'sourceControl') {
-      setActiveView('files');
+    if (!enableSourceControl && !taskFileTree) {
+      setInternalView('files');
     }
-  }, [enableSourceControl, activeView]);
+  }, [enableSourceControl, taskFileTree]);
 
   /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
   const handleModifiedFileClick = useCallback(
@@ -100,7 +111,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
     } catch (error) {
       console.error('Refresh git status on source control open failed:', error);
     }
-  }, [onRefreshGitList]);
+  }, [onRefreshGitList, setActiveView]);
 
   const panelBody = (
     <>

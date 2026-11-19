@@ -4,6 +4,20 @@ type McpAskInteraction = NonNullable<MessageInfo['mcpAskInteractions']>[number];
 export const mcpAskResolutionKey = (interaction: McpAskInteraction) =>
   JSON.stringify([interaction.input.requestId, interaction.input.revision]);
 
+export function getLatestMcpAskRevisions(messages: MessageInfo[]) {
+  const revisions = new Map<string, number>();
+  for (const message of messages) {
+    for (const { input } of message.mcpAskInteractions ?? []) {
+      if (!Number.isInteger(input.revision)) continue;
+      const previous = revisions.get(input.requestId);
+      if (previous === undefined || input.revision > previous) {
+        revisions.set(input.requestId, input.revision);
+      }
+    }
+  }
+  return revisions;
+}
+
 /** 同一会话的旧 pending 快照不能复活已应答的问题；新 revision 不受影响。 */
 export function preserveResolvedMcpAskInteractions(
   current: MessageInfo[],

@@ -1,4 +1,5 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { mcpAskResolutionKey } from '@/utils/mcpAskResolution';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import {
@@ -21,9 +22,7 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
   }
 
   const existing = message.mcpAskInteractions || [];
-  const existingRequestIds = new Set(
-    existing.map((interaction) => interaction.input.requestId),
-  );
+  const existingKeys = new Set(existing.map(mcpAskResolutionKey));
   const hydrated: McpAskInteraction[] = [];
 
   componentExecutedList.forEach((component) => {
@@ -33,17 +32,20 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
 
     const input = parseMcpAskToolInput(getMcpAskComponentInput(component));
     const toolCallId = getMcpAskComponentToolCallId(component, input);
-    if (!input || !toolCallId || existingRequestIds.has(input.requestId)) {
+    if (!input || !toolCallId) {
       return;
     }
 
-    existingRequestIds.add(input.requestId);
-    hydrated.push({
+    const interaction = {
       input,
       toolCallId,
       responseStatus: resolveMcpAskHydratedResponseStatus(component),
       triggeredAt: createInterventionTriggeredAt(),
-    });
+    };
+    const key = mcpAskResolutionKey(interaction);
+    if (existingKeys.has(key)) return;
+    existingKeys.add(key);
+    hydrated.push(interaction);
   });
 
   if (!hydrated.length) {

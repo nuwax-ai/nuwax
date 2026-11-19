@@ -1,4 +1,5 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { getLatestMcpAskRevisions } from '@/utils/mcpAskResolution';
 import { useMemo } from 'react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
@@ -65,6 +66,7 @@ export function useActiveInterventionQueue(
     let fallbackSeq = 0;
 
     const messages = sortMessagesByConversationIndex(messageList ?? []);
+    const latestAskRevisions = getLatestMcpAskRevisions(messages);
 
     messages.forEach((message) => {
       getAcpPermissionInteractions(message).forEach((interaction) => {
@@ -106,6 +108,8 @@ export function useActiveInterventionQueue(
       });
 
       message.mcpAskInteractions?.forEach((interaction) => {
+        const { requestId, revision } = interaction.input;
+        if ((latestAskRevisions.get(requestId) ?? revision) > revision) return;
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }

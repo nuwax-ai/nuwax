@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
+import { TaskUiStateContext } from '@/features/conversation/react/taskUiStateContext';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
@@ -14,6 +15,7 @@ import classNames from 'classnames';
 import React, {
   forwardRef,
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -64,18 +66,23 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const restoredDirectoryRequestsRef = useRef(new Set<string>());
     // 已展开的文件夹 ID。初始全部收起，避免一进页面就展开第一层；
     // 之后只随点击、新建或定位文件更新，文件列表刷新不重置，避免已展开的节点被折叠。
-    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-      () => new Set(),
-    );
+    const [localExpandedFolders, setLocalExpandedFolders] = useState<
+      Set<string>
+    >(() => new Set());
+    const taskFileTree = useContext(TaskUiStateContext)?.fileTree;
+    const expandedFolders =
+      taskFileTree?.expandedFolders ?? localExpandedFolders;
+    const setExpandedFolders =
+      taskFileTree?.updateExpandedFolders ?? setLocalExpandedFolders;
     // 展示层每层都排序：不依赖接口插入顺序，展开/关闭/新增都同一套规则
     const sortedFiles = useMemo(() => sortFileTreeNodes(files || []), [files]);
 
     useImperativeHandle(
       ref,
       () => ({
-        collapseAll: () => setExpandedFolders(new Set()),
+        collapseAll: () => setExpandedFolders(() => new Set()),
       }),
-      [],
+      [setExpandedFolders],
     );
 
     useEffect(() => {
@@ -111,6 +118,14 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
      */
     const onToggleFolder = useCallback(
       (folderId: string) => {
+        if (
+          !expandedFolders.has(folderId) &&
+          loadedFolderIds &&
+          onLoadDirectory
+        ) {
+          // 点击展开由 onFileSelect 发起加载，避免恢复 effect 重复请求同一目录。
+          restoredDirectoryRequestsRef.current.add(folderId);
+        }
         setExpandedFolders((prev) => {
           const newExpanded = new Set(prev);
           const wasExpanded = newExpanded.has(folderId);
@@ -119,15 +134,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
             newExpanded.delete(folderId);
           } else {
             newExpanded.add(folderId);
-            if (loadedFolderIds && onLoadDirectory) {
-              // 点击展开会由 onFileSelect 发起加载，避免恢复 effect 重复请求同一目录。
-              restoredDirectoryRequestsRef.current.add(folderId);
-            }
           }
           return newExpanded;
         });
       },
-      [loadedFolderIds, onLoadDirectory],
+      [expandedFolders, loadedFolderIds, onLoadDirectory, setExpandedFolders],
     );
 
     /**
@@ -305,7 +316,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         ancestorIds.forEach((id) => next.add(id));
         return next;
       });
-    }, [renamingNode, files]);
+    }, [renamingNode, files, setExpandedFolders]);
 
     /**
      * 根据 taskAgentSelectedFileId 自动展开包含该文件的文件夹路径
@@ -381,7 +392,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
           return next;
         });
       }
-    }, [taskAgentSelectedFileId, files]);
+    }, [taskAgentSelectedFileId, files, setExpandedFolders]);
 
     /**
      * 渲染文件树节点
