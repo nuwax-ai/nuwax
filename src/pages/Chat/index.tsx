@@ -78,6 +78,7 @@ import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 import { conversationTaskKey } from '@/utils/conversationTaskStorage';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
+import { hostBridge } from '@/utils/hostBridge';
 import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 
@@ -581,8 +582,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   const { state: taskFileTree, update: updateTaskFileTree } =
     useTaskFileTreeState(taskScope);
 
+  // 保活页面的远端工作区在切回时可以继续使用已加载的目录。本机授权仍随页面失活释放。
+  const keepWorkspaceContext = active || !hostBridge.localFiles.getApi();
   useLocalFilesContext(
-    active && id && conversationInfo?.id === id
+    keepWorkspaceContext && id && conversationInfo?.id === id
       ? {
           cId: id,
           sandboxId: String(finalSelectedId),
