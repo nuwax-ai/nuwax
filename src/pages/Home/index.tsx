@@ -67,7 +67,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
@@ -93,6 +93,10 @@ const Home: React.FC = () => {
     setSelectedComputerId,
     workspacePath,
     setWorkspaceDir,
+    selectedModelId,
+    setSelectedModelId,
+    selectedSpaceId,
+    setSelectedSpaceId,
     selectedRecommend,
     setSelectedRecommend,
     summonedExpert,
@@ -105,6 +109,7 @@ const Home: React.FC = () => {
     initSelectedComponentList,
     componentAgentKey,
     setComponentAgentKey,
+    resetInputContext,
   } = useModel('homeInputContext') as ReturnType<typeof useHomeInputContext>;
   const { handleCreateConversation } = useConversation();
   const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
@@ -118,8 +123,6 @@ const Home: React.FC = () => {
   const location = useLocation();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [selectedModelId, setSelectedModelId] = useState<number>();
-  const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
@@ -219,6 +222,9 @@ const Home: React.FC = () => {
     : selectedRecommend?.id;
   const agentTypeLoading =
     !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const allowOtherModel = agentTypeLoading
+    ? undefined
+    : agentDetail?.allowOtherModel;
   const supportsAgentCapabilities =
     !agentTypeLoading && agentDetail?.type !== AgentTypeEnum.ChatBot;
 
@@ -368,7 +374,11 @@ const Home: React.FC = () => {
     ];
   }, [agentDetail?.manualComponents, selectedComponentDetails]);
 
+  const previousRecommend = useRef(selectedRecommend);
   useEffect(() => {
+    // 路由返回继续使用草稿选择；只有实际切换推荐项才恢复模型和空间默认值。
+    if (previousRecommend.current === selectedRecommend) return;
+    previousRecommend.current = selectedRecommend;
     // 项目内保留当前电脑；项目外由选择器解析新智能体的绑定与记忆。
     // 此处不清空，避免选择器按旧 agentId 回落。
     setSelectedModelId(undefined);
@@ -542,7 +552,10 @@ const Home: React.FC = () => {
         message: inputMessage,
         files,
         skillIds: supportsAgentCapabilities ? skillIds : [],
-        modelId: modelId || selectedModelId,
+        modelId:
+          allowOtherModel === DefaultSelectedEnum.Yes
+            ? modelId || selectedModelId
+            : undefined,
         agentMode,
         infos: mergedInfos,
         selectedDocs: supportsAgentCapabilities ? selectedDocs : [],
@@ -663,6 +676,22 @@ const Home: React.FC = () => {
     chatInputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const { key, pathname, search, hash, state } = location;
+    if (!state?.newTask || history.location.key !== key) return;
+    // 即使有草稿也消费标记，避免历史回退重放新建任务。
+    const { newTask: _newTask, ...remainingState } = state;
+    history.replace({ pathname, search, hash }, remainingState);
+    // 有草稿时保留绑定，避免返回首页后把未发送内容归到其他项目。
+    if (chatInputRef.current?.hasContent()) return;
+    ++pinnedProjectConfigSequence.current;
+    setPinnedProjectConfigLoading(false);
+    agentMissedPromptedRef.current = undefined;
+    resetInputContext();
+    setSelectedSkill(undefined);
+    chatInputRef.current?.focus();
+  }, [location, resetInputContext]);
+
   return (
     <div
       id="home-container"
@@ -779,7 +808,7 @@ const Home: React.FC = () => {
           strictAgentMemory
           /* / 能力弹窗默认由首页开放；ChatBot 或详情加载期间由
              agentType/agentTypeLoading 统一关闭。 */
-          allowOtherModel={agentDetail?.allowOtherModel}
+          allowOtherModel={allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
           showSpaceSelector={showSpaceSelector}

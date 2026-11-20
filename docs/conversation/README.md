@@ -7,6 +7,7 @@
 | 数据线 / 渲染线与接入 | [renderer-v2.md](renderer-v2.md) |
 | 分组、折叠、可见性与最终回答 | [rendering-rules.md](rendering-rules.md) |
 | 容器选择与 sandboxId | [agent-sandbox-selection-rules.md](agent-sandbox-selection-rules.md) |
+| 输入草稿、项目/专家上框、选择记忆与返回恢复 | [input-state-lifecycle.md](input-state-lifecycle.md) |
 | 架构边界、运行时与终态排障 | [维护指南](dual-track/conversation-maintenance-guide.md) |
 | 活跃态状态机 | [conversation-active-state-machine.md](dual-track/conversation-active-state-machine.md) |
 | 关键业务验收场景 | [业务清单](dual-track/conversation-business-logic-checklist.md) |

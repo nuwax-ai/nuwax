@@ -211,7 +211,7 @@ describe('useMenuNavigation：handleNewTask', () => {
     expect(result.current.isClickNewConversation).toBe(false);
     expect(result.current.isClickMenu.current).toBe(false);
     expect(nav.handleCloseMobileMenu).toHaveBeenCalledTimes(1);
-    expect(nav.historyPush).toHaveBeenCalledWith('/home');
+    expect(nav.historyPush).toHaveBeenCalledWith('/home', { newTask: true });
     expect(nav.handleCreateConversation).not.toHaveBeenCalled();
   });
 
