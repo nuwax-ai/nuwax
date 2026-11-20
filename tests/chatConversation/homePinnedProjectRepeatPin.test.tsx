@@ -67,7 +67,10 @@ const navigation = vi.hoisted(() => ({
   search: '',
   hash: '',
   key: 'test-home-key',
-  state: undefined as { newTask?: boolean; source?: string } | undefined,
+  action: 'POP' as 'POP' | 'PUSH' | 'REPLACE',
+  state: undefined as
+    | { newTask?: boolean; menuCode?: string; source?: string }
+    | undefined,
 }));
 const replaceHistory = vi.hoisted(() =>
   vi.fn(
@@ -93,6 +96,9 @@ const render = (ui: React.ReactElement) =>
 vi.mock('umi', () => ({
   useLocation: () => ({ ...navigation }),
   history: {
+    get action() {
+      return navigation.action;
+    },
     get location() {
       return navigation;
     },
@@ -312,6 +318,7 @@ beforeEach(() => {
     search: '',
     hash: '',
     key: 'test-home-key',
+    action: 'POP',
     state: undefined,
   });
   input.hasContent = false;
@@ -378,9 +385,9 @@ describe('首页新建任务和模型选择', () => {
         window.history.pushState(null, '', '/space');
         rerender(<div>其他页面</div>);
 
-        const popped = new Promise<void>((resolve) =>
-          window.addEventListener('popstate', () => resolve(), { once: true }),
-        );
+        const popped = new Promise<void>((resolve) => {
+          window.addEventListener('popstate', () => resolve(), { once: true });
+        });
         window.history.back();
         await popped;
         syncHomeLocation();
@@ -602,46 +609,61 @@ describe('项目新建任务的电脑与工作目录', () => {
     },
   );
 
-  it('有草稿时切走再点新建任务，保留项目和用户选择，发送仍绑定原项目', async () => {
-    pinNormalProject();
-    const { rerender } = render(<Home />);
-    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
-    act(() => input.props.onComputerSelect('777'));
-    act(() => input.props.onWorkspaceDirChange('/other/draft'));
-    act(() => input.props.onModelSelect(123));
-    act(() => input.props.onSpaceSelect(456));
-    act(() =>
-      input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
-    );
+  const homeEntries = [
+    { name: '新建任务', state: { newTask: true } },
+    { name: '首页菜单', state: { menuCode: 'homepage' } },
+  ];
 
-    rerender(<div>其他页面</div>);
-    input.hasContent = true;
-    navigation.key = 'new-task-with-draft';
-    navigation.state = { newTask: true };
-    rerender(<Home />);
-    await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+  it.each(homeEntries)(
+    '有草稿时切走再点$name，保留项目和用户选择，发送仍绑定原项目',
+    async ({ state }) => {
+      pinNormalProject();
+      const { rerender } = render(<Home />);
+      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+      act(() => input.props.onComputerSelect('777'));
+      act(() => input.props.onWorkspaceDirChange('/other/draft'));
+      act(() => input.props.onModelSelect(123));
+      act(() => input.props.onSpaceSelect(456));
+      act(() =>
+        input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
+      );
 
-    expect(input.props.pinnedProject?.name).toBe('常规项目 B');
-    expect(input.props.selectedComputerId).toBe('777');
-    expect(input.props.workspacePath).toBe('/other/draft');
-    expect(input.props.selectedModelId).toBe(123);
-    expect(input.props.selectedSpaceId).toBe(456);
-    expect(input.props.agentId).toBe(67);
-    expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
-    await act(async () => input.props.onEnter('保留的草稿'));
-    expect(handleCreateConversation).toHaveBeenCalledWith(
-      67,
-      expect.objectContaining({
-        projectId: 6,
-        sandboxId: 777,
-        workspacePath: '/other/draft',
-      }),
-    );
-  });
+      rerender(<div>其他页面</div>);
+      input.hasContent = true;
+      Object.assign(navigation, {
+        key: 'home-with-draft',
+        action: 'PUSH',
+        state,
+      });
+      rerender(<Home />);
+      await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
 
-  it.each([false, true])(
-    '输入为空时新建任务恢复默认选择（先切到其他页面：%s）',
-    async (leaveHome) => {
+      expect(input.props.pinnedProject?.name).toBe('常规项目 B');
+      expect(input.props.selectedComputerId).toBe('777');
+      expect(input.props.workspacePath).toBe('/other/draft');
+      expect(input.props.selectedModelId).toBe(123);
+      expect(input.props.selectedSpaceId).toBe(456);
+      expect(input.props.agentId).toBe(67);
+      expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
+      await act(async () => input.props.onEnter('保留的草稿'));
+      expect(handleCreateConversation).toHaveBeenCalledWith(
+        67,
+        expect.objectContaining({
+          projectId: 6,
+          sandboxId: 777,
+          workspacePath: '/other/draft',
+        }),
+      );
+    },
+  );
+
+  it.each(
+    homeEntries.flatMap((entry) =>
+      [false, true].map((leaveHome) => ({ ...entry, leaveHome })),
+    ),
+  )(
+    '输入清空后点$name恢复默认选择（先切到其他页面：$leaveHome）',
+    async ({ state, leaveHome }) => {
       pinNormalProject();
       const { rerender } = render(<Home />);
       await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
@@ -651,10 +673,18 @@ describe('项目新建任务的电脑与工作目录', () => {
         input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
       );
       act(() => input.props.onSelectComponent({ id: 73, type: 'MCP' }));
-      if (leaveHome) rerender(<div>其他页面</div>);
 
-      navigation.key = 'new-task-empty';
-      navigation.state = { newTask: true };
+      input.hasContent = true;
+      Object.assign(navigation, {
+        key: 'home-with-content',
+        action: 'PUSH',
+        state,
+      });
+      rerender(<Home />);
+      expect(input.props.pinnedProject?.name).toBe('常规项目 B');
+      input.hasContent = false;
+      if (leaveHome) rerender(<div>其他页面</div>);
+      Object.assign(navigation, { key: 'empty-home', action: 'PUSH', state });
       rerender(<Home />);
       await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
 
@@ -672,7 +702,7 @@ describe('项目新建任务的电脑与工作目录', () => {
     },
   );
 
-  it('新建任务复位后项目详情晚到，不能恢复旧电脑和目录', async () => {
+  it('点首页复位后项目详情晚到，不能恢复旧电脑和目录', async () => {
     let finish!: (response: any) => void;
     vi.mocked(apiNormalProjectGetById).mockImplementation(
       () =>
@@ -684,8 +714,11 @@ describe('项目新建任务的电脑与工作目录', () => {
     const { rerender } = render(<Home />);
     expect(input.props.wholeDisabled).toBe(true);
 
-    navigation.key = 'new-task-while-loading';
-    navigation.state = { newTask: true };
+    Object.assign(navigation, {
+      key: 'homepage-while-loading',
+      action: 'PUSH',
+      state: { menuCode: 'homepage' },
+    });
     rerender(<Home />);
     await act(async () =>
       finish({
@@ -698,6 +731,22 @@ describe('项目新建任务的电脑与工作目录', () => {
     expect(input.props.selectedComputerId).toBe('-1');
     expect(input.props.workspacePath).toBe('');
     expect(input.props.wholeDisabled).toBe(false);
+  });
+
+  it('浏览器前进或后退到首页菜单的历史项时保留项目配置', async () => {
+    pinNormalProject();
+    const { rerender } = render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    rerender(<div>其他页面</div>);
+    Object.assign(navigation, {
+      key: 'homepage-pop',
+      action: 'POP',
+      state: { menuCode: 'homepage' },
+    });
+    rerender(<Home />);
+    expect(input.props.pinnedProject?.name).toBe('常规项目 B');
+    expect(input.props.workspacePath).toBe('/work/project');
+    expect(replaceHistory).not.toHaveBeenCalled();
   });
 
   it('全栈项目输入为空时新建任务清除自动命中的推荐，不会再次绑定旧项目', async () => {

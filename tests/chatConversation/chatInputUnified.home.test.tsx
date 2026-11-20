@@ -683,6 +683,15 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
 });
 
 describe('首页草稿（draftKey=home）', () => {
+  const attachment = {
+    uid: 'home-pdf',
+    name: '报告.pdf',
+    type: 'application/pdf',
+    size: 2048,
+    url: 'https://cdn.example.com/report.pdf',
+    key: 'tmp/report.pdf',
+  };
+
   it('实时查询不等待落盘；删除最后一段正文后立即离开不会恢复旧草稿', () => {
     const ref = createRef<ChatInputUnifiedRef>();
     const { unmount } = render(
@@ -692,36 +701,40 @@ describe('首页草稿（draftKey=home）', () => {
     expect(ref.current?.hasContent()).toBe(true);
     expect(loadDraft('home')).toBeNull();
     saveDraft('home', { version: 1, text: '未发送正文' });
-    act(() => editor.lastProps.onChange('   '));
+    act(() => editor.lastProps.onChange(' \n\t  '));
     expect(ref.current?.hasContent()).toBe(false);
     unmount();
     expect(loadDraft('home')).toBeNull();
   });
 
-  it.each(['引用', '附件'])(
-    '首挂恢复纯%s时，父级导航判断能立即读取内容',
-    (kind) => {
-      saveDraft('home', {
-        version: 1,
-        text: '',
-        ...(kind === '引用'
-          ? {
-              content: [{ kind: 'skill' as const, targetId: 42, name: '写作' }],
-            }
-          : { files: [attachment] }),
-      });
-      const observed = vi.fn();
-      function HomeNavigationProbe() {
-        const ref = createRef<ChatInputUnifiedRef>();
-        useEffect(() => {
-          observed(ref.current?.hasContent());
-        }, []);
-        return <ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />;
-      }
-      render(<HomeNavigationProbe />);
-      expect(observed).toHaveBeenCalledWith(true);
+  it.each([
+    {
+      kind: '引用',
+      content: [{ kind: 'skill' as const, targetId: 42, name: '写作' }],
     },
-  );
+    { kind: '附件', files: [attachment] },
+    {
+      kind: '图片',
+      files: [{ ...attachment, name: '截图.png', type: 'image/png' }],
+    },
+  ])('首挂恢复纯$kind时，父级导航判断能立即读取内容', ({ content, files }) => {
+    saveDraft('home', {
+      version: 1,
+      text: '',
+      content,
+      files,
+    });
+    const observed = vi.fn();
+    function HomeNavigationProbe() {
+      const ref = createRef<ChatInputUnifiedRef>();
+      useEffect(() => {
+        observed(ref.current?.hasContent());
+      }, []);
+      return <ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />;
+    }
+    render(<HomeNavigationProbe />);
+    expect(observed).toHaveBeenCalledWith(true);
+  });
 
   it('草稿恢复后仍遵守当前智能体的技能开关', () => {
     saveDraft('home', {
@@ -787,17 +800,9 @@ describe('首页草稿（draftKey=home）', () => {
       { kind: 'skill', targetId: 42, name: '写作' },
     ]);
   });
-  const attachment = {
-    uid: 'home-pdf',
-    name: '报告.pdf',
-    type: 'application/pdf',
-    size: 2048,
-    url: 'https://cdn.example.com/report.pdf',
-    key: 'tmp/report.pdf',
-  };
-
-  it('上传完成后立即离开再返回，纯附件草稿仍显示且只上传一次', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
+  it('只有正在上传的附件也算有内容，上传完成后离开再返回仍能恢复', async () => {
+    let finishUpload!: () => void;
+    const response = {
       json: async () => ({
         code: '0000',
         data: {
@@ -806,14 +811,25 @@ describe('首页草稿（draftKey=home）', () => {
           mimeType: attachment.type,
         },
       }),
+    };
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise((resolve) => {
+        finishUpload = () => resolve(response);
+      });
     });
     vi.stubGlobal('fetch', fetchMock);
-    const { unmount } = renderHomeInput();
+    const ref = createRef<ChatInputUnifiedRef>();
+    const { unmount } = render(
+      <ChatInputUnified ref={ref} onEnter={vi.fn()} draftKey="home" />,
+    );
     fireEvent.change(document.querySelector('input[type=file]')!, {
       target: {
         files: [new File(['pdf'], attachment.name, { type: attachment.type })],
       },
     });
+    expect(uploadList.files[0]?.status).toBe('uploading');
+    expect(ref.current?.hasContent()).toBe(true);
+    await act(async () => finishUpload());
     await waitFor(() => expect(uploadList.files[0]?.status).toBe('done'));
     unmount();
 

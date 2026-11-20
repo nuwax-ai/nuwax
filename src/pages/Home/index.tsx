@@ -114,6 +114,7 @@ const Home: React.FC = () => {
   const { handleCreateConversation } = useConversation();
   const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
   const chatInputRef = useRef<ChatInputUnifiedRef>(null);
+  const handledHomeEntryKey = useRef<string>();
   const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
   // 广场智能体上框通道（bug 2398）：广场/空间广场卡片点击透传进本页
   const { consume: consumePinnedAgent } = usePinnedAgentHandoff();
@@ -678,10 +679,23 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const { key, pathname, search, hash, state } = location;
-    if (!state?.newTask || history.location.key !== key) return;
-    // 即使有草稿也消费标记，避免历史回退重放新建任务。
-    const { newTask: _newTask, ...remainingState } = state;
-    history.replace({ pathname, search, hash }, remainingState);
+    // 浏览器前进或后退也会恢复 menuCode，只在主动点击时判断是否复位。
+    const clickedHomeMenu =
+      state?.menuCode === 'homepage' && history.action === 'PUSH';
+    if (
+      (!state?.newTask && !clickedHomeMenu) ||
+      history.location.key !== key ||
+      handledHomeEntryKey.current === key
+    ) {
+      return;
+    }
+    handledHomeEntryKey.current = key;
+    if (state?.newTask) {
+      // 即使有草稿也消费标记，避免历史回退重放新建任务。
+      const remainingState = { ...state };
+      delete remainingState.newTask;
+      history.replace({ pathname, search, hash }, remainingState);
+    }
     // 有草稿时保留绑定，避免返回首页后把未发送内容归到其他项目。
     if (chatInputRef.current?.hasContent()) return;
     ++pinnedProjectConfigSequence.current;

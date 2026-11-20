@@ -15,7 +15,10 @@ const nav = vi.hoisted(() => ({
   refreshUserInfo: vi.fn(),
   hostCommandHandler: null as ((payload: HostCommand) => void) | null,
   syncNewTaskAvailable: vi.fn(),
-  tenantConfigInfo: { defaultAgentId: 42 } as { defaultAgentId: number } | null,
+  tenantConfigInfo: { defaultAgentId: 42 } as {
+    defaultAgentId: number;
+    siteLogo?: string;
+  } | null,
   menus: [
     { code: 'new_conversation', name: '新对话', path: '' },
     { code: 'homepage', name: '主页', path: '/home' },
@@ -178,6 +181,25 @@ describe('全局新建任务入口', () => {
       ),
     );
     expectHomeWithoutConversation();
+  });
+
+  it('单栏 Logo 在新建任务菜单隐藏时仍可进入首页输入框', () => {
+    nav.tenantConfigInfo = { defaultAgentId: 42, siteLogo: '/logo.svg' };
+    nav.menus = [{ code: 'homepage', name: '主页', path: '/home' }];
+    render(<SidebarNavLayout />);
+    fireEvent.click(screen.getByAltText(''));
+    expectHomeWithoutConversation();
+  });
+
+  it('首页菜单保留菜单标识供首页判断与侧栏列表刷新使用', () => {
+    render(<SidebarNavLayout />);
+    fireEvent.click(screen.getByText('主页'));
+    expect(nav.historyPush).toHaveBeenCalledTimes(1);
+    expect(nav.historyPush).toHaveBeenCalledWith(
+      '/home',
+      expect.objectContaining({ menuCode: 'homepage' }),
+    );
+    expect(nav.handleCreateConversation).not.toHaveBeenCalled();
   });
 
   it.each(['ctrlKey', 'metaKey'])('%s + N 与侧栏点击行为一致', (modifier) => {

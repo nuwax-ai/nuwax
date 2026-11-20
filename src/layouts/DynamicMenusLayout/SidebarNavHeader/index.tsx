@@ -287,7 +287,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
             className={cx(styles['header-logo'])}
             src={tenantConfigInfo.siteLogo}
             alt=""
-            onClick={() => history.push('/home')}
+            onClick={onNewTask}
           />
         )}
         {/* 客户端版本徽标（仅桌面宿主 + 布局级实例；浏览器/旧宿主组件内部自隐藏） */}

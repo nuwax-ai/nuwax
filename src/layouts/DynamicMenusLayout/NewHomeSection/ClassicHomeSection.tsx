@@ -46,12 +46,6 @@ const ClassicHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   const [activeTab, setActiveTab] = useState<HomeTab>(() =>
     aiOSCommercialEdition ? getInitialActiveTab() : 'conversation',
   );
-  // 配置刷新后，已缓存的项目 Tab 不能继续占用任务入口。
-  useEffect(() => {
-    if (!aiOSCommercialEdition && activeTab === 'project') {
-      handleTabChange('conversation');
-    }
-  }, [aiOSCommercialEdition, activeTab]);
 
   // 初始停留在任务 tab 才首载（停留在项目 tab 时延后到切换时加载；单栏形态由
   // 数据壳挂载恒发）——与数据壳初始 loading 的互补语义由 initialLoad 内部保证
@@ -116,9 +110,16 @@ const ClassicHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     shell.resetSearchAndRefresh();
   };
 
+  // 配置刷新后，已缓存的项目 Tab 不能继续占用任务入口。
+  useEffect(() => {
+    if (!aiOSCommercialEdition && activeTab === 'project') {
+      handleTabChange('conversation');
+    }
+  }, [aiOSCommercialEdition, activeTab]);
+
   const handleNewConversation = () => {
     handleCloseMobileMenu();
-    history.push('/home');
+    history.push('/home', { newTask: true });
   };
 
   // 新建会话入口在搜索栏右侧（单栏在侧栏顶部操作区 SidebarNavHeader）
