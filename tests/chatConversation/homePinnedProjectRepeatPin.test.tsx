@@ -10,6 +10,7 @@ import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { fetchChatboxCategories } from '@/services/square';
 import { apiNormalProjectGetById } from '@/services/userProjectApp';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import {
   act,
@@ -62,9 +63,20 @@ const handoffState = vi.hoisted(() => {
 
 const messageMock = vi.hoisted(() => ({ warning: vi.fn() }));
 const navigation = vi.hoisted(() => ({
+  pathname: '/home',
+  search: '',
+  hash: '',
   key: 'test-home-key',
-  state: undefined as { newTask: boolean } | undefined,
+  state: undefined as { newTask?: boolean; source?: string } | undefined,
 }));
+const replaceHistory = vi.hoisted(() =>
+  vi.fn(
+    (
+      path: Pick<typeof navigation, 'pathname' | 'search' | 'hash'>,
+      state: (typeof navigation)['state'],
+    ) => void Object.assign(navigation, path, { state }),
+  ),
+);
 
 // 与 umi 一样让 model 活在路由外，切走再返回时只重挂 Home。
 const HomeInputContext = createContext<ReturnType<
@@ -79,7 +91,13 @@ const render = (ui: React.ReactElement) =>
   renderView(ui, { wrapper: HomeInputProvider });
 
 vi.mock('umi', () => ({
-  useLocation: () => navigation,
+  useLocation: () => ({ ...navigation }),
+  history: {
+    get location() {
+      return navigation;
+    },
+    replace: replaceHistory,
+  },
   useModel: (name: string) => {
     const homeInput = useContext(HomeInputContext);
     if (name === 'homeInputContext') return homeInput;
@@ -289,8 +307,13 @@ const initNeverReceivedDefaultTools = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   handoffState.reset();
-  navigation.key = 'test-home-key';
-  navigation.state = undefined;
+  Object.assign(navigation, {
+    pathname: '/home',
+    search: '',
+    hash: '',
+    key: 'test-home-key',
+    state: undefined,
+  });
   input.hasContent = false;
   vi.mocked(apiNormalProjectGetById).mockReset();
   vi.mocked(apiNormalProjectGetById).mockResolvedValue({
@@ -300,6 +323,123 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+describe('首页新建任务和模型选择', () => {
+  it.each([false, true])(
+    '后退到已处理的历史项时保留选择（首次进入有草稿：%s）',
+    async (hadDraft) => {
+      const originalUrl = window.location.href;
+      const originalState = window.history.state;
+      const homeUrl = '/home?from=sidebar#input';
+      const homeState = { newTask: true, source: 'sidebar' };
+      const syncHomeLocation = () => {
+        Object.assign(navigation, {
+          pathname: window.location.pathname,
+          search: window.location.search,
+          hash: window.location.hash,
+          key: window.history.state.key,
+          state: window.history.state.state,
+        });
+      };
+      vi.mocked(apiPublishedAgentInfo).mockImplementation(
+        async (agentId) =>
+          ({
+            data: { agentId, allowOtherModel: DefaultSelectedEnum.Yes },
+          } as Awaited<ReturnType<typeof apiPublishedAgentInfo>>),
+      );
+      replaceHistory.mockImplementationOnce(
+        ({ pathname, search, hash }, state) => {
+          window.history.replaceState(
+            { key: 'consumed-home-entry', state },
+            '',
+            pathname + search + hash,
+          );
+          syncHomeLocation();
+        },
+      );
+
+      try {
+        window.history.pushState(
+          { key: 'new-task-entry', state: homeState },
+          '',
+          homeUrl,
+        );
+        syncHomeLocation();
+        input.hasContent = hadDraft;
+        const { rerender } = render(<Home />);
+        await waitFor(() => expect(input.props.agentId).toBe(7));
+
+        act(() =>
+          input.props.onExpertAgentSelect({ targetId: 67, name: '专家' }),
+        );
+        await waitFor(() => expect(input.props.agentId).toBe(67));
+        act(() => input.props.onModelSelect(123));
+        input.hasContent = false;
+        window.history.pushState(null, '', '/space');
+        rerender(<div>其他页面</div>);
+
+        const popped = new Promise<void>((resolve) =>
+          window.addEventListener('popstate', () => resolve(), { once: true }),
+        );
+        window.history.back();
+        await popped;
+        syncHomeLocation();
+        rerender(<Home />);
+
+        await waitFor(() => expect(input.props.agentTypeLoading).toBe(false));
+        expect(input.props.summonedExpert?.agentId).toBe(67);
+        expect(input.props.selectedModelId).toBe(123);
+        expect(
+          window.location.pathname +
+            window.location.search +
+            window.location.hash,
+        ).toBe(homeUrl);
+        expect(window.history.state.state).toEqual({ source: 'sidebar' });
+        expect(replaceHistory).toHaveBeenCalledTimes(1);
+      } finally {
+        window.history.replaceState(originalState, '', originalUrl);
+      }
+    },
+  );
+
+  it.each([
+    { allowOtherModel: DefaultSelectedEnum.No, modelId: undefined },
+    { allowOtherModel: DefaultSelectedEnum.Yes, modelId: 123 },
+  ])(
+    '返回首页时按当前智能体配置发送模型（allowOtherModel：$allowOtherModel）',
+    async ({ allowOtherModel, modelId }) => {
+      let currentModelPermission = DefaultSelectedEnum.Yes;
+      vi.mocked(apiPublishedAgentInfo).mockImplementation(
+        async (agentId) =>
+          ({
+            data: { agentId, allowOtherModel: currentModelPermission },
+          } as Awaited<ReturnType<typeof apiPublishedAgentInfo>>),
+      );
+      const { rerender } = render(<Home />);
+      await waitFor(() =>
+        expect(input.props.allowOtherModel).toBe(DefaultSelectedEnum.Yes),
+      );
+      act(() => input.props.onModelSelect(123));
+      rerender(<div>其他页面</div>);
+
+      currentModelPermission = allowOtherModel;
+      navigation.key = 'regular-home-return';
+      rerender(<Home />);
+      await waitFor(() =>
+        expect(input.props.allowOtherModel).toBe(allowOtherModel),
+      );
+      expect(input.props.selectedModelId).toBe(123);
+
+      await act(async () => input.props.onEnter('使用当前智能体配置'));
+      expect(handleCreateConversation.mock.lastCall?.[1].modelId).toBe(modelId);
+
+      await act(async () =>
+        input.props.onEnter('含输入框透传的模型', undefined, undefined, 123),
+      );
+      expect(handleCreateConversation.mock.lastCall?.[1].modelId).toBe(modelId);
+    },
+  );
+});
 
 describe('首页隐藏运行容器选择器时的发送参数', () => {
   beforeEach(() => {

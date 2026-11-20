@@ -67,7 +67,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
@@ -222,6 +222,9 @@ const Home: React.FC = () => {
     : selectedRecommend?.id;
   const agentTypeLoading =
     !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const allowOtherModel = agentTypeLoading
+    ? undefined
+    : agentDetail?.allowOtherModel;
   const supportsAgentCapabilities =
     !agentTypeLoading && agentDetail?.type !== AgentTypeEnum.ChatBot;
 
@@ -549,7 +552,10 @@ const Home: React.FC = () => {
         message: inputMessage,
         files,
         skillIds: supportsAgentCapabilities ? skillIds : [],
-        modelId: modelId || selectedModelId,
+        modelId:
+          allowOtherModel === DefaultSelectedEnum.Yes
+            ? modelId || selectedModelId
+            : undefined,
         agentMode,
         infos: mergedInfos,
         selectedDocs: supportsAgentCapabilities ? selectedDocs : [],
@@ -670,21 +676,21 @@ const Home: React.FC = () => {
     chatInputRef.current?.focus();
   }, []);
 
-  const handledNewTaskNavigation = useRef<string>();
   useEffect(() => {
-    if (handledNewTaskNavigation.current === location.key) return;
-    handledNewTaskNavigation.current = location.key;
-    // 仅全局新建任务恢复空白首页；项目 + 和专家等入口继续消费各自的透传。
+    const { key, pathname, search, hash, state } = location;
+    if (!state?.newTask || history.location.key !== key) return;
+    // 即使有草稿也消费标记，避免历史回退重放新建任务。
+    const { newTask: _newTask, ...remainingState } = state;
+    history.replace({ pathname, search, hash }, remainingState);
     // 有草稿时保留绑定，避免返回首页后把未发送内容归到其他项目。
-    if (!location.state?.newTask || chatInputRef.current?.hasContent()) return;
+    if (chatInputRef.current?.hasContent()) return;
     ++pinnedProjectConfigSequence.current;
     setPinnedProjectConfigLoading(false);
     agentMissedPromptedRef.current = undefined;
     resetInputContext();
     setSelectedSkill(undefined);
     chatInputRef.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key]);
+  }, [location, resetInputContext]);
 
   return (
     <div
@@ -802,7 +808,7 @@ const Home: React.FC = () => {
           strictAgentMemory
           /* / 能力弹窗默认由首页开放；ChatBot 或详情加载期间由
              agentType/agentTypeLoading 统一关闭。 */
-          allowOtherModel={agentDetail?.allowOtherModel}
+          allowOtherModel={allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
           showSpaceSelector={showSpaceSelector}
