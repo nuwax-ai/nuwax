@@ -7,7 +7,7 @@
 | 状态 | 实际持有者 | 作用域与保存位置 | 离开后返回 / 刷新 |
 | --- | --- | --- | --- |
 | 未发送正文、技能/文档/文件引用、已上传附件 | `ChatInputUnified` 编辑态，`draftStorage` 读写 | `localStorage` 的 `chat_draft:<scope>`，24 小时有效 | 按 scope 恢复；刷新也能恢复 |
-| 首页绑定项目、推荐智能体、召唤专家、分类、电脑、目录、模型、空间、手选工具及工具展示元数据 | `homeInputContext` | SPA 内存，首页只有一份，独立于所有已有会话 | 路由返回保留；刷新丢失；空输入点击全局新建任务时复位 |
+| 首页绑定项目、推荐智能体、召唤专家、分类、电脑、目录、模型、空间、手选工具及工具展示元数据 | `homeInputContext` | SPA 内存，首页只有一份，独立于所有已有会话 | 普通路由返回保留，刷新丢失。空输入时主动点击首页或新建任务会复位 |
 | 项目「+」、召唤专家、广场智能体、技能卡的带入参数 | `pageHandoffContext` | SPA 内存，一次性消费；每条通道只有一个待消费值 | 消费后删除；刷新丢失；后一次写入覆盖同通道前一次 |
 | 电脑选择记忆 | `ComputerTypeSelector` + 后端 `agentSelected` | 当前用户、按智能体保存；组件另有本次手选镜像 | 重建时重新查询，受项目配置/会话绑定/只读限制约束 |
 | 模型默认选择 | 页面受控 `selectedModelId` + `ModelSelector` | 当前页面选择；服务端 options 首项提供该智能体的最近使用候选 | 首页路由返回保留手选；重建/刷新按可用列表重新校验，失效时选默认候选 |
@@ -44,7 +44,7 @@
 2. **编辑**：正文、技能、文档和已上传附件变化后，约 1 秒防抖保存。删除引用、删除附件、清空最后一段正文立即写回，防止删除后立刻离开又恢复旧内容。
 3. **离开/卸载**：用最新镜像补写未落盘的非空草稿。卸载兜底只补写，不以 teardown 中的空镜像删草稿；真正的用户清空在编辑阶段处理。
 4. **恢复引用**：`MentionEditor` 从结构化数据重新创建 chip，再派生 `skillIds`、`selectedDocs` 等发送参数。只恢复文字 `@名称` 不等于恢复引用。
-5. **恢复附件**：只保留有服务端 `url` 和 `key` 的完成附件，恢复为已上传状态，不再重复上传。上传中的文件不持久化，但仍算当前输入有内容，不能触发新建任务复位。
+5. **恢复附件**：图片和其他已上传文件都算输入内容。恢复时只保留有服务端 `url` 和 `key` 的完成附件。正在上传的文件也算当前页面有内容。
 6. **全空**：纯空格/换行不算正文；没有正文、引用、已上传附件和兼容技能数据时删除存储键。读取时过滤非法引用/附件，过期或合法结构中的空草稿被清除；存储不可用时静默降级。
 7. **发送**：当前实现是在调用 `onEnter` 后立即消费并清除当前桶，取消待保存定时器，卸载时不回写已消费内容。`isClearInput=true` 还清空当前编辑态；首页传 `false`，在页面跳转前保留输入。
 8. **删除会话**：缓存 manager 按会话 ID 删除各入口对应的草稿及面板偏好。LRU 释放页面实例本身不删除草稿，24 小时 TTL 也不等于页面实例的寿命。
@@ -57,10 +57,10 @@
 
 | 用户动作 | 内容处理 | 项目、智能体及其他选择 |
 | --- | --- | --- |
-| 全局“新建任务”，当前没有正文、引用或附件 | 保持空输入 | `resetInputContext()` 复位首页选择，清除项目/目录/推荐/专家/工具/模型/空间/手选分类；默认智能体及其配置按正常链路重新生效 |
-| 全局“新建任务”，已有内容 | 保留并恢复草稿 | 保留原项目、电脑/目录、推荐或专家、工具、模型、空间和分类 |
-| 当前已在首页，再点击“新建任务” | 同上，读取实时编辑态 | 依赖新的导航 key，也执行空/非空判断，无需重挂载 |
-| 普通路由返回、浏览器导航到首页 | 按 `home` 恢复草稿 | 不主动全量复位；全局新建任务通过 `history.state.newTask` 显式标识 |
+| 点击“首页”或“新建任务”，当前没有正文、引用或附件 | 保持空输入 | `resetInputContext()` 复位首页选择，清除项目、目录、推荐、专家、工具、模型、空间和手选分类，恢复默认智能体及其配置 |
+| 点击“首页”或“新建任务”，已有内容 | 保留并恢复草稿 | 保留原项目、电脑和目录、推荐或专家、工具、模型、空间和分类 |
+| 当前已在首页，再点这些入口 | 读取实时编辑态 | 每个新的导航 key 执行一次空输入判断 |
+| 普通路由返回、浏览器前进或后退到首页 | 按 `home` 恢复草稿 | 保留首页内存选择 |
 | 项目行/详情页「+」 | 保留当前草稿 | 一次性项目透传优先绑定指定项目；不当作全局新建任务 |
 | 同项目再次「+」 | 保留草稿 | 保留所选智能体和工具，重读项目电脑与目录；项目身份按类型＋ ID 比较 |
 | 改点另一个项目「+」 | 保留草稿 | 替换项目，清掉互斥的推荐/专家/模型/空间/分类，继承新项目电脑与目录 |
@@ -71,7 +71,7 @@
 | 移除项目 chip | 清空编辑器正文和引用，附件仍保留 | 去掉项目、推荐、手选分类、目录并复位电脑；这不是全量 `resetInputContext`，已有专家按现行行为保留 |
 | 刷新首页 | 正文、引用、已上传附件仍可恢复 | 首页内存选择及待消费透传丢失，按默认首页重新初始化 |
 
-侧栏点击、Ctrl/Cmd+N 和宿主 `new-task` 命令共用 [useMenuNavigation](../../src/layouts/DynamicMenusLayout/useMenuNavigation.ts)。项目「+」等业务上框入口不携带全局 `newTask` 标记。首页首次处理时从当前历史项移除该标记，其余导航数据保留，浏览器后退不会再次复位。
+首页菜单沿用 `menuCode: 'homepage'`，首页仅在 `PUSH` 导航时把它当作主动点击。单栏 Logo、经典布局快捷新建、Ctrl/Cmd+N 和宿主 `new-task` 命令用 `history.state.newTask` 标识进入首页输入框。首页处理时从当前历史项移除该标记并保留其余数据。项目「+」等业务上框入口沿用各自的一次性透传。
 
 一次性通道的交接点是 `pageHandoffContext`，消费后的首页选择由 `homeInputContext` 接管。不要为了保留项目而把一次性 payload 留在 handoff map，也不要把首页的项目状态塞进已有会话的草稿桶。
 
@@ -112,11 +112,11 @@ PC style3 的整页保活由 `ClientConversationKeepAlive` 和 `fullPageInstance
 
 | 要调整的规则 | 修改入口 | 主要回归 |
 | --- | --- | --- |
-| 全局新建任务 vs 业务上框、空/非空恢复 | `useMenuNavigation`、`Home`、`homeInputContext` | `newTaskNavigation.test.tsx`、`homePinnedProjectRepeatPin.test.tsx` |
+| 点击首页、新建任务、业务上框与草稿恢复 | `useMenuNavigation`、`Home`、`homeInputContext` | `newTaskNavigation.test.tsx`、`homePinnedProjectRepeatPin.test.tsx` |
 | 正文/引用/附件恢复、延迟保存、发送消费 | `ChatInputUnified`、`draftStorage`、会话缓存 manager | `chatInputUnified.home.test.tsx`、`draftStorage.test.ts`、`conversationPageCache.test.ts` |
 | 按入口和会话隔离、保活路径冻结 | `useConversationDraftScope`、`ConversationPagePathnameContext` | `useConversationDraftScope.test.tsx`、统一输入框切 scope 回归 |
 | 专家/技能/项目带入 | 各 `use*Handoff`、`pageHandoffContext`、首页消费 | `homeSummonedExpertHandoff.test.tsx`、`homeSelectedSkillHandoff.test.tsx`、项目上框回归 |
 | 工具默认值与手选恢复 | `useSelectedComponent`、首页 `componentAgentKey`、各会话页面 | 首页重复 pin、同页异步竞态与工具发送回归 |
 | 电脑/模型/空间默认值及模式偏好 | 对应选择器、`useChatboxAgentConfig`、干预层模式缓存 | 选择器及配置 hook 的现有回归；按实际入口走查 |
 
-会话改动执行 `npm run test:conversation`。对应页面至少走查：项目「+」→ 空输入新建任务；项目「+」→ 输入 → 切走 → 新建任务；删除最后一段正文立刻切走；已有会话 A/B 草稿互不串入。保活、持久化与后端记录要分别验证，单测通过不代表已安装客户端或线上环境已经接受该行为。
+会话改动执行 `npm run test:conversation`。首页走查覆盖项目「+」后空输入点首页、输入正文或添加附件后切页再点首页，以及删除最后一段正文后立即返回首页。已有会话走查验证 A/B 草稿隔离。保活、持久化和后端记录分别验证。
