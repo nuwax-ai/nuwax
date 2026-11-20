@@ -2,83 +2,93 @@
 @import '@/styles/token';
 
 .header {
-  height: 56px;
-  gap: 12px;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 56px;
+  gap: 8px 12px;
   padding: 8px 20px;
-  overflow-x: auto;
-  overflow-y: hidden;
+
+  .identity,
+  .details,
+  .controls {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .identity {
+    gap: 12px;
+  }
 
   .icon-back {
     // 统一返回图标方案：SvgIcon 默认内联 20px
+    flex-shrink: 0;
     color: @navFirstMenuTextSecondary;
   }
 
   .logo {
+    flex-shrink: 0;
     width: 27px;
     height: 27px;
     border-radius: 5px;
     object-fit: cover;
   }
 
-  .section {
-    gap: 6px;
+  .details {
+    gap: 10px;
+    color: @BLANK04;
+  }
 
-    .top-box {
-      gap: 10px;
-      color: @BLANK04;
+  .name {
+    max-width: 200px;
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+  }
 
-      .name {
-        max-width: 200px;
-        font-size: 14px;
-        font-weight: @fontWeightStrong;
-      }
+  .bottom-box {
+    gap: 8px;
+  }
 
-      .bottom-box {
-        gap: 8px;
+  .box {
+    padding: 0 5px;
+    border-radius: 4px;
+    background-color: @BLANK18;
+    font-size: 10px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
 
-        .box {
-          display: inline-block;
-          padding: 0 5px;
-          line-height: 18px;
-          background-color: @BLANK18;
-          color: @BLANK04;
-          font-size: 10px;
-          border-radius: 4px;
-        }
-      }
-    }
+  .controls {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .tabs {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 2px;
+  }
+
+  .radio-group-box {
+    display: flex;
+    flex: 0 0 auto;
+    margin-inline: auto;
+    white-space: nowrap;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 150px;
+    margin-inline-start: auto;
   }
 
   .dropdown-icon {
     font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  .header {
-    margin-bottom: 10px;
-  }
-
-  .radio-group-box {
-    flex-wrap: nowrap;
-
-    :global {
-      .ant-radio-button-label {
-        white-space: nowrap;
-      }
-
-      .ant-radio-group {
-        display: flex;
-        flex-wrap: nowrap; /* 禁止换行 */
-      }
-
-      .ant-radio-button {
-        flex: 0 0 auto; /* 防止按钮被压缩 */
-      }
-    }
-  }
-
-  .box {
-    white-space: nowrap;
   }
 }

@@ -50,22 +50,23 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   };
 
   return (
-    <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
-      <SvgIcon
-        name="icons-nav-backward"
-        className={cx(styles['icon-back'], 'cursor-pointer')}
-        onClick={() => jumpBack(`/space/${spaceId}/library`)}
-      />
-      <img
-        className={cx(styles.logo)}
-        src={knowledgeInfo?.icon || (knowledgeImage as string)}
-        alt=""
-      />
-      <section
-        className={cx('flex', 'flex-col', 'content-between', styles.section)}
-      >
-        <div className={cx('flex', styles['top-box'])}>
-          <h3 className={cx(styles.name, 'text-ellipsis')}>
+    <header className={styles.header}>
+      <div className={styles.identity}>
+        <SvgIcon
+          name="icons-nav-backward"
+          className={cx(styles['icon-back'], 'cursor-pointer')}
+          onClick={() => jumpBack(`/space/${spaceId}/library`)}
+        />
+        <img
+          className={styles.logo}
+          src={knowledgeInfo?.icon || (knowledgeImage as string)}
+          alt=""
+        />
+        <div className={styles.details}>
+          <h3
+            className={cx(styles.name, 'text-ellipsis')}
+            title={knowledgeInfo?.name}
+          >
             {knowledgeInfo?.name}
           </h3>
           <FormOutlined
@@ -84,71 +85,64 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
             </span>
           </div>
         </div>
-      </section>
-      {/* 添加radio.group 放在中间 选项有 文档和QA问答 默认选中文档 */}
-      {/* <div className={cx('flex', 'flex-col', 'items-center', styles['radio-group-box'])}> */}
-      <Radio.Group
-        className={cx(
-          'flex',
-          'items-center',
-          'flex-1',
-          'content-center',
-          styles['radio-group-box'],
-        )}
-        optionType="button"
-        value={docType}
-        onChange={handleChange}
-      >
-        <Radio value={KnowledgeDocTypeEnum.DOC}>
-          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
-        </Radio>
-        <Radio value={KnowledgeDocTypeEnum.QA}>
-          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
-        </Radio>
-        {aiOSCommercialEdition && (
-          <Radio value={KnowledgeDocTypeEnum.GRAPH}>
-            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
-          </Radio>
-        )}
-        <Radio value={KnowledgeDocTypeEnum.ACCURACYTEST}>
-          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
-        </Radio>
-      </Radio.Group>
-      {/* </div> */}
-      {/*添加内容*/}
-      <div
-        style={{
-          width: 150,
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}
-      >
-        {docType === KnowledgeDocTypeEnum.DOC ? (
-          <CustomPopover list={KNOWLEDGE_TEXT_IMPORT_TYPE} onClick={onPopover}>
-            <Button
-              type="primary"
-              icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
-              iconPosition="end"
+      </div>
+      <div className={styles.controls}>
+        <div className={styles.tabs}>
+          <Radio.Group
+            className={styles['radio-group-box']}
+            optionType="button"
+            value={docType}
+            onChange={handleChange}
+          >
+            <Radio value={KnowledgeDocTypeEnum.DOC}>
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
+            </Radio>
+            <Radio value={KnowledgeDocTypeEnum.QA}>
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
+            </Radio>
+            {aiOSCommercialEdition && (
+              <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+                {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+              </Radio>
+            )}
+            <Radio value={KnowledgeDocTypeEnum.ACCURACYTEST}>
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
+            </Radio>
+          </Radio.Group>
+        </div>
+        <div className={styles.actions}>
+          {docType === KnowledgeDocTypeEnum.DOC ? (
+            <CustomPopover
+              list={KNOWLEDGE_TEXT_IMPORT_TYPE}
+              onClick={onPopover}
             >
-              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
-            </Button>
-          </CustomPopover>
-        ) : docType === KnowledgeDocTypeEnum.QA ? (
-          <CustomPopover list={KNOWLEDGE_QA_IMPORT_TYPE} onClick={onQaPopover}>
-            <Button
-              type="primary"
-              icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
-              iconPosition="end"
+              <Button
+                type="primary"
+                icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
+                iconPosition="end"
+              >
+                {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
+              </Button>
+            </CustomPopover>
+          ) : docType === KnowledgeDocTypeEnum.QA ? (
+            <CustomPopover
+              list={KNOWLEDGE_QA_IMPORT_TYPE}
+              onClick={onQaPopover}
             >
-              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
+              <Button
+                type="primary"
+                icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
+                iconPosition="end"
+              >
+                {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
+              </Button>
+            </CustomPopover>
+          ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
+            <Button type="primary" onClick={onViewAllGraphs}>
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
             </Button>
-          </CustomPopover>
-        ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
-          <Button type="primary" onClick={onViewAllGraphs}>
-            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
-          </Button>
-        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? null : null}
+          ) : null}
+        </div>
       </div>
     </header>
   );
