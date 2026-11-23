@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import defaultAvatar from '@/assets/images/avatar.png';
 import CardWrapper from '@/components/business-component/CardWrapper';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { EyeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -16,15 +17,26 @@ export interface AppCardProps {
 }
 
 /**
- * 会话数紧凑格式:<1万原样展示,≥1万展示「x.x万」去尾零
- * (与 ExpertSummonCard 的 formatUsage 同口径;hover title 展示精确值)
+ * 会话数紧凑格式:未达量级原样展示,达到后展示紧凑值去尾零。
+ * 中文/日文按「万」量级(≥1万),其余语种按 K 量级(≥1K);
+ * 单位模板走 i18n,避免硬编码单位在非中文界面泄漏(hover title 展示精确值)
  */
 const formatConvCount = (count: number): string => {
-  if (count < 10000) return String(count);
-  const wan = count / 10000;
+  const lang = getCurrentLang();
+  const useWanUnit = lang.startsWith('zh') || lang.startsWith('ja');
+  const unitBase = useWanUnit ? 10000 : 1000;
+  if (count < unitBase) return String(count);
+  const scaled = count / unitBase;
   const text =
-    wan >= 100 ? String(Math.round(wan)) : String(Math.round(wan * 100) / 100);
-  return `${text}万`;
+    scaled >= 100
+      ? String(Math.round(scaled))
+      : String(Math.round(scaled * 100) / 100);
+  return dict(
+    useWanUnit
+      ? 'PC.Pages.NuwaApps.convCountWan'
+      : 'PC.Pages.NuwaApps.convCountKilo',
+    text,
+  );
 };
 
 /**

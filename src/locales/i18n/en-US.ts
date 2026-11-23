@@ -4936,6 +4936,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.NuwaApps.expand": "Expand",
   "PC.Pages.NuwaApps.collapse": "Collapse",
   "PC.Pages.NuwaApps.appTabLimitReached": "You can open up to 5 apps at once. Close an open app first. Hover an open app tab to show the delete button",
+  "PC.Pages.NuwaApps.convCountWan": "{0}万",
+  "PC.Pages.NuwaApps.convCountKilo": "{0}K",
   "PC.Pages.UserApp.emptyDomain": "No domain data",
   "PC.Pages.UserApp.loadFailed": "Failed to load domain info",
   "PC.Pages.Square.Square.plugin": "Plugin",
