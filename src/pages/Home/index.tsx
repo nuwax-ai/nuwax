@@ -7,6 +7,7 @@ import {
 import ChatInputUnified, {
   type ChatInputUnifiedRef,
 } from '@/components/business-component/ChatInputUnified';
+import { useConversationSettingsPrompt } from '@/components/business-component/ConversationSettings/useConversationSettingsPrompt';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import SiteFooter from '@/components/SiteFooter';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -73,7 +74,6 @@ import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
   type HomeCategoryDef,
 } from './components/HomeCategoryTabs';
-import { useHomeConversationSettings } from './hooks/useHomeConversationSettings';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -232,7 +232,7 @@ const Home: React.FC = () => {
   const agentDetail = agentDetailReady ? agentDetailResult.detail : undefined;
   const agentTypeLoading =
     !!currentAgentId && agentDetail?.agentId !== currentAgentId;
-  const { requestSettings, settingsDialog } = useHomeConversationSettings(
+  const { requestSettings, settingsDialog } = useConversationSettingsPrompt(
     [
       agentDetailKey,
       pinnedProject?.projectType,

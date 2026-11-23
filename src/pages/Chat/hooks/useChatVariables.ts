@@ -23,6 +23,10 @@ export const useChatVariables = ({
 
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
+  const confirmedSettings = useRef<{
+    conversationId: number;
+    values: Record<string, string | number>;
+  }>();
   const hasRequiredValues = (values?: Record<string, unknown> | null) =>
     requiredNameList.every((name) =>
       hasConversationVariableValue(values?.[name]),
@@ -63,6 +67,12 @@ export const useChatVariables = ({
     ? savedVariableParams
     : variableParams;
   const isChatInputDisabled = !hasRequiredValues(currentVariableParams);
+  const applyFirstSendSettings = (values: Record<string, string | number>) => {
+    confirmedSettings.current = { conversationId, values };
+    isSendMessageRef.current = true;
+    form.setFieldsValue(values);
+    setVariableParams(values);
+  };
 
   return {
     variableParams: isChatInputDisabled ? null : currentVariableParams,
@@ -70,5 +80,13 @@ export const useChatVariables = ({
     isSendMessageRef,
     isChatInputDisabled,
     hasUserFillVariables,
+    applyFirstSendSettings,
+    // 校验弹窗确认与发送发生在同一轮，读取值时不等待 React 重渲染。
+    getVariableParams: () =>
+      confirmedSettings.current?.conversationId === conversationId
+        ? confirmedSettings.current.values
+        : isChatInputDisabled
+        ? undefined
+        : currentVariableParams ?? undefined,
   };
 };

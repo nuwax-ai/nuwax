@@ -10,6 +10,7 @@ import {
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
 import AppPageState from '@/components/business-component/AppPageState';
+import { useConversationSettingsPrompt } from '@/components/business-component/ConversationSettings/useConversationSettingsPrompt';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
@@ -46,7 +47,8 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
-import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import { parsePageAppProjectId } from '@/utils/common';
+import { hasConversationVariableValue } from '@/utils/conversationVariables';
 import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -156,6 +158,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const [detailError, setDetailError] = useState<unknown>(null);
   // 会话ID
   const [conversationId, setConversationId] = useState<number | null>(null);
+  const { requestSettings, settingsDialog } = useConversationSettingsPrompt(
+    `${agentId}:${conversationId}:${active}`,
+  );
+  const firstSendSettings = useRef<{
+    conversationId: number;
+    values: Record<string, string | number>;
+  }>();
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   // 选中的模型 ID
@@ -255,21 +264,26 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   }, [form, values]);
 
   // 聊天会话框是否禁用，不能发送消息
-  const wholeDisabled = useMemo(() => {
-    // 变量参数为空，不发送消息
-    if (requiredNameList?.length > 0) {
-      // 未填写必填参数，禁用发送按钮
-      if (!variableParams) {
-        return true;
-      }
-      const isSameName = arraysContainSameItems(
-        requiredNameList,
-        Object.keys(variableParams),
-      );
-      return !isSameName;
-    }
-    return false;
-  }, [requiredNameList, variableParams]);
+  const wholeDisabled = requiredNameList.some(
+    (name) => !hasConversationVariableValue(variableParams?.[name]),
+  );
+  const beforeSend =
+    active &&
+    !isAppSidebarMode &&
+    isLoaded &&
+    conversationId !== null &&
+    wholeDisabled
+      ? async () => {
+          const values = await requestSettings(
+            variables,
+            form.getFieldsValue(),
+          );
+          if (!values) return false;
+          firstSendSettings.current = { conversationId, values };
+          form.setFieldsValue(values);
+          return true;
+        }
+      : undefined;
 
   // 打开页面预览
   const handleOpenPreview = (agentDetail: AgentDetailDto) => {
@@ -640,8 +654,12 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       return;
     }
     // 变量参数为空，不发送消息
-    if (wholeDisabled) {
-      form.validateFields(); // 触发表单验证以显示error
+    const confirmed =
+      firstSendSettings.current?.conversationId === conversationId
+        ? firstSendSettings.current.values
+        : undefined;
+    if (wholeDisabled && !confirmed) {
+      void form.validateFields().catch(() => undefined);
       message.warning(
         t('PC.Components.ConversationDetails.requiredParamsWarning'),
       );
@@ -697,7 +715,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       // 默认智能体详情
       defaultAgentDetail: agentDetail,
       // 变量参数
-      variableParams,
+      variableParams: confirmed ?? variableParams,
       // 消息来源
       messageSourceType: 'agent' as MessageSourceType,
       // 智能体电脑ID
@@ -714,6 +732,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
     incrementCalledTrialCount();
 
+    firstSendSettings.current = undefined;
     confirmSendMessage(attach);
   };
 
@@ -931,7 +950,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
             }}
             chatSuggestList={chatSuggestList}
             onSendMessage={handleMessageSend}
-            chatInputDisabled={wholeDisabled}
+            beforeSend={beforeSend}
+            chatInputDisabled={wholeDisabled && !beforeSend}
             showClearIcon={false}
             showConversationStatus={false}
             manualComponents={agentDetail?.manualComponents || []}
@@ -1037,6 +1057,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       />
 
       {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
+      {settingsDialog}
       <ConditionRender condition={!isAppSidebarMode}>
         {/*智能体详情*/}
         <AgentSidebar

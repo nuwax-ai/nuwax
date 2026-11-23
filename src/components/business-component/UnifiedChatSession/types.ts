@@ -88,6 +88,8 @@ export interface UnifiedChatSessionProps {
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
   ) => void | Promise<unknown>;
+  /** 首发缺少必填设置时，补填成功后才允许进入发送队列。 */
+  beforeSend?: () => Promise<boolean>;
   onClear?: () => Promise<void>; // 刷新/清空会话的回调
   onLoadMoreMessage?: (id: number) => void; // 向上滚动到顶加载历史消息的回调
 

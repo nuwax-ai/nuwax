@@ -5,6 +5,7 @@ import {
   type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
+import { useConversationSettingsPrompt } from '@/components/business-component/ConversationSettings/useConversationSettingsPrompt';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
@@ -539,12 +540,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isSendMessageRef,
     isChatInputDisabled,
     hasUserFillVariables,
+    applyFirstSendSettings,
+    getVariableParams,
   } = useChatVariables({
     conversationId: id,
     savedVariableParams,
     requiredNameList,
     form,
   });
+  const { requestSettings, settingsDialog } = useConversationSettingsPrompt(
+    `${id}:${active}`,
+  );
 
   // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
   // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
@@ -553,7 +559,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     messageViewRef,
     allowAutoScrollRef,
     getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
-    getVariableParams: () => variableParams ?? undefined,
+    getVariableParams,
     effectsResources: {
       isAppSidebarMode,
       runHistory,
@@ -1187,7 +1193,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     form,
     isChatInputDisabled,
     isSendMessageRef,
-    variableParams,
+    getVariableParams,
     getEffectiveSandboxId,
     createConversationSandboxId,
     setClearLoading,
@@ -2467,6 +2473,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectTrigger(Date.now());
   };
 
+  const needsFirstSendSettings =
+    active &&
+    !isAppSidebarMode &&
+    conversationInfo?.id === id &&
+    isChatInputDisabled &&
+    !hasUserSentMessage &&
+    !(runtimeLine?.messageList ?? messageList).some(
+      (item) =>
+        item.messageType === MessageTypeEnum.USER ||
+        String(item.role) === MessageTypeEnum.USER,
+    );
   const chatSessionProps = {
     onFetchMentionFiles:
       id && effectiveAgent?.type === AgentTypeEnum.TaskAgent
@@ -2523,6 +2540,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       enableVersionControl: effectiveAgent?.enableVersionControl,
     },
     onSendMessage: handleMessageSend,
+    beforeSend: needsFirstSendSettings
+      ? async () => {
+          const settings = await requestSettings(
+            variables,
+            form.getFieldsValue(),
+          );
+          if (!settings) return false;
+          applyFirstSendSettings(settings);
+          return true;
+        }
+      : undefined,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
@@ -2703,6 +2731,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       />
       {/*展示台区域*/}
       <ShowArea />
+      {settingsDialog}
 
       <ConditionRender
         condition={showPayment && isEnableSubscription && !isAppSidebarMode}

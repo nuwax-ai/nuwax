@@ -10,9 +10,11 @@ type SettingsValues = Record<string, string | number>;
 
 const ConversationSettingsDialog = ({
   variables,
+  initialValues,
   finish,
 }: {
   variables: BindConfigWithSub[];
+  initialValues?: SettingsValues;
   finish: (values: SettingsValues | null) => void;
 }) => {
   const [form] = Form.useForm<SettingsValues>();
@@ -47,21 +49,25 @@ const ConversationSettingsDialog = ({
       <NewConversationSet
         form={form}
         variables={variables}
+        userFillVariables={initialValues}
         onConfirm={handleConfirm}
       />
     </Modal>
   );
 };
 
-export function useHomeConversationSettings(scope: string) {
-  const [variables, setVariables] = useState<BindConfigWithSub[]>();
+export function useConversationSettingsPrompt(scope: string) {
+  const [settings, setSettings] = useState<{
+    variables: BindConfigWithSub[];
+    initialValues?: SettingsValues;
+  }>();
   const resolveRef = useRef<(values: SettingsValues | null) => void>();
 
   const finish = useCallback((values: SettingsValues | null) => {
     if (!resolveRef.current) return;
     resolveRef.current(values);
     resolveRef.current = undefined;
-    setVariables(undefined);
+    setSettings(undefined);
   }, []);
 
   useEffect(() => {
@@ -73,19 +79,23 @@ export function useHomeConversationSettings(scope: string) {
     };
   }, [scope, finish]);
 
-  const requestSettings = (agentVariables?: BindConfigWithSub[] | null) => {
+  const requestSettings = (
+    agentVariables?: BindConfigWithSub[] | null,
+    initialValues?: SettingsValues,
+  ) => {
     const fields = (agentVariables ?? []).filter(
       (item) => !item.systemVariable,
     );
     if (!fields.some((item) => item.require)) return undefined;
+    if (resolveRef.current) return Promise.resolve(null);
     return new Promise<SettingsValues | null>((resolve) => {
       resolveRef.current = resolve;
-      setVariables(fields);
+      setSettings({ variables: fields, initialValues });
     });
   };
 
-  const settingsDialog = variables && (
-    <ConversationSettingsDialog variables={variables} finish={finish} />
+  const settingsDialog = settings && (
+    <ConversationSettingsDialog {...settings} finish={finish} />
   );
   return { requestSettings, settingsDialog };
 }
