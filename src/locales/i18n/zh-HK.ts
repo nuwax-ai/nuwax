@@ -4609,6 +4609,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.NuwaApps.expand": "展開",
   "PC.Pages.NuwaApps.collapse": "收起",
   "PC.Pages.NuwaApps.appTabLimitReached": "最多同時開啟5個應用，請先關閉已開啟的應用，滑鼠放到已開啟的應用標籤上展示刪除按鈕",
+  "PC.Pages.NuwaApps.convCountWan": "{0}萬",
+  "PC.Pages.NuwaApps.convCountKilo": "{0}K",
   "PC.Pages.UserApp.emptyDomain": "暫無網域資料",
   "PC.Pages.UserApp.loadFailed": "網域資訊載入失敗",
   "PC.Pages.Square.Square.plugin": "插件",
