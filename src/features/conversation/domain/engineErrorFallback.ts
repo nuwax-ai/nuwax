@@ -19,6 +19,8 @@ const ENGINE_INTERNAL_ERROR_PATTERNS: RegExp[] = [
   /^acp\s*engine\s+not\s+initialized\.?$/i,
   // 同族兜底：任意「XXEngine not initialized」内部错误，避免逐个引擎补正则
   /^[a-z0-9_.]+\s*engine\s+not\s+initialized\.?$/i,
+  // NW-390：服务端将客户端启动失败放在纯文本或整段代码块中。
+  /^failed to create engine for project [a-z0-9_.-]+:[ \t]+write EPIPE\.?$/i,
 ];
 
 /** 剥掉包住整段结果的 Markdown code fence（正文内部 fence 保留） */
