@@ -4,7 +4,7 @@
   "sourceDir": "submodules/nuwax-im",
   "projectDir": "nuwax-im-web",
   "branch": "feat-video-meeting",
-  "pin": "d2f4c54e774bba696eb3598d2f4b8a5994ad8439",
+  "pin": "d4b13eb07981357dc11c917bfeb66bbfbbe91b79",
   "patch": "adapter.patch",
   "overlay": "overlay",
   "entry": "/micro-apps/message/index.html",
