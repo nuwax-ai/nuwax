@@ -82,6 +82,12 @@ vi.mock('@/components/SiteFooter/index.less', () => ({
 vi.mock('antd', () => ({
   App: { useApp: () => ({ message: { warning: vi.fn(), error: vi.fn() } }) },
 }));
+vi.mock(
+  '@/components/business-component/ConversationSettings/useConversationSettingsPrompt',
+  () => ({
+    useConversationSettingsPrompt: () => ({ requestSettings: () => undefined }),
+  }),
+);
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,

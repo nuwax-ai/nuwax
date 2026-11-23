@@ -86,11 +86,15 @@ vi.mock('@/pages/Home/index.less', () => ({
 vi.mock('@/components/SiteFooter/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/components/NewConversationSet/index.less', () => ({
+  default: {},
+}));
 vi.mock('@/pages/Home/components/ChatBoxRecommendNav/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
-vi.mock('antd', () => ({
+vi.mock('antd', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('antd')>()),
   App: { useApp: () => ({ message: { warning: vi.fn(), error: vi.fn() } }) },
 }));
 
@@ -219,9 +223,13 @@ beforeEach(() => {
     },
   );
   vi.clearAllMocks();
-  vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
-    data: undefined,
-  } as any);
+  vi.mocked(apiPublishedAgentInfo).mockImplementation(
+    async (agentId) =>
+      ({
+        data: { agentId, variables: [] },
+      } as any),
+  );
+  handleCreateConversation.mockResolvedValue(100);
   Object.keys(handoffMap).forEach((key) => delete handoffMap[key]);
 });
 
@@ -583,6 +591,94 @@ describe('首页项目上框与专家透传消费', () => {
       expect(input.props.summonedExpert?.iconSrc).toBe('agent-image-png'),
     );
   });
+
+  it('专家首发先校验对话设置，取消后可重试并发送原消息和附件', async () => {
+    handoffMap.homeSummonedExpert = { agentId: 8, name: '天气专家' };
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (agentId) =>
+        ({
+          data: {
+            agentId,
+            variables:
+              agentId === 8
+                ? [
+                    {
+                      key: 'name',
+                      name: 'name',
+                      displayName: '姓名',
+                      inputType: 'Text',
+                    },
+                    {
+                      key: 'age',
+                      name: 'age',
+                      displayName: '年龄',
+                      inputType: 'Number',
+                      require: true,
+                    },
+                    {
+                      key: 'system',
+                      name: 'system',
+                      displayName: '系统变量',
+                      systemVariable: true,
+                      require: true,
+                    },
+                  ]
+                : [],
+          },
+        } as any),
+    );
+    render(<Home />);
+    await waitFor(() => expect(input.props.agentId).toBe(8));
+
+    const files = [{ uid: '1', name: '记录.txt', url: '/files/1' }];
+    let submission: Promise<boolean>;
+    const openSettings = async () => {
+      act(() => {
+        submission = input.props.onEnter('成都天气', files);
+      });
+      return screen.findByRole('dialog');
+    };
+    await openSettings();
+    const start = () =>
+      screen.getByRole('button', {
+        name: 'PC.Components.NewConversationSet.startConversation',
+      });
+    fireEvent.click(start());
+    await screen.findByText(
+      'PC.Components.NewConversationSet.pleaseInputField',
+    );
+    expect(handleCreateConversation).not.toHaveBeenCalled();
+    expect(screen.queryByText('系统变量')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.cancel' }),
+    );
+    await expect(submission!).resolves.toBe(false);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    await openSettings();
+    fireEvent.change(screen.getByLabelText('姓名'), {
+      target: { value: '小明' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '0' },
+    });
+    fireEvent.click(start());
+    await waitFor(() =>
+      expect(handleCreateConversation).toHaveBeenCalledTimes(1),
+    );
+    expect(handleCreateConversation).toHaveBeenCalledWith(
+      8,
+      expect.objectContaining({
+        message: '成都天气',
+        files,
+        variableParams: { name: '小明', age: 0 },
+      }),
+    );
+    await expect(submission!).resolves.toBe(true);
+  }, 15000);
 
   it('无透传（直接进首页或刷新）不渲染召唤 chip', async () => {
     render(<Home />);

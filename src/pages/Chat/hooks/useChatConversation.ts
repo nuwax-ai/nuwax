@@ -26,7 +26,7 @@ export interface UseChatConversationProps {
   form: FormInstance;
   isChatInputDisabled: boolean;
   isSendMessageRef: React.MutableRefObject<boolean>;
-  variableParams: any;
+  getVariableParams: () => SendMessageParams['variableParams'];
   getEffectiveSandboxId: () => string | undefined;
   /**
    * 清空上下文新建会话时绑定的沙箱 id（bug 2451：执行按创建时绑定路由）。
@@ -63,7 +63,7 @@ export const useChatConversation = ({
   form,
   isChatInputDisabled,
   isSendMessageRef,
-  variableParams,
+  getVariableParams,
   getEffectiveSandboxId,
   createConversationSandboxId,
   setClearLoading,
@@ -171,7 +171,8 @@ export const useChatConversation = ({
     expertComponents?: AgentSelectedComponentInfo[],
   ) => {
     // 变量参数为空，不发送消息
-    if (isChatInputDisabled) {
+    const variableParams = getVariableParams();
+    if (isChatInputDisabled && !variableParams) {
       return form.validateFields(); // 验证失败交给调用链消费，问答卡片可恢复重试
     }
 

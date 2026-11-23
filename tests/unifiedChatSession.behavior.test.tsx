@@ -320,6 +320,32 @@ describe('UnifiedChatSession 行为', () => {
     );
   });
 
+  it('新会话可以输入首条提示词，补齐必填项后才进入发送队列', async () => {
+    const beforeSend = vi
+      .fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    render(
+      <UnifiedChatSession
+        conversationId={11}
+        requiredNameList={['age']}
+        variableParams={null}
+        beforeSend={beforeSend}
+      />,
+    );
+
+    expect(screen.getByTestId('whole-disabled')).toHaveTextContent('false');
+    await expect(chatInputPropsRef.current.onEnter('首条提示词')).resolves.toBe(
+      false,
+    );
+    expect(mockTrySend).not.toHaveBeenCalled();
+    await expect(chatInputPropsRef.current.onEnter('首条提示词')).resolves.toBe(
+      true,
+    );
+    expect(mockTrySend).toHaveBeenCalledTimes(1);
+    expect(mockTrySend.mock.lastCall?.[0]).toBe('首条提示词');
+  });
+
   it('intervention onSendMessage 走 rawSend 绕过队列', () => {
     render(
       <UnifiedChatSession

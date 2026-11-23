@@ -5,6 +5,7 @@ import {
   type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
+import { useConversationSettingsPrompt } from '@/components/business-component/ConversationSettings/useConversationSettingsPrompt';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
@@ -530,6 +531,27 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     ),
   });
 
+  const savedVariableParams =
+    firstVariableParams ??
+    (conversationInfo?.id === id ? conversationInfo.variables : null);
+  const {
+    variableParams,
+    setVariableParams,
+    isSendMessageRef,
+    isChatInputDisabled,
+    hasUserFillVariables,
+    applyFirstSendSettings,
+    getVariableParams,
+  } = useChatVariables({
+    conversationId: id,
+    savedVariableParams,
+    requiredNameList,
+    form,
+  });
+  const { requestSettings, settingsDialog } = useConversationSettingsPrompt(
+    `${id}:${active}`,
+  );
+
   // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
   // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
   const runtimeLine = useConversationRuntimeSession({
@@ -537,6 +559,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     messageViewRef,
     allowAutoScrollRef,
     getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    getVariableParams,
     effectsResources: {
       isAppSidebarMode,
       runHistory,
@@ -755,18 +778,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       handleClosePreviewView();
     }
   }, [finalSelectedId, viewMode, handleClosePreviewView]);
-
-  const {
-    variableParams,
-    setVariableParams,
-    isSendMessageRef,
-    isChatInputDisabled,
-    hasUserFillVariables,
-  } = useChatVariables({
-    firstVariableParams,
-    requiredNameList,
-    form,
-  });
 
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
@@ -1182,7 +1193,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     form,
     isChatInputDisabled,
     isSendMessageRef,
-    variableParams,
+    getVariableParams,
     getEffectiveSandboxId,
     createConversationSandboxId,
     setClearLoading,
@@ -2462,6 +2473,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectTrigger(Date.now());
   };
 
+  const needsFirstSendSettings =
+    active &&
+    !isAppSidebarMode &&
+    conversationInfo?.id === id &&
+    isChatInputDisabled &&
+    !hasUserSentMessage &&
+    !(runtimeLine?.messageList ?? messageList).some(
+      (item) =>
+        item.messageType === MessageTypeEnum.USER ||
+        String(item.role) === MessageTypeEnum.USER,
+    );
   const chatSessionProps = {
     onFetchMentionFiles:
       id && effectiveAgent?.type === AgentTypeEnum.TaskAgent
@@ -2518,6 +2540,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       enableVersionControl: effectiveAgent?.enableVersionControl,
     },
     onSendMessage: handleMessageSend,
+    beforeSend: needsFirstSendSettings
+      ? async () => {
+          const settings = await requestSettings(
+            variables,
+            form.getFieldsValue(),
+          );
+          if (!settings) return false;
+          applyFirstSendSettings(settings);
+          return true;
+        }
+      : undefined,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
@@ -2531,7 +2564,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     variableParams,
     form,
     variables,
-    userFillVariables: firstVariableParams,
+    userFillVariables: savedVariableParams,
     isVariablesDisabled: hasUserFillVariables || isSendMessageRef.current,
     clearLoading,
     isSelectionLocked,
@@ -2698,6 +2731,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       />
       {/*展示台区域*/}
       <ShowArea />
+      {settingsDialog}
 
       <ConditionRender
         condition={showPayment && isEnableSubscription && !isAppSidebarMode}

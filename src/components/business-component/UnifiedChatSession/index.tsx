@@ -92,6 +92,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   manualComponents = [],
   selectedComponentList = [],
   onSelectComponent,
+  beforeSend,
   requiredNameList = [],
   variableParams,
   form,
@@ -307,21 +308,24 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
   ) => {
-    // 用户在会话中发送新提示词：恢复队列自动消费（解除此前主动停止造成的暂停）
-    messageQueue.resumeAutoConsume();
-
-    // 发送消息时强制重置自动滚动状态并立即置底
-    handleSendScrollReset();
-
-    messageQueue.trySend(
-      messageInfo,
-      files,
-      skillIds,
-      modelId,
-      selectedAgentMode,
-      selectedDocs,
-      expertComponents,
-    );
+    const send = () => {
+      messageQueue.resumeAutoConsume();
+      handleSendScrollReset();
+      messageQueue.trySend(
+        messageInfo,
+        files,
+        skillIds,
+        modelId,
+        selectedAgentMode,
+        selectedDocs,
+        expertComponents,
+      );
+    };
+    if (!beforeSend) return send();
+    return beforeSend().then((allowed) => {
+      if (allowed) send();
+      return allowed;
+    });
   };
 
   // 智能体指令介入图层 (ACP/MCP 审批交互)
@@ -545,7 +549,9 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           onEnter={handleMessageSend}
           onClear={onClear}
           wholeDisabled={
-            inputDisabled || chatInputDisabled || hasPendingIntervention
+            (inputDisabled && !beforeSend) ||
+            chatInputDisabled ||
+            hasPendingIntervention
           }
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}

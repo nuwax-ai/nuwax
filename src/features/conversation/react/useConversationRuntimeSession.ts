@@ -92,6 +92,8 @@ export interface RuntimeSessionLineOptions {
    * 未提供或返回空时请求体不带该字段（兜底口径由入口决定，本 hook 不越权补值）。
    */
   getSandboxId?: () => string | undefined;
+  /** 发送时读取入口当前有效的对话变量。 */
+  getVariableParams?: () => Record<string, unknown> | undefined;
 }
 
 export interface UseConversationRuntimeSessionResult {
@@ -169,6 +171,8 @@ export function useConversationRuntimeSession(
   /** 入口当前生效的电脑 sandboxId 取值器（render 期同步最新闭包，发送时求值） */
   const getSandboxIdRef = useRef(options.getSandboxId);
   getSandboxIdRef.current = options.getSandboxId;
+  const getVariableParamsRef = useRef(options.getVariableParams);
+  getVariableParamsRef.current = options.getVariableParams;
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
 
@@ -430,6 +434,7 @@ export function useConversationRuntimeSession(
         conversationId,
         message: messageInfo,
         files: files as never,
+        variableParams: getVariableParamsRef.current?.(),
         currentInfo: conversationInfoRef.current,
         debug: false,
         isSuggestEnabled: isSuggestEnabledRef.current,

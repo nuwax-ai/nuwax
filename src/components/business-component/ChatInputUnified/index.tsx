@@ -173,7 +173,7 @@ export interface ChatInputUnifiedProps {
     agentMode?: AgentMode,
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
-  ) => void;
+  ) => void | Promise<boolean>;
   enableMention?: boolean;
   onFetchMentionFiles?: FetchMentionFiles;
   mentionPlacement?: 'auto' | 'up' | 'down';
@@ -621,6 +621,12 @@ const ChatInputUnifiedImpl: React.FC<
     return () => resizeObserver.disconnect();
   }, [hasInputPrefixPill]);
 
+  // 草稿恢复时更新作用域，避免过渡渲染把旧内容写到新会话。
+  const draftStateScopeRef = useRef<string | null>(null);
+  // 节流保存前离开页面时，卸载清理仍能读到最新输入。
+  const draftStateRef = useRef({ text: messageInfo, files });
+  draftStateRef.current = { text: messageInfo, files };
+
   const fillPromptText = useCallback(
     (text: string) => {
       if (wholeDisabled) return;
@@ -731,7 +737,8 @@ const ChatInputUnifiedImpl: React.FC<
       return;
     }
     if (!!value.trim() || !!files?.length) {
-      onEnter(
+      const sentScope = draftScope;
+      const submission = onEnter(
         value,
         files,
         supportsAgentCapabilities && enableMention ? skillIds : [],
@@ -740,24 +747,33 @@ const ChatInputUnifiedImpl: React.FC<
         supportsAgentCapabilities ? selectedDocs : [],
         supportsAgentCapabilities ? expertComponents : [],
       );
-      // 已发送内容不再是草稿：无论 isClearInput 与否都清除（isClearInput=false
-      // 时输入保留供失败重试，但草稿已消费，卸载兜底不再回写旧内容）
-      if (draftSaveTimerRef.current) {
-        clearTimeout(draftSaveTimerRef.current);
-        draftSaveTimerRef.current = null;
-      }
-      draftConsumedRef.current = true;
-      const scope = draftScope;
-      if (scope) {
-        clearDraft(scope);
-      }
-      if (isClearInput) {
-        setUploadFiles([]);
-        setMessageInfo('');
-        setSkillIds([]);
-        setSelectedDocs([]);
-        setExpertComponents([]);
-        mentionEditorRef.current?.clear();
+      const consumeDraft = () => {
+        if (draftSaveTimerRef.current) {
+          clearTimeout(draftSaveTimerRef.current);
+          draftSaveTimerRef.current = null;
+        }
+        draftConsumedRef.current = true;
+        if (sentScope) clearDraft(sentScope);
+        if (isClearInput) {
+          setUploadFiles([]);
+          setMessageInfo('');
+          setSkillIds([]);
+          setSelectedDocs([]);
+          setExpertComponents([]);
+          mentionEditorRef.current?.clear();
+        }
+      };
+      if (submission) {
+        // 首页还可能等待表单或创建结果，只有成功进入会话才能消费草稿。
+        void submission
+          .then((accepted) => {
+            if (!accepted) return;
+            if (draftStateScopeRef.current === sentScope) consumeDraft();
+            else if (sentScope) clearDraft(sentScope);
+          })
+          .catch(() => undefined);
+      } else {
+        consumeDraft();
       }
     }
   };
@@ -1084,11 +1100,6 @@ const ChatInputUnifiedImpl: React.FC<
   }, []);
 
   // ===== 输入草稿缓存（按「会话页面地址 × 会话 id」持久化，切回/刷新后恢复） =====
-  // 仅恢复 effect 建立新作用域时更新，防止过渡渲染把旧内容写进新桶。
-  const draftStateScopeRef = useRef<string | null>(null);
-  // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
-  const draftStateRef = useRef({ text: messageInfo, files });
-  draftStateRef.current = { text: messageInfo, files };
   // 文本摘要与结构化引用同时保存，回显后再由 chip 派生发送参数。
   const draftEditorRef = useRef<Pick<ChatDraftData, 'text' | 'content'>>({
     text: messageInfo,

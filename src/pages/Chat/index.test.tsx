@@ -378,6 +378,8 @@ vi.mock('./hooks/useChatSandbox', () => ({
 vi.mock('./hooks/useChatVariables', () => ({
   useChatVariables: () => ({
     variableParams: null,
+    getVariableParams: () => undefined,
+    applyFirstSendSettings: vi.fn(),
     setVariableParams: vi.fn(),
     isSendMessageRef: { current: false },
     isChatInputDisabled: false,

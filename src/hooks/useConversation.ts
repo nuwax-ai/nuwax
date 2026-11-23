@@ -162,6 +162,7 @@ const useConversation = () => {
           : `/home/chat/${id}/${agentId}`;
         history.push(url, attach);
       }
+      return id;
     },
     [runAsyncConversationCreate],
   );
