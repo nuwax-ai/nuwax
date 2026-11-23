@@ -46,7 +46,10 @@ import type {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import { type DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
@@ -70,6 +73,7 @@ import React, {
 import { history, useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
+import ConversationSettingsModal from './components/ConversationSettingsModal';
 import HomeCategoryTabs, {
   type HomeCategoryDef,
 } from './components/HomeCategoryTabs';
@@ -77,6 +81,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
+type ConversationSettingsValues = Record<string, string | number>;
 
 // 推荐位功能类型 → 项目类型 / 任务态 / 空间选择器映射已上移至
 // @/constants/recommendAgentPolicy.constants（策略单源，弹窗选择等场景复用）
@@ -123,7 +128,11 @@ const Home: React.FC = () => {
   // 供下方消费 effect 依赖触发重读（handoff 写入方不重挂 Home）
   const location = useLocation();
 
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [agentDetailResult, setAgentDetailResult] = useState<{
+    key: string;
+    detail?: AgentDetailDto;
+  }>();
+  const [agentDetailRetry, setAgentDetailRetry] = useState(0);
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
@@ -154,6 +163,11 @@ const Home: React.FC = () => {
   // 上框命中失败提示去重（同一项目只提示一次）
   const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const submittingRef = useRef(false);
+  const [settingsVariables, setSettingsVariables] =
+    useState<BindConfigWithSub[]>();
+  const finishSettingsRef =
+    useRef<(values?: ConversationSettingsValues) => void>();
   // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
   const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
     summonedExpert?.icon,
@@ -221,8 +235,10 @@ const Home: React.FC = () => {
   const currentRecId = summonedExpert?.agentId
     ? undefined
     : selectedRecommend?.id;
-  const agentTypeLoading =
-    !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const agentDetailKey = `${currentAgentId ?? ''}:${currentRecId ?? ''}`;
+  const agentDetailReady = agentDetailResult?.key === agentDetailKey;
+  const agentDetail = agentDetailReady ? agentDetailResult.detail : undefined;
+  const agentTypeLoading = !!currentAgentId && !agentDetail;
   const allowOtherModel = agentTypeLoading
     ? undefined
     : agentDetail?.allowOtherModel;
@@ -288,6 +304,16 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 切换专家或项目后，取消为上一个发送目标打开的表单。
+    const cancelSettings = () => finishSettingsRef.current?.();
+    eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, cancelSettings);
+    return () => {
+      cancelSettings();
+      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, cancelSettings);
+    };
+  }, [agentDetailKey, pinnedProject?.projectId, location.key]);
+
+  useEffect(() => {
     runRecommendNavList();
   }, [runRecommendNavList]);
 
@@ -318,20 +344,27 @@ const Home: React.FC = () => {
     // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持；
     // cancelled 守卫：快速连续切换（上框命中/召唤/切 pill）时旧响应晚到
     // 不得覆盖新会话对象的详情与工具选中（禅道bug2394 根因之一）
-    setAgentDetail(undefined);
+    setAgentDetailResult(undefined);
     if (!currentAgentId) return;
     let cancelled = false;
     apiPublishedAgentInfo(currentAgentId, false, currentRecId)
-      .then(({ data }) => {
-        if (!cancelled) setAgentDetail(data);
+      .then(({ data, success }) => {
+        if (cancelled) return;
+        setAgentDetailResult({
+          key: agentDetailKey,
+          detail:
+            success !== false && data?.agentId === currentAgentId
+              ? data
+              : undefined,
+        });
       })
       .catch(() => {
-        if (!cancelled) setAgentDetail(undefined);
+        if (!cancelled) setAgentDetailResult({ key: agentDetailKey });
       });
     return () => {
       cancelled = true;
     };
-  }, [currentAgentId, currentRecId]);
+  }, [currentAgentId, currentRecId, agentDetailKey, agentDetailRetry]);
 
   useEffect(() => {
     if (agentDetail) {
@@ -509,11 +542,11 @@ const Home: React.FC = () => {
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
   ) => {
-    if (submitting || pinnedProjectConfigLoading) return;
+    if (submittingRef.current || pinnedProjectConfigLoading) return false;
 
     if (!tenantConfigInfo) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
-      return;
+      return false;
     }
     // 上框期间会话对象未定（全栈未命中且未手选）引导手选，不误报租户信息缺失
     if (!currentAgentId) {
@@ -524,7 +557,7 @@ const Home: React.FC = () => {
             : 'PC.Pages.Home.noTenantInfo',
         ),
       );
-      return;
+      return false;
     }
 
     // 专家 chip 合并进组件列表：与外部受控列表按 id+type 去重（对齐会话页规则）
@@ -541,6 +574,7 @@ const Home: React.FC = () => {
         ]
       : [];
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       // 发送计划（决策与参数拼装单源 @/utils/homeSendPlan）：
@@ -570,9 +604,9 @@ const Home: React.FC = () => {
       if (plan.kind === 'createProject') {
         if (!plan.spaceId) {
           message.warning(dict('PC.Pages.Home.noTenantInfo'));
-          return;
+          return false;
         }
-        await createProjectAndNavigate({
+        const targetId = await createProjectAndNavigate({
           payload:
             plan.payload.type === AgentComponentTypeEnum.PageApp
               ? {
@@ -590,11 +624,46 @@ const Home: React.FC = () => {
           tenantConfigInfo,
           setContext,
         });
-        return;
+        return !!targetId;
       }
-      await handleCreateConversation(plan.agentId, plan.attach);
+
+      let variableParams: ConversationSettingsValues | undefined;
+      if (!plan.attach.redirectUrl) {
+        if (!agentDetail) {
+          if (agentDetailReady) setAgentDetailRetry((attempt) => attempt + 1);
+          message.warning(dict('PC.Common.Global.loading'));
+          return false;
+        }
+
+        const variables = (agentDetail.variables ?? []).filter(
+          (item) => !item.systemVariable,
+        );
+        if (variables.some((item) => item.require)) {
+          variableParams = await new Promise<
+            ConversationSettingsValues | undefined
+          >((resolve) => {
+            finishSettingsRef.current = (values) => {
+              finishSettingsRef.current = undefined;
+              setSettingsVariables(undefined);
+              resolve(values);
+            };
+            setSettingsVariables(variables);
+          });
+          if (!variableParams || !homeMounted.current) return false;
+        }
+      }
+
+      const conversationId = await handleCreateConversation(
+        plan.agentId,
+        variableParams ? { ...plan.attach, variableParams } : plan.attach,
+      );
+      return !!conversationId;
+    } catch {
+      // 请求层负责提示，首页保留草稿供重试。
+      return false;
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false;
+      if (homeMounted.current) setSubmitting(false);
     }
   };
 
@@ -891,6 +960,13 @@ const Home: React.FC = () => {
             });
           }}
         />
+        {settingsVariables && (
+          <ConversationSettingsModal
+            variables={settingsVariables}
+            onCancel={() => finishSettingsRef.current?.()}
+            onConfirm={(values) => finishSettingsRef.current?.(values)}
+          />
+        )}
         <SiteFooter className={cx(styles['foot-tip'])} />
       </main>
     </div>

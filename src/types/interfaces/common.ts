@@ -811,6 +811,7 @@ export interface BindConfigWithSubDisabled extends BindConfigWithSub {
 export interface NewConversationSetProps {
   className?: string;
   form: FormInstance;
+  showHeader?: boolean;
   // 是否已填写表单
   isFilled?: boolean;
   disabled?: boolean;

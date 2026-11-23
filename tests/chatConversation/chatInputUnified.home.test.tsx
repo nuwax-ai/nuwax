@@ -937,6 +937,32 @@ describe('首页草稿（draftKey=home）', () => {
     expect(loadDraft('home')).toBeNull();
     expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
   });
+
+  it('异步发送取消保留草稿，成功后才消费草稿', async () => {
+    let cancel!: (submitted: boolean) => void;
+    const onEnter = vi
+      .fn()
+      .mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          cancel = resolve;
+        }),
+      )
+      .mockResolvedValueOnce(true);
+    saveDraft('home', { version: 1, text: '成都天气' });
+    renderHomeInput({ onEnter, isClearInput: false });
+
+    act(() => editor.lastProps.onPressEnter());
+    expect(loadDraft('home')?.text).toBe('成都天气');
+    await act(async () => cancel(false));
+    expect(loadDraft('home')?.text).toBe('成都天气');
+
+    await act(async () => editor.lastProps.onPressEnter());
+    expect(onEnter.mock.calls.map(([text]) => text)).toEqual([
+      '成都天气',
+      '成都天气',
+    ]);
+    expect(loadDraft('home')).toBeNull();
+  });
 });
 
 describe('切换会话（同实例换草稿作用域）', () => {

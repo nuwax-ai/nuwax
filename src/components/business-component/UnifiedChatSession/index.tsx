@@ -48,6 +48,7 @@ import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
+import { hasRequiredConversationVariables } from '@/utils/conversationVariables';
 import { isRealAgentSandboxBinding } from '@/utils/effectiveSandbox';
 import ChatContentArea from './components/ChatContentArea';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
@@ -338,20 +339,10 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   agentModeRef.current = interventionLayer.agentMode;
 
   // 输入框是否禁用（表单必填验证）
-  const inputDisabled = useMemo(() => {
-    if (requiredNameList?.length > 0) {
-      if (!variableParams) {
-        return true;
-      }
-      // 判断所填参数是否包含所有必填
-      const hasAllRequired = requiredNameList.every(
-        (name) =>
-          variableParams[name] !== undefined && variableParams[name] !== '',
-      );
-      return !hasAllRequired;
-    }
-    return false;
-  }, [requiredNameList, variableParams]);
+  const inputDisabled = !hasRequiredConversationVariables(
+    requiredNameList,
+    variableParams,
+  );
 
   const computerSelection = resolveComputerSelection({
     conversationId,

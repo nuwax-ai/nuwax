@@ -530,6 +530,22 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     ),
   });
 
+  const savedVariableParams =
+    firstVariableParams ??
+    (conversationInfo?.id === id ? conversationInfo.variables : null);
+  const {
+    variableParams,
+    setVariableParams,
+    isSendMessageRef,
+    isChatInputDisabled,
+    hasUserFillVariables,
+  } = useChatVariables({
+    conversationId: id,
+    savedVariableParams,
+    requiredNameList,
+    form,
+  });
+
   // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
   // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
   const runtimeLine = useConversationRuntimeSession({
@@ -537,6 +553,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     messageViewRef,
     allowAutoScrollRef,
     getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    getVariableParams: () => variableParams ?? undefined,
     effectsResources: {
       isAppSidebarMode,
       runHistory,
@@ -755,18 +772,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       handleClosePreviewView();
     }
   }, [finalSelectedId, viewMode, handleClosePreviewView]);
-
-  const {
-    variableParams,
-    setVariableParams,
-    isSendMessageRef,
-    isChatInputDisabled,
-    hasUserFillVariables,
-  } = useChatVariables({
-    firstVariableParams,
-    requiredNameList,
-    form,
-  });
 
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
@@ -2531,7 +2536,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     variableParams,
     form,
     variables,
-    userFillVariables: firstVariableParams,
+    userFillVariables: savedVariableParams,
     isVariablesDisabled: hasUserFillVariables || isSendMessageRef.current,
     clearLoading,
     isSelectionLocked,

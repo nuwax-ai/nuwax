@@ -20,6 +20,7 @@ const { SHOW_CHILD } = Cascader;
 const NewConversationSet: React.FC<NewConversationSetProps> = ({
   className,
   form,
+  showHeader = true,
   isFilled = false,
   disabled = false,
   showSubmitButton = false,
@@ -119,7 +120,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
         );
     }
 
-    return { isSelect, content };
+    return { inputType, isSelect, content };
   };
 
   if (!variables?.length) {
@@ -129,28 +130,41 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
   return (
     <div
       data-history-scroll-static=""
-      className={cx(styles['variables-box'], 'flex', 'flex-col', className)}
+      className={cx(
+        styles['variables-box'],
+        !showHeader && styles['without-header'],
+        'flex',
+        'flex-col',
+        className,
+      )}
     >
-      <header
-        className={cx(styles.header, 'flex', 'items-center', 'content-between')}
-      >
-        <span>
-          {dict('PC.Components.NewConversationSet.conversationSettings')}
-        </span>
-        <ConditionRender condition={isFilled}>
-          <span
-            className={cx(styles.text, 'cursor-pointer')}
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            <DownOutlined
-              className={cx(
-                !isOpen ? styles['rotate-90'] : '',
-                styles['down-icon'],
-              )}
-            />
+      {showHeader && (
+        <header
+          className={cx(
+            styles.header,
+            'flex',
+            'items-center',
+            'content-between',
+          )}
+        >
+          <span>
+            {dict('PC.Components.NewConversationSet.conversationSettings')}
           </span>
-        </ConditionRender>
-      </header>
+          <ConditionRender condition={isFilled}>
+            <span
+              className={cx(styles.text, 'cursor-pointer')}
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              <DownOutlined
+                className={cx(
+                  !isOpen ? styles['rotate-90'] : '',
+                  styles['down-icon'],
+                )}
+              />
+            </span>
+          </ConditionRender>
+        </header>
+      )}
       <div className={cx(_className)}>
         <Form
           form={form}
@@ -164,7 +178,12 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
         >
           {variables?.map((item: BindConfigWithSub) => {
             const { name, displayName, require, key } = item;
-            const { isSelect, content } = getContent(item);
+            const { inputType, isSelect, content } = getContent(item);
+            const type = isSelect
+              ? 'array'
+              : inputType === InputTypeEnum.Number
+              ? 'number'
+              : 'string';
             return (
               <Form.Item
                 key={key}
@@ -173,6 +192,8 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
                 rules={[
                   {
                     required: require,
+                    type,
+                    whitespace: require && type === 'string',
                     message: isSelect
                       ? dict(
                           'PC.Components.NewConversationSet.pleaseSelectField',

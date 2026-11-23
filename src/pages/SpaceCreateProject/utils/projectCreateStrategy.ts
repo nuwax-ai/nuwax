@@ -179,6 +179,7 @@ export const createProjectAndNavigate = async ({
         : url;
 
     history.push(finalUrl, routeState);
+    return targetId;
   } catch (error: any) {
     message.error(
       error?.message || dict('PC.Components.WorkspaceDir.createProjectFailed'),

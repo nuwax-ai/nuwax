@@ -143,6 +143,9 @@ vi.mock('@/components/SiteFooter/index.less', () => ({
 vi.mock('antd', () => ({
   App: { useApp: () => ({ message: messageMock }) },
 }));
+vi.mock('@/pages/Home/components/ConversationSettingsModal', () => ({
+  default: () => null,
+}));
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -268,6 +271,7 @@ const HIT_AGENT_TOOLS = [{ id: 881, type: 1, name: '全栈工具' }];
 
 const agentDetailOf = (id: number, manualComponents: unknown[] = []) => ({
   id,
+  agentId: id,
   manualComponents,
 });
 

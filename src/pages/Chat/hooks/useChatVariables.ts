@@ -1,15 +1,17 @@
-import { arraysContainSameItems } from '@/utils/common';
+import { hasRequiredConversationVariables } from '@/utils/conversationVariables';
 import { Form, FormInstance } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface UseChatVariablesProps {
-  firstVariableParams: Record<string, string | number> | null;
+  conversationId: number;
+  savedVariableParams?: Record<string, string | number> | null;
   requiredNameList: string[];
   form: FormInstance;
 }
 
 export const useChatVariables = ({
-  firstVariableParams,
+  conversationId,
+  savedVariableParams,
   requiredNameList,
   form,
 }: UseChatVariablesProps) => {
@@ -24,49 +26,47 @@ export const useChatVariables = ({
 
   // 接口有时返回空对象 {}，不能当成用户已经填写过变量
   const hasUserFillVariables =
-    !!firstVariableParams && Object.keys(firstVariableParams).length > 0;
+    !!savedVariableParams &&
+    Object.keys(savedVariableParams).length > 0 &&
+    hasRequiredConversationVariables(requiredNameList, savedVariableParams);
 
-  // 用户在智能体主页填写的变量信息
   useEffect(() => {
-    if (hasUserFillVariables) {
-      setVariableParams(firstVariableParams);
-    }
-  }, [hasUserFillVariables, firstVariableParams]);
+    setVariableParams(null);
+    isSendMessageRef.current = false;
+  }, [conversationId]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
   useEffect(() => {
     // 监听form表单值变化
-    if (values && Object.keys(values).length === 0) {
+    if (hasUserFillVariables || !values || Object.keys(values).length === 0)
       return;
-    }
+    let current = true;
     form
       .validateFields({ validateOnly: true })
-      .then(() => setVariableParams(values))
-      .catch(() => setVariableParams(null));
-  }, [form, values]);
+      .then((validatedValues) => {
+        if (current) setVariableParams(validatedValues);
+      })
+      .catch(() => {
+        if (current) setVariableParams(null);
+      });
+    return () => {
+      current = false;
+    };
+  }, [conversationId, form, hasUserFillVariables, values]);
 
-  // 聊天会话框是否禁用，不能发送消息
-  const isChatInputDisabled = useMemo(() => {
-    // 强制传参逻辑: 校验当前是否要求必填参数
-    if (requiredNameList?.length > 0) {
-      // 至少还有一个必填参数未填充
-      if (!variableParams) {
-        return true;
-      }
-      return !arraysContainSameItems(
-        Object.keys(variableParams),
-        requiredNameList,
-      );
-    }
-    return false;
-  }, [requiredNameList, variableParams]);
+  const currentVariableParams = hasUserFillVariables
+    ? savedVariableParams
+    : variableParams;
 
   return {
-    variableParams,
+    variableParams: currentVariableParams,
     setVariableParams,
     isSendMessageRef,
-    isChatInputDisabled,
+    isChatInputDisabled: !hasRequiredConversationVariables(
+      requiredNameList,
+      currentVariableParams,
+    ),
     hasUserFillVariables,
   };
 };
