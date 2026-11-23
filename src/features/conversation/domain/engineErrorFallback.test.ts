@@ -19,6 +19,17 @@ describe('引擎内部错误兜底（NW-108）', () => {
     );
   });
 
+  it('NW-390：只替换整段 IPC 管道启动错误', () => {
+    const failure = 'Failed to create engine for project 46291: write EPIPE';
+    const fallback = '智能体引擎启动异常，请稍后重试或重新进入会话';
+
+    expect(mapEngineInternalErrorText(failure, fallback)).toBe(fallback);
+    const fenced = ['```', failure, '```'].join('\n');
+    expect(mapEngineInternalErrorText(fenced, fallback)).toBe(fallback);
+    const answer = `以下是之前的错误：\n${failure}\n之后已恢复。`;
+    expect(mapEngineInternalErrorText(answer, fallback)).toBe(answer);
+  });
+
   it('正常回答（即使顺带提到引擎错误词）不受影响', () => {
     expect(isEngineInternalErrorText('')).toBe(false);
     expect(isEngineInternalErrorText(null)).toBe(false);
