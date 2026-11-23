@@ -46,10 +46,7 @@ import type {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
-import type {
-  BindConfigWithSub,
-  UploadFileInfo,
-} from '@/types/interfaces/common';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import { type DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
@@ -73,15 +70,14 @@ import React, {
 import { history, useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
-import ConversationSettingsModal from './components/ConversationSettingsModal';
 import HomeCategoryTabs, {
   type HomeCategoryDef,
 } from './components/HomeCategoryTabs';
+import { useHomeConversationSettings } from './hooks/useHomeConversationSettings';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
-type ConversationSettingsValues = Record<string, string | number>;
 
 // 推荐位功能类型 → 项目类型 / 任务态 / 空间选择器映射已上移至
 // @/constants/recommendAgentPolicy.constants（策略单源，弹窗选择等场景复用）
@@ -164,10 +160,6 @@ const Home: React.FC = () => {
   const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const submittingRef = useRef(false);
-  const [settingsVariables, setSettingsVariables] =
-    useState<BindConfigWithSub[]>();
-  const finishSettingsRef =
-    useRef<(values?: ConversationSettingsValues) => void>();
   // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
   const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
     summonedExpert?.icon,
@@ -238,7 +230,16 @@ const Home: React.FC = () => {
   const agentDetailKey = `${currentAgentId ?? ''}:${currentRecId ?? ''}`;
   const agentDetailReady = agentDetailResult?.key === agentDetailKey;
   const agentDetail = agentDetailReady ? agentDetailResult.detail : undefined;
-  const agentTypeLoading = !!currentAgentId && !agentDetail;
+  const agentTypeLoading =
+    !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const { requestSettings, settingsDialog } = useHomeConversationSettings(
+    [
+      agentDetailKey,
+      pinnedProject?.projectType,
+      pinnedProject?.projectId,
+      location.key,
+    ].join(':'),
+  );
   const allowOtherModel = agentTypeLoading
     ? undefined
     : agentDetail?.allowOtherModel;
@@ -304,16 +305,6 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 切换专家或项目后，取消为上一个发送目标打开的表单。
-    const cancelSettings = () => finishSettingsRef.current?.();
-    eventBus.on(EVENT_NAMES.AUTH_SESSION_CLEARED, cancelSettings);
-    return () => {
-      cancelSettings();
-      eventBus.off(EVENT_NAMES.AUTH_SESSION_CLEARED, cancelSettings);
-    };
-  }, [agentDetailKey, pinnedProject?.projectId, location.key]);
-
-  useEffect(() => {
     runRecommendNavList();
   }, [runRecommendNavList]);
 
@@ -352,10 +343,7 @@ const Home: React.FC = () => {
         if (cancelled) return;
         setAgentDetailResult({
           key: agentDetailKey,
-          detail:
-            success !== false && data?.agentId === currentAgentId
-              ? data
-              : undefined,
+          detail: success !== false ? data : undefined,
         });
       })
       .catch(() => {
@@ -606,7 +594,7 @@ const Home: React.FC = () => {
           message.warning(dict('PC.Pages.Home.noTenantInfo'));
           return false;
         }
-        const targetId = await createProjectAndNavigate({
+        await createProjectAndNavigate({
           payload:
             plan.payload.type === AgentComponentTypeEnum.PageApp
               ? {
@@ -624,35 +612,20 @@ const Home: React.FC = () => {
           tenantConfigInfo,
           setContext,
         });
-        return !!targetId;
+        return true;
       }
 
-      let variableParams: ConversationSettingsValues | undefined;
-      if (!plan.attach.redirectUrl) {
-        if (!agentDetail) {
-          if (agentDetailReady) setAgentDetailRetry((attempt) => attempt + 1);
-          message.warning(dict('PC.Common.Global.loading'));
-          return false;
-        }
-
-        const variables = (agentDetail.variables ?? []).filter(
-          (item) => !item.systemVariable,
-        );
-        if (variables.some((item) => item.require)) {
-          variableParams = await new Promise<
-            ConversationSettingsValues | undefined
-          >((resolve) => {
-            finishSettingsRef.current = (values) => {
-              finishSettingsRef.current = undefined;
-              setSettingsVariables(undefined);
-              resolve(values);
-            };
-            setSettingsVariables(variables);
-          });
-          if (!variableParams || !homeMounted.current) return false;
-        }
+      const opensChat = !plan.attach.redirectUrl;
+      if (opensChat && agentTypeLoading) {
+        if (agentDetailReady) setAgentDetailRetry((attempt) => attempt + 1);
+        message.warning(dict('PC.Common.Global.loading'));
+        return false;
       }
 
+      const variableParams = opensChat
+        ? await requestSettings(agentDetail?.variables)
+        : undefined;
+      if (variableParams === null || !homeMounted.current) return false;
       const conversationId = await handleCreateConversation(
         plan.agentId,
         variableParams ? { ...plan.attach, variableParams } : plan.attach,
@@ -960,13 +933,7 @@ const Home: React.FC = () => {
             });
           }}
         />
-        {settingsVariables && (
-          <ConversationSettingsModal
-            variables={settingsVariables}
-            onCancel={() => finishSettingsRef.current?.()}
-            onConfirm={(values) => finishSettingsRef.current?.(values)}
-          />
-        )}
+        {settingsDialog}
         <SiteFooter className={cx(styles['foot-tip'])} />
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { hasRequiredConversationVariables } from '@/utils/conversationVariables';
+import { hasConversationVariableValue } from '@/utils/conversationVariables';
 import { Form, FormInstance } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
@@ -23,12 +23,16 @@ export const useChatVariables = ({
 
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
+  const hasRequiredValues = (values?: Record<string, unknown> | null) =>
+    requiredNameList.every((name) =>
+      hasConversationVariableValue(values?.[name]),
+    );
 
   // 接口有时返回空对象 {}，不能当成用户已经填写过变量
   const hasUserFillVariables =
     !!savedVariableParams &&
     Object.keys(savedVariableParams).length > 0 &&
-    hasRequiredConversationVariables(requiredNameList, savedVariableParams);
+    hasRequiredValues(savedVariableParams);
 
   useEffect(() => {
     setVariableParams(null);
@@ -58,15 +62,13 @@ export const useChatVariables = ({
   const currentVariableParams = hasUserFillVariables
     ? savedVariableParams
     : variableParams;
+  const isChatInputDisabled = !hasRequiredValues(currentVariableParams);
 
   return {
-    variableParams: currentVariableParams,
+    variableParams: isChatInputDisabled ? null : currentVariableParams,
     setVariableParams,
     isSendMessageRef,
-    isChatInputDisabled: !hasRequiredConversationVariables(
-      requiredNameList,
-      currentVariableParams,
-    ),
+    isChatInputDisabled,
     hasUserFillVariables,
   };
 };

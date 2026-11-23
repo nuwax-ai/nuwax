@@ -82,8 +82,8 @@ vi.mock('@/components/SiteFooter/index.less', () => ({
 vi.mock('antd', () => ({
   App: { useApp: () => ({ message: { warning: vi.fn(), error: vi.fn() } }) },
 }));
-vi.mock('@/pages/Home/components/ConversationSettingsModal', () => ({
-  default: () => null,
+vi.mock('@/pages/Home/hooks/useHomeConversationSettings', () => ({
+  useHomeConversationSettings: () => ({ requestSettings: () => undefined }),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({

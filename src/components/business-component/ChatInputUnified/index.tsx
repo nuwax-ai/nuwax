@@ -748,13 +748,12 @@ const ChatInputUnifiedImpl: React.FC<
         supportsAgentCapabilities ? expertComponents : [],
       );
       const consumeDraft = () => {
-        if (sentScope) clearDraft(sentScope);
-        if (draftStateScopeRef.current !== sentScope) return;
         if (draftSaveTimerRef.current) {
           clearTimeout(draftSaveTimerRef.current);
           draftSaveTimerRef.current = null;
         }
         draftConsumedRef.current = true;
+        if (sentScope) clearDraft(sentScope);
         if (isClearInput) {
           setUploadFiles([]);
           setMessageInfo('');
@@ -768,7 +767,9 @@ const ChatInputUnifiedImpl: React.FC<
         // 首页还可能等待表单或创建结果，只有成功进入会话才能消费草稿。
         void submission
           .then((accepted) => {
-            if (accepted) consumeDraft();
+            if (!accepted) return;
+            if (draftStateScopeRef.current === sentScope) consumeDraft();
+            else if (sentScope) clearDraft(sentScope);
           })
           .catch(() => undefined);
       } else {

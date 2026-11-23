@@ -161,7 +161,6 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
             {/* 变量参数配置表单 */}
             {form && (
               <NewConversationSet
-                key={conversationId}
                 className="mb-16"
                 form={form}
                 variables={variables || agentInfo?.guidQuestionDtos || []}
