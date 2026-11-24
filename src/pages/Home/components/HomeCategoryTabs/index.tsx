@@ -1,8 +1,8 @@
+import OptionalIcon from '@/components/business-component/OptionalIcon';
 import type { DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import { Segmented } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import HomeIcon from '../HomeIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -49,7 +49,7 @@ const HomeCategoryTabs: React.FC<HomeCategoryTabsProps> = ({
           value: category.key,
           label: (
             <span className={cx(styles['item-label'])}>
-              <HomeIcon
+              <OptionalIcon
                 className={cx(styles['item-icon'])}
                 src={category.icon}
               />

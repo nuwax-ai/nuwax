@@ -1,4 +1,3 @@
-import agentImage from '@/assets/images/agent_image.png';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import {
   readAgentModeCache,
@@ -21,7 +20,6 @@ import {
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
 import { getWorkspaceDirPolicy } from '@/constants/workspaceDirPolicy.constants';
-import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useConversation from '@/hooks/useConversation';
 import useHomePinnedProjectHandoff, {
   type PinnedProjectInfo,
@@ -160,10 +158,6 @@ const Home: React.FC = () => {
   const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const submittingRef = useRef(false);
-  // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
-  const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
-    summonedExpert?.icon,
-  );
   // 外部带入技能（广场技能卡「选择」经 pageHandoffContext 一次性透传，
   // 与专家召唤相互独立、互不覆盖）；复用「直接选技能」链路：转为编辑器
   // mention chip 回填，skillIds 由编辑器 selectedMentions 自然派生
@@ -876,6 +870,7 @@ const Home: React.FC = () => {
             selectedRecommend
               ? {
                   label: selectedRecommend.label,
+                  icon: selectedRecommend.icon,
                 }
               : undefined
           }
@@ -906,17 +901,7 @@ const Home: React.FC = () => {
           onAgentModeChange={handleAgentModeChange}
           agentEnableVersionControl={agentDetail?.enableVersionControl}
           // 召唤专家 chip：提交时以该专家 agentId 创建会话（优先级高于推荐 pill）
-          // 召唤专家 chip（透传契约见 useSummonExpertHandoff）：icon 缺失或
-          // 受保护地址解析失败时回退默认智能体图，chip 恒有图标位
-          summonedExpert={
-            summonedExpert
-              ? {
-                  agentId: summonedExpert.agentId,
-                  name: summonedExpert.name,
-                  iconSrc: summonedExpertIconSrc || agentImage,
-                }
-              : undefined
-          }
+          summonedExpert={summonedExpert}
           onClearSummonedExpert={() => setSummonedExpert(undefined)}
           // 外部带入技能：复用「直接选技能」链路，编辑器回填 mention chip
           defaultMentions={skillDefaultMentions}

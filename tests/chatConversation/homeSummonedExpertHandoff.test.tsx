@@ -121,18 +121,12 @@ vi.mock('@/pages/SpaceCreateProject/utils/projectCreateStrategy', () => ({
   createProjectAndNavigate: vi.fn(),
 }));
 
-// 受保护图标 hook 桩：公开 URL 原样返回，/api/f/ 与空值回落 undefined
-// （驱动 chip 回退默认图的分支）
 vi.mock('@/hooks/useAuthProtectedImageSrc', () => ({
   useAuthProtectedImageSrc: (url?: string) => ({
     displaySrc: url && !String(url).startsWith('/api/f/') ? url : undefined,
     loading: false,
     error: false,
   }),
-}));
-
-vi.mock('@/assets/images/agent_image.png', () => ({
-  default: 'agent-image-png',
 }));
 
 const handleCreateConversation = vi.hoisted(() => vi.fn());
@@ -248,6 +242,7 @@ describe('首页项目上框与专家透传消费', () => {
               id: 1,
               targetId: 71,
               label: '推荐一',
+              icon: '/api/f/rec-icon.svg',
               functionType: 'Chat',
               category: 'chat',
               prompts: [{ title: '标题一', content: '完整内容一', icon: '' }],
@@ -256,6 +251,7 @@ describe('首页项目上框与专家透传消费', () => {
               id: 2,
               targetId: 71,
               label: '推荐二',
+              icon: '',
               functionType: 'Chat',
               category: 'chat',
               prompts: [{ title: '标题二', content: '完整内容二', icon: '' }],
@@ -269,6 +265,10 @@ describe('首页项目上框与专家透传消费', () => {
     ] as any);
     render(<Home />);
     fireEvent.click(await screen.findByRole('button', { name: '推荐一' }));
+    expect(input.props.selectedTag).toEqual({
+      label: '推荐一',
+      icon: '/api/f/rec-icon.svg',
+    });
     fireEvent.click(screen.getByRole('button', { name: '标题一' }));
     expect(setText).toHaveBeenLastCalledWith('完整内容一');
     act(() => input.props.onClearSelectedTag());
@@ -276,7 +276,7 @@ describe('首页项目上框与专家透传消费', () => {
     expect(screen.queryByRole('button', { name: '标题一' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '标题二' }));
     expect(setText).toHaveBeenLastCalledWith('完整内容二');
-    expect(input.props.selectedTag?.label).toBe('推荐二');
+    expect(input.props.selectedTag).toEqual({ label: '推荐二', icon: '' });
   });
 
   it('同一智能体的不同标签按 recId 重拉详情，取消标签及选择专家清掉 recId', async () => {
@@ -569,7 +569,7 @@ describe('首页项目上框与专家透传消费', () => {
       ),
     );
     // 公开图标 URL 原样透传到 chip
-    expect(input.props.summonedExpert.iconSrc).toBe(
+    expect(input.props.summonedExpert.icon).toBe(
       'https://cdn.example.com/a.png',
     );
     // 页面回显专家名
@@ -580,16 +580,14 @@ describe('首页项目上框与专家透传消费', () => {
     expect(handoffMap.homeSummonedExpert).toBeUndefined();
   });
 
-  it('图标缺失或受保护地址解析失败时回退默认智能体图', async () => {
+  it('召唤专家没有配置图标时保留空值', async () => {
     handoffMap.homeSummonedExpert = {
       agentId: 9,
       name: '大赛',
-      icon: '/api/f/protected-icon',
+      icon: '',
     };
     render(<Home />);
-    await waitFor(() =>
-      expect(input.props.summonedExpert?.iconSrc).toBe('agent-image-png'),
-    );
+    await waitFor(() => expect(input.props.summonedExpert?.icon).toBe(''));
   });
 
   it('专家首发先校验对话设置，取消后可重试并发送原消息和附件', async () => {

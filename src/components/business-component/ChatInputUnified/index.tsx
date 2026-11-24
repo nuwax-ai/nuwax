@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import OptionalIcon from '@/components/business-component/OptionalIcon';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -100,14 +101,11 @@ const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
 
-/**
- * 召唤专家 chip 展示信息（首页场景：以该专家智能体身份创建会话；
- * iconSrc 为经 useAuthProtectedImageSrc 鉴权解析后的地址，加载失败隐藏）
- */
+/** 召唤专家 chip 展示信息（首页场景：以该专家智能体身份创建会话） */
 export interface SummonedExpertChipInfo {
   agentId: number;
   name: string;
-  iconSrc?: string;
+  icon?: string;
 }
 
 /** 已连接连接器展示信息（工具栏头像组） */
@@ -196,7 +194,7 @@ export interface ChatInputUnifiedProps {
   selectedSpaceId?: number;
   onSpaceSelect?: (spaceId: number) => void;
   /** 推荐标签 pill：选中后内联展示在输入框行首，可取消 */
-  selectedTag?: { label: string };
+  selectedTag?: { label: string; icon?: string };
   onClearSelectedTag?: () => void;
   /**
    * 首页项目上框（项目列表「+ 新建会话」透传）：输入卡底部灰底栏展示绑定项目
@@ -1451,16 +1449,10 @@ const ChatInputUnifiedImpl: React.FC<
                       styles['expert-pill'],
                     )}
                   >
-                    {summonedExpert.iconSrc && (
-                      <img
-                        src={summonedExpert.iconSrc}
-                        alt=""
-                        className={cx(styles['expert-pill-icon'])}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
+                    <OptionalIcon
+                      src={summonedExpert.icon}
+                      className={cx(styles['expert-pill-icon'])}
+                    />
                     <span className={cx(styles['expert-pill-name'])}>
                       {summonedExpert.name}
                     </span>
@@ -1492,6 +1484,10 @@ const ChatInputUnifiedImpl: React.FC<
                       styles['expert-pill'],
                     )}
                   >
+                    <OptionalIcon
+                      src={selectedTag.icon}
+                      className={cx(styles['expert-pill-icon'])}
+                    />
                     <span className={cx(styles['expert-pill-name'])}>
                       {selectedTag.label}
                     </span>
