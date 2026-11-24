@@ -624,6 +624,41 @@ describe('首页工具栏能力', () => {
   });
 });
 
+describe('首页选中智能体图标', () => {
+  it.each(['selectedTag', 'summonedExpert'] as const)(
+    '%s 仅显示配置的图标，切换后不会保留上一张图',
+    (kind) => {
+      const name = '插件开发';
+      const input = (icon?: string) => (
+        <ChatInputUnified
+          onEnter={vi.fn()}
+          selectedTag={
+            kind === 'selectedTag' ? { label: name, icon } : undefined
+          }
+          summonedExpert={
+            kind === 'summonedExpert' ? { agentId: 8, name, icon } : undefined
+          }
+        />
+      );
+      const { rerender } = render(input('/plugin.svg'));
+      const pill = screen.getByText(name).closest('.expert-pill');
+
+      expect(pill?.querySelector('img')).toHaveAttribute('src', '/plugin.svg');
+      fireEvent.error(pill!.querySelector('img')!);
+      expect(pill?.querySelector('img')).toBeNull();
+
+      rerender(input('/new-plugin.svg'));
+      expect(pill?.querySelector('img')).toHaveAttribute(
+        'src',
+        '/new-plugin.svg',
+      );
+      rerender(input('  '));
+      expect(pill?.querySelector('img')).toBeNull();
+      expect(screen.getByText(name)).toBeInTheDocument();
+    },
+  );
+});
+
 describe('能力弹窗开放范围（专家仅首页开放）', () => {
   it('会话输入框关闭提示后，当前智能体和消息级 @ 专家都不显示提示', () => {
     renderHomeInput({

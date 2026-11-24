@@ -1,3 +1,4 @@
+import OptionalIcon from '@/components/business-component/OptionalIcon';
 import RecommendList from '@/components/RecommendList';
 import { dict } from '@/services/i18nRuntime';
 import type { GuidQuestionDto } from '@/types/interfaces/agent';
@@ -12,7 +13,6 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import HomeIcon from '../HomeIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -149,7 +149,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
                 title={prompt.title?.trim() || prompt.content}
                 onClick={() => onQuestionClick?.(prompt.content)}
               >
-                <HomeIcon
+                <OptionalIcon
                   className={styles.icon}
                   src={prompt.icon}
                   fallback={
@@ -208,7 +208,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
                   }
                 }}
               >
-                <HomeIcon className={cx(styles.icon)} src={item.icon} />
+                <OptionalIcon className={cx(styles.icon)} src={item.icon} />
                 <span className={cx(styles.label)}>{item.label}</span>
               </button>
             );

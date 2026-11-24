@@ -1,7 +1,7 @@
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { useState, type ReactNode } from 'react';
 
-export default function HomeIcon({
+export default function OptionalIcon({
   src,
   className,
   fallback = null,
