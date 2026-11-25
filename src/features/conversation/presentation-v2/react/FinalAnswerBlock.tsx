@@ -68,8 +68,11 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
     thinking: '',
   });
 
-  const handleCopy = () => {
-    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+  // 仅复制成功才提示：失败提示由 clipboard 工具统一弹出
+  const handleCopy = (_text: string, result?: boolean) => {
+    if (result) {
+      message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+    }
   };
 
   const terminal =

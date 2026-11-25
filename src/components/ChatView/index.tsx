@@ -123,8 +123,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
       }
     })();
 
-    const handleTextCopy = () => {
-      message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+    // 仅复制成功才提示：失败提示由 clipboard 工具统一弹出
+    const handleTextCopy = (_text: string, result?: boolean) => {
+      if (result) {
+        message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+      }
     };
 
     const isUser = useMemo(() => {
