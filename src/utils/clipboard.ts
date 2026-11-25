@@ -48,10 +48,12 @@ const getMessages = () => ({
  * 传统复制方法（降级方案）
  * @param text 要复制的文本
  * @param callback 成功回调
+ * @param cause 触发降级的原因（Clipboard API 的报错），降级也失败时一并输出
  */
 export const fallbackCopyTextToClipboard = (
   text: string,
   callback?: CopyCallback,
+  cause?: unknown,
 ): void => {
   const textArea = document.createElement('textarea');
   textArea.value = text;
@@ -63,22 +65,28 @@ export const fallbackCopyTextToClipboard = (
   textArea.focus();
   textArea.select();
 
-  try {
-    const successful = document.execCommand('copy');
-    if (successful && callback) {
-      callback(text, true);
-    } else if (!successful) {
-      message.error(getMessages().COPY_FAILED);
-      if (callback) {
-        callback(text, false);
-      }
+  // execCommand 返回 false 时不抛错，触发降级的原因只能靠 cause 留痕
+  const notifyFailure = (err?: unknown) => {
+    if (err !== undefined) {
+      console.error(getMessages().COPY_FAILED, err);
     }
-  } catch (err) {
-    console.error(getMessages().COPY_FAILED, err);
     message.error(getMessages().COPY_FAILED);
     if (callback) {
       callback(text, false);
     }
+  };
+
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      if (callback) {
+        callback(text, true);
+      }
+    } else {
+      notifyFailure(cause);
+    }
+  } catch (err) {
+    notifyFailure(cause ?? err);
   }
 
   document.body.removeChild(textArea);
@@ -105,23 +113,28 @@ export const copyTextToClipboard = async (
 
   const copiedText = await shareableUrl(text);
 
+  // 成功提示与回调只看最终结果：Clipboard API 走不通时转传统复制，两条路径成功后的表现一致
+  const handleResult: CopyCallback = (resultText, result) => {
+    if (result && showSuccessMsg) {
+      message.success(getMessages().COPY_SUCCESS);
+    }
+    if (callback) {
+      callback(resultText, result);
+    }
+  };
+
   // 使用现代剪贴板API或降级到传统方法
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
       await navigator.clipboard.writeText(copiedText);
-      if (showSuccessMsg) {
-        message.success(getMessages().COPY_SUCCESS);
-      }
-      if (callback) {
-        callback(copiedText, true);
-      }
+      handleResult(copiedText, true);
     } catch (err) {
-      console.error(getMessages().COPY_FAILED, err);
-      message.error(getMessages().COPY_FAILED);
-      fallbackCopyTextToClipboard(copiedText, callback);
+      // Clipboard API 被权限策略拦截（嵌入到未授权剪贴板的跨域 iframe）或被浏览器拒绝时转降级；
+      // 降级可能成功，不能在这里提前弹「复制失败」
+      fallbackCopyTextToClipboard(copiedText, handleResult, err);
     }
   } else {
-    fallbackCopyTextToClipboard(copiedText, callback);
+    fallbackCopyTextToClipboard(copiedText, handleResult);
   }
 };
 

@@ -126,6 +126,8 @@ const CopyChatWidgetCode: React.FC<CopyChatWidgetCodeProps> = ({
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
+        // 跨域 iframe 默认没有剪贴板权限，会话里的复制会被浏览器拦截
+        iframe.allow = 'clipboard-read; clipboard-write';
 
         // 将 iframe 添加到窗口
         chatWindow.appendChild(iframe);
