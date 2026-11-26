@@ -6,6 +6,9 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/ChatView/RunOver', () => ({ default: () => null }));
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string, value: string) => `${value}（按工具记录估算）`,
+}));
 vi.mock(
   '@/components/business-component/ConversationStatus/index.less',
   () => ({
@@ -28,6 +31,69 @@ const message = (
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+});
+
+const historyTool = (id: string, startTime: number, endTime: number) => ({
+  result: {
+    executeId: id,
+    type: 'ToolCall',
+    startTime,
+    endTime,
+    success: true,
+  },
+});
+const historyTag = (id: string) =>
+  `<div><markdown-custom-process executeId="${id}" type="ToolCall" status="FINISHED"></markdown-custom-process></div>`;
+
+it('历史多轮只取本轮的有效工具时间，标记估算来源', () => {
+  const old = message('old', AssistantRoleEnum.ASSISTANT, {
+    text: historyTag('old-tool'),
+    componentExecutedList: [historyTool('old-tool', 1000, 999000)],
+  });
+  const assistant = message('new', AssistantRoleEnum.ASSISTANT, {
+    text: historyTag('one') + historyTag('two') + historyTag('broken'),
+    componentExecutedList: [
+      historyTool('one', 10000, 15000),
+      historyTool('two', 20000, 53969),
+      historyTool('broken', 1, -1),
+    ],
+  });
+  render(
+    <ConversationStatus
+      messageList={[
+        message('old-user', AssistantRoleEnum.USER),
+        old,
+        message('new-user', AssistantRoleEnum.USER),
+        assistant,
+      ]}
+    />,
+  );
+  expect(screen.getByText('00:43（按工具记录估算）')).toBeInTheDocument();
+});
+
+it('历史缺少有效耗时显示短横线，有最终结果时优先使用最终耗时', () => {
+  const user = message('user', AssistantRoleEnum.USER);
+  const assistant = message('assistant', AssistantRoleEnum.ASSISTANT, {
+    text: historyTag('broken'),
+    componentExecutedList: [historyTool('broken', 10000, 5000)],
+  });
+  const view = render(<ConversationStatus messageList={[user, assistant]} />);
+  expect(screen.getByText('—')).toBeInTheDocument();
+  view.rerender(
+    <ConversationStatus
+      messageList={[
+        user,
+        {
+          ...assistant,
+          finalResult: {
+            startTime: 1000,
+            endTime: 11000,
+          } as MessageInfo['finalResult'],
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByText('00:10')).toBeInTheDocument();
 });
 
 it('从历史快照的毫秒时间戳恢复本轮计时', () => {

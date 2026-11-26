@@ -674,6 +674,7 @@ const projectTurn = (
     .find((message) => message.finalResult)?.finalResult;
   let elapsedMs: number | undefined;
   let elapsedAnchor: number | undefined;
+  let elapsedSource: 'finalResult' | 'tools' | undefined;
   if (running) {
     // 续接期间旧助手消息可能已有 finalResult，计时仍从本轮开始。
     const userStartTime = new Date(draft.userMessage?.time ?? '').getTime();
@@ -691,21 +692,25 @@ const projectTurn = (
       elapsedAnchor = assistantStartTime;
     }
   } else if (
-    typeof lastFinalResult?.startTime === 'number' &&
-    typeof lastFinalResult?.endTime === 'number'
+    Number.isFinite(lastFinalResult?.startTime) &&
+    Number.isFinite(lastFinalResult?.endTime) &&
+    lastFinalResult!.endTime >= lastFinalResult!.startTime
   ) {
-    elapsedMs = lastFinalResult.endTime - lastFinalResult.startTime;
+    elapsedMs = lastFinalResult!.endTime - lastFinalResult!.startTime;
+    elapsedSource = 'finalResult';
   } else {
-    const starts = nodes
-      .map((node) => node.startTime)
-      .filter((value): value is number => typeof value === 'number');
-    const ends = nodes
-      .map((node) => node.endTime)
-      .filter((value): value is number => typeof value === 'number');
-    const minStart = starts.length ? Math.min(...starts) : undefined;
-    const maxEnd = ends.length ? Math.max(...ends) : undefined;
-    if (typeof minStart === 'number' && typeof maxEnd === 'number') {
-      elapsedMs = Math.max(0, maxEnd - minStart);
+    const timedNodes = nodes.filter(
+      (node) =>
+        (node.kind === 'tool' || node.kind === 'subagent') &&
+        Number.isFinite(node.startTime) &&
+        Number.isFinite(node.endTime) &&
+        node.endTime! >= node.startTime!,
+    );
+    if (timedNodes.length) {
+      elapsedMs =
+        Math.max(...timedNodes.map((node) => node.endTime!)) -
+        Math.min(...timedNodes.map((node) => node.startTime!));
+      elapsedSource = 'tools';
     }
   }
 
@@ -722,6 +727,7 @@ const projectTurn = (
       toolCount: toolExecuteIds.size,
       messageCount,
       elapsedMs,
+      elapsedSource,
       elapsedAnchor,
     },
   };

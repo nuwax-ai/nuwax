@@ -494,6 +494,7 @@ describe('projectConversation · 节点与指标', () => {
       }),
     ]).turns[0];
     expect(withFinal.metrics.elapsedMs).toBe(64000);
+    expect(withFinal.metrics.elapsedSource).toBe('finalResult');
 
     const running = projectConversation([
       msg({
@@ -517,6 +518,38 @@ describe('projectConversation · 节点与指标', () => {
     expect(running.running).toBe(true);
     expect(running.metrics.elapsedAnchor).toBe(5000);
     expect(running.metrics.elapsedMs).toBeUndefined();
+  });
+
+  it('历史工具耗时只使用同一工具的有效时间窗口并按执行 ID 去重', () => {
+    const tool = (id: string, startTime: number, endTime: number) => ({
+      result: {
+        executeId: id,
+        type: 'ToolCall',
+        startTime,
+        endTime,
+        success: true,
+      },
+    });
+    const tag = (id: string) =>
+      processTag({ executeId: id, type: 'ToolCall', status: 'FINISHED' });
+    const turn = projectConversation([
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: tag('one') + tag('two') + tag('invalid'),
+        componentExecutedList: [
+          tool('one', 10000, 15000),
+          tool('two', 20000, 53969),
+          tool('invalid', 1, -1),
+        ],
+        finalResult: {
+          startTime: 10,
+          endTime: 1,
+        } as MessageInfo['finalResult'],
+      }),
+    ]).turns[0];
+    expect(turn.metrics.elapsedMs).toBe(43969);
+    expect(turn.metrics.elapsedSource).toBe('tools');
   });
 });
 

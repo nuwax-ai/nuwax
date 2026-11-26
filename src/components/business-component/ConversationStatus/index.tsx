@@ -1,8 +1,9 @@
 import RunOver from '@/components/ChatView/RunOver';
+import { projectConversation } from '@/features/conversation/presentation-v2';
+import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { parseFinalResultTimes } from '@/utils/conversationFinalResult';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -57,6 +58,17 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     roundKey: typeof roundKey;
     elapsedSeconds: number;
   }>();
+  const terminalMetrics = useMemo(() => {
+    if (isRunning || !lastAssistantMessage) return undefined;
+    try {
+      return projectConversation(messageList).turns.find((turn) =>
+        turn.assistantMessages.includes(lastAssistantMessage),
+      )?.metrics;
+    } catch (error) {
+      console.error('[ConversationStatus] 无法计算终态耗时', error);
+      return undefined;
+    }
+  }, [isRunning, lastAssistantMessage, messageList]);
 
   useEffect(() => {
     if (!isRunning) return undefined;
@@ -78,19 +90,32 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
 
   if (!lastAssistantMessage) return null;
 
-  const finalTimes =
-    isRunning || status === MessageStatusEnum.Stopped
-      ? null
-      : parseFinalResultTimes(lastAssistantMessage.finalResult);
   const elapsedSeconds =
-    timer?.roundKey === roundKey ? timer?.elapsedSeconds ?? 0 : 0;
-  const finalSeconds = finalTimes ? Math.floor(finalTimes.elapsedMs / 1000) : 0;
-  const secondsToDisplay = Math.max(elapsedSeconds, finalSeconds);
-  const minutes = Math.floor(secondsToDisplay / 60);
-  const seconds = secondsToDisplay % 60;
-  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(
-    seconds,
-  ).padStart(2, '0')}`;
+    timer?.roundKey === roundKey ? timer.elapsedSeconds : undefined;
+  const finalSeconds =
+    terminalMetrics?.elapsedMs === undefined
+      ? undefined
+      : Math.floor(terminalMetrics.elapsedMs / 1000);
+  const secondsToDisplay = isRunning
+    ? elapsedSeconds ?? 0
+    : status === MessageStatusEnum.Stopped && elapsedSeconds !== undefined
+    ? elapsedSeconds
+    : elapsedSeconds === undefined
+    ? finalSeconds
+    : Math.max(elapsedSeconds, finalSeconds ?? 0);
+  const formattedTime =
+    secondsToDisplay === undefined
+      ? '—'
+      : `${String(Math.floor(secondsToDisplay / 60)).padStart(2, '0')}:${String(
+          secondsToDisplay % 60,
+        ).padStart(2, '0')}`;
+  const estimated =
+    !isRunning &&
+    (elapsedSeconds === undefined ||
+      (status !== MessageStatusEnum.Stopped &&
+        finalSeconds !== undefined &&
+        finalSeconds > elapsedSeconds)) &&
+    terminalMetrics?.elapsedSource === 'tools';
 
   // 已落库的历史消息可能没有临时 status，仍需展示状态栏。
   const statusMessage = status
@@ -111,7 +136,11 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       <div className={cx(styles.statusBadge, 'flex-1')}>
         <RunOver messageInfo={statusMessage} showTerminalStatus />
       </div>
-      <div className={cx(styles.timer)}>{formattedTime}</div>
+      <div className={cx(styles.timer)}>
+        {estimated
+          ? dict('PC.Components.ConversationStatus.estimated', formattedTime)
+          : formattedTime}
+      </div>
     </div>
   );
 };

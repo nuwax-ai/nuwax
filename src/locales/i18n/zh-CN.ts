@@ -1,6 +1,8 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
+  "PC.Components.ConversationRendererV2.traceMetricEstimated": "按工具记录估算 {0}",
+  "PC.Components.ConversationStatus.estimated": "{0}（按工具记录估算）",
   "PC.Pages.SpaceInvite.manageTitle": "邀请成员",
   "PC.Pages.SpaceInvite.createTab": "创建邀请",
   "PC.Pages.SpaceInvite.historyTab": "邀请记录",

@@ -26,7 +26,7 @@
 | R-DISCLOSURE | 活动尾组默认展开，被后续内容超越时收起一次，手动重开不被后续增量反复覆盖；具体层级见下表 | `traceDisclosureState.ts`、`react/useTraceDisclosure.ts`；整轮由 `react/ConversationRendererV2.tsx` 托管 | `conversation/traceDisclosureState.test.ts`、`conversationRendererComponent.test.tsx`（含三种 sub 快照） |
 | R-TODO | 同一 executeId 去重；相邻 Plan/Todo 清单更新只保留最后一份。live 标签名称可能滞后，识别优先使用最新 processing 详情 | `projectConversation.ts` 的 `dedupeProcessSegments`、`traceItems.ts` 的 `isTodoTraceNode` | `conversation/todoToolNormalization.test.ts` |
 | R-OPENUI | inline/sidecar 产物独立展示；折叠或收尾保持父路径与 key，避免重挂载表单/iframe。无产物或失败退化为普通事件行 | `traceViewModel.ts`、`react/WorkTraceDisclosure.tsx`、`react/OpenUiTraceNode.tsx` | `conversationRendererComponent.test.tsx` |
-| R-METRICS | 消息数只计 reasoning/context/completed-interaction，不含正文；工具数按执行 ID 去重。结束耗时缺失或不足一秒时省略，禁止显示“已工作 0 秒”；运行计时可从 00:00 起 | `projectConversation.ts`、`traceSegments.ts`、`react/WorkTraceDisclosure.tsx` 的 `TraceMetrics` | `conversation/traceSegments.test.ts`、`conversation/workTraceTimer.test.tsx` |
+| R-METRICS | 消息数只计 reasoning/context/completed-interaction，不含正文；工具数按执行 ID 去重。终态优先使用最终结果的有效时间，缺失时使用本轮有效工具时间窗并标注估算。轨迹耗时不足一秒时省略；底部无可信耗时时显示短横线。运行计时可从 00:00 起 | `projectConversation.ts`、`traceSegments.ts`、`react/WorkTraceDisclosure.tsx` 的 `TraceMetrics`、`ConversationStatus` | `conversation/traceSegments.test.ts`、`conversation/workTraceTimer.test.tsx`、`conversation/conversationStatus.test.tsx` |
 
 ## 折叠状态与优先级
 
