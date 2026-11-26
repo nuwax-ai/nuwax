@@ -130,6 +130,27 @@ describe('parseMessageSegments', () => {
     });
   });
 
+  it('工具之间的空白 HTML 不产生正文，也不截断连续工具', () => {
+    const tool = (executeId: string) =>
+      processTag({ executeId, type: 'ToolCall', status: 'FINISHED' });
+    const first = tool('first');
+    const second = tool('second');
+    const third = tool('third');
+    const input = `${first}<p><br /></p>&nbsp;${second}<div>&nbsp;<br></div>实际<br>过程说明<p>&nbsp;</p>${third}`;
+
+    const segments = parseMessageSegments(input);
+    expect(segments.map((segment) => segment.type)).toEqual([
+      'process',
+      'process',
+      'text',
+      'process',
+    ]);
+    expect(segments[2]).toEqual({ type: 'text', content: '实际<br>过程说明' });
+    expect(parseMessageSegments('<div>&nbsp;<br></div>')).toEqual([]);
+    expect(stripCustomTags('<div>&nbsp;<br></div>')).toBe('');
+    expect(stripCustomTags('第一行<br>第二行')).toBe('第一行<br>第二行');
+  });
+
   it('stripCustomTags 剥离全部自定义标签保留正文', () => {
     const text = `${thinkTag('finished', '想')}${processTag({
       executeId: 'x',
@@ -152,6 +173,38 @@ describe('parseMessageSegments', () => {
 });
 
 describe('projectConversation · 轮次分组', () => {
+  const turnStart = '2026-09-16T00:00:00Z';
+
+  it.each([turnStart, Date.parse(turnStart)])(
+    '续接运行时从本轮消息时间 %s 开始，不沿用旧耗时',
+    (time) => {
+      const { turns } = projectConversation([
+        msg({
+          id: 'u1',
+          index: 1,
+          role: AssistantRoleEnum.USER,
+          time: time as MessageInfo['time'],
+        }),
+        msg({
+          id: 'a1',
+          index: 2,
+          role: AssistantRoleEnum.ASSISTANT,
+          finalResult: { ...finishedResult('上一次结果'), endTime: 2300 },
+        }),
+        msg({
+          id: 'a2',
+          index: 3,
+          role: AssistantRoleEnum.ASSISTANT,
+          status: MessageStatusEnum.Loading,
+        }),
+      ]);
+
+      expect(turns[0].running).toBe(true);
+      expect(turns[0].metrics.elapsedMs).toBeUndefined();
+      expect(turns[0].metrics.elapsedAnchor).toBe(Date.parse(turnStart));
+    },
+  );
+
   it('历史全局 index 与无 index 流式轮次混合时，最新输出保持在列表末尾', () => {
     const turns = projectConversation([
       msg({
