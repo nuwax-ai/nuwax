@@ -83,11 +83,17 @@ const decodeContentAttr = (raw: string): string => {
   }
 };
 
-/** 剥离段间残留的包装标签（开闭 div/p），避免正文段两端出现空标签 */
+const htmlSpacing = /(?:<\/?(?:div|p)>|<br\s*\/?>|&(?:nbsp|#160|#xa0);)/.source;
+const leadingHtmlSpacing = new RegExp('^(?:\\s*' + htmlSpacing + ')+', 'i');
+const trailingHtmlSpacing = new RegExp('(?:' + htmlSpacing + '\\s*)+$', 'i');
+
+/** 去掉协议标签之间留下的空白包装，保留正文内部的排版。 */
 const stripWrapperTags = (text: string): string =>
-  text
-    .replace(/^[\s\n]*(?:<(?:div|p)>[\s\n]*)+/, '')
-    .replace(/(?:[\s\n]*<\/(?:div|p)>[\s\n]*)+$/, '');
+  text.replace(leadingHtmlSpacing, '').replace(trailingHtmlSpacing, '');
+
+/** 连续工具之间的 HTML 空白只是排版，不构成过程正文。 */
+const hasTextContent = (text: string): boolean =>
+  Boolean(text.replace(leadingHtmlSpacing, '').trim());
 
 /**
  * 切分消息 text 为有序段。纯函数、容错：解析过程任何异常返回原文本的
@@ -102,7 +108,7 @@ export function parseMessageSegments(
     text.indexOf('markdown-custom-process') === -1 &&
     text.indexOf('markdown-custom-think') === -1
   ) {
-    return text.trim() ? [{ type: 'text', content: text }] : [];
+    return hasTextContent(text) ? [{ type: 'text', content: text }] : [];
   }
 
   try {
@@ -111,7 +117,7 @@ export function parseMessageSegments(
 
     const pushGap = (gap: string) => {
       const stripped = stripWrapperTags(gap);
-      if (!stripped.trim()) return;
+      if (!hasTextContent(stripped)) return;
       // 主正则没吃掉的标签碎片（未闭合/属性截断）单独标记为 unknown，
       // 碎片之前的干净正文仍按正文段保留，不因畸形尾巴整段丢弃。
       const fragmentIndex = stripped.search(/<\/?markdown-custom/);
@@ -120,7 +126,7 @@ export function parseMessageSegments(
         return;
       }
       const head = stripped.slice(0, fragmentIndex);
-      if (head.trim()) {
+      if (hasTextContent(head)) {
         segments.push({ type: 'text', content: head });
       }
       segments.push({
@@ -171,15 +177,14 @@ export function parseMessageSegments(
 export function stripCustomTags(input: string | undefined | null): string {
   const text = typeof input === 'string' ? input : '';
   if (!text) return '';
-  return (
-    text
-      .replace(
-        /(?:\s*<(?:div|p)>\s*)?<markdown-custom-(?:process|think)\b[^>]*>(?:<\/markdown-custom-(?:process|think)>)?(?:\s*<\/(?:div|p)>\s*)?/g,
-        '\n\n',
-      )
-      // 包装是块边界，不能连同相邻换行一起删掉，否则首个列表项会粘回引导段落。
-      .replace(/(?:\s*<(?:div|p)>\s*|\s*<\/(?:div|p)>\s*)/g, '\n\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
+  const stripped = text
+    .replace(
+      /(?:\s*<(?:div|p)>\s*)?<markdown-custom-(?:process|think)\b[^>]*>(?:<\/markdown-custom-(?:process|think)>)?(?:\s*<\/(?:div|p)>\s*)?/g,
+      '\n\n',
+    )
+    // 包装是块边界，不能连同相邻换行一起删掉，否则首个列表项会粘回引导段落。
+    .replace(/(?:\s*<(?:div|p)>\s*|\s*<\/(?:div|p)>\s*)/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return hasTextContent(stripped) ? stripped : '';
 }

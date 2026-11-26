@@ -674,7 +674,21 @@ const projectTurn = (
     .find((message) => message.finalResult)?.finalResult;
   let elapsedMs: number | undefined;
   let elapsedAnchor: number | undefined;
-  if (
+  if (running) {
+    // 续接期间旧助手消息可能已有 finalResult，计时仍从本轮开始。
+    const userStartTime = Date.parse(draft.userMessage?.time ?? '');
+    const starts = nodes
+      .map((node) => node.startTime)
+      .filter((value): value is number => Number.isFinite(value));
+    const assistantStartTime = Date.parse(assistantMessages[0]?.time ?? '');
+    if (Number.isFinite(userStartTime)) {
+      elapsedAnchor = userStartTime;
+    } else if (starts.length) {
+      elapsedAnchor = Math.min(...starts);
+    } else if (Number.isFinite(assistantStartTime)) {
+      elapsedAnchor = assistantStartTime;
+    }
+  } else if (
     typeof lastFinalResult?.startTime === 'number' &&
     typeof lastFinalResult?.endTime === 'number'
   ) {
@@ -688,14 +702,7 @@ const projectTurn = (
       .filter((value): value is number => typeof value === 'number');
     const minStart = starts.length ? Math.min(...starts) : undefined;
     const maxEnd = ends.length ? Math.max(...ends) : undefined;
-    if (running) {
-      // 与页面底部 ConversationStatus 使用同一计时起点：从本轮用户消息发出时开始。
-      // sub 恢复的历史半轮可能没有 userMessage，才回退到最早工具开始时间。
-      const userStartTime = draft.userMessage?.time
-        ? new Date(draft.userMessage.time).getTime()
-        : Number.NaN;
-      elapsedAnchor = Number.isFinite(userStartTime) ? userStartTime : minStart;
-    } else if (typeof minStart === 'number' && typeof maxEnd === 'number') {
+    if (typeof minStart === 'number' && typeof maxEnd === 'number') {
       elapsedMs = Math.max(0, maxEnd - minStart);
     }
   }
