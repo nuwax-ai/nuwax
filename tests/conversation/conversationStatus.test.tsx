@@ -30,6 +30,21 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it('从历史快照的毫秒时间戳恢复本轮计时', () => {
+  vi.useFakeTimers();
+  const user = message('user-1', AssistantRoleEnum.USER, {
+    time: (Date.now() - 90_000) as unknown as MessageInfo['time'],
+  });
+  const assistant = message('assistant-1', AssistantRoleEnum.ASSISTANT, {
+    status: MessageStatusEnum.Loading,
+  });
+
+  render(<ConversationStatus messageList={[user, assistant]} />);
+  expect(screen.getByText('01:30')).toBeInTheDocument();
+  act(() => vi.advanceTimersByTime(1000));
+  expect(screen.getByText('01:31')).toBeInTheDocument();
+});
+
 it('思考中追加无状态消息或收到旧耗时时，底部计时继续，停止时冻结', () => {
   vi.useFakeTimers();
   const user = message('user-1', AssistantRoleEnum.USER);

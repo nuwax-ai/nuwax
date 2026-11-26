@@ -42,10 +42,11 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
   const isRunning =
     status === MessageStatusEnum.Loading ||
     status === MessageStatusEnum.Incomplete;
-  const userStartTime = Date.parse(userMessage?.time ?? '');
+  // 历史快照和本地消息分别可能用毫秒时间戳、日期字符串。
+  const userStartTime = new Date(userMessage?.time ?? '').getTime();
   const startTime = Number.isFinite(userStartTime)
     ? userStartTime
-    : Date.parse(lastAssistantMessage?.time ?? '');
+    : new Date(lastAssistantMessage?.time ?? '').getTime();
   const roundKey =
     userMessage?.clientRenderKey ||
     userMessage?.id ||

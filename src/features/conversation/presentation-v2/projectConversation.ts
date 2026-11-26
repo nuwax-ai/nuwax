@@ -676,11 +676,13 @@ const projectTurn = (
   let elapsedAnchor: number | undefined;
   if (running) {
     // 续接期间旧助手消息可能已有 finalResult，计时仍从本轮开始。
-    const userStartTime = Date.parse(draft.userMessage?.time ?? '');
+    const userStartTime = new Date(draft.userMessage?.time ?? '').getTime();
     const starts = nodes
       .map((node) => node.startTime)
       .filter((value): value is number => Number.isFinite(value));
-    const assistantStartTime = Date.parse(assistantMessages[0]?.time ?? '');
+    const assistantStartTime = new Date(
+      assistantMessages[0]?.time ?? '',
+    ).getTime();
     if (Number.isFinite(userStartTime)) {
       elapsedAnchor = userStartTime;
     } else if (starts.length) {

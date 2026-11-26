@@ -173,28 +173,37 @@ describe('parseMessageSegments', () => {
 });
 
 describe('projectConversation · 轮次分组', () => {
-  it('续接运行时使用本轮起点，不沿用已完成助手消息的耗时', () => {
-    const time = '2026-09-16T00:00:00Z';
-    const { turns } = projectConversation([
-      msg({ id: 'u1', index: 1, role: AssistantRoleEnum.USER, time }),
-      msg({
-        id: 'a1',
-        index: 2,
-        role: AssistantRoleEnum.ASSISTANT,
-        finalResult: { ...finishedResult('上一次结果'), endTime: 2300 },
-      }),
-      msg({
-        id: 'a2',
-        index: 3,
-        role: AssistantRoleEnum.ASSISTANT,
-        status: MessageStatusEnum.Loading,
-      }),
-    ]);
+  const turnStart = '2026-09-16T00:00:00Z';
 
-    expect(turns[0].running).toBe(true);
-    expect(turns[0].metrics.elapsedMs).toBeUndefined();
-    expect(turns[0].metrics.elapsedAnchor).toBe(Date.parse(time));
-  });
+  it.each([turnStart, Date.parse(turnStart)])(
+    '续接运行时从本轮消息时间 %s 开始，不沿用旧耗时',
+    (time) => {
+      const { turns } = projectConversation([
+        msg({
+          id: 'u1',
+          index: 1,
+          role: AssistantRoleEnum.USER,
+          time: time as MessageInfo['time'],
+        }),
+        msg({
+          id: 'a1',
+          index: 2,
+          role: AssistantRoleEnum.ASSISTANT,
+          finalResult: { ...finishedResult('上一次结果'), endTime: 2300 },
+        }),
+        msg({
+          id: 'a2',
+          index: 3,
+          role: AssistantRoleEnum.ASSISTANT,
+          status: MessageStatusEnum.Loading,
+        }),
+      ]);
+
+      expect(turns[0].running).toBe(true);
+      expect(turns[0].metrics.elapsedMs).toBeUndefined();
+      expect(turns[0].metrics.elapsedAnchor).toBe(Date.parse(turnStart));
+    },
+  );
 
   it('历史全局 index 与无 index 流式轮次混合时，最新输出保持在列表末尾', () => {
     const turns = projectConversation([
