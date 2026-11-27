@@ -2106,6 +2106,7 @@ const ChatInputUnifiedImpl: React.FC<
                       (!pinnedProject || pinnedProjectSandboxSelectable) &&
                       !readonly && (
                         <ComputerTypeSelector
+                          prioritizeLocalComputer
                           value={
                             agentSandboxId !== undefined &&
                             agentSandboxId !== null &&

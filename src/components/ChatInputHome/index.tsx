@@ -1167,6 +1167,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                         !pinnedProject &&
                         !readonly && (
                           <ComputerTypeSelector
+                            prioritizeLocalComputer
                             value={
                               agentSandboxId !== undefined &&
                               agentSandboxId !== null

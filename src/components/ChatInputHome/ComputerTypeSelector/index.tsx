@@ -70,6 +70,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   readonly = false,
   cloudOnly = false,
   strictAgentMemory = false,
+  prioritizeLocalComputer = false,
 }) => {
   const [open, setOpen] = useState(false);
   const {
@@ -77,7 +78,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     agentSelectedMap: remoteSelectedMap,
     initialized,
     refresh,
-  } = useComputerList(!cloudOnly);
+  } = useComputerList(!cloudOnly, prioritizeLocalComputer);
   // 手选覆盖当前组件会话内的服务器记忆，旧的在途响应不能把手选回退。
   const [manualSelectedMap, setManualSelectedMap] = useState<
     Record<string, string>
