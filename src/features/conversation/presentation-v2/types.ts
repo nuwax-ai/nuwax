@@ -153,6 +153,8 @@ export interface ConversationTurnPresentationV2 {
     messageCount: number;
     /** 终态耗时（ms）；运行态为 undefined，用 elapsedAnchor 每秒推进 */
     elapsedMs?: number;
+    /** 终态耗时的数据来源。 */
+    elapsedSource?: 'finalResult' | 'tools';
     /** 运行态计时锚点（ms epoch） */
     elapsedAnchor?: number;
   };
