@@ -674,29 +674,43 @@ const projectTurn = (
     .find((message) => message.finalResult)?.finalResult;
   let elapsedMs: number | undefined;
   let elapsedAnchor: number | undefined;
-  if (
-    typeof lastFinalResult?.startTime === 'number' &&
-    typeof lastFinalResult?.endTime === 'number'
-  ) {
-    elapsedMs = lastFinalResult.endTime - lastFinalResult.startTime;
-  } else {
+  let elapsedSource: 'finalResult' | 'tools' | undefined;
+  if (running) {
+    // 续接期间旧助手消息可能已有 finalResult，计时仍从本轮开始。
+    const userStartTime = new Date(draft.userMessage?.time ?? '').getTime();
     const starts = nodes
       .map((node) => node.startTime)
-      .filter((value): value is number => typeof value === 'number');
-    const ends = nodes
-      .map((node) => node.endTime)
-      .filter((value): value is number => typeof value === 'number');
-    const minStart = starts.length ? Math.min(...starts) : undefined;
-    const maxEnd = ends.length ? Math.max(...ends) : undefined;
-    if (running) {
-      // 与页面底部 ConversationStatus 使用同一计时起点：从本轮用户消息发出时开始。
-      // sub 恢复的历史半轮可能没有 userMessage，才回退到最早工具开始时间。
-      const userStartTime = draft.userMessage?.time
-        ? new Date(draft.userMessage.time).getTime()
-        : Number.NaN;
-      elapsedAnchor = Number.isFinite(userStartTime) ? userStartTime : minStart;
-    } else if (typeof minStart === 'number' && typeof maxEnd === 'number') {
-      elapsedMs = Math.max(0, maxEnd - minStart);
+      .filter((value): value is number => Number.isFinite(value));
+    const assistantStartTime = new Date(
+      assistantMessages[0]?.time ?? '',
+    ).getTime();
+    if (Number.isFinite(userStartTime)) {
+      elapsedAnchor = userStartTime;
+    } else if (starts.length) {
+      elapsedAnchor = Math.min(...starts);
+    } else if (Number.isFinite(assistantStartTime)) {
+      elapsedAnchor = assistantStartTime;
+    }
+  } else if (
+    Number.isFinite(lastFinalResult?.startTime) &&
+    Number.isFinite(lastFinalResult?.endTime) &&
+    lastFinalResult!.endTime >= lastFinalResult!.startTime
+  ) {
+    elapsedMs = lastFinalResult!.endTime - lastFinalResult!.startTime;
+    elapsedSource = 'finalResult';
+  } else {
+    const timedNodes = nodes.filter(
+      (node) =>
+        (node.kind === 'tool' || node.kind === 'subagent') &&
+        Number.isFinite(node.startTime) &&
+        Number.isFinite(node.endTime) &&
+        node.endTime! >= node.startTime!,
+    );
+    if (timedNodes.length) {
+      elapsedMs =
+        Math.max(...timedNodes.map((node) => node.endTime!)) -
+        Math.min(...timedNodes.map((node) => node.startTime!));
+      elapsedSource = 'tools';
     }
   }
 
@@ -713,6 +727,7 @@ const projectTurn = (
       toolCount: toolExecuteIds.size,
       messageCount,
       elapsedMs,
+      elapsedSource,
       elapsedAnchor,
     },
   };

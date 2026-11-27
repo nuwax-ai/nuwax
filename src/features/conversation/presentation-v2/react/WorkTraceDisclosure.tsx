@@ -106,6 +106,8 @@ const TraceMetrics: React.FC<{ turn: TraceMetricsTurn }> = ({ turn }) => {
       dict(
         turn.running
           ? 'PC.Components.ConversationRendererV2.traceMetricRunning'
+          : turn.metrics.elapsedSource === 'tools'
+          ? 'PC.Components.ConversationRendererV2.traceMetricEstimated'
           : 'PC.Components.ConversationRendererV2.traceMetricElapsed',
         elapsedText,
       ),

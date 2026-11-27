@@ -1,6 +1,8 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.ConversationRendererV2.traceMetricEstimated": "Estimated from tool records {0}",
+  "PC.Components.ConversationStatus.estimated": "{0} (estimated from tool records)",
   "PC.Pages.SpaceInvite.manageTitle": "Invite members",
   "PC.Pages.SpaceInvite.createTab": "Create invitation",
   "PC.Pages.SpaceInvite.historyTab": "Invitation history",
