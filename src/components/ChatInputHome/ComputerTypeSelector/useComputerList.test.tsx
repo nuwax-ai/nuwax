@@ -63,6 +63,69 @@ function commercialHost() {
 }
 
 describe('useComputerList 请求生命周期', () => {
+  it('未启用本机置顶的入口保留后端顺序', async () => {
+    commercialHost();
+    handleComputerServiceStatePayload({ phase: 'ready', sandboxId: '366' });
+    fetchList.mockResolvedValue(response([other, local]));
+    const { result } = renderHook(() => useComputerList());
+    await settle();
+    expect(result.current.rawComputerList.map((item) => item.id)).toEqual([
+      '999',
+      '366',
+    ]);
+  });
+
+  it('客户端将本机排在首位，保留其余候选顺序；本机不在列表时不改变顺序', async () => {
+    commercialHost();
+    handleComputerServiceStatePayload({ phase: 'ready', sandboxId: '366' });
+    fetchList.mockResolvedValue(response([other, cloud, local]));
+    const { result } = renderHook(() => useComputerList(true, true));
+    await settle();
+    expect(result.current.rawComputerList.map((item) => item.id)).toEqual([
+      '366',
+      '999',
+      '-1',
+    ]);
+    fetchList.mockResolvedValue(response([other, cloud]));
+    act(() => result.current.refresh());
+    await settle();
+    expect(result.current.rawComputerList.map((item) => item.id)).toEqual([
+      '999',
+      '-1',
+    ]);
+  });
+
+  it('本机身份晚于列表到达时立即调整顺序，普通浏览器保留原顺序', async () => {
+    fetchList.mockResolvedValue(response([other, local]));
+    const web = renderHook(() => useComputerList(true, true));
+    await settle();
+    act(() =>
+      handleComputerServiceStatePayload({
+        phase: 'starting',
+        sandboxId: '366',
+      }),
+    );
+    expect(web.result.current.rawComputerList.map((item) => item.id)).toEqual([
+      '999',
+      '366',
+    ]);
+    web.unmount();
+
+    resetServiceState();
+    commercialHost();
+    const client = renderHook(() => useComputerList(true, true));
+    await settle();
+    act(() =>
+      handleComputerServiceStatePayload({
+        phase: 'starting',
+        sandboxId: '366',
+      }),
+    );
+    expect(
+      client.result.current.rawComputerList.map((item) => item.id),
+    ).toEqual(['366', '999']);
+  });
+
   it.each(['web', 'client'])(
     '%s 收到 sandbox_online 后刷新其他电脑，卸载后退订',
     async (host) => {

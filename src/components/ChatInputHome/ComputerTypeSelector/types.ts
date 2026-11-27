@@ -51,4 +51,6 @@ export interface ComputerTypeSelectorProps {
    * 列表只保留云电脑，已选个人电脑时由既有自动选择逻辑回落到 '-1'。
    */
   cloudOnly?: boolean;
+  /** 对话框内将当前客户端对应的电脑排在首位 */
+  prioritizeLocalComputer?: boolean;
 }

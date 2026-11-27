@@ -82,6 +82,52 @@ const click = (element: HTMLElement) =>
   });
 
 describe('电脑列表刷新与选择保护', () => {
+  it('无云电脑时，新建默认选择本机并在菜单中排首位', async () => {
+    window.NuwaClawBridge = { host: { getProduct: () => 'nuwax' } };
+    handleComputerServiceStatePayload({ phase: 'ready', sandboxId: '366' });
+    fetchComputerList.mockResolvedValue(response([other, local]));
+    render(
+      <Controlled
+        initialValue="-1"
+        agentId={7}
+        strictAgentMemory
+        prioritizeLocalComputer
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('selected-id')).toHaveTextContent('366'),
+    );
+    await click(screen.getByText('我的电脑'));
+    const menu = screen.getByRole('menu');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['我的电脑', '其他电脑']);
+  });
+
+  it('本机身份晚到只调整列表，不抢走已选电脑', async () => {
+    window.NuwaClawBridge = { host: { getProduct: () => 'nuwax' } };
+    fetchComputerList.mockResolvedValue(response([other, local]));
+    render(<Controlled initialValue="999" prioritizeLocalComputer />);
+    await screen.findByText('其他电脑');
+    act(() =>
+      handleComputerServiceStatePayload({
+        phase: 'starting',
+        sandboxId: '366',
+      }),
+    );
+    expect(screen.getByTestId('selected-id')).toHaveTextContent('999');
+    await click(screen.getByText('其他电脑'));
+    const menu = screen.getByRole('menu');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['我的电脑', '其他电脑']);
+  });
+
   it.each<Record<string, string>>([{}, { 7: '-1' }])(
     '只有个人电脑时自动同步默认电脑，无须手选且不保存临时值（记忆=%j）',
     async (agentSelected) => {

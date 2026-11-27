@@ -12,19 +12,23 @@ import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
 import { EventTypeEnum } from '@/types/enums/event';
 import eventBus from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComputerOption } from './types';
 
 const RETRY_INTERVAL_MS = 2_000;
 const WAIT_WINDOW_MS = 30_000;
 
 /** 请求与启动等待独立于选择决策，刷新不清空已有列表。 */
-export function useComputerList(waitForLocalComputer = true) {
+export function useComputerList(
+  waitForLocalComputer = true,
+  prioritizeLocalComputer = false,
+) {
   const [rawComputerList, setRawComputerList] = useState<ComputerOption[]>([]);
   const [agentSelectedMap, setAgentSelectedMap] = useState<
     Record<string, string>
   >({});
   const [initialized, setInitialized] = useState(false);
+  const [localId, setLocalId] = useState<string>();
   const refreshRef = useRef<(() => void) | null>(null);
   const refresh = useCallback(() => refreshRef.current?.(), []);
 
@@ -44,6 +48,8 @@ export function useComputerList(waitForLocalComputer = true) {
     const product = hostBridge.host.getProduct();
     const commercial =
       waitForLocalComputer && (product === 'nuwax' || product === 'nuwawork');
+    if (commercial) setLocalId(localSandboxId);
+    else setLocalId(undefined);
     // 截止时间按墙钟计算：后台暂停不会重置或延长预算。
     let deadline = commercial ? Date.now() + WAIT_WINDOW_MS : 0;
     if (commercial) waitMode = 'online';
@@ -113,8 +119,11 @@ export function useComputerList(waitForLocalComputer = true) {
     };
 
     const handleServiceState = (next: ComputerServiceState) => {
-      if (next.sandboxId) localSandboxId = next.sandboxId;
       if (!commercial) return;
+      if (next.sandboxId) {
+        localSandboxId = next.sandboxId;
+        setLocalId(next.sandboxId);
+      }
       if (next.phase === 'ready') {
         // 重启前的旧列表可能仍含本机，须以 ready 之后的接口响应判断是否在线。
         waitMode = 'online';
@@ -170,5 +179,21 @@ export function useComputerList(waitForLocalComputer = true) {
     };
   }, [waitForLocalComputer]);
 
-  return { rawComputerList, agentSelectedMap, initialized, refresh };
+  const sortedComputerList = useMemo(() => {
+    if (!prioritizeLocalComputer || !localId) return rawComputerList;
+    const index = rawComputerList.findIndex((item) => item.id === localId);
+    if (index <= 0) return rawComputerList;
+    return [
+      rawComputerList[index],
+      ...rawComputerList.slice(0, index),
+      ...rawComputerList.slice(index + 1),
+    ];
+  }, [localId, prioritizeLocalComputer, rawComputerList]);
+
+  return {
+    rawComputerList: sortedComputerList,
+    agentSelectedMap,
+    initialized,
+    refresh,
+  };
 }
